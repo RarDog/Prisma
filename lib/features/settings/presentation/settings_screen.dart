@@ -14,6 +14,7 @@ import '../../../app/changelog.dart';
 import '../../../app/app_strings.dart';
 import '../../../app/motion.dart';
 import '../../../backend/backend.dart';
+import '../../../backend/providers/e621_provider.dart';
 import '../../../core/utils/result.dart';
 import '../../../shared/widgets/adaptive_scaffold.dart';
 import '../../../shared/widgets/error_view.dart';
@@ -616,6 +617,19 @@ class _SettingsContentState extends ConsumerState<_SettingsContent> {
                           ),
                         ),
                         const _SettingsDivider(),
+                        _SettingsTile(
+                          icon: Icons.sync_rounded,
+                          iconColor: const Color(0xFF0055AA),
+                          title: isRu
+                              ? 'Синхронизация черного списка e621'
+                              : 'Sync e621 Blacklist',
+                          subtitle: isRu
+                              ? 'Загрузить заблокированные теги из аккаунта e621'
+                              : 'Import blacklisted tags from e621 account',
+                          trailing: const Icon(Icons.download_rounded, size: 20),
+                          onTap: () => _syncE621Blacklist(context),
+                        ),
+                        const _SettingsDivider(),
                         Padding(
                           padding: const EdgeInsets.all(14),
                           child: _TagListEditor(
@@ -882,6 +896,97 @@ class _SettingsContentState extends ConsumerState<_SettingsContent> {
 
   Future<void> _update(WidgetRef ref, AppSettings settings) {
     return ref.read(settingsControllerProvider.notifier).saveSettings(settings);
+  }
+
+  Future<void> _syncE621Blacklist(BuildContext context) async {
+    final isRu = settings.languageCode == 'ru';
+    HapticFeedback.mediumImpact();
+
+    try {
+      final providerInstance = await ref
+          .read(providerManagerProvider)
+          .getProviderInstance('e621');
+      if (providerInstance is! E621Provider) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                isRu ? 'Провайдер e621 не найден' : 'e621 provider not found',
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
+      final login = providerInstance.login?.trim();
+      if (login == null || login.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                isRu
+                    ? 'Укажите логин e621 в настройках источников'
+                    : 'Configure e621 login in provider settings first',
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
+      final tags = await providerInstance.fetchAccountBlacklist();
+      if (!context.mounted) return;
+      if (tags.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isRu
+                  ? 'В аккаунте e621 нет заблокированных тегов'
+                  : 'No blacklisted tags found on e621 account',
+            ),
+          ),
+        );
+        return;
+      }
+
+      final res = await ref
+          .read(settingsServiceProvider)
+          .importBlacklistFromE621(tags);
+      ref.invalidate(settingsControllerProvider);
+      ref.invalidate(appSettingsProvider);
+
+      if (context.mounted) {
+        res.fold(
+          onSuccess: (count) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  count > 0
+                      ? (isRu
+                          ? 'Синхронизировано $count новых тегов/правил из e621!'
+                          : 'Imported $count new rules/tags from e621!')
+                      : (isRu
+                          ? 'Черный список уже синхронизирован (нет новых тегов)'
+                          : 'Blacklist already up to date'),
+                ),
+              ),
+            );
+          },
+          onError: (fail) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Ошибка: ${fail.message}')),
+            );
+          },
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка синхронизации: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _copyDiagnostics(BuildContext context, WidgetRef ref) async {

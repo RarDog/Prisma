@@ -35,9 +35,8 @@ class Rule34Provider extends GelbooruProvider {
     TopPeriodFilter topPeriod = TopPeriodFilter.none,
   }) async {
     final topTags = switch (topPeriod) {
-      TopPeriodFilter.none => const <String>[],
-      TopPeriodFilter.month || TopPeriodFilter.year => const <String>[],
       TopPeriodFilter.allTime => const ['sort:score:desc'],
+      _ => const <String>[],
     };
     try {
       final response = await dio.get<dynamic>(

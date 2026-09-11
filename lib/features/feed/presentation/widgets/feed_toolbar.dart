@@ -370,6 +370,8 @@ class _LiquidPeriodTabs extends StatelessWidget {
   IconData _iconFor(TopPeriodFilter period) {
     return switch (period) {
       TopPeriodFilter.none => Icons.auto_awesome_rounded,
+      TopPeriodFilter.day => Icons.today_rounded,
+      TopPeriodFilter.week => Icons.date_range_rounded,
       TopPeriodFilter.month => Icons.calendar_month_rounded,
       TopPeriodFilter.year => Icons.calendar_today_rounded,
       TopPeriodFilter.allTime => Icons.workspace_premium_rounded,

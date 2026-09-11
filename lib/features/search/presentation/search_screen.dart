@@ -16,7 +16,9 @@ import 'search_controller.dart';
 import 'widgets/recent_searches.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
-  const SearchScreen({super.key});
+  const SearchScreen({this.initialQuery, super.key});
+
+  final String? initialQuery;
 
   @override
   ConsumerState<SearchScreen> createState() => _SearchScreenState();
@@ -24,6 +26,30 @@ class SearchScreen extends ConsumerStatefulWidget {
 
 class _SearchScreenState extends ConsumerState<SearchScreen> {
   bool _showTips = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final query = widget.initialQuery?.trim();
+    if (query != null && query.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(searchControllerProvider.notifier).updateQuery(query);
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(SearchScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final query = widget.initialQuery?.trim();
+    if (query != null &&
+        query.isNotEmpty &&
+        query != oldWidget.initialQuery?.trim()) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(searchControllerProvider.notifier).updateQuery(query);
+      });
+    }
+  }
 
   void _onTagTap(String tag, String currentQuery) {
     final trimmed = currentQuery.trim();

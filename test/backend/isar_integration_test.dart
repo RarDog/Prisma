@@ -242,6 +242,34 @@ void main() {
     expect(exported.data, contains('"provider:post"'));
   });
 
+  test('settings importBlacklistFromE621 parses and deduplicates rules', () async {
+    final service = SettingsService(databaseService);
+    await service.updateSettings(
+      AppSettings.defaults.copyWith(
+        blacklistedTags: ['existing_tag'],
+        smartBlacklistRules: ['score:<5'],
+      ),
+    );
+
+    final importResult = await service.importBlacklistFromE621([
+      'existing_tag',
+      'new_tag',
+      'rating:explicit gore',
+      'score:<5',
+      'scat watersports',
+      '',
+    ]);
+
+    expect(importResult, isA<Success<int>>());
+    expect((importResult as Success<int>).data, equals(3));
+
+    final settingsResult = await service.getSettings() as Success<AppSettings>;
+    final settings = settingsResult.data;
+
+    expect(settings.blacklistedTags, containsAll(['existing_tag', 'new_tag']));
+    expect(settings.smartBlacklistRules, containsAll(['score:<5', 'rating:explicit gore', 'scat watersports']));
+  });
+
   test('cache service prunes to max item count', () async {
     final service = CacheService(databaseService);
 

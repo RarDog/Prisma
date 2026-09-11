@@ -65,6 +65,28 @@ class E621Provider
   @override
   String postPageUrl(Post post) => '$baseUrl/posts/${post.id}';
 
+  static List<String> sanitizeTags(List<String> tags) {
+    const stripPrefixes = [
+      'artist:',
+      'creator:',
+      'character:',
+      'species:',
+      'general:',
+      'meta:',
+      'lore:',
+    ];
+    return tags.map((t) {
+      final trimmed = t.trim();
+      final lower = trimmed.toLowerCase();
+      for (final prefix in stripPrefixes) {
+        if (lower.startsWith(prefix)) {
+          return trimmed.substring(prefix.length);
+        }
+      }
+      return trimmed;
+    }).where((t) => t.isNotEmpty).toList();
+  }
+
   @override
   Future<List<Post>> searchPosts({
     required List<String> tags,
@@ -74,13 +96,14 @@ class E621Provider
     TopPeriodFilter topPeriod = TopPeriodFilter.none,
   }) async {
     await _throttle();
+    final sanitized = sanitizeTags(tags);
     final response = await _dio.get<dynamic>(
       '/posts.json',
       queryParameters: {
         'page': page + 1,
         'limit': limit.clamp(1, 75),
         'tags': [
-          ...tags,
+          ...sanitized,
           if (rating != null && rating.isNotEmpty) 'rating:${_rating(rating)}',
           ..._topTags(topPeriod),
         ].join(' '),
@@ -212,6 +235,92 @@ class E621Provider
     }
   }
 
+  /// Fetches server-side popular posts from e621 by scale ('day', 'week', 'month').
+  Future<List<Post>> getPopularPosts({
+    String scale = 'day',
+    DateTime? date,
+  }) async {
+    await _throttle();
+    try {
+      final response = await _dio.get<dynamic>(
+        '/popular.json',
+        queryParameters: {
+          'scale': scale,
+          if (date != null) 'date': _date(date),
+          ..._queryParameters,
+        },
+      );
+      return E621Mapper.postsFromResponse(
+        response.data,
+        providerId: id,
+        providerName: name,
+      );
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// Fetches the authenticated user's blacklist rules from e621.
+  Future<List<String>> fetchAccountBlacklist() async {
+    final currentLogin = login?.trim();
+    if (currentLogin == null || currentLogin.isEmpty) return const [];
+    await _throttle();
+    try {
+      final response = await _dio.get<dynamic>(
+        '/users.json',
+        queryParameters: {
+          'search[name]': currentLogin,
+          ..._queryParameters,
+        },
+      );
+      final data = response.data;
+      if (data is List && data.isNotEmpty && data.first is Map) {
+        final userData = Map<String, dynamic>.from(data.first as Map);
+        final rawBlacklist = (userData['blacklisted_tags'] ?? '').toString();
+        return rawBlacklist
+            .split(RegExp(r'[\r\n]+'))
+            .map((s) => s.trim())
+            .where((s) => s.isNotEmpty)
+            .toList();
+      }
+    } catch (_) {}
+    return const [];
+  }
+
+  /// Posts a comment to an e621 post.
+  Future<PostComment?> createComment({
+    required String postId,
+    required String body,
+  }) async {
+    if (!isAuthorized || body.trim().isEmpty) return null;
+    await _throttle();
+    try {
+      final response = await _dio.post<dynamic>(
+        '/comments.json',
+        queryParameters: _queryParameters,
+        data: {
+          'comment': {
+            'post_id': int.tryParse(postId) ?? postId,
+            'body': body.trim(),
+          },
+        },
+      );
+      if (response.data is Map) {
+        final json = Map<String, dynamic>.from(response.data as Map);
+        return PostComment(
+          id: (json['id'] ?? '').toString(),
+          postId: (json['post_id'] ?? postId).toString(),
+          providerId: id,
+          authorName: (json['creator_name'] ?? login ?? 'user').toString(),
+          body: (json['body'] ?? body.trim()).toString(),
+          createdAt: DateTime.tryParse((json['created_at'] ?? '').toString()) ??
+              DateTime.now(),
+        );
+      }
+    } catch (_) {}
+    return null;
+  }
+
   @override
   Future<ProviderHealth> checkHealth() async {
     final startedAt = DateTime.now();
@@ -314,6 +423,14 @@ class E621Provider
     final now = DateTime.now();
     return switch (period) {
       TopPeriodFilter.none => const [],
+      TopPeriodFilter.day => [
+          'order:score',
+          'date:>${_date(now.subtract(const Duration(days: 1)))}',
+        ],
+      TopPeriodFilter.week => [
+          'order:score',
+          'date:>${_date(now.subtract(const Duration(days: 7)))}',
+        ],
       TopPeriodFilter.month => [
           'order:score',
           'date:>${_date(now.subtract(const Duration(days: 31)))}',

@@ -159,6 +159,14 @@ class DanbooruProvider
     final now = DateTime.now();
     return switch (period) {
       TopPeriodFilter.none => const [],
+      TopPeriodFilter.day => [
+          'order:score',
+          'date:>${_date(now.subtract(const Duration(days: 1)))}',
+        ],
+      TopPeriodFilter.week => [
+          'order:score',
+          'date:>${_date(now.subtract(const Duration(days: 7)))}',
+        ],
       TopPeriodFilter.month => [
           'order:score',
           'date:>${_date(now.subtract(const Duration(days: 31)))}',

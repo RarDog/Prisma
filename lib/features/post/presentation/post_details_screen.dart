@@ -48,16 +48,54 @@ final postProviderInstanceProvider =
   return ref.watch(providerManagerProvider).getProviderInstance(providerId);
 });
 
+class ArtistPostsArgs {
+  const ArtistPostsArgs({
+    required this.providerId,
+    required this.artistName,
+    required this.queryTag,
+  });
+
+  final String providerId;
+  final String artistName;
+  final String queryTag;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ArtistPostsArgs &&
+          runtimeType == other.runtimeType &&
+          providerId == other.providerId &&
+          artistName == other.artistName &&
+          queryTag == other.queryTag;
+
+  @override
+  int get hashCode => Object.hash(providerId, artistName, queryTag);
+}
+
 /// Fetches up to 6 recent posts from the same artist.
 final artistPostsProvider =
-    FutureProvider.family<List<Post>, String>((ref, artistTag) async {
-  if (artistTag.isEmpty) return const [];
+    FutureProvider.family<List<Post>, ArtistPostsArgs>((ref, args) async {
+  if (args.queryTag.isEmpty && args.artistName.isEmpty) return const [];
   final result = await ref.watch(feedServiceProvider).refresh(
-        tags: [artistTag],
-        limit: 7,
+        tags: [args.queryTag],
+        providerId: args.providerId,
+        limit: 12,
       );
-  if (result is! Success<List<Post>>) return const [];
-  return (result as Success<List<Post>>).data.take(6).toList(growable: false);
+  if (result is! Success<List<Post>>) {
+    // If querying with 'artist:xyz' failed on another provider, try plain name fallback
+    if (args.artistName.isNotEmpty && args.queryTag != args.artistName) {
+      final fallback = await ref.watch(feedServiceProvider).refresh(
+            tags: [args.artistName],
+            providerId: args.providerId,
+            limit: 12,
+          );
+      if (fallback is Success<List<Post>>) {
+        return fallback.data;
+      }
+    }
+    return const [];
+  }
+  return result.data;
 });
 
 class PostDetailsScreen extends ConsumerWidget {
@@ -1418,36 +1456,66 @@ class _ArtistPostsCard extends ConsumerWidget {
 
   final Post post;
 
-  String _artistTag(Post post) {
-    final artists = post.tagGroups['artist'] ??
+  static ({String name, String queryTag})? extractArtist(Post post) {
+    final rawArtists = post.tagGroups['artist'] ??
         post.tags
-            .where((t) => t.startsWith('artist:'))
-            .map((t) => t.replaceFirst('artist:', ''))
+            .where((t) => t.startsWith('artist:') || t.startsWith('creator:'))
+            .map((t) =>
+                t.replaceFirst('artist:', '').replaceFirst('creator:', ''))
             .toList();
-    if (artists.isEmpty) return '';
-    return 'artist:${artists.first}';
+    if (rawArtists.isEmpty) return null;
+
+    const nonArtistTags = {
+      'conditional_dnp',
+      'avoid_posting',
+      'soundless',
+      'third_party_edit',
+      'unknown_artist',
+      'anonymous_artist',
+    };
+
+    final realArtists = rawArtists
+        .where((a) => !nonArtistTags.contains(a.toLowerCase()))
+        .toList();
+    final artistName =
+        realArtists.isNotEmpty ? realArtists.first : rawArtists.first;
+    if (nonArtistTags.contains(artistName.toLowerCase())) return null;
+
+    final isE621 = post.providerId == 'e621' || post.providerId == 'e926';
+    final queryTag = isE621 ? artistName : 'artist:$artistName';
+    return (name: artistName, queryTag: queryTag);
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tag = _artistTag(post);
-    if (tag.isEmpty) return const SizedBox.shrink();
+    final artistInfo = extractArtist(post);
+    if (artistInfo == null) return const SizedBox.shrink();
 
-    final artistPosts = ref.watch(artistPostsProvider(tag));
+    final artistPosts = ref.watch(
+      artistPostsProvider(
+        ArtistPostsArgs(
+          providerId: post.providerId,
+          artistName: artistInfo.name,
+          queryTag: artistInfo.queryTag,
+        ),
+      ),
+    );
     final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final scheme = Theme.of(context).colorScheme;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final artistName = tag.replaceFirst('artist:', '');
+    final artistName = artistInfo.name;
 
     return artistPosts.when(
       loading: () => const SizedBox.shrink(),
       error: (_, __) => const SizedBox.shrink(),
       data: (posts) {
         if (posts.isEmpty) return const SizedBox.shrink();
-        // exclude the current post
-        final filtered =
-            posts.where((p) => p.cacheKey != post.cacheKey).take(6).toList();
+        // exclude the current post, keep matching provider, take up to 6 photos
+        final filtered = posts
+            .where((p) => p.id != post.id && p.providerId == post.providerId)
+            .take(6)
+            .toList();
         if (filtered.isEmpty) return const SizedBox.shrink();
 
         return Padding(
@@ -1488,7 +1556,7 @@ class _ArtistPostsCard extends ConsumerWidget {
                     ),
                     InkWell(
                       onTap: () => context.push(
-                        '/search?q=${Uri.encodeComponent(tag)}',
+                        '/search?q=${Uri.encodeComponent(artistInfo.queryTag)}',
                       ),
                       borderRadius: BorderRadius.circular(8),
                       child: Padding(
@@ -1522,6 +1590,9 @@ class _ArtistPostsCard extends ConsumerWidget {
                     separatorBuilder: (_, __) => const SizedBox(width: 8),
                     itemBuilder: (context, index) {
                       final p = filtered[index];
+                      final isVideo = p.fileType.toLowerCase() == 'video' ||
+                          p.fileUrl.endsWith('.mp4') ||
+                          p.fileUrl.endsWith('.webm');
                       return InkWell(
                         onTap: () => Navigator.of(context).push(
                           MaterialPageRoute<void>(
@@ -1529,29 +1600,51 @@ class _ArtistPostsCard extends ConsumerWidget {
                               providerId: p.providerId,
                               postId: p.id,
                               initialPost: p,
+                              postsList: filtered,
                             ),
                           ),
                         ),
                         borderRadius: BorderRadius.circular(12),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: CachedNetworkImage(
-                            imageUrl: p.previewUrl.isNotEmpty
-                                ? p.previewUrl
-                                : p.sampleUrl,
-                            width: 110,
-                            height: 110,
-                            fit: BoxFit.cover,
-                            memCacheWidth: 220,
-                            memCacheHeight: 220,
-                            errorWidget: (_, __, ___) => Container(
-                              width: 110,
-                              height: 110,
-                              color: scheme.surfaceContainerHigh,
-                              child: Icon(Icons.broken_image_rounded,
-                                  color: scheme.onSurfaceVariant),
+                        child: Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: CachedNetworkImage(
+                                imageUrl: p.previewUrl.isNotEmpty
+                                    ? p.previewUrl
+                                    : p.sampleUrl,
+                                width: 110,
+                                height: 110,
+                                fit: BoxFit.cover,
+                                memCacheWidth: 220,
+                                memCacheHeight: 220,
+                                errorWidget: (_, __, ___) => Container(
+                                  width: 110,
+                                  height: 110,
+                                  color: scheme.surfaceContainerHigh,
+                                  child: Icon(Icons.broken_image_rounded,
+                                      color: scheme.onSurfaceVariant),
+                                ),
+                              ),
                             ),
-                          ),
+                            if (isVideo)
+                              Positioned(
+                                right: 6,
+                                bottom: 6,
+                                child: Container(
+                                  padding: const EdgeInsets.all(3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.65),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Icon(
+                                    Icons.play_arrow_rounded,
+                                    size: 14,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       );
                     },
@@ -1577,6 +1670,77 @@ class _CommentsSection extends ConsumerStatefulWidget {
 
 class _CommentsSectionState extends ConsumerState<_CommentsSection> {
   bool _expanded = false;
+  late final TextEditingController _commentController;
+  bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _commentController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submitComment() async {
+    final text = _commentController.text.trim();
+    if (text.isEmpty || _isSubmitting) return;
+
+    final providerInstance = await ref
+        .read(providerManagerProvider)
+        .getProviderInstance(widget.post.providerId);
+    if (providerInstance is! E621Provider) return;
+
+    if (!providerInstance.isAuthorized) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Для отправки комментариев укажите API-ключ e621 в Источниках',
+          ),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    final created = await providerInstance.createComment(
+      postId: widget.post.id,
+      body: text,
+    );
+
+    if (!mounted) return;
+    setState(() => _isSubmitting = false);
+
+    if (created != null) {
+      _commentController.clear();
+      ref.invalidate(
+        postCommentsProvider(
+          PostDetailsArgs(
+            providerId: widget.post.providerId,
+            postId: widget.post.id,
+          ),
+        ),
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Комментарий опубликован!'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Не удалось отправить комментарий'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1592,6 +1756,8 @@ class _CommentsSectionState extends ConsumerState<_CommentsSection> {
           )
         : null;
     final scheme = Theme.of(context).colorScheme;
+    final isE621 = widget.post.providerId == 'e621' ||
+        widget.post.providerId == 'e926';
 
     return Container(
       decoration: BoxDecoration(
@@ -1633,70 +1799,124 @@ class _CommentsSectionState extends ConsumerState<_CommentsSection> {
               ),
             ),
             data: (items) {
-              if (items.isEmpty) {
-                return Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Text(
-                    strings.noComments,
-                    style: TextStyle(color: scheme.onSurfaceVariant),
-                  ),
-                );
-              }
               return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  for (final comment in items)
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: scheme.surfaceContainerHigh,
-                        borderRadius: BorderRadius.circular(12),
+                  if (items.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Text(
+                        strings.noComments,
+                        style: TextStyle(color: scheme.onSurfaceVariant),
+                        textAlign: TextAlign.center,
                       ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CircleAvatar(
-                            radius: 14,
-                            backgroundColor: scheme.primaryContainer,
-                            child: Text(
-                              (comment.authorName.isNotEmpty
-                                      ? comment.authorName[0]
-                                      : '?')
-                                  .toUpperCase(),
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: scheme.onPrimaryContainer,
+                    )
+                  else
+                    for (final comment in items)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: scheme.surfaceContainerHigh,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CircleAvatar(
+                              radius: 14,
+                              backgroundColor: scheme.primaryContainer,
+                              child: Text(
+                                (comment.authorName.isNotEmpty
+                                        ? comment.authorName[0]
+                                        : '?')
+                                    .toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: scheme.onPrimaryContainer,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  comment.authorName.isEmpty
-                                      ? strings.anonymous
-                                      : comment.authorName,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .labelMedium
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  comment.body,
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ],
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    comment.authorName.isEmpty
+                                        ? strings.anonymous
+                                        : comment.authorName,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    comment.body,
+                                    style:
+                                        Theme.of(context).textTheme.bodySmall,
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
+                  if (isE621) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _commentController,
+                            minLines: 1,
+                            maxLines: 3,
+                            decoration: InputDecoration(
+                              hintText: strings.ru
+                                  ? 'Написать комментарий...'
+                                  : 'Add a comment...',
+                              hintStyle: TextStyle(
+                                fontSize: 13,
+                                color: scheme.onSurfaceVariant
+                                    .withValues(alpha: 0.6),
+                              ),
+                              filled: true,
+                              fillColor: scheme.surfaceContainerHigh,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 10,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                            style: const TextStyle(fontSize: 13),
+                            onSubmitted: (_) => _submitComment(),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton.filled(
+                          onPressed: _isSubmitting ? null : _submitComment,
+                          icon: _isSubmitting
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(Icons.send_rounded, size: 18),
+                          tooltip: strings.ru ? 'Отправить' : 'Send',
+                        ),
+                      ],
                     ),
+                  ],
                 ],
               );
             },
@@ -1847,11 +2067,16 @@ class _PostInfoCardState extends State<_PostInfoCard> {
 
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final artists = post.tagGroups['artist'] ??
-        post.tags
-            .where((t) => t.startsWith('artist:'))
-            .map((t) => t.replaceFirst('artist:', ''))
-            .toList();
+    final artistInfo = _ArtistPostsCard.extractArtist(post);
+    final displayArtistName = artistInfo?.name ??
+        (post.tagGroups['artist']?.firstOrNull ??
+            post.tags
+                .where((t) =>
+                    t.startsWith('artist:') || t.startsWith('creator:'))
+                .map((t) => t
+                    .replaceFirst('artist:', '')
+                    .replaceFirst('creator:', ''))
+                .firstOrNull);
 
     // Determine which dimensions to display.
     final displayWidth = post.width != 0 ? post.width : _resolvedWidth;
@@ -1889,7 +2114,7 @@ class _PostInfoCardState extends State<_PostInfoCard> {
                 ),
                 child: Center(
                   child: Icon(
-                    artists.isNotEmpty
+                    displayArtistName != null
                         ? Icons.palette_rounded
                         : Icons.hub_rounded,
                     size: 18,
@@ -1902,16 +2127,22 @@ class _PostInfoCardState extends State<_PostInfoCard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (artists.isNotEmpty)
+                    if (displayArtistName != null &&
+                        displayArtistName.isNotEmpty)
                       InkWell(
                         onTap: () {
+                          final queryTag = artistInfo?.queryTag ??
+                              ((post.providerId == 'e621' ||
+                                      post.providerId == 'e926')
+                                  ? displayArtistName
+                                  : 'artist:$displayArtistName');
                           context.push(
-                            '/search?q=${Uri.encodeComponent('artist:${artists.first}')}',
+                            '/search?q=${Uri.encodeComponent(queryTag)}',
                           );
                         },
                         borderRadius: BorderRadius.circular(6),
                         child: Text(
-                          artists.join(', '),
+                          displayArtistName,
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: scheme.primary,

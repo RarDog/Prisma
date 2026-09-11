@@ -601,6 +601,46 @@ class SettingsService {
     return updateSettings(settings.copyWith(hiddenPostKeys: const []));
   }
 
+  Future<Result<int>> importBlacklistFromE621(List<String> incomingTags) async {
+    final result = await getSettings();
+    if (result is Error<AppSettings>) return Error(result.failure);
+    final settings = (result as Success<AppSettings>).data;
+
+    final currentTags = settings.blacklistedTags.toSet();
+    final currentRules = settings.smartBlacklistRules.toSet();
+    int addedCount = 0;
+
+    for (final raw in incomingTags) {
+      final line = raw.trim();
+      if (line.isEmpty) continue;
+
+      if (line.contains(' ') ||
+          line.startsWith('rating:') ||
+          line.startsWith('score:')) {
+        if (!currentRules.contains(line)) {
+          currentRules.add(line);
+          addedCount++;
+        }
+      } else {
+        final cleanTag = line.toLowerCase();
+        if (!currentTags.contains(cleanTag)) {
+          currentTags.add(cleanTag);
+          addedCount++;
+        }
+      }
+    }
+
+    if (addedCount == 0) return const Success(0);
+
+    final updated = settings.copyWith(
+      blacklistedTags: currentTags.toList(),
+      smartBlacklistRules: currentRules.toList(),
+    );
+    final saveResult = await updateSettings(updated);
+    if (saveResult is Error<void>) return Error(saveResult.failure);
+    return Success(addedCount);
+  }
+
   Future<Result<void>> saveVideoPlaybackPosition(
     String cacheKey,
     int milliseconds, {

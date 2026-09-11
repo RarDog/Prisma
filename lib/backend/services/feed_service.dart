@@ -98,9 +98,15 @@ class FeedService {
     if (period == TopPeriodFilter.allTime) return sorted;
 
     final now = DateTime.now();
-    final minDate = period == TopPeriodFilter.month
-        ? now.subtract(const Duration(days: 31))
-        : DateTime(now.year - 1, now.month, now.day);
+    final minDate = switch (period) {
+      TopPeriodFilter.day => now.subtract(const Duration(days: 1)),
+      TopPeriodFilter.week => now.subtract(const Duration(days: 7)),
+      TopPeriodFilter.month => now.subtract(const Duration(days: 31)),
+      TopPeriodFilter.year => DateTime(now.year - 1, now.month, now.day),
+      _ => null,
+    };
+    if (minDate == null) return sorted;
+
     final inPeriod = sorted
         .where((post) =>
             post.createdAt.isAfter(minDate) &&
