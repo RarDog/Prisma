@@ -65,8 +65,10 @@ class AppSettings {
     this.searchHistoryLimit = 500,
     this.tagCacheLimit = 5000,
     this.lastActiveLocation = '/',
+    this.hasCompletedOnboarding = false,
   });
 
+  final bool hasCompletedOnboarding;
   final String lastActiveLocation;
   final List<String> favoriteArtists;
   final List<String> pawchiveAccounts;
@@ -168,6 +170,7 @@ class AppSettings {
     searchHistoryLimit: 500,
     tagCacheLimit: 5000,
     lastActiveLocation: '/',
+    hasCompletedOnboarding: false,
   );
 
   AppSettings copyWith({
@@ -224,6 +227,7 @@ class AppSettings {
     int? searchHistoryLimit,
     int? tagCacheLimit,
     String? lastActiveLocation,
+    bool? hasCompletedOnboarding,
   }) {
     return AppSettings(
       lastActiveLocation: lastActiveLocation ?? this.lastActiveLocation,
@@ -286,6 +290,8 @@ class AppSettings {
       downloadPathTemplate: downloadPathTemplate ?? this.downloadPathTemplate,
       searchHistoryLimit: searchHistoryLimit ?? this.searchHistoryLimit,
       tagCacheLimit: tagCacheLimit ?? this.tagCacheLimit,
+      hasCompletedOnboarding:
+          hasCompletedOnboarding ?? this.hasCompletedOnboarding,
     );
   }
 
@@ -342,6 +348,7 @@ class AppSettings {
         'searchHistoryLimit': searchHistoryLimit,
         'tagCacheLimit': tagCacheLimit,
         'lastActiveLocation': lastActiveLocation,
+        'hasCompletedOnboarding': hasCompletedOnboarding,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) => AppSettings(
@@ -463,6 +470,8 @@ class AppSettings {
             defaults.tagCacheLimit,
         lastActiveLocation: (json['lastActiveLocation'] as String?) ??
             defaults.lastActiveLocation,
+        hasCompletedOnboarding:
+            (json['hasCompletedOnboarding'] as bool?) ?? false,
       );
 
   List<PawchiveAccount> get parsedPawchiveAccounts {

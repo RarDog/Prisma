@@ -9,6 +9,7 @@ import '../features/collections/presentation/collection_details_screen.dart';
 import '../features/collections/presentation/collections_screen.dart';
 import '../features/favorites/presentation/favorites_screen.dart';
 import '../features/feed/presentation/feed_screen.dart';
+import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/post/presentation/post_details_screen.dart';
 import '../features/post/presentation/similar_posts_screen.dart';
 import '../features/providers/presentation/provider_check_screen.dart';
@@ -24,9 +25,14 @@ import '../shared/widgets/app_shell.dart';
 final branchNavKeys = List.generate(8, (_) => GlobalKey<NavigatorState>());
 
 final appRouterProvider = Provider<GoRouter>((ref) {
+  final showOnboarding = ref.watch(shouldShowOnboardingProvider);
   return GoRouter(
-    initialLocation: '/',
+    initialLocation: showOnboarding ? '/onboarding' : '/',
     routes: [
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) => AppShell(
           navigationShell: navigationShell,

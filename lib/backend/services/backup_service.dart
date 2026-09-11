@@ -455,6 +455,12 @@ class BackupService {
     return restoreFromJson(backupJson);
   }
 
+  /// Returns true if a persistent backup file already exists on the device.
+  Future<bool> hasPersistentBackup() async {
+    final status = await getPersistentBackupStatus();
+    return status['exists'] == true;
+  }
+
   /// Returns current status of persistent backup.
   Future<Map<String, dynamic>> getPersistentBackupStatus() async {
     final candidateDirs = await getCandidateBackupDirectories();

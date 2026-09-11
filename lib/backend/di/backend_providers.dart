@@ -36,6 +36,9 @@ import '../services/settings_service.dart';
 import '../services/update_service.dart';
 import '../services/viewed_history_service.dart';
 import '../services/backup_service.dart';
+import '../services/onboarding_service.dart';
+
+final shouldShowOnboardingProvider = StateProvider<bool>((ref) => false);
 
 final appDatabaseProvider = FutureProvider<AppDatabase>((ref) async {
   final database = await AppDatabase.open();
@@ -43,10 +46,20 @@ final appDatabaseProvider = FutureProvider<AppDatabase>((ref) async {
   try {
     final dbService = DatabaseService(database);
     final settingsService = SettingsService(dbService);
-    final backupService = BackupService(settingsService, dbService);
+    final providerRepo = ProviderRepository(dbService);
+    await providerRepo.ensureSeedProviders();
+    final backupService = BackupService(settingsService, dbService, providerRepo);
     await backupService.autoRestoreIfNeeded();
+
+    final onboardingService = OnboardingService(
+      settingsService: settingsService,
+      backupService: backupService,
+      providerRepository: providerRepo,
+    );
+    final show = await onboardingService.shouldShowOnboarding();
+    ref.read(shouldShowOnboardingProvider.notifier).state = show;
   } catch (e) {
-    debugPrint('Prisma autoRestore on startup error: $e');
+    debugPrint('Prisma startup & autoRestore error: $e');
   }
   return database;
 });
@@ -274,3 +287,14 @@ final Provider<BackupService> backupServiceProvider =
     ref.watch(providerRepositoryProvider),
   );
 });
+
+final Provider<OnboardingService> onboardingServiceProvider =
+    Provider<OnboardingService>((ref) {
+  return OnboardingService(
+    settingsService: ref.watch(settingsServiceProvider),
+    backupService: ref.watch(backupServiceProvider),
+    providerRepository: ref.watch(providerRepositoryProvider),
+  );
+});
+
+

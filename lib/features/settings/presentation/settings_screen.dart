@@ -2973,6 +2973,15 @@ class _HeroBrandBanner extends StatelessWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: () => context.push('/onboarding'),
+                icon: const Icon(Icons.school_rounded, size: 18),
+                label: Text(
+                  isRu ? 'Первичная настройка (Мастер)' : 'Initial Setup Wizard',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
         ],
