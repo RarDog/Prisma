@@ -35,6 +35,15 @@ class MainActivity : FlutterActivity() {
                             openFile(path, mimeType)
                             result.success(null)
                         }
+                        "savePersistentBackup" -> {
+                            val content = call.argument<String>("content") ?: error("Missing content")
+                            val fileName = call.argument<String>("fileName") ?: "prisma_backup.json"
+                            result.success(savePersistentBackup(content, fileName))
+                        }
+                        "readPersistentBackup" -> {
+                            val fileName = call.argument<String>("fileName") ?: "prisma_backup.json"
+                            result.success(readPersistentBackup(fileName))
+                        }
                         else -> result.notImplemented()
                     }
                 } catch (error: Throwable) {
@@ -145,5 +154,97 @@ class MainActivity : FlutterActivity() {
             attrs.preferredRefreshRate = mode.refreshRate
         }
         window.attributes = attrs
+    }
+
+    private fun savePersistentBackup(content: String, fileName: String): String {
+        // 1. Try public Documents/Prisma
+        try {
+            val docsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
+            val prismaDir = File(docsDir, "Prisma")
+            prismaDir.mkdirs()
+            val dest = File(prismaDir, fileName)
+            dest.writeText(content, Charsets.UTF_8)
+        } catch (_: Throwable) {}
+
+        // 2. Try public Downloads/Prisma
+        try {
+            val downDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            val prismaDir = File(downDir, "Prisma")
+            prismaDir.mkdirs()
+            val dest = File(prismaDir, fileName)
+            dest.writeText(content, Charsets.UTF_8)
+        } catch (_: Throwable) {}
+
+        // 3. For Android 10+, write via MediaStore to Downloads/Prisma
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            try {
+                val resolver = applicationContext.contentResolver
+                val projection = arrayOf(MediaStore.Downloads._ID)
+                val selection = "${MediaStore.Downloads.DISPLAY_NAME} = ? AND ${MediaStore.Downloads.RELATIVE_PATH} LIKE ?"
+                val selectionArgs = arrayOf(fileName, "%Prisma%")
+                resolver.query(MediaStore.Downloads.EXTERNAL_CONTENT_URI, projection, selection, selectionArgs, null)?.use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Downloads._ID))
+                        val itemUri = android.content.ContentUris.withAppendedId(MediaStore.Downloads.EXTERNAL_CONTENT_URI, id)
+                        resolver.delete(itemUri, null, null)
+                    }
+                }
+
+                val values = ContentValues().apply {
+                    put(MediaStore.Downloads.DISPLAY_NAME, fileName)
+                    put(MediaStore.Downloads.MIME_TYPE, "application/json")
+                    put(MediaStore.Downloads.RELATIVE_PATH, "${Environment.DIRECTORY_DOWNLOADS}/Prisma")
+                    put(MediaStore.Downloads.IS_PENDING, 1)
+                }
+                val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                if (uri != null) {
+                    resolver.openOutputStream(uri)?.use { output ->
+                        output.write(content.toByteArray(Charsets.UTF_8))
+                    }
+                    values.clear()
+                    values.put(MediaStore.Downloads.IS_PENDING, 0)
+                    resolver.update(uri, values, null, null)
+                }
+            } catch (_: Throwable) {}
+        }
+        return fileName
+    }
+
+    private fun readPersistentBackup(fileName: String): String? {
+        // 1. Try Documents/Prisma
+        try {
+            val docs = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "Prisma/$fileName")
+            if (docs.exists() && docs.length() > 0) {
+                return docs.readText(Charsets.UTF_8)
+            }
+        } catch (_: Throwable) {}
+
+        // 2. Try Downloads/Prisma
+        try {
+            val down = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "Prisma/$fileName")
+            if (down.exists() && down.length() > 0) {
+                return down.readText(Charsets.UTF_8)
+            }
+        } catch (_: Throwable) {}
+
+        // 3. Try MediaStore on Android 10+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            try {
+                val resolver = applicationContext.contentResolver
+                val projection = arrayOf(MediaStore.Downloads._ID)
+                val selection = "${MediaStore.Downloads.DISPLAY_NAME} = ? AND ${MediaStore.Downloads.RELATIVE_PATH} LIKE ?"
+                val selectionArgs = arrayOf(fileName, "%Prisma%")
+                resolver.query(MediaStore.Downloads.EXTERNAL_CONTENT_URI, projection, selection, selectionArgs, null)?.use { cursor ->
+                    if (cursor.moveToLast()) {
+                        val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Downloads._ID))
+                        val uri = android.content.ContentUris.withAppendedId(MediaStore.Downloads.EXTERNAL_CONTENT_URI, id)
+                        resolver.openInputStream(uri)?.use { input ->
+                            return input.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                        }
+                    }
+                }
+            } catch (_: Throwable) {}
+        }
+        return null
     }
 }

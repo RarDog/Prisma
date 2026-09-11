@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/cache/cache_service.dart';
@@ -39,6 +40,14 @@ import '../services/backup_service.dart';
 final appDatabaseProvider = FutureProvider<AppDatabase>((ref) async {
   final database = await AppDatabase.open();
   ref.onDispose(database.close);
+  try {
+    final dbService = DatabaseService(database);
+    final settingsService = SettingsService(dbService);
+    final backupService = BackupService(settingsService, dbService);
+    await backupService.autoRestoreIfNeeded();
+  } catch (e) {
+    debugPrint('Prisma autoRestore on startup error: $e');
+  }
   return database;
 });
 
@@ -61,8 +70,16 @@ final postRepositoryProvider = Provider<PostRepository>((ref) {
   return PostRepository(ref.watch(databaseServiceProvider));
 });
 
-final providerRepositoryProvider = Provider<ProviderRepository>((ref) {
-  return ProviderRepository(ref.watch(databaseServiceProvider));
+final Provider<ProviderRepository> providerRepositoryProvider =
+    Provider<ProviderRepository>((ref) {
+  return ProviderRepository(
+    ref.watch(databaseServiceProvider),
+    onDataChanged: () {
+      try {
+        ref.read(backupServiceProvider).scheduleAutoBackup();
+      } catch (_) {}
+    },
+  );
 });
 
 final searchRepositoryProvider = Provider<SearchRepository>((ref) {
@@ -82,6 +99,11 @@ final favoriteRepositoryProvider = Provider<FavoriteRepository>((ref) {
   return FavoriteRepository(
     ref.watch(databaseServiceProvider),
     ref.watch(postRepositoryProvider),
+    onDataChanged: () {
+      try {
+        ref.read(backupServiceProvider).scheduleAutoBackup();
+      } catch (_) {}
+    },
   );
 });
 
@@ -89,6 +111,11 @@ final collectionRepositoryProvider = Provider<CollectionRepository>((ref) {
   return CollectionRepository(
     ref.watch(databaseServiceProvider),
     ref.watch(postRepositoryProvider),
+    onDataChanged: () {
+      try {
+        ref.read(backupServiceProvider).scheduleAutoBackup();
+      } catch (_) {}
+    },
   );
 });
 
@@ -161,10 +188,16 @@ final collectionServiceProvider = Provider<CollectionService>((ref) {
   return CollectionService(ref.watch(collectionRepositoryProvider));
 });
 
-final settingsServiceProvider = Provider<SettingsService>((ref) {
+final Provider<SettingsService> settingsServiceProvider =
+    Provider<SettingsService>((ref) {
   return SettingsService(
     ref.watch(databaseServiceProvider),
     providerRepository: ref.watch(providerRepositoryProvider),
+    onDataChanged: () {
+      try {
+        ref.read(backupServiceProvider).scheduleAutoBackup();
+      } catch (_) {}
+    },
   );
 });
 
@@ -233,6 +266,11 @@ final updateServiceProvider = Provider<UpdateService>((ref) {
   );
 });
 
-final backupServiceProvider = Provider<BackupService>((ref) {
-  return BackupService(ref.watch(settingsServiceProvider));
+final Provider<BackupService> backupServiceProvider =
+    Provider<BackupService>((ref) {
+  return BackupService(
+    ref.watch(settingsServiceProvider),
+    ref.watch(databaseServiceProvider),
+    ref.watch(providerRepositoryProvider),
+  );
 });

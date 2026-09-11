@@ -73,8 +73,31 @@ class _AppOverlay extends ConsumerStatefulWidget {
   ConsumerState<_AppOverlay> createState() => _AppOverlayState();
 }
 
-class _AppOverlayState extends ConsumerState<_AppOverlay> {
+class _AppOverlayState extends ConsumerState<_AppOverlay> with WidgetsBindingObserver {
   bool _checkedUpdates = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
+      try {
+        ref.read(backupServiceProvider).saveAutoBackupToPersistentStorage();
+      } catch (_) {}
+    }
+  }
 
   @override
   void didChangeDependencies() {

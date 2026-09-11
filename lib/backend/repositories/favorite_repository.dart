@@ -8,14 +8,19 @@ import '../models/post.dart';
 import 'post_repository.dart';
 
 class FavoriteRepository {
-  FavoriteRepository(this._databaseService, this._postRepository);
+  FavoriteRepository(
+    this._databaseService,
+    this._postRepository, {
+    this.onDataChanged,
+  });
 
   final DatabaseService _databaseService;
   final PostRepository _postRepository;
+  final void Function()? onDataChanged;
 
   Future<Result<void>> add(Post post) async {
     await _postRepository.cachePosts([post]);
-    return _databaseService.safeWrite((isar) async {
+    final res = await _databaseService.safeWrite((isar) async {
       final key = '${post.providerId}:${post.id}';
       await isar.favoriteEntitys.put(
         FavoriteEntity()
@@ -26,15 +31,19 @@ class FavoriteRepository {
           ..savedAt = DateTime.now(),
       );
     });
+    if (res is Success) onDataChanged?.call();
+    return res;
   }
 
-  Future<Result<void>> remove(String postId, String providerId) {
-    return _databaseService.safeWrite((isar) async {
+  Future<Result<void>> remove(String postId, String providerId) async {
+    final res = await _databaseService.safeWrite((isar) async {
       await isar.favoriteEntitys
           .filter()
           .favoriteKeyEqualTo('$providerId:$postId')
           .deleteAll();
     });
+    if (res is Success) onDataChanged?.call();
+    return res;
   }
 
   Future<Result<bool>> exists(String postId, String providerId) {
@@ -55,9 +64,11 @@ class FavoriteRepository {
     });
   }
 
-  Future<Result<void>> clear() {
-    return _databaseService.safeWrite((isar) async {
+  Future<Result<void>> clear() async {
+    final res = await _databaseService.safeWrite((isar) async {
       await isar.favoriteEntitys.clear();
     });
+    if (res is Success) onDataChanged?.call();
+    return res;
   }
 }

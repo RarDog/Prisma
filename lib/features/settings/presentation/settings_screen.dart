@@ -882,6 +882,9 @@ class _SettingsContentState extends ConsumerState<_SettingsContent> {
                       onImportJson: () => _importDialog(context, ref),
                       onExportBackup: () => _exportBackupFile(context, ref),
                       onImportBackup: () => _importBackupFile(context, ref),
+                      onSaveAutoBackup: () => _saveAutoBackupNow(context, ref),
+                      onRestoreAutoBackup: () =>
+                          _restoreFromPersistentBackup(context, ref),
                     ),
                     const SizedBox(height: 32),
                   ],
@@ -1029,6 +1032,50 @@ class _SettingsContentState extends ConsumerState<_SettingsContent> {
     }
   }
 
+  Future<void> _saveAutoBackupNow(BuildContext context, WidgetRef ref) async {
+    final success =
+        await ref.read(backupServiceProvider).saveAutoBackupToPersistentStorage();
+    if (!context.mounted) return;
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Данные сохранены в папку Documents/Prisma!'),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Не удалось сохранить в хранилище'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _restoreFromPersistentBackup(
+      BuildContext context, WidgetRef ref) async {
+    final result =
+        await ref.read(backupServiceProvider).restoreFromPersistentStorage();
+    if (!context.mounted) return;
+    if (result is Success<AppSettings>) {
+      ref.invalidate(appSettingsProvider);
+      ref.invalidate(settingsControllerProvider);
+      ref.invalidate(providerRepositoryProvider);
+      ref.invalidate(favoriteRepositoryProvider);
+      ref.invalidate(collectionRepositoryProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Все данные успешно восстановлены из автобэкапа!'),
+        ),
+      );
+    } else if (result is Error<AppSettings>) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Ошибка восстановления: ${result.failure.message}'),
+        ),
+      );
+    }
+  }
+
   Future<void> _importBackupFile(BuildContext context, WidgetRef ref) async {
     final result = await ref.read(backupServiceProvider).importBackup();
     if (!context.mounted) return;
@@ -1036,8 +1083,11 @@ class _SettingsContentState extends ConsumerState<_SettingsContent> {
     if (result is Success<AppSettings>) {
       ref.invalidate(appSettingsProvider);
       ref.invalidate(settingsControllerProvider);
+      ref.invalidate(providerRepositoryProvider);
+      ref.invalidate(favoriteRepositoryProvider);
+      ref.invalidate(collectionRepositoryProvider);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Настройки успешно импортированы!')),
+        const SnackBar(content: Text('Все данные успешно импортированы!')),
       );
     } else if (result is Error<AppSettings>) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2648,6 +2698,8 @@ class _HeroBrandBanner extends StatelessWidget {
     required this.onImportJson,
     required this.onExportBackup,
     required this.onImportBackup,
+    this.onSaveAutoBackup,
+    this.onRestoreAutoBackup,
   });
 
   final Key sectionKey;
@@ -2659,6 +2711,8 @@ class _HeroBrandBanner extends StatelessWidget {
   final VoidCallback onImportJson;
   final VoidCallback onExportBackup;
   final VoidCallback onImportBackup;
+  final VoidCallback? onSaveAutoBackup;
+  final VoidCallback? onRestoreAutoBackup;
 
   @override
   Widget build(BuildContext context) {
@@ -2780,10 +2834,88 @@ class _HeroBrandBanner extends StatelessWidget {
 
           // Backup & JSON controls
           Text(
-            isRu ? 'Резервное копирование и экспорт' : 'Backup & JSON Export',
+            isRu ? 'Резервное копирование и автосохранение' : 'Backup & Auto-Sync',
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w700,
               letterSpacing: -0.2,
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // Persistent Storage Auto-backup Card
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: theme.colorScheme.primary.withValues(alpha: 0.2),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.cloud_sync_rounded,
+                      size: 20,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        isRu ? 'Автобэкап: Documents/Prisma' : 'Auto-Sync: Documents/Prisma',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  isRu
+                      ? 'Все настройки, аккаунты, избранное и коллекции сохраняются в файл и автоматически восстанавливаются при переустановке приложения.'
+                      : 'Settings, accounts, favorites and collections are saved to file and automatically restored upon re-installation.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    height: 1.3,
+                  ),
+                ),
+                if (onSaveAutoBackup != null || onRestoreAutoBackup != null) ...[
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      if (onSaveAutoBackup != null)
+                        Expanded(
+                          child: FilledButton.icon(
+                            onPressed: onSaveAutoBackup,
+                            icon: const Icon(Icons.save_rounded, size: 16),
+                            label: Text(
+                              isRu ? 'Сохранить сейчас' : 'Save now',
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                      if (onSaveAutoBackup != null && onRestoreAutoBackup != null)
+                        const SizedBox(width: 8),
+                      if (onRestoreAutoBackup != null)
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: onRestoreAutoBackup,
+                            icon: const Icon(Icons.restore_rounded, size: 16),
+                            label: Text(
+                              isRu ? 'Восстановить' : 'Restore',
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ],
             ),
           ),
           const SizedBox(height: 12),

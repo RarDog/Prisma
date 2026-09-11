@@ -489,10 +489,12 @@ class SettingsService {
   SettingsService(
     this._databaseService, {
     ProviderRepository? providerRepository,
+    this.onDataChanged,
   }) : _providerRepository = providerRepository;
 
   final DatabaseService _databaseService;
   final ProviderRepository? _providerRepository;
+  final void Function()? onDataChanged;
   static const _settingsKey = 'app_settings';
 
   Future<Result<AppSettings>> getSettings() {
@@ -507,8 +509,8 @@ class SettingsService {
     });
   }
 
-  Future<Result<void>> updateSettings(AppSettings settings) {
-    return _databaseService.safeWrite((isar) async {
+  Future<Result<void>> updateSettings(AppSettings settings) async {
+    final res = await _databaseService.safeWrite((isar) async {
       await isar.appSettingEntitys.put(
         AppSettingEntity()
           ..key = _settingsKey
@@ -516,6 +518,8 @@ class SettingsService {
           ..updatedAt = DateTime.now(),
       );
     });
+    if (res is Success) onDataChanged?.call();
+    return res;
   }
 
   Future<Result<void>> saveEnabledProviders(List<String> providerIds) async {

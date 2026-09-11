@@ -8,9 +8,10 @@ import '../models/provider_diagnostics.dart';
 import '../models/provider_health.dart';
 
 class ProviderRepository {
-  ProviderRepository(this._databaseService);
+  ProviderRepository(this._databaseService, {this.onDataChanged});
 
   final DatabaseService _databaseService;
+  final void Function()? onDataChanged;
 
   static List<ContentProviderConfig> seedProviders() {
     final now = DateTime.now();
@@ -167,15 +168,17 @@ class ProviderRepository {
     });
   }
 
-  Future<Result<void>> saveProvider(ContentProviderConfig config) {
-    return _databaseService.safeWrite((isar) async {
+  Future<Result<void>> saveProvider(ContentProviderConfig config) async {
+    final res = await _databaseService.safeWrite((isar) async {
       await isar.providerConfigEntitys
           .put(ProviderConfigEntity.fromModel(config));
     });
+    if (res is Success) onDataChanged?.call();
+    return res;
   }
 
-  Future<Result<void>> deleteProvider(String id) {
-    return _databaseService.safeWrite((isar) async {
+  Future<Result<void>> deleteProvider(String id) async {
+    final res = await _databaseService.safeWrite((isar) async {
       await isar.providerConfigEntitys
           .filter()
           .providerIdEqualTo(id)
@@ -185,6 +188,8 @@ class ProviderRepository {
           .providerIdEqualTo(id)
           .deleteAll();
     });
+    if (res is Success) onDataChanged?.call();
+    return res;
   }
 
   Future<Result<void>> saveHealth(ProviderHealth health) {

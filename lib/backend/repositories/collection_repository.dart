@@ -8,13 +8,18 @@ import '../models/post.dart';
 import 'post_repository.dart';
 
 class CollectionRepository {
-  CollectionRepository(this._databaseService, this._postRepository);
+  CollectionRepository(
+    this._databaseService,
+    this._postRepository, {
+    this.onDataChanged,
+  });
 
   final DatabaseService _databaseService;
   final PostRepository _postRepository;
+  final void Function()? onDataChanged;
 
-  Future<Result<Collection>> save(Collection collection) {
-    return _databaseService.safeWrite((isar) async {
+  Future<Result<Collection>> save(Collection collection) async {
+    final res = await _databaseService.safeWrite((isar) async {
       await isar.collectionEntitys.put(
         CollectionEntity()
           ..collectionId = collection.id
@@ -26,16 +31,20 @@ class CollectionRepository {
       );
       return collection;
     });
+    if (res is Success) onDataChanged?.call();
+    return res;
   }
 
-  Future<Result<void>> delete(String id) {
-    return _databaseService.safeWrite((isar) async {
+  Future<Result<void>> delete(String id) async {
+    final res = await _databaseService.safeWrite((isar) async {
       await isar.collectionPostEntitys
           .filter()
           .collectionIdEqualTo(id)
           .deleteAll();
       await isar.collectionEntitys.deleteByCollectionId(id);
     });
+    if (res is Success) onDataChanged?.call();
+    return res;
   }
 
   Future<Result<List<Collection>>> all() {
@@ -58,7 +67,7 @@ class CollectionRepository {
 
   Future<Result<void>> addPost(String collectionId, Post post) async {
     await _postRepository.cachePosts([post]);
-    return _databaseService.safeWrite((isar) async {
+    final res = await _databaseService.safeWrite((isar) async {
       await isar.collectionPostEntitys.put(
         CollectionPostEntity()
           ..linkKey = '$collectionId:${post.providerId}:${post.id}'
@@ -68,12 +77,14 @@ class CollectionRepository {
           ..addedAt = DateTime.now(),
       );
     });
+    if (res is Success) onDataChanged?.call();
+    return res;
   }
 
   Future<Result<void>> addPosts(String collectionId, List<Post> posts) async {
     if (posts.isEmpty) return const Success(null);
     await _postRepository.cachePosts(posts);
-    return _databaseService.safeWrite((isar) async {
+    final res = await _databaseService.safeWrite((isar) async {
       final now = DateTime.now();
       await isar.collectionPostEntitys.putAll([
         for (final post in posts)
@@ -85,19 +96,23 @@ class CollectionRepository {
             ..addedAt = now,
       ]);
     });
+    if (res is Success) onDataChanged?.call();
+    return res;
   }
 
   Future<Result<void>> removePost(
     String collectionId,
     String postId,
     String providerId,
-  ) {
-    return _databaseService.safeWrite((isar) async {
+  ) async {
+    final res = await _databaseService.safeWrite((isar) async {
       await isar.collectionPostEntitys
           .filter()
           .linkKeyEqualTo('$collectionId:$providerId:$postId')
           .deleteAll();
     });
+    if (res is Success) onDataChanged?.call();
+    return res;
   }
 
   Future<Result<List<Post>>> posts(String collectionId) {
