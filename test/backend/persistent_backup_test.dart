@@ -109,5 +109,16 @@ void main() {
       expect(dirs, isNotEmpty);
       expect(dirs.any((d) => d.contains('Prisma')), isTrue);
     });
+
+    test('createBackupDataMap provides structured snapshot', () async {
+      final fakeSettings = _FakeSettingsService();
+      final backupService = BackupService(fakeSettings);
+
+      final map = await backupService.createBackupDataMap();
+      expect(map.containsKey('settings'), isTrue);
+      expect(map.containsKey('providers'), isTrue);
+      expect(map.containsKey('favorites'), isTrue);
+      expect(map.containsKey('collections'), isTrue);
+    });
   });
 }

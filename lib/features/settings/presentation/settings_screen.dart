@@ -1033,13 +1033,14 @@ class _SettingsContentState extends ConsumerState<_SettingsContent> {
   }
 
   Future<void> _saveAutoBackupNow(BuildContext context, WidgetRef ref) async {
-    final success =
-        await ref.read(backupServiceProvider).saveAutoBackupToPersistentStorage();
+    final success = await ref
+        .read(backupServiceProvider)
+        .saveAutoBackupToPersistentStorage(force: true);
     if (!context.mounted) return;
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Данные сохранены в папку Documents/Prisma!'),
+          content: Text('Данные сохранены в хранилище Prisma!'),
         ),
       );
     } else {
@@ -2865,7 +2866,7 @@ class _HeroBrandBanner extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        isRu ? 'Автобэкап: Documents/Prisma' : 'Auto-Sync: Documents/Prisma',
+                        isRu ? 'Автобэкап: Prisma' : 'Auto-Sync: Prisma',
                         style: theme.textTheme.labelLarge?.copyWith(
                           fontWeight: FontWeight.w700,
                           color: theme.colorScheme.primary,

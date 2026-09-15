@@ -35,22 +35,18 @@ class BackupService {
   Timer? _debounceTimer;
   DateTime? lastPersistentBackupAt;
   String? lastPersistentBackupPath;
+  String? _lastSavedPayloadDigest;
 
-  /// Schedules a debounced persistent backup (defaults to 2 seconds).
-  void scheduleAutoBackup({Duration delay = const Duration(seconds: 2)}) {
+  /// Schedules a debounced persistent backup (defaults to 5 seconds).
+  void scheduleAutoBackup({Duration delay = const Duration(seconds: 5)}) {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(delay, () {
       saveAutoBackupToPersistentStorage();
     });
   }
 
-  /// Creates a full JSON snapshot of all user data:
-  /// - Settings (UI, themes, blacklist, whitelist, etc.)
-  /// - Accounts & Provider configurations (API keys, logins, auth)
-  /// - Favorites & their cached post data
-  /// - Collections & their posts and cached post data
-  /// - Search history
-  Future<String> createBackupJson() async {
+  /// Creates a raw map snapshot of user data for comparison and backup.
+  Future<Map<String, dynamic>> createBackupDataMap() async {
     final settingsResult = await _settingsService.getSettings();
     final settings = settingsResult is Success<AppSettings>
         ? settingsResult.data
@@ -122,10 +118,7 @@ class BackupService {
       });
     }
 
-    const encoder = JsonEncoder.withIndent('  ');
-    return encoder.convert({
-      'version': 3,
-      'createdAt': DateTime.now().toIso8601String(),
+    return {
       'settings': settings.toJson(),
       'providers': providersData,
       'favorites': favoritesData,
@@ -133,6 +126,22 @@ class BackupService {
       'collections': collectionsData,
       'collectionPosts': collectionPostsData,
       'searchHistory': searchHistoryData,
+    };
+  }
+
+  /// Creates a full JSON snapshot of all user data:
+  /// - Settings (UI, themes, blacklist, whitelist, etc.)
+  /// - Accounts & Provider configurations (API keys, logins, auth)
+  /// - Favorites & their cached post data
+  /// - Collections & their posts and cached post data
+  /// - Search history
+  Future<String> createBackupJson() async {
+    final payload = await createBackupDataMap();
+    const encoder = JsonEncoder.withIndent('  ');
+    return encoder.convert({
+      'version': 3,
+      'createdAt': DateTime.now().toIso8601String(),
+      ...payload,
     });
   }
 
@@ -297,8 +306,6 @@ class BackupService {
     final dirs = <String>[];
 
     if (Platform.isAndroid) {
-      dirs.add('/storage/emulated/0/Documents/Prisma');
-      dirs.add('/storage/emulated/0/Download/Prisma');
       try {
         final ext = await getExternalStorageDirectory();
         if (ext != null) {
@@ -340,9 +347,23 @@ class BackupService {
   }
 
   /// Automatically writes backup JSON snapshot to external persistent storage.
-  Future<bool> saveAutoBackupToPersistentStorage() async {
+  Future<bool> saveAutoBackupToPersistentStorage({bool force = false}) async {
     try {
-      final json = await createBackupJson();
+      final payload = await createBackupDataMap();
+      final payloadJson = jsonEncode(payload);
+
+      // Skip redundant writes if data hasn't changed
+      if (!force && payloadJson == _lastSavedPayloadDigest) {
+        return true;
+      }
+
+      const encoder = JsonEncoder.withIndent('  ');
+      final json = encoder.convert({
+        'version': 3,
+        'createdAt': DateTime.now().toIso8601String(),
+        ...payload,
+      });
+
       bool anySaved = false;
 
       final candidateDirs = await getCandidateBackupDirectories();
@@ -366,10 +387,12 @@ class BackupService {
             'fileName': backupFileName,
           });
           anySaved = true;
+          lastPersistentBackupPath = 'Downloads/Prisma/$backupFileName';
         } catch (_) {}
       }
 
       if (anySaved) {
+        _lastSavedPayloadDigest = payloadJson;
         lastPersistentBackupAt = DateTime.now();
       }
       return anySaved;
@@ -382,17 +405,6 @@ class BackupService {
   /// Reads persistent backup from external persistent storage.
   Future<String?> readPersistentBackup() async {
     try {
-      final candidateDirs = await getCandidateBackupDirectories();
-      for (final dirPath in candidateDirs) {
-        try {
-          final file = File('$dirPath/$backupFileName');
-          if (file.existsSync() && file.lengthSync() > 0) {
-            lastPersistentBackupPath = file.path;
-            return await file.readAsString();
-          }
-        } catch (_) {}
-      }
-
       if (Platform.isAndroid) {
         try {
           final content = await _channel.invokeMethod<String>(
@@ -400,7 +412,36 @@ class BackupService {
             {'fileName': backupFileName},
           );
           if (content != null && content.trim().isNotEmpty) {
+            lastPersistentBackupPath = 'Downloads/Prisma/$backupFileName';
             return content;
+          }
+        } catch (e) {
+          debugPrint('native readPersistentBackup error: $e');
+        }
+      }
+
+      final candidateDirs = await getCandidateBackupDirectories();
+      for (final dirPath in candidateDirs) {
+        try {
+          final dir = Directory(dirPath);
+          if (!dir.existsSync()) continue;
+
+          final files = dir.listSync().whereType<File>().where((f) {
+            final name = f.uri.pathSegments.last;
+            return name.startsWith('prisma_backup') && name.endsWith('.json');
+          }).toList();
+
+          if (files.isNotEmpty) {
+            files.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+            for (final f in files) {
+              try {
+                final text = await f.readAsString();
+                if (text.trim().isNotEmpty && text.contains('"version"')) {
+                  lastPersistentBackupPath = f.path;
+                  return text;
+                }
+              } catch (_) {}
+            }
           }
         } catch (_) {}
       }
@@ -419,8 +460,7 @@ class BackupService {
       final hasData = await db.safeRead((isar) async {
         final favCount = await isar.favoriteEntitys.count();
         final colCount = await isar.collectionEntitys.count();
-        final settingCount = await isar.appSettingEntitys.count();
-        return favCount > 0 || colCount > 0 || settingCount > 0;
+        return favCount > 0 || colCount > 0;
       });
 
       if (hasData is Success<bool> && hasData.data) {
@@ -458,7 +498,9 @@ class BackupService {
   /// Returns true if a persistent backup file already exists on the device.
   Future<bool> hasPersistentBackup() async {
     final status = await getPersistentBackupStatus();
-    return status['exists'] == true;
+    if (status['exists'] == true) return true;
+    final backup = await readPersistentBackup();
+    return backup != null && backup.trim().isNotEmpty;
   }
 
   /// Returns current status of persistent backup.
@@ -466,15 +508,23 @@ class BackupService {
     final candidateDirs = await getCandidateBackupDirectories();
     for (final dirPath in candidateDirs) {
       try {
-        final file = File('$dirPath/$backupFileName');
-        if (file.existsSync() && file.lengthSync() > 0) {
-          final stat = file.statSync();
-          return {
-            'exists': true,
-            'path': file.path,
-            'lastModified': stat.modified,
-            'fileSize': stat.size,
-          };
+        final dir = Directory(dirPath);
+        if (dir.existsSync()) {
+          final files = dir.listSync().whereType<File>().where((f) {
+            final name = f.uri.pathSegments.last;
+            return name.startsWith('prisma_backup') && name.endsWith('.json');
+          }).toList();
+          if (files.isNotEmpty) {
+            files.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+            final file = files.first;
+            final stat = file.statSync();
+            return {
+              'exists': true,
+              'path': file.path,
+              'lastModified': stat.modified,
+              'fileSize': stat.size,
+            };
+          }
         }
       } catch (_) {}
     }
@@ -482,17 +532,34 @@ class BackupService {
     if (lastPersistentBackupAt != null) {
       return {
         'exists': true,
-        'path': lastPersistentBackupPath ?? 'Documents/Prisma/$backupFileName',
+        'path': lastPersistentBackupPath ?? 'Downloads/Prisma/$backupFileName',
         'lastModified': lastPersistentBackupAt,
         'fileSize': null,
       };
+    }
+
+    if (Platform.isAndroid) {
+      try {
+        final content = await _channel.invokeMethod<String>(
+          'readPersistentBackup',
+          {'fileName': backupFileName},
+        );
+        if (content != null && content.trim().isNotEmpty) {
+          return {
+            'exists': true,
+            'path': lastPersistentBackupPath ?? 'Downloads/Prisma/$backupFileName',
+            'lastModified': null,
+            'fileSize': content.length,
+          };
+        }
+      } catch (_) {}
     }
 
     return {
       'exists': false,
       'path': candidateDirs.firstOrNull != null
           ? '${candidateDirs.first}/$backupFileName'
-          : 'Documents/Prisma/$backupFileName',
+          : 'Downloads/Prisma/$backupFileName',
       'lastModified': null,
       'fileSize': null,
     };
@@ -532,13 +599,14 @@ class BackupService {
     const typeGroup = XTypeGroup(
       label: 'JSON files',
       extensions: ['json'],
+      mimeTypes: ['application/json', 'text/plain', 'text/*', '*/*'],
     );
     final file = await openFile(acceptedTypeGroups: [typeGroup]);
     if (file == null) return null;
     final content = await file.readAsString();
     final result = await restoreFromJson(content);
     if (result is Success<AppSettings>) {
-      await saveAutoBackupToPersistentStorage();
+      await saveAutoBackupToPersistentStorage(force: true);
     }
     return result;
   }
