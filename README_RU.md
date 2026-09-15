@@ -2,10 +2,6 @@
   <a href="README.md">English</a> • <strong>Русский</strong>
 </p>
 
-<p align="center">
-  <img src="android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" width="96" height="96" alt="Prisma Logo" />
-</p>
-
 # Prisma
 
 Быстрый, удобный и современный клиент для Booru-имиджборд и архивов авторов (Pawchive).

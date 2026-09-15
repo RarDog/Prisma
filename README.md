@@ -2,10 +2,6 @@
   <strong>English</strong> • <a href="README_RU.md">Русский</a>
 </p>
 
-<p align="center">
-  <img src="android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" width="96" height="96" alt="Prisma Logo" />
-</p>
-
 # Prisma
 
 A clean, fast, and modern cross-platform client for Booru imageboards and creator archives (Pawchive).
