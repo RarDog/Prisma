@@ -23,6 +23,8 @@ class PostMediaViewer extends StatefulWidget {
     required this.post,
     this.localFilePath,
     this.fullscreen = false,
+    this.notes = const [],
+    this.showNotes = true,
     this.initialPosition = Duration.zero,
     this.autoplay = false,
     this.initialLoop = false,
@@ -42,6 +44,8 @@ class PostMediaViewer extends StatefulWidget {
   final Post post;
   final String? localFilePath;
   final bool fullscreen;
+  final List<PostNote> notes;
+  final bool showNotes;
   final Duration initialPosition;
   final bool autoplay;
   final bool initialLoop;
@@ -351,7 +355,17 @@ class _PostMediaViewerState extends State<PostMediaViewer>
       children: [
         _ZoomableImage(
           onGestureLockChanged: widget.onMediaGestureLockChanged,
-          child: image,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              image,
+              if (widget.showNotes && widget.notes.isNotEmpty)
+                _PostNotesOverlay(
+                  post: widget.post,
+                  notes: widget.notes,
+                ),
+            ],
+          ),
         ),
         if (_imageUrls.length > 1)
           Positioned(
@@ -3426,6 +3440,179 @@ class _TextArticleHero extends StatelessWidget {
                 ),
               ],
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+String _cleanNoteBody(String raw) {
+  var text = raw;
+  text = text
+      .replaceAll('&quot;', '"')
+      .replaceAll('&#39;', "'")
+      .replaceAll('&apos;', "'")
+      .replaceAll('&amp;', '&')
+      .replaceAll('&lt;', '<')
+      .replaceAll('&gt;', '>');
+  text = text.replaceAll(RegExp(r'\[/?[a-zA-Z0-9_=#]+\]'), '');
+  text = text.replaceAll(RegExp(r'</?[a-zA-Z0-9_]+>'), '');
+  return text.trim();
+}
+
+void _showNoteDialog(BuildContext context, PostNote note) {
+  final cleaned = _cleanNoteBody(note.body);
+  showDialog<void>(
+    context: context,
+    builder: (dialogContext) {
+      final theme = Theme.of(dialogContext);
+      return AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.translate_rounded, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                note.authorName != null && note.authorName!.isNotEmpty
+                    ? 'Перевод (${note.authorName})'
+                    : 'Перевод',
+                style: const TextStyle(fontSize: 16),
+              ),
+            ),
+          ],
+        ),
+        content: SelectableText(
+          cleaned,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontSize: 15,
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          TextButton.icon(
+            icon: const Icon(Icons.copy_rounded, size: 16),
+            label: const Text('Копировать'),
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: cleaned));
+              Navigator.of(dialogContext).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Текст перевода скопирован'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Закрыть'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+class _PostNotesOverlay extends StatelessWidget {
+  const _PostNotesOverlay({
+    required this.post,
+    required this.notes,
+  });
+
+  final Post post;
+  final List<PostNote> notes;
+
+  @override
+  Widget build(BuildContext context) {
+    if (notes.isEmpty || post.width <= 0 || post.height <= 0) {
+      return const SizedBox.shrink();
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (!constraints.hasBoundedWidth || !constraints.hasBoundedHeight) {
+          return const SizedBox.shrink();
+        }
+        final containerSize = Size(constraints.maxWidth, constraints.maxHeight);
+        final imageSize = Size(post.width.toDouble(), post.height.toDouble());
+        final fitted = applyBoxFit(BoxFit.contain, imageSize, containerSize);
+        final renderedW = fitted.destination.width;
+        final renderedH = fitted.destination.height;
+        final dx = (containerSize.width - renderedW) / 2.0;
+        final dy = (containerSize.height - renderedH) / 2.0;
+        final scaleX = renderedW / post.width;
+        final scaleY = renderedH / post.height;
+
+        return Stack(
+          children: [
+            for (final note in notes)
+              if (note.isActive)
+                Positioned(
+                  left: dx + (note.x * scaleX),
+                  top: dy + (note.y * scaleY),
+                  width: (note.width * scaleX).clamp(16.0, renderedW),
+                  height: (note.height * scaleY).clamp(16.0, renderedH),
+                  child: _NoteBox(note: note),
+                ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _NoteBox extends StatelessWidget {
+  const _NoteBox({required this.note});
+
+  final PostNote note;
+
+  @override
+  Widget build(BuildContext context) {
+    final cleaned = _cleanNoteBody(note.body);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _showNoteDialog(context, note),
+      child: Tooltip(
+        message: cleaned,
+        child: Container(
+          padding: const EdgeInsets.all(2),
+          decoration: BoxDecoration(
+            color: (isDark ? Colors.grey.shade900 : Colors.grey.shade200)
+                .withValues(alpha: 0.85),
+            borderRadius: BorderRadius.circular(3),
+            border: Border.all(
+              color: isDark ? Colors.white54 : Colors.black45,
+              width: 0.75,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.18),
+                blurRadius: 2,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Center(
+            child: SingleChildScrollView(
+              physics: const NeverScrollableScrollPhysics(),
+              child: Text(
+                cleaned,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: isDark ? Colors.white : Colors.black87,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w600,
+                  height: 1.15,
+                ),
+                softWrap: true,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 8,
+              ),
+            ),
           ),
         ),
       ),

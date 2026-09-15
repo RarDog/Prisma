@@ -11,6 +11,7 @@ import '../../../app/app_navigator.dart';
 import '../../../app/responsive.dart';
 import '../../../backend/backend.dart';
 import '../../../shared/widgets/adaptive_scaffold.dart';
+import '../../../shared/widgets/confirm_dialog.dart';
 import '../../../shared/widgets/empty_view.dart';
 import '../../../shared/widgets/error_view.dart';
 import '../../../shared/widgets/post_masonry_grid.dart';
@@ -117,6 +118,38 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
               }
             });
           },
+        ),
+        IconButton(
+          tooltip: isRu ? 'Очистить всё избранное' : 'Clear all favorites',
+          icon: const Icon(Icons.delete_sweep_rounded),
+          onPressed: allPosts.isEmpty
+              ? null
+              : () async {
+                  final confirm = await showConfirmDialog(
+                    context,
+                    title: isRu ? 'Очистить избранное' : 'Clear favorites',
+                    message: isRu
+                        ? 'Вы действительно хотите удалить все посты (${allPosts.length}) из избранного?'
+                        : 'Are you sure you want to remove all ${allPosts.length} posts from favorites?',
+                    confirmText: isRu ? 'Очистить' : 'Clear',
+                    cancelText: isRu ? 'Отмена' : 'Cancel',
+                  );
+                  if (confirm && context.mounted) {
+                    await ref
+                        .read(favoritesControllerProvider.notifier)
+                        .clearAll();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            isRu ? 'Избранное очищено' : 'Favorites cleared',
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  }
+                },
         ),
       ],
       body: state.when(

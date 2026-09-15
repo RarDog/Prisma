@@ -79,6 +79,13 @@ class E621Mapper {
       tagGroups['description'] = [desc];
     }
 
+    final hasNotes = json['has_notes'] == true ||
+        json['last_noted_at'] != null ||
+        (json['flags'] is Map && (json['flags'] as Map)['has_notes'] == true);
+    if (hasNotes) {
+      tagGroups['has_notes'] = ['true'];
+    }
+
     final tags = tagGroups.values.expand((items) => items).toSet().toList();
     final fileUrl = _string(file['url']);
     return Post(

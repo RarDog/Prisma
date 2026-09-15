@@ -97,6 +97,58 @@ void main() {
     expect(find.text('animator'), findsOneWidget);
   });
 
+  testWidgets(
+      'FavoritesScreen clear all button shows confirmation dialog and clears favorites',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final post = _samplePost(id: '1');
+    final controller = _FakeFavoritesController([post]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          favoritesControllerProvider.overrideWith(() => controller),
+          appSettingsProvider.overrideWith(
+            (ref) => AppSettings.defaults.copyWith(languageCode: 'ru'),
+          ),
+          downloadedMediaByKeysProvider([post.cacheKey])
+              .overrideWith((ref) => <String, DownloadedMedia>{}),
+        ],
+        child: const MaterialApp(
+          home: FavoritesScreen(),
+        ),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    // Verify delete sweep button is present
+    final clearButton = find.byIcon(Icons.delete_sweep_rounded);
+    expect(clearButton, findsOneWidget);
+
+    // Tap clear button to show confirmation dialog
+    await tester.tap(clearButton);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Очистить избранное'), findsOneWidget);
+    expect(find.text('Очистить'), findsOneWidget);
+
+    // Confirm dialog
+    await tester.tap(find.text('Очистить'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(controller.clearAllCalled, isTrue);
+  });
+
   testWidgets('ViewedScreen renders timeline and switches view mode',
       (tester) async {
     tester.view.physicalSize = const Size(390, 844);
@@ -251,10 +303,17 @@ class _FakeFavoritesController extends FavoritesController {
   _FakeFavoritesController(this._posts);
 
   final List<Post> _posts;
+  bool clearAllCalled = false;
 
   @override
   Future<FavoritesState> build() async {
     return FavoritesState(posts: _posts);
+  }
+
+  @override
+  Future<void> clearAll() async {
+    clearAllCalled = true;
+    state = const AsyncData(FavoritesState(posts: []));
   }
 }
 

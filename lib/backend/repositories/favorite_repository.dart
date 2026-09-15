@@ -35,6 +35,26 @@ class FavoriteRepository {
     return res;
   }
 
+  Future<Result<void>> addAll(List<Post> posts) async {
+    if (posts.isEmpty) return const Success(null);
+    await _postRepository.cachePosts(posts);
+    final res = await _databaseService.safeWrite((isar) async {
+      final now = DateTime.now();
+      final entities = posts.map((post) {
+        final key = '${post.providerId}:${post.id}';
+        return FavoriteEntity()
+          ..favoriteKey = key
+          ..favoriteId = key
+          ..postId = post.id
+          ..providerId = post.providerId
+          ..savedAt = now;
+      }).toList();
+      await isar.favoriteEntitys.putAll(entities);
+    });
+    if (res is Success) onDataChanged?.call();
+    return res;
+  }
+
   Future<Result<void>> remove(String postId, String providerId) async {
     final res = await _databaseService.safeWrite((isar) async {
       await isar.favoriteEntitys

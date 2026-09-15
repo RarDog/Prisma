@@ -5,6 +5,7 @@ import '../mappers/e621_mapper.dart';
 import '../models/e621_pool.dart';
 import '../models/post.dart';
 import '../models/post_comment.dart';
+import '../models/post_note.dart';
 import '../models/provider_health.dart';
 import '../models/tag_suggestion.dart';
 import '../models/top_period_filter.dart';
@@ -15,6 +16,7 @@ class E621Provider
         ContentProvider,
         TagSuggestionProvider,
         CommentProvider,
+        NoteProvider,
         PostPageProvider {
   E621Provider({
     required this.id,
@@ -408,6 +410,29 @@ class E621Provider
         })
         .where((comment) => comment.body.trim().isNotEmpty)
         .toList();
+  }
+
+  @override
+  Future<List<PostNote>> getNotes(String postId) async {
+    await _throttle();
+    try {
+      final response = await _dio.get<dynamic>(
+        '/notes.json',
+        queryParameters: {
+          'search[post_id]': postId,
+          'limit': 100,
+          ..._queryParameters,
+        },
+      );
+      final items = response.data is List ? response.data as List : const [];
+      return items
+          .whereType<Map>()
+          .map((item) => PostNote.fromJson(Map<String, dynamic>.from(item)))
+          .where((note) => note.isActive && note.body.trim().isNotEmpty)
+          .toList();
+    } catch (_) {
+      return const [];
+    }
   }
 
   String _rating(String value) {

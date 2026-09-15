@@ -42,6 +42,7 @@ class _E621FavoritesViewState extends ConsumerState<E621FavoritesView> {
   String? _error;
   String? _currentLogin;
   bool _isImporting = false;
+  int _importedCount = 0;
   bool _isSyncingBlacklist = false;
 
   @override
@@ -119,7 +120,7 @@ class _E621FavoritesViewState extends ConsumerState<E621FavoritesView> {
         setState(() {
           _posts.addAll(items);
           _isLoading = false;
-          _hasMore = items.length >= 25;
+          _hasMore = items.length >= 50;
           _page = 2;
         });
       }
@@ -152,7 +153,7 @@ class _E621FavoritesViewState extends ConsumerState<E621FavoritesView> {
               items.where((p) => !existingIds.contains(p.id)).toList();
           _posts.addAll(newItems);
           _isLoading = false;
-          _hasMore = items.length >= 25;
+          _hasMore = items.length >= 50;
           _page++;
         });
       }
@@ -164,32 +165,99 @@ class _E621FavoritesViewState extends ConsumerState<E621FavoritesView> {
   }
 
   Future<void> _importAllToLocal() async {
-    if (_posts.isEmpty || _isImporting) return;
-    setState(() => _isImporting = true);
+    if (_isImporting) return;
+    setState(() {
+      _isImporting = true;
+      _importedCount = 0;
+    });
     HapticFeedback.mediumImpact();
 
-    final favService = ref.read(favoriteServiceProvider);
-    int imported = 0;
-    for (final post in _posts) {
-      await favService.addFavorite(post);
-      imported++;
-    }
+    try {
+      final provider = await _getE621Provider();
+      if (provider == null) {
+        if (mounted) setState(() => _isImporting = false);
+        return;
+      }
 
-    ref.invalidate(favoriteKeysProvider);
-    ref.invalidate(favoritesControllerProvider);
+      final favService = ref.read(favoriteServiceProvider);
+      int imported = 0;
+      int page = 1;
+      const pageSize = 75;
+      final seenIds = <String>{};
+      final allNewPosts = <Post>[];
 
-    if (mounted) {
-      setState(() => _isImporting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            widget.isRu
-                ? 'Импортировано $imported постов в локальное избранное!'
-                : 'Imported $imported posts to local favorites!',
+      while (true) {
+        final pagePosts =
+            await provider.getFavorites(page: page, limit: pageSize);
+        if (pagePosts.isEmpty) break;
+
+        final batchToAdd = <Post>[];
+        for (final post in pagePosts) {
+          if (seenIds.add(post.id)) {
+            batchToAdd.add(post);
+            allNewPosts.add(post);
+          }
+        }
+
+        if (batchToAdd.isNotEmpty) {
+          await favService.addFavorites(batchToAdd);
+          imported += batchToAdd.length;
+        }
+
+        if (mounted) {
+          setState(() {
+            _importedCount = imported;
+          });
+        }
+
+        if (pagePosts.length < pageSize) {
+          break;
+        }
+
+        page++;
+        if (page > 100) {
+          break;
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          final existingIds = _posts.map((p) => p.id).toSet();
+          final additional = allNewPosts
+              .where((p) => !existingIds.contains(p.id))
+              .toList();
+          _posts.addAll(additional);
+          _hasMore = false;
+        });
+      }
+
+      ref.invalidate(favoriteKeysProvider);
+      ref.invalidate(favoritesControllerProvider);
+
+      if (mounted) {
+        setState(() => _isImporting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              widget.isRu
+                  ? 'Импортировано $imported постов в локальное избранное!'
+                  : 'Imported $imported posts to local favorites!',
+            ),
+            duration: const Duration(seconds: 4),
           ),
-          duration: const Duration(seconds: 3),
-        ),
-      );
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isImporting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              widget.isRu ? 'Ошибка импорта: $e' : 'Import error: $e',
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -516,9 +584,13 @@ class _E621FavoritesViewState extends ConsumerState<E621FavoritesView> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                               Text(
-                                widget.isRu
-                                    ? '${_posts.length} постов на сервере e621'
-                                    : '${_posts.length} posts on e621',
+                                _isImporting
+                                    ? (widget.isRu
+                                        ? 'Импорт: $_importedCount постов...'
+                                        : 'Importing: $_importedCount posts...')
+                                    : (widget.isRu
+                                        ? '${_posts.length} постов загружено'
+                                        : '${_posts.length} posts loaded'),
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: theme.colorScheme.onSurfaceVariant,
@@ -542,11 +614,15 @@ class _E621FavoritesViewState extends ConsumerState<E621FavoritesView> {
                               : const Icon(Icons.sync_rounded, size: 18),
                         ),
                         const SizedBox(width: 4),
-                        if (_posts.isNotEmpty) ...[
+                        if (_posts.isNotEmpty || _isImporting) ...[
                           IconButton.filledTonal(
                             tooltip: widget.isRu
-                                ? 'Импортировать в локальное избранное'
-                                : 'Import to local favorites',
+                                ? (_isImporting
+                                    ? 'Импортируется... ($_importedCount)'
+                                    : 'Импортировать все в локальное избранное')
+                                : (_isImporting
+                                    ? 'Importing... ($_importedCount)'
+                                    : 'Import all to local favorites'),
                             onPressed: _isImporting ? null : _importAllToLocal,
                             icon: _isImporting
                                 ? const SizedBox(

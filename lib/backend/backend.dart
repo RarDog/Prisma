@@ -16,6 +16,7 @@ export 'models/favorite_artist_item.dart';
 export 'models/pawchive_account.dart';
 export 'models/post.dart';
 export 'models/post_comment.dart';
+export 'models/post_note.dart';
 export 'models/provider_diagnostics.dart';
 export 'models/provider_health.dart';
 export 'models/search_history.dart';

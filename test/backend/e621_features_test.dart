@@ -180,5 +180,63 @@ void main() {
       expect(comment.authorName, equals('testuser'));
       expect(comment.body, equals('Awesome artwork!'));
     });
+
+    test('getNotes fetches and parses notes from /notes.json', () async {
+      dio.httpClientAdapter = _FakeAdapter((options) async {
+        expect(options.path, equals('/notes.json'));
+        expect(options.queryParameters['search[post_id]'], equals('12345'));
+
+        final responseJson = [
+          {
+            'id': 101,
+            'post_id': 12345,
+            'x': 50,
+            'y': 60,
+            'width': 200,
+            'height': 80,
+            'body': '[b]Hello[/b] world &amp; comic',
+            'creator_name': 'translator_cat',
+            'is_active': true,
+          },
+          {
+            'id': 102,
+            'post_id': 12345,
+            'x': 10,
+            'y': 20,
+            'width': 100,
+            'height': 50,
+            'body': 'Inactive note',
+            'is_active': false,
+          }
+        ];
+
+        return ResponseBody.fromString(
+          jsonEncode(responseJson),
+          200,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        );
+      });
+
+      final provider = E621Provider(
+        id: 'e621',
+        name: 'e621',
+        baseUrl: 'https://e621.net',
+        dioClient: dioClient,
+      );
+
+      final notes = await provider.getNotes('12345');
+      expect(notes.length, equals(1));
+      expect(notes[0].id, equals('101'));
+      expect(notes[0].postId, equals('12345'));
+      expect(notes[0].x, equals(50));
+      expect(notes[0].y, equals(60));
+      expect(notes[0].width, equals(200));
+      expect(notes[0].height, equals(80));
+      expect(notes[0].body, equals('[b]Hello[/b] world &amp; comic'));
+      expect(notes[0].authorName, equals('translator_cat'));
+      expect(notes[0].isActive, isTrue);
+    });
   });
 }

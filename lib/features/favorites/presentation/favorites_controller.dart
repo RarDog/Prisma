@@ -31,6 +31,12 @@ class FavoritesController extends AsyncNotifier<FavoritesState> {
     state = AsyncData(FavoritesState(posts: await _load()));
   }
 
+  Future<void> clearAll() async {
+    await ref.read(favoriteServiceProvider).clearFavorites();
+    ref.invalidate(favoriteKeysProvider);
+    state = const AsyncData(FavoritesState(posts: []));
+  }
+
   Future<List<Post>> _load() async {
     final result = await ref.read(favoriteServiceProvider).getFavoritePosts();
     return result is Success<List<Post>> ? result.data : const [];

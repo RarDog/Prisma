@@ -78,6 +78,8 @@ class Post {
 
   bool get hasPools => poolIds.isNotEmpty;
 
+  bool get hasNotes => tagGroups['has_notes']?.firstOrNull == 'true';
+
   int? get favCount {
     final raw = tagGroups['fav_count']?.firstOrNull;
     return raw != null ? int.tryParse(raw) : null;

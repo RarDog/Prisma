@@ -5,6 +5,7 @@ import '../../core/utils/result.dart';
 import '../models/content_provider_config.dart';
 import '../models/post.dart';
 import '../models/post_comment.dart';
+import '../models/post_note.dart';
 import '../models/provider_diagnostics.dart';
 import '../models/provider_health.dart';
 import '../models/tag_suggestion.dart';
@@ -519,6 +520,34 @@ class ProviderManager {
         Failure(
           code: 'comments_unavailable',
           message: 'Comments unavailable',
+          details: error,
+        ),
+      );
+    }
+  }
+
+  Future<Result<List<PostNote>>> getNotes(
+    String providerId,
+    String postId,
+  ) async {
+    final providersResult = await activeProviders();
+    if (providersResult is Error<List<ContentProvider>>) {
+      return Error(providersResult.failure);
+    }
+    final providers = (providersResult as Success<List<ContentProvider>>).data;
+    final matches = providers.where((provider) => provider.id == providerId);
+    if (matches.isEmpty) {
+      return const Success([]);
+    }
+    final provider = matches.first;
+    if (provider is! NoteProvider) return const Success([]);
+    try {
+      return Success(await (provider as NoteProvider).getNotes(postId));
+    } catch (error) {
+      return Error(
+        Failure(
+          code: 'notes_unavailable',
+          message: 'Notes unavailable',
           details: error,
         ),
       );

@@ -135,7 +135,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           priority: 3,
           timeoutSeconds: 20,
           customHeaders: const {
-            'User-Agent': 'Prisma/3.8.2 Flutter local booru browser',
+            'User-Agent': 'Prisma/3.8.3 Flutter local booru browser',
           },
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),

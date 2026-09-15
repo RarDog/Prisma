@@ -26,6 +26,10 @@ class FavoriteService {
     return result;
   }
 
+  Future<Result<void>> addFavorites(List<Post> posts) {
+    return _repository.addAll(posts);
+  }
+
   Future<Result<void>> removeFavorite(String postId, String providerId) {
     return _repository.remove(postId, providerId);
   }

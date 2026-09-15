@@ -5,6 +5,7 @@ import '../models/artist_tag.dart';
 import '../models/artist_work_query.dart';
 import '../models/post.dart';
 import '../models/post_comment.dart';
+import '../models/post_note.dart';
 import '../models/provider_health.dart';
 import '../models/tag_suggestion.dart';
 import '../models/top_period_filter.dart';
@@ -37,6 +38,10 @@ abstract class MediaHeadersProvider {
 
 abstract class CommentProvider {
   Future<List<PostComment>> getComments(String postId);
+}
+
+abstract class NoteProvider {
+  Future<List<PostNote>> getNotes(String postId);
 }
 
 abstract class TagSuggestionProvider {
