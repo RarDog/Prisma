@@ -1,5 +1,24 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.0.0',
+    title: 'Новый брендинг и иконка, 100% двуязычность и масштабные улучшения Realbooru',
+    titleEn: 'Brand New Icon & Branding, 100% Bilingual Parity & Realbooru Overhaul',
+    bullets: [
+      'Новая официальная иконка приложения: обновлены иконки для всех платформ (Android, Linux, Windows, macOS).',
+      'Обновлённый экран «Настройки»: плейсхолдер полумесяца заменён на стильный логотип с официальной иконкой приложения.',
+      '100% двуязычная локализация (RU/EN): полное покрытие перевода без исключений на всех экранах, кнопках и диалогах.',
+      'Исправление поиска: устранена ошибка отображения («серый квадрат») в поиске при русской локали.',
+      'Масштабное обновление Realbooru: быстрый HTML-парсер, ветки комментариев, фильтрация по топу периодов и нативные превью видео.',
+    ],
+    bulletsEn: [
+      'Brand New Official App Icon: refreshed across all supported platforms (Android, Linux, Windows, macOS).',
+      'Refreshed Settings Screen: replaced crescent moon placeholder with the high-resolution branded app icon banner.',
+      '100% Bilingual Localization (RU/EN): complete language parity across all screens, controls, and dialogs.',
+      'Search Bar Fix: resolved Russian locale search TextField rendering crash by integrating missing Material localization delegates.',
+      'Major Realbooru Overhaul: high-speed scraping engine, comment threads, top period browsing, and instant static video thumbnails.',
+    ],
+  ),
+  PrismaChange(
     version: '3.8.4',
     title: '100% двуязычная локализация (RU/EN), улучшение Realbooru и исправление превью видео',
     titleEn: '100% Bilingual Localization (RU/EN), Realbooru Enhancements & Video Preview Fixes',
