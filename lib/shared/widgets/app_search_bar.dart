@@ -329,7 +329,11 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
                       ),
                     ),
                     IconButton(
-                      tooltip: 'Clear',
+                      tooltip:
+                          Localizations.maybeLocaleOf(context)?.languageCode ==
+                                  'ru'
+                              ? 'Очистить'
+                              : 'Clear',
                       visualDensity: VisualDensity.compact,
                       icon: const Icon(Icons.close_rounded),
                       onPressed: _clear,
@@ -844,7 +848,10 @@ class _AppSearchBarState extends State<AppSearchBar> {
         hintText: widget.hintText,
         prefixIcon: const Icon(Icons.search_rounded),
         suffixIcon: IconButton(
-          tooltip: 'Clear',
+          tooltip:
+              Localizations.maybeLocaleOf(context)?.languageCode == 'ru'
+                  ? 'Очистить'
+                  : 'Clear',
           icon: const Icon(Icons.close_rounded),
           onPressed: () {
             _debounce?.cancel();
