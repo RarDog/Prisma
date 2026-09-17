@@ -68,14 +68,14 @@ class _E621PoolSheetState extends State<E621PoolSheet> {
           _pool = pool;
           _isLoading = false;
           if (pool == null) {
-            _error = 'Не удалось загрузить информацию о серии';
+            _error = '__not_found__';
           }
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = 'Ошибка: $e';
+          _error = '$e';
           _isLoading = false;
         });
       }
@@ -158,11 +158,15 @@ class _E621PoolSheetState extends State<E621PoolSheet> {
                             const Icon(Icons.error_outline_rounded,
                                 size: 40, color: Color(0xFFEF4444)),
                             const SizedBox(height: 12),
-                            Text(_error!),
+                            Text(
+                              _error == '__not_found__'
+                                  ? (isRu ? 'Не удалось загрузить информацию о серии' : 'Failed to load series info')
+                                  : '${isRu ? 'Ошибка: ' : 'Error: '}$_error',
+                            ),
                             const SizedBox(height: 12),
                             FilledButton.tonal(
                               onPressed: _loadPool,
-                              child: const Text('Повторить'),
+                              child: Text(isRu ? 'Повторить' : 'Retry'),
                             ),
                           ],
                         ),

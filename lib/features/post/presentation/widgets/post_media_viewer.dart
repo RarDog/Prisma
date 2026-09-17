@@ -578,12 +578,17 @@ class _PostMediaViewerState extends State<PostMediaViewer>
     });
     _disposeVideo();
     _initializeVideo();
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     ScaffoldMessenger.maybeOf(context)?.showSnackBar(
       SnackBar(
         content: Text(
           _useSoftwareDecoding
-              ? 'Включено программное декодирование (S/W)'
-              : 'Включено аппаратное декодирование (H/W)',
+              ? (isRu
+                  ? 'Включено программное декодирование (S/W)'
+                  : 'Software decoding enabled (S/W)')
+              : (isRu
+                  ? 'Включено аппаратное декодирование (H/W)'
+                  : 'Hardware decoding enabled (H/W)'),
         ),
         duration: const Duration(seconds: 2),
       ),
@@ -1278,7 +1283,8 @@ class _AudioSurfaceState extends State<_AudioSurface>
       final seg = uri.pathSegments.lastOrNull;
       if (seg != null && seg.isNotEmpty) return seg;
     }
-    return 'Аудиозапись';
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
+    return isRu ? 'Аудиозапись' : 'Audio track';
   }
 
   void _seekRelative(int seconds) {
@@ -1292,6 +1298,7 @@ class _AudioSurfaceState extends State<_AudioSurface>
 
   @override
   Widget build(BuildContext context) {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final theme = Theme.of(context);
     final title = _deriveTitle();
     final artistName =
@@ -1316,7 +1323,9 @@ class _AudioSurfaceState extends State<_AudioSurface>
                   size: 40, color: theme.colorScheme.error),
               const SizedBox(height: 12),
               Text(
-                'Не удалось воспроизвести аудио',
+                isRu
+                    ? 'Не удалось воспроизвести аудио'
+                    : 'Could not play audio',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -1335,7 +1344,7 @@ class _AudioSurfaceState extends State<_AudioSurface>
               FilledButton.icon(
                 onPressed: widget.onRetry,
                 icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Повторить попытку'),
+                label: Text(isRu ? 'Повторить попытку' : 'Retry'),
               ),
             ],
           ),
@@ -1548,7 +1557,9 @@ class _AudioSurfaceState extends State<_AudioSurface>
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               IconButton(
-                tooltip: widget.loopAudio ? 'Повтор: включен' : 'Повтор: выключен',
+                tooltip: widget.loopAudio
+                    ? (isRu ? 'Повтор: включен' : 'Repeat: on')
+                    : (isRu ? 'Повтор: выключен' : 'Repeat: off'),
                 icon: Icon(
                   widget.loopAudio ? Icons.repeat_one_rounded : Icons.repeat_rounded,
                   color: widget.loopAudio
@@ -1559,7 +1570,7 @@ class _AudioSurfaceState extends State<_AudioSurface>
                 onPressed: widget.onToggleLoop,
               ),
               IconButton(
-                tooltip: 'Назад на 10 сек',
+                tooltip: isRu ? 'Назад на 10 сек' : 'Rewind 10 sec',
                 icon: const Icon(Icons.replay_10_rounded, size: 26),
                 color: theme.colorScheme.onSurface,
                 onPressed: () => _seekRelative(-10),
@@ -1595,13 +1606,15 @@ class _AudioSurfaceState extends State<_AudioSurface>
                 ),
               ),
               IconButton(
-                tooltip: 'Вперед на 10 сек',
+                tooltip: isRu ? 'Вперед на 10 сек' : 'Forward 10 sec',
                 icon: const Icon(Icons.forward_10_rounded, size: 26),
                 color: theme.colorScheme.onSurface,
                 onPressed: () => _seekRelative(10),
               ),
               IconButton(
-                tooltip: widget.muted ? 'Включить звук' : 'Выключить звук',
+                tooltip: widget.muted
+                    ? (isRu ? 'Включить звук' : 'Unmute')
+                    : (isRu ? 'Выключить звук' : 'Mute'),
                 icon: Icon(
                   widget.muted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
                   color: widget.muted
@@ -2416,10 +2429,11 @@ class _SpeedBadgeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final scheme = Theme.of(context).colorScheme;
     return PopupMenuButton<double>(
       initialValue: currentRate,
-      tooltip: 'Скорость воспроизведения',
+      tooltip: isRu ? 'Скорость воспроизведения' : 'Playback speed',
       onSelected: onSelected,
       color: const Color(0xFF1E1E24),
       shape: RoundedRectangleBorder(
@@ -2478,6 +2492,7 @@ class _SpeedBoostOverlayBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     return Positioned(
       top: 32,
       left: 0,
@@ -2497,14 +2512,14 @@ class _SpeedBoostOverlayBadge extends StatelessWidget {
               ),
             ],
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.bolt_rounded, color: Colors.amberAccent, size: 18),
-              SizedBox(width: 6),
+              const Icon(Icons.bolt_rounded, color: Colors.amberAccent, size: 18),
+              const SizedBox(width: 6),
               Text(
-                '2X УСКОРЕНИЕ',
-                style: TextStyle(
+                isRu ? '2X УСКОРЕНИЕ' : '2X SPEED',
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w900,
                   fontSize: 12,
@@ -2653,6 +2668,7 @@ class _DoubleTapSeekRipple extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!visible) return const SizedBox.shrink();
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     return Align(
       alignment: isLeft ? Alignment.centerLeft : Alignment.centerRight,
       child: Container(
@@ -2683,7 +2699,9 @@ class _DoubleTapSeekRipple extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                isLeft ? '-10 сек' : '+10 сек',
+                isRu
+                    ? (isLeft ? '-10 сек' : '+10 сек')
+                    : (isLeft ? '-10 sec' : '+10 sec'),
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w900,
@@ -2752,6 +2770,7 @@ class _VideoControlsState extends State<_VideoControls> {
 
   @override
   Widget build(BuildContext context) {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final scheme = Theme.of(context).colorScheme;
 
     if (widget.isLocked) {
@@ -2761,7 +2780,7 @@ class _VideoControlsState extends State<_VideoControls> {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: _RoundControlButton(
-              tooltip: 'Разблокировать экран',
+              tooltip: isRu ? 'Разблокировать экран' : 'Unlock screen',
               icon: Icons.lock_rounded,
               size: 44,
               iconSize: 24,
@@ -2805,7 +2824,7 @@ class _VideoControlsState extends State<_VideoControls> {
                     children: [
                       if (widget.fullscreen) ...[
                         _RoundControlButton(
-                          tooltip: 'Закрыть',
+                          tooltip: isRu ? 'Закрыть' : 'Close',
                           icon: Icons.arrow_back_rounded,
                           onPressed: widget.onFullscreen,
                         ),
@@ -2814,8 +2833,8 @@ class _VideoControlsState extends State<_VideoControls> {
                       if (widget.fullscreen && widget.onToggleOrientation != null) ...[
                         _RoundControlButton(
                           tooltip: (widget.isLandscape ?? false)
-                              ? 'Портретная ориентация'
-                              : 'Альбомная ориентация',
+                              ? (isRu ? 'Портретная ориентация' : 'Portrait orientation')
+                              : (isRu ? 'Альбомная ориентация' : 'Landscape orientation'),
                           icon: (widget.isLandscape ?? false)
                               ? Icons.screen_lock_portrait_rounded
                               : Icons.screen_lock_landscape_rounded,
@@ -2827,15 +2846,19 @@ class _VideoControlsState extends State<_VideoControls> {
                         const SizedBox(width: 8),
                       ],
                       _RoundControlButton(
-                        tooltip: 'Заблокировать экран',
+                        tooltip: isRu ? 'Заблокировать экран' : 'Lock screen',
                         icon: Icons.lock_outline_rounded,
                         onPressed: widget.onToggleLock,
                       ),
                       const Spacer(),
                       _RoundControlButton(
                         tooltip: widget.isSoftwareDecoding
-                            ? 'Декодер: S/W (программный). Нажмите для переключения на H/W'
-                            : 'Декодер: H/W (аппаратный). Нажмите для переключения на S/W',
+                            ? (isRu
+                                ? 'Декодер: S/W (программный). Нажмите для переключения на H/W'
+                                : 'Decoder: S/W (software). Tap to switch to H/W')
+                            : (isRu
+                                ? 'Декодер: H/W (аппаратный). Нажмите для переключения на S/W'
+                                : 'Decoder: H/W (hardware). Tap to switch to S/W'),
                         selected: !widget.isSoftwareDecoding,
                         icon: widget.isSoftwareDecoding
                             ? Icons.memory_rounded
@@ -2849,7 +2872,9 @@ class _VideoControlsState extends State<_VideoControls> {
                       ),
                       const SizedBox(width: 8),
                       _RoundControlButton(
-                        tooltip: widget.loopVideo ? 'Выключить повтор' : 'Повтор видео',
+                        tooltip: widget.loopVideo
+                            ? (isRu ? 'Выключить повтор' : 'Disable repeat')
+                            : (isRu ? 'Повтор видео' : 'Repeat video'),
                         selected: widget.loopVideo,
                         icon: widget.loopVideo
                             ? Icons.repeat_one_on_rounded
@@ -2858,7 +2883,9 @@ class _VideoControlsState extends State<_VideoControls> {
                       ),
                       const SizedBox(width: 8),
                       _RoundControlButton(
-                        tooltip: widget.coverVideo ? 'Вписать' : 'Заполнить',
+                        tooltip: widget.coverVideo
+                            ? (isRu ? 'Вписать' : 'Fit')
+                            : (isRu ? 'Заполнить' : 'Fill'),
                         selected: widget.coverVideo,
                         icon: widget.coverVideo
                             ? Icons.fit_screen_rounded
@@ -2867,7 +2894,9 @@ class _VideoControlsState extends State<_VideoControls> {
                       ),
                       const SizedBox(width: 8),
                       _RoundControlButton(
-                        tooltip: widget.muted ? 'Включить звук' : 'Выключить звук',
+                        tooltip: widget.muted
+                            ? (isRu ? 'Включить звук' : 'Unmute')
+                            : (isRu ? 'Выключить звук' : 'Mute'),
                         selected: !widget.muted,
                         icon: widget.muted
                             ? Icons.volume_off_rounded
@@ -2891,7 +2920,7 @@ class _VideoControlsState extends State<_VideoControls> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       _RoundControlButton(
-                        tooltip: 'Назад на 10с',
+                        tooltip: isRu ? 'Назад на 10с' : 'Back 10s',
                         icon: Icons.replay_10_rounded,
                         size: 46,
                         iconSize: 26,
@@ -2902,7 +2931,9 @@ class _VideoControlsState extends State<_VideoControls> {
                       ),
                       const SizedBox(width: 32),
                       _RoundControlButton(
-                        tooltip: playing ? 'Пауза' : 'Воспроизведение',
+                        tooltip: playing
+                            ? (isRu ? 'Пауза' : 'Pause')
+                            : (isRu ? 'Воспроизведение' : 'Play'),
                         icon: playing
                             ? Icons.pause_rounded
                             : Icons.play_arrow_rounded,
@@ -2929,7 +2960,7 @@ class _VideoControlsState extends State<_VideoControls> {
                       ),
                       const SizedBox(width: 32),
                       _RoundControlButton(
-                        tooltip: 'Вперед на 10с',
+                        tooltip: isRu ? 'Вперед на 10с' : 'Forward 10s',
                         icon: Icons.forward_10_rounded,
                         size: 46,
                         iconSize: 26,
@@ -3133,8 +3164,12 @@ class _VideoControlsState extends State<_VideoControls> {
                                       const SizedBox(width: 8),
                                       _RoundControlButton(
                                         tooltip: widget.fullscreen
-                                            ? 'Выйти из полноэкранного режима'
-                                            : 'Полноэкранный режим',
+                                            ? (isRu
+                                                ? 'Выйти из полноэкранного режима'
+                                                : 'Exit fullscreen')
+                                            : (isRu
+                                                ? 'Полноэкранный режим'
+                                                : 'Fullscreen mode'),
                                         icon: widget.fullscreen
                                             ? Icons.fullscreen_exit_rounded
                                             : Icons.fullscreen_rounded,
@@ -3289,12 +3324,17 @@ class _TextArticleHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final title = (post.title ?? '').trim();
     final cleanContent =
         CloudLinkExtractor.cleanCommentary(post.description ?? '');
     final displayContent = cleanContent.isNotEmpty
         ? cleanContent
-        : (title.isNotEmpty ? '' : 'Публикация автора без текста и вложений');
+        : (title.isNotEmpty
+            ? ''
+            : (isRu
+                ? 'Публикация автора без текста и вложений'
+                : 'Author post without text or attachments'));
     final creatorLinks = CreatorLink.extractLinks(post.description ?? '');
     final cleanTags = post.cleanTags;
 
@@ -3344,7 +3384,7 @@ class _TextArticleHero extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Текстовая публикация',
+                          isRu ? 'Текстовая публикация' : 'Text post',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -3364,7 +3404,7 @@ class _TextArticleHero extends StatelessWidget {
                   ),
                   IconButton(
                     icon: const Icon(Icons.copy_rounded, size: 18),
-                    tooltip: 'Скопировать текст',
+                    tooltip: isRu ? 'Скопировать текст' : 'Copy text',
                     onPressed: () {
                       final textToCopy = [
                         if (title.isNotEmpty) title,
@@ -3372,9 +3412,13 @@ class _TextArticleHero extends StatelessWidget {
                       ].join('\n\n');
                       Clipboard.setData(ClipboardData(text: textToCopy));
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Текст скопирован в буфер обмена'),
-                          duration: Duration(seconds: 2),
+                        SnackBar(
+                          content: Text(
+                            isRu
+                                ? 'Текст скопирован в буфер обмена'
+                                : 'Text copied to clipboard',
+                          ),
+                          duration: const Duration(seconds: 2),
                         ),
                       );
                     },
@@ -3409,7 +3453,9 @@ class _TextArticleHero extends StatelessWidget {
                 const SizedBox(height: 18),
                 CreatorLinkChips(
                   links: creatorLinks,
-                  title: 'Ссылки из публикации',
+                  title: isRu
+                      ? 'Ссылки из публикации'
+                      : 'Links from publication',
                 ),
               ],
               if (cleanTags.isNotEmpty) ...[
@@ -3463,6 +3509,7 @@ String _cleanNoteBody(String raw) {
 
 void _showNoteDialog(BuildContext context, PostNote note) {
   final cleaned = _cleanNoteBody(note.body);
+  final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
   showDialog<void>(
     context: context,
     builder: (dialogContext) {
@@ -3475,8 +3522,8 @@ void _showNoteDialog(BuildContext context, PostNote note) {
             Expanded(
               child: Text(
                 note.authorName != null && note.authorName!.isNotEmpty
-                    ? 'Перевод (${note.authorName})'
-                    : 'Перевод',
+                    ? '${isRu ? "Перевод" : "Translation"} (${note.authorName})'
+                    : (isRu ? 'Перевод' : 'Translation'),
                 style: const TextStyle(fontSize: 16),
               ),
             ),
@@ -3492,21 +3539,25 @@ void _showNoteDialog(BuildContext context, PostNote note) {
         actions: [
           TextButton.icon(
             icon: const Icon(Icons.copy_rounded, size: 16),
-            label: const Text('Копировать'),
+            label: Text(isRu ? 'Копировать' : 'Copy'),
             onPressed: () {
               Clipboard.setData(ClipboardData(text: cleaned));
               Navigator.of(dialogContext).pop();
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Текст перевода скопирован'),
-                  duration: Duration(seconds: 2),
+                SnackBar(
+                  content: Text(
+                    isRu
+                        ? 'Текст перевода скопирован'
+                        : 'Translation text copied',
+                  ),
+                  duration: const Duration(seconds: 2),
                 ),
               );
             },
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Закрыть'),
+            child: Text(isRu ? 'Закрыть' : 'Close'),
           ),
         ],
       );

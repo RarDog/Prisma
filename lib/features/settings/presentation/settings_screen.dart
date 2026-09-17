@@ -978,75 +978,108 @@ class _SettingsContentState extends ConsumerState<_SettingsContent> {
           },
           onError: (fail) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Ошибка: ${fail.message}')),
+              SnackBar(
+                content: Text('${isRu ? "Ошибка" : "Error"}: ${fail.message}'),
+              ),
             );
           },
         );
       }
     } catch (e) {
       if (context.mounted) {
+        final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка синхронизации: $e')),
+          SnackBar(
+            content:
+                Text('${isRu ? "Ошибка синхронизации" : "Sync error"}: $e'),
+          ),
         );
       }
     }
   }
 
   Future<void> _copyDiagnostics(BuildContext context, WidgetRef ref) async {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final report =
         await ref.read(settingsControllerProvider.notifier).diagnosticsReport();
     await Clipboard.setData(ClipboardData(text: report));
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Diagnostics copied')),
+      SnackBar(
+        content: Text(
+          isRu ? 'Диагностика скопирована' : 'Diagnostics copied',
+        ),
+      ),
     );
   }
 
   Future<void> _copyLogs(BuildContext context, WidgetRef ref) async {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final logs =
         await ref.read(settingsControllerProvider.notifier).diagnosticLogs();
     await Clipboard.setData(ClipboardData(text: logs));
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Diagnostic logs copied')),
+      SnackBar(
+        content: Text(isRu ? 'Логи скопированы' : 'Diagnostic logs copied'),
+      ),
     );
   }
 
   Future<void> _exportJson(BuildContext context, WidgetRef ref) async {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final json =
         await ref.read(settingsControllerProvider.notifier).exportJson();
     await Clipboard.setData(ClipboardData(text: json));
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Settings JSON copied')),
+      SnackBar(
+        content: Text(
+          isRu ? 'JSON настроек скопирован' : 'Settings JSON copied',
+        ),
+      ),
     );
   }
 
   Future<void> _exportBackupFile(BuildContext context, WidgetRef ref) async {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final success = await ref.read(backupServiceProvider).exportBackup();
     if (!context.mounted) return;
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Бэкап сохранен / отправлен')),
+        SnackBar(
+          content: Text(
+            isRu ? 'Бэкап сохранен / отправлен' : 'Backup saved / shared',
+          ),
+        ),
       );
     }
   }
 
   Future<void> _saveAutoBackupNow(BuildContext context, WidgetRef ref) async {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final success = await ref
         .read(backupServiceProvider)
         .saveAutoBackupToPersistentStorage(force: true);
     if (!context.mounted) return;
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Данные сохранены в хранилище Prisma!'),
+        SnackBar(
+          content: Text(
+            isRu
+                ? 'Данные сохранены в хранилище Prisma!'
+                : 'Data saved to Prisma storage!',
+          ),
         ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Не удалось сохранить в хранилище'),
+        SnackBar(
+          content: Text(
+            isRu
+                ? 'Не удалось сохранить в хранилище'
+                : 'Failed to save to storage',
+          ),
         ),
       );
     }
@@ -1054,6 +1087,7 @@ class _SettingsContentState extends ConsumerState<_SettingsContent> {
 
   Future<void> _restoreFromPersistentBackup(
       BuildContext context, WidgetRef ref) async {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final result =
         await ref.read(backupServiceProvider).restoreFromPersistentStorage();
     if (!context.mounted) return;
@@ -1064,20 +1098,27 @@ class _SettingsContentState extends ConsumerState<_SettingsContent> {
       ref.invalidate(favoriteRepositoryProvider);
       ref.invalidate(collectionRepositoryProvider);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Все данные успешно восстановлены из автобэкапа!'),
+        SnackBar(
+          content: Text(
+            isRu
+                ? 'Все данные успешно восстановлены из автобэкапа!'
+                : 'All data successfully restored from backup!',
+          ),
         ),
       );
     } else if (result is Error<AppSettings>) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Ошибка восстановления: ${result.failure.message}'),
+          content: Text(
+            '${isRu ? "Ошибка восстановления" : "Restore error"}: ${result.failure.message}',
+          ),
         ),
       );
     }
   }
 
   Future<void> _importBackupFile(BuildContext context, WidgetRef ref) async {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final result = await ref.read(backupServiceProvider).importBackup();
     if (!context.mounted) return;
     if (result == null) return;
@@ -1088,21 +1129,32 @@ class _SettingsContentState extends ConsumerState<_SettingsContent> {
       ref.invalidate(favoriteRepositoryProvider);
       ref.invalidate(collectionRepositoryProvider);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Все данные успешно импортированы!')),
+        SnackBar(
+          content: Text(
+            isRu
+                ? 'Все данные успешно импортированы!'
+                : 'All data successfully imported!',
+          ),
+        ),
       );
     } else if (result is Error<AppSettings>) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка импорта: ${result.failure.message}')),
+        SnackBar(
+          content: Text(
+            '${isRu ? "Ошибка импорта" : "Import error"}: ${result.failure.message}',
+          ),
+        ),
       );
     }
   }
 
   Future<void> _importDialog(BuildContext context, WidgetRef ref) async {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final controller = TextEditingController();
     await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Import settings'),
+        title: Text(isRu ? 'Импорт настроек' : 'Import settings'),
         content: TextField(
           controller: controller,
           minLines: 6,
@@ -1112,7 +1164,7 @@ class _SettingsContentState extends ConsumerState<_SettingsContent> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(isRu ? 'Отмена' : 'Cancel'),
           ),
           FilledButton(
             onPressed: () async {
@@ -1121,7 +1173,7 @@ class _SettingsContentState extends ConsumerState<_SettingsContent> {
                   .importJson(controller.text);
               if (context.mounted) Navigator.pop(context);
             },
-            child: const Text('Import'),
+            child: Text(isRu ? 'Импортировать' : 'Import'),
           ),
         ],
       ),
@@ -1510,10 +1562,11 @@ class _SettingsContentState extends ConsumerState<_SettingsContent> {
   }
 
   Future<void> _showChangelog(BuildContext context) {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     return showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Prisma changelog'),
+        title: Text(isRu ? 'История изменений Prisma' : 'Prisma changelog'),
         content: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 560),
           child: SingleChildScrollView(
@@ -1523,11 +1576,11 @@ class _SettingsContentState extends ConsumerState<_SettingsContent> {
               children: [
                 for (final change in prismaChangelog) ...[
                   Text(
-                    '${change.version} - ${change.title}',
+                    '${change.version} - ${change.localizedTitle(isRu)}',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 6),
-                  for (final bullet in change.bullets)
+                  for (final bullet in change.localizedBullets(isRu))
                     Padding(
                       padding: const EdgeInsets.only(left: 8, bottom: 4),
                       child: Text('- $bullet'),
@@ -1541,7 +1594,7 @@ class _SettingsContentState extends ConsumerState<_SettingsContent> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: Text(isRu ? 'Закрыть' : 'Close'),
           ),
         ],
       ),
@@ -2555,6 +2608,7 @@ class _ColorSwatches extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2564,7 +2618,7 @@ class _ColorSwatches extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Акцентный цвет интерфейса',
+                isRu ? 'Акцентный цвет интерфейса' : 'Interface accent color',
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -2643,7 +2697,22 @@ class _TabVisibilityEditor extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final hidden = hiddenTabs.toSet();
+
+    String tabLabel(String key, String defaultLabel) {
+      if (!isRu) return defaultLabel;
+      return switch (key) {
+        'feed' => 'Лента',
+        'search' => 'Поиск',
+        'favorites' => 'Избранное',
+        'viewed' => 'История',
+        'collections' => 'Коллекции',
+        'artists' => 'Авторы',
+        _ => defaultLabel,
+      };
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2653,7 +2722,9 @@ class _TabVisibilityEditor extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Отображение вкладок навигации',
+                isRu
+                    ? 'Отображение вкладок навигации'
+                    : 'Navigation tabs visibility',
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -2670,7 +2741,7 @@ class _TabVisibilityEditor extends StatelessWidget {
               FilterChip(
                 selected: !hidden.contains(entry.key),
                 avatar: Icon(entry.value.$2, size: 16),
-                label: Text(entry.value.$1),
+                label: Text(tabLabel(entry.key, entry.value.$1)),
                 onSelected: (visible) {
                   final next = {...hidden};
                   if (visible) {

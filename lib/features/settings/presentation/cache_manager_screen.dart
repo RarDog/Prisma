@@ -188,7 +188,9 @@ class _CacheManagerScreenState extends ConsumerState<CacheManagerScreen> {
       ],
       body: statsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Ошибка: $e')),
+        error: (e, _) => Center(
+          child: Text('${strings.ru ? "Ошибка" : "Error"}: $e'),
+        ),
         data: (stats) {
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -385,7 +387,10 @@ class _CacheCategoryTile extends StatelessWidget {
             ],
             if (showClear && onClear != null)
               IconButton(
-                tooltip: 'Очистить',
+                tooltip:
+                    Localizations.maybeLocaleOf(context)?.languageCode == 'ru'
+                        ? 'Очистить'
+                        : 'Clear',
                 onPressed: onClear,
                 icon: const Icon(Icons.delete_outline_rounded, size: 20),
               ),

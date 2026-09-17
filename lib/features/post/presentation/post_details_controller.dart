@@ -12,13 +12,9 @@ final postDetailsControllerProvider =
 
   bool needsRealbooruDetails(Post post) {
     if (post.providerId != 'realbooru') return false;
-    final preview = post.previewUrl.toLowerCase();
-    final sample = post.sampleUrl.toLowerCase();
     return post.fileUrl.isEmpty ||
         post.fileUrl == post.previewUrl ||
-        post.fileUrl == post.sampleUrl ||
-        preview.contains('/thumbnails/') ||
-        sample.contains('/thumbnails/');
+        post.tagGroups.isEmpty;
   }
 
   Future<Post?> enrich(Post? post) async {
@@ -44,9 +40,7 @@ final postDetailsControllerProvider =
 
   // Scenario 1: feed navigation already passed the post.
   if (args.initialPost != null) {
-    if (!needsRealbooruDetails(args.initialPost!)) {
-      yield args.initialPost;
-    }
+    yield args.initialPost;
     final enriched = await enrich(args.initialPost);
     yield enriched;
     return;
@@ -56,9 +50,7 @@ final postDetailsControllerProvider =
   final cached =
       await postRepository.getCachedPost(args.postId, args.providerId);
   if (cached is Success<Post?> && cached.data != null) {
-    if (!needsRealbooruDetails(cached.data!)) {
-      yield cached.data;
-    }
+    yield cached.data;
     final enriched = await enrich(cached.data);
     yield enriched;
     return;

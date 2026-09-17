@@ -310,7 +310,7 @@ class _E621FavoritesViewState extends ConsumerState<E621FavoritesView> {
           },
           onError: (f) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Ошибка: ${f.message}')),
+              SnackBar(content: Text('${widget.isRu ? 'Ошибка: ' : 'Error: '}${f.message}')),
             );
           },
         );
@@ -319,7 +319,7 @@ class _E621FavoritesViewState extends ConsumerState<E621FavoritesView> {
       if (mounted) {
         setState(() => _isSyncingBlacklist = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка синхронизации: $e')),
+          SnackBar(content: Text('${widget.isRu ? 'Ошибка синхронизации: ' : 'Sync error: '}$e')),
         );
       }
     }
@@ -575,7 +575,7 @@ class _E621FavoritesViewState extends ConsumerState<E621FavoritesView> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Избранное: @$_currentLogin',
+                                widget.isRu ? 'Избранное: @$_currentLogin' : 'Favorites: @$_currentLogin',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 13,

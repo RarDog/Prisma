@@ -54,6 +54,7 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
     required String tag,
     required String group,
   }) {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final currentTags =
         ref.read(feedControllerProvider).value?.selectedTags ?? const [];
     final settings =
@@ -114,7 +115,7 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.search_rounded),
-                    title: const Text('Искать только этот тег'),
+                    title: Text(isRu ? 'Искать только этот тег' : 'Search only this tag'),
                     onTap: () {
                       Navigator.pop(modalContext);
                       context.go('/?q=${Uri.encodeQueryComponent(tag)}');
@@ -122,9 +123,9 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
                   ),
                   ListTile(
                     leading: const Icon(Icons.add_circle_outline_rounded),
-                    title: const Text('Добавить к поиску (+тег)'),
+                    title: Text(isRu ? 'Добавить к поиску (+тег)' : 'Add to search (+tag)'),
                     subtitle: currentTags.isNotEmpty
-                        ? Text('Текущие: ${currentTags.join(', ')}')
+                        ? Text(isRu ? 'Текущие: ${currentTags.join(', ')}' : 'Current: ${currentTags.join(', ')}')
                         : null,
                     onTap: () {
                       Navigator.pop(modalContext);
@@ -136,7 +137,7 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
                   ),
                   ListTile(
                     leading: const Icon(Icons.remove_circle_outline_rounded),
-                    title: const Text('Исключить из поиска (-тег)'),
+                    title: Text(isRu ? 'Исключить из поиска (-тег)' : 'Exclude from search (-tag)'),
                     onTap: () {
                       Navigator.pop(modalContext);
                       final filtered = currentTags
@@ -157,8 +158,8 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
                     ),
                     title: Text(
                       isBlacklisted
-                          ? 'Удалить из чёрного списка'
-                          : 'В чёрный список (Blacklist)',
+                          ? (isRu ? 'Удалить из чёрного списка' : 'Remove from blacklist')
+                          : (isRu ? 'В чёрный список (Blacklist)' : 'Add to blacklist'),
                     ),
                     onTap: () async {
                       Navigator.pop(modalContext);
@@ -177,8 +178,8 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
                           SnackBar(
                             content: Text(
                               isBlacklisted
-                                  ? 'Тег "$tag" удалён из чёрного списка'
-                                  : 'Тег "$tag" добавлен в чёрный список',
+                                  ? (isRu ? 'Тег "$tag" удалён из чёрного списка' : 'Tag "$tag" removed from blacklist')
+                                  : (isRu ? 'Тег "$tag" добавлен в чёрный список' : 'Tag "$tag" added to blacklist'),
                             ),
                             behavior: SnackBarBehavior.floating,
                           ),
@@ -188,13 +189,13 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
                   ),
                   ListTile(
                     leading: const Icon(Icons.copy_rounded),
-                    title: const Text('Скопировать тег'),
+                    title: Text(isRu ? 'Скопировать тег' : 'Copy tag'),
                     onTap: () {
                       Navigator.pop(modalContext);
                       Clipboard.setData(ClipboardData(text: tag));
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Тег "$tag" скопирован в буфер'),
+                          content: Text(isRu ? 'Тег "$tag" скопирован в буфер' : 'Tag "$tag" copied to clipboard'),
                           behavior: SnackBarBehavior.floating,
                           duration: const Duration(seconds: 2),
                         ),
@@ -204,7 +205,7 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
                   if (isArtist)
                     ListTile(
                       leading: const Icon(Icons.palette_rounded),
-                      title: const Text('Все работы этого автора'),
+                      title: Text(isRu ? 'Все работы этого автора' : 'All works by this artist'),
                       onTap: () {
                         Navigator.pop(modalContext);
                         context.go('/?q=${Uri.encodeQueryComponent(tag)}');

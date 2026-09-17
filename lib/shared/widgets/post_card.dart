@@ -238,6 +238,7 @@ class _PostCardState extends ConsumerState<PostCard>
                         final videoUrls = MediaUrlSelector.video(post);
                         if (!mobile &&
                             _hovered &&
+                            post.providerId != 'realbooru' &&
                             _resolvedPost != null &&
                             MediaUrlSelector.isVideo(post) &&
                             videoUrls.isNotEmpty) {
@@ -306,6 +307,7 @@ class _PostCardState extends ConsumerState<PostCard>
                       post.fileType.toLowerCase().contains('webm') ||
                       post.fileType.toLowerCase().contains('mp4') ||
                       post.fileType.toLowerCase().contains('gif') ||
+                      isVideoPost ||
                       isAudioPost ||
                       isTextPost)
                     Positioned(
@@ -314,7 +316,9 @@ class _PostCardState extends ConsumerState<PostCard>
                       child: _MediaBadge(
                         fileType: isAudioPost
                             ? 'audio'
-                            : (isTextPost ? 'text' : post.fileType),
+                            : (isTextPost
+                                ? 'text'
+                                : (isVideoPost ? 'video' : post.fileType)),
                       ),
                     ),
                   Positioned(
@@ -486,8 +490,16 @@ class _PostCardState extends ConsumerState<PostCard>
   }
 
   List<String> _feedUrls(Post post, {required bool mobile}) {
-    if ((post.providerId == 'realbooru' || post.providerId == 'paheal') &&
-        !MediaUrlSelector.isVideo(post)) {
+    if (MediaUrlSelector.isVideo(post)) {
+      return [
+        if (!MediaUrlSelector.looksLikeVideoUrl(post.previewUrl))
+          post.previewUrl,
+        if (!MediaUrlSelector.looksLikeVideoUrl(post.sampleUrl))
+          post.sampleUrl,
+        post.previewUrl,
+      ].where((url) => url.trim().isNotEmpty).toSet().toList(growable: false);
+    }
+    if (post.providerId == 'realbooru' || post.providerId == 'paheal') {
       return [
         post.sampleUrl,
         post.fileUrl,
@@ -552,13 +564,7 @@ class _PostCardState extends ConsumerState<PostCard>
 
   bool _needsRealbooruDetails(Post post) {
     if (post.providerId != 'realbooru') return false;
-    final preview = post.previewUrl.toLowerCase();
-    final sample = post.sampleUrl.toLowerCase();
-    return post.fileUrl.isEmpty ||
-        post.fileUrl == post.previewUrl ||
-        post.fileUrl == post.sampleUrl ||
-        preview.contains('/thumbnails/') ||
-        sample.contains('/thumbnails/');
+    return post.fileUrl.isEmpty || post.fileUrl == post.previewUrl;
   }
 }
 
@@ -669,17 +675,14 @@ class _FeedVideoPreviewState extends State<_FeedVideoPreview> {
       await _VideoPreviewOpenQueue.run(() async {
         if (!mounted || requestId != _requestId) return;
         await _player.stop();
+        await _player.setVolume(0);
+        await _player.setPlaylistMode(PlaylistMode.loop);
         await _player
             .open(
               Media(widget.videoUrl, httpHeaders: widget.headers),
-              play: false,
+              play: true,
             )
             .timeout(const Duration(seconds: 8));
-        if (!mounted || requestId != _requestId) return;
-        await _player
-            .seek(const Duration(milliseconds: 300))
-            .timeout(const Duration(seconds: 3));
-        await _player.pause();
       });
       if (!mounted || requestId != _requestId) return;
       setState(() => _ready = true);
@@ -872,7 +875,7 @@ class _MediaBadge extends StatelessWidget {
         'audio' => 'AUDIO',
         'video' => 'VIDEO',
         'gif' => 'GIF',
-        'text' => 'ТЕКСТ',
+        'text' => 'TEXT',
         _ => 'PHOTO',
       };
 }
@@ -888,6 +891,7 @@ class _TextPostCardPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final theme = Theme.of(context);
     final title = (post.title ?? '').trim();
     final cleanContent =
@@ -895,7 +899,11 @@ class _TextPostCardPreview extends StatelessWidget {
     final hasTitle = title.isNotEmpty;
     final snippet = cleanContent.isNotEmpty
         ? cleanContent
-        : (hasTitle ? '' : 'Текстовая публикация автора без вложений');
+        : (hasTitle
+            ? ''
+            : (isRu
+                ? 'Текстовая публикация автора без вложений'
+                : 'Text post by author without attachments'));
     final cloudCount = post.cloudLinks.length;
 
     return Container(
@@ -994,7 +1002,7 @@ class _TextPostCardPreview extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        'Вложения ($cloudCount)',
+                        isRu ? 'Вложения ($cloudCount)' : 'Attachments ($cloudCount)',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -1022,7 +1030,7 @@ class _AudioPostCardPreview extends StatelessWidget {
   final Post post;
   final bool hovered;
 
-  String _deriveAudioTitle() {
+  String _deriveAudioTitle(bool isRu) {
     final title = (post.title ?? '').trim();
     if (title.isNotEmpty) return title;
     final uri = Uri.tryParse(post.fileUrl);
@@ -1037,14 +1045,15 @@ class _AudioPostCardPreview extends StatelessWidget {
       }
     }
     final artist = post.tagGroups['artist']?.firstOrNull;
-    if (artist != null && artist.isNotEmpty) return 'Аудиозапись от $artist';
-    return 'Аудиозапись';
+    if (artist != null && artist.isNotEmpty) return isRu ? 'Аудиозапись от $artist' : 'Audio track by $artist';
+    return isRu ? 'Аудиозапись' : 'Audio track';
   }
 
   @override
   Widget build(BuildContext context) {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final theme = Theme.of(context);
-    final audioTitle = _deriveAudioTitle();
+    final audioTitle = _deriveAudioTitle(isRu);
     final artistName = post.tagGroups['artist']?.firstOrNull ?? post.providerName;
 
     return Container(
@@ -1147,7 +1156,7 @@ class _AudioPostCardPreview extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'Воспроизвести',
+                      isRu ? 'Воспроизвести' : 'Play',
                       style: TextStyle(
                         fontSize: 10.5,
                         fontWeight: FontWeight.w600,

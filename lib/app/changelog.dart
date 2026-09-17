@@ -1,12 +1,36 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '3.8.4',
+    title: '100% двуязычная локализация (RU/EN), улучшение Realbooru и исправление превью видео',
+    titleEn: '100% Bilingual Localization (RU/EN), Realbooru Enhancements & Video Preview Fixes',
+    bullets: [
+      'Полная 100% локализация интерфейса: абсолютно все экраны, диалоги, настройки, подсказки кнопок, плееры и панели теперь поддерживают бесшовный перевод между Русским и English.',
+      'Улучшенный провайдер Realbooru: внедрён высокоскоростной парсинг HTML с полной поддержкой комментариев, древовидных веток обсуждений и фильтрации популярных постов за период (Top day, week, month, year).',
+      'Исправление превью видео в Realbooru: нативные статические обложки видео вместо тяжелой и нестабильной генерации первого кадра, мгновенная подгрузка превью в ленте.',
+      'Улучшенное автосохранение и бэкапы: полностью локализованные сообщения синхронизации и резервного копирования во всех поддерживаемых ОС.',
+    ],
+    bulletsEn: [
+      '100% Complete UI Localization: every screen, dialog, settings panel, button tooltip, media viewer, and toolbar now seamlessly supports switching between English and Russian.',
+      'Enhanced Realbooru Provider: high-speed HTML parser with full support for post comments, threaded discussions, and top period filtering (Day, Week, Month, Year, All time).',
+      'Fixed Realbooru Video Thumbnails: native static video thumbnails instead of laggy single-frame video extraction, providing instant feed rendering.',
+      'Refined Auto-backup & Data Persistence: localized sync notifications and backup management across all supported platforms.',
+    ],
+  ),
+  PrismaChange(
     version: '3.8.3',
     title: 'Перевод комиксов e621, исправление импорта избранного и быстрая очистка',
+    titleEn: 'e621 Comic Translation Overlay, Favorites Import Fix & Quick Cleanup',
     bullets: [
       'Перевод комиксов e621 поверх текста: аккуратные полупрозрачные плашки перевода прямо поверх реплик и бабблов комикса, точно позиционируемые с учётом масштаба страницы.',
       'Кнопка управления переводом: плавающая кнопка в стиле Google Translate под комиксом («Показать перевод» / «Скрыть перевод» / «Нет перевода»), активная только в режиме чтения серий и пулов.',
       'Полный импорт избранного из e621: снято ограничение в 50 постов — теперь постранично загружаются все лайки пользователя порциями по 75 штук с пакетной записью в базу и живым счётчиком прогресса.',
       'Быстрая очистка избранного: удобная кнопка удаления всех постов в правом верхнем углу вкладки «Избранное» с диалогом подтверждения.',
+    ],
+    bulletsEn: [
+      'e621 Comic Translation Overlay: cleanly positioned translucent translation overlays on top of comic dialogue bubbles matching page scale.',
+      'Translation Control Button: floating Google Translate-style toggle below comic pages ("Show translation" / "Hide translation" / "No translation").',
+      'Full Favorites Import from e621: removed 50-post limit, now paging through all user likes in chunks of 75 posts with progress feedback.',
+      'Quick Favorites Cleanup: handy clear all button with confirmation dialog in the top-right corner of Favorites tab.',
     ],
   ),
   PrismaChange(
@@ -781,11 +805,18 @@ class PrismaChange {
     required this.version,
     required this.title,
     required this.bullets,
+    this.titleEn,
+    this.bulletsEn,
   });
 
   final String version;
   final String title;
   final List<String> bullets;
+  final String? titleEn;
+  final List<String>? bulletsEn;
+
+  String localizedTitle(bool ru) => ru ? title : (titleEn ?? title);
+  List<String> localizedBullets(bool ru) => ru ? bullets : (bulletsEn ?? bullets);
 }
 
 const lunarisChangelog = prismaChangelog;

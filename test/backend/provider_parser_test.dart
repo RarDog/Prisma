@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gel_rule_app/backend/mappers/danbooru_mapper.dart';
 import 'package:gel_rule_app/backend/mappers/e621_mapper.dart';
@@ -5,10 +7,12 @@ import 'package:gel_rule_app/backend/mappers/gelbooru_mapper.dart';
 import 'package:gel_rule_app/backend/mappers/moebooru_mapper.dart';
 import 'package:gel_rule_app/backend/mappers/rule34_mapper.dart';
 import 'package:gel_rule_app/backend/models/content_provider_config.dart';
+import 'package:gel_rule_app/backend/models/top_period_filter.dart';
 import 'package:gel_rule_app/backend/providers/custom_provider.dart';
 import 'package:gel_rule_app/backend/providers/provider_factory.dart';
 import 'package:gel_rule_app/backend/providers/realbooru_html_provider.dart';
 import 'package:gel_rule_app/backend/repositories/provider_repository.dart';
+import 'package:gel_rule_app/core/http/dio_client.dart';
 
 void main() {
   test('parses Gelbooru array response', () {
@@ -325,4 +329,176 @@ void main() {
       expect(provider, isA<UnsupportedCustomProvider>());
     }
   });
+
+  test('RealbooruHtmlProvider parses video post details, metadata and tag categories', () async {
+    final dio = Dio();
+    dio.httpClientAdapter = _FakeAdapter((options) async {
+      const html = '''
+        <div class="content">
+          <video style="width: 100%;" controls loop id="gelcomVideoPlayer">
+            <source src="https://realbooru.com//images/33/19/3319e66c3dac8d361a51d628037bfb8e.mp4" type="video/mp4" />
+            <source src="https://realbooru.com//images/33/19/3319e66c3dac8d361a51d628037bfb8e.webm" type="video/webm" />
+          </video>
+          <div id="tagLink">
+            Posted at Sep, 16 2026 by <a href="index.php?page=account&s=profile&id=1">alienpineapples</a>
+            Current Score: <b><span id="psc1007638">42</span></b>
+            <a class="model" href="index.php?page=post&amp;s=list&amp;tags=cosplay_queen">cosplay queen</a>
+            <a class="copyright" href="index.php?page=post&amp;s=list&amp;tags=genshin_impact">genshin impact</a>
+            <a class="metadata" href="index.php?page=post&amp;s=list&amp;tags=watermark">watermark</a>
+            <a class="tag-type-general" href="index.php?page=post&amp;s=list&amp;tags=cosplay">cosplay</a>
+          </div>
+        </div>
+      ''';
+      return ResponseBody.fromString(html, 200);
+    });
+
+    final provider = RealbooruHtmlProvider(
+      id: 'realbooru',
+      name: 'Realbooru',
+      baseUrl: 'https://realbooru.com',
+      dioClient: DioClient(dio: dio),
+    );
+
+    final post = await provider.getPost('1007638');
+    expect(post, isNotNull);
+    expect(post!.fileType, 'video');
+    expect(post.fileUrl, 'https://realbooru.com/images/33/19/3319e66c3dac8d361a51d628037bfb8e.mp4');
+    expect(post.previewUrl, 'https://realbooru.com/thumbnails/33/19/thumbnail_3319e66c3dac8d361a51d628037bfb8e.jpg');
+    expect(post.score, 42);
+    expect(post.createdAt.year, 2026);
+    expect(post.createdAt.month, 9);
+    expect(post.createdAt.day, 16);
+    expect(post.tagGroups['artist'], contains('cosplay_queen'));
+    expect(post.tagGroups['copyright'], contains('genshin_impact'));
+    expect(post.tagGroups['metadata'], contains('watermark'));
+    expect(post.tagGroups['general'], contains('cosplay'));
+  });
+
+  test('RealbooruHtmlProvider parses autocomplete with post counts', () async {
+    final dio = Dio();
+    dio.httpClientAdapter = _FakeAdapter((options) async {
+      final jsonStr = jsonEncode([
+        {'label': 'cosplay (60503)', 'value': 'cosplay'},
+        {'label': 'cosplayer (692)', 'value': 'cosplayer'},
+      ]);
+      return ResponseBody.fromString(jsonStr, 200);
+    });
+
+    final provider = RealbooruHtmlProvider(
+      id: 'realbooru',
+      name: 'Realbooru',
+      baseUrl: 'https://realbooru.com',
+      dioClient: DioClient(dio: dio),
+    );
+
+    final suggestions = await provider.suggestTags('cos');
+    expect(suggestions, hasLength(2));
+    expect(suggestions.first.name, 'cosplay');
+    expect(suggestions.first.postCount, 60503);
+    expect(suggestions.last.name, 'cosplayer');
+    expect(suggestions.last.postCount, 692);
+  });
+
+  test('RealbooruHtmlProvider parses user comments', () async {
+    final dio = Dio();
+    dio.httpClientAdapter = _FakeAdapter((options) async {
+      expect(options.path, '/index.php');
+      expect(options.queryParameters['page'], 'post');
+      expect(options.queryParameters['s'], 'view');
+      expect(options.queryParameters['id'], '995364');
+
+      const html = '''
+        <div style="width: 100%; padding: 00px;">
+          <h5>User Comments</h5>
+          <div class="userComment" id="c145488">
+            <div style="margin-bottom: 5px; font-style: italic;"><a href="index.php?page=account&amp;s=profile&amp;uname=Rufo6969">Rufo6969</a> <span style="font-size: 11px; color: #8f8f8f;">&raquo; #145488</span></div>
+            <div id="c145488" style="display:inline;"><b>Posted on 2026-06-08 22:24:11 Score: <a id="sc145488">4</a></b></div>
+            <div style="font-size: .8em;">This lady has an amazing look!<br />Love it.</div>
+          </div>
+          <br />
+          <div class="userComment" id="c146172">
+            <div style="margin-bottom: 5px; font-style: italic;"><a href="index.php?page=account&amp;s=profile&amp;uname=Brazil_Horny">Brazil Horny</a> <span style="font-size: 11px; color: #8f8f8f;">&raquo; #146172</span></div>
+            <div id="c146172" style="display:inline;"><b>Posted on 2026-06-11 20:30:50 Score: <a id="sc146172">0</a></b></div>
+            <div style="font-size: .8em;">Que perfei&ccedil;&atilde;o de mulher hein<br /></div>
+          </div>
+        </div>
+      ''';
+      return ResponseBody.fromString(html, 200);
+    });
+
+    final provider = RealbooruHtmlProvider(
+      id: 'realbooru',
+      name: 'Realbooru',
+      baseUrl: 'https://realbooru.com',
+      dioClient: DioClient(dio: dio),
+    );
+
+    final comments = await provider.getComments('995364');
+    expect(comments, hasLength(2));
+    expect(comments.first.id, '145488');
+    expect(comments.first.postId, '995364');
+    expect(comments.first.authorName, 'Rufo6969');
+    expect(comments.first.createdAt.year, 2026);
+    expect(comments.first.createdAt.month, 6);
+    expect(comments.first.createdAt.day, 8);
+    expect(comments.first.body, 'This lady has an amazing look!\nLove it.');
+
+    expect(comments.last.id, '146172');
+    expect(comments.last.authorName, 'Brazil Horny');
+    expect(comments.last.body, 'Que perfeição de mulher hein');
+  });
+
+  test('RealbooruHtmlProvider applies sort:score:desc on TopPeriodFilter', () async {
+    final dio = Dio();
+    late String queryTags;
+    dio.httpClientAdapter = _FakeAdapter((options) async {
+      queryTags = options.queryParameters['tags']?.toString() ?? '';
+      return ResponseBody.fromString('', 200);
+    });
+
+    final provider = RealbooruHtmlProvider(
+      id: 'realbooru',
+      name: 'Realbooru',
+      baseUrl: 'https://realbooru.com',
+      dioClient: DioClient(dio: dio),
+    );
+
+    await provider.searchPosts(
+      tags: ['cosplay'],
+      page: 0,
+      topPeriod: TopPeriodFilter.allTime,
+    );
+    expect(queryTags, 'cosplay sort:score:desc');
+
+    await provider.searchPosts(
+      tags: const [],
+      page: 0,
+      topPeriod: TopPeriodFilter.week,
+    );
+    expect(queryTags, 'sort:score:desc');
+
+    await provider.searchPosts(
+      tags: const [],
+      page: 0,
+      topPeriod: TopPeriodFilter.none,
+    );
+    expect(queryTags, 'all');
+  });
+}
+
+class _FakeAdapter implements HttpClientAdapter {
+  _FakeAdapter(this.handler);
+  final Future<ResponseBody> Function(RequestOptions options) handler;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<dynamic>? requestStream,
+    Future<void>? cancelFuture,
+  ) {
+    return handler(options);
+  }
+
+  @override
+  void close({bool force = false}) {}
 }

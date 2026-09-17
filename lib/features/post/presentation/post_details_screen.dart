@@ -918,8 +918,13 @@ class PostDetailsScreen extends ConsumerWidget {
       await Share.shareXFiles([XFile(path)], text: post.source ?? post.fileUrl);
     } catch (e) {
       if (!context.mounted) return;
+      final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка отправки: $e')),
+        SnackBar(
+          content: Text(
+            '${isRu ? "Ошибка отправки" : "Share error"}: $e',
+          ),
+        ),
       );
     }
   }
@@ -1361,14 +1366,21 @@ class _MobilePostPagerState extends State<_MobilePostPager> {
                         const Icon(Icons.auto_stories_rounded,
                             size: 14, color: Colors.white),
                         const SizedBox(width: 6),
-                        Text(
-                          'Комикс • Стр. ${_currentPage + 1} из ${widget.posts.length}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: -0.2,
-                          ),
+                        Builder(
+                          builder: (ctx) {
+                            final isRu = Localizations.maybeLocaleOf(ctx)?.languageCode == 'ru';
+                            return Text(
+                              isRu
+                                  ? 'Комикс • Стр. ${_currentPage + 1} из ${widget.posts.length}'
+                                  : 'Comic • Page ${_currentPage + 1} of ${widget.posts.length}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: -0.2,
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -1760,6 +1772,7 @@ class _CommentsSectionState extends ConsumerState<_CommentsSection> {
     final text = _commentController.text.trim();
     if (text.isEmpty || _isSubmitting) return;
 
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final providerInstance = await ref
         .read(providerManagerProvider)
         .getProviderInstance(widget.post.providerId);
@@ -1768,11 +1781,13 @@ class _CommentsSectionState extends ConsumerState<_CommentsSection> {
     if (!providerInstance.isAuthorized) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Для отправки комментариев укажите API-ключ e621 в Источниках',
+            isRu
+                ? 'Для отправки комментариев укажите API-ключ e621 в Источниках'
+                : 'To post comments, specify e621 API key in Sources',
           ),
-          duration: Duration(seconds: 3),
+          duration: const Duration(seconds: 3),
         ),
       );
       return;
@@ -1798,16 +1813,22 @@ class _CommentsSectionState extends ConsumerState<_CommentsSection> {
         ),
       );
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Комментарий опубликован!'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(
+            isRu ? 'Комментарий опубликован!' : 'Comment posted!',
+          ),
+          duration: const Duration(seconds: 2),
         ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Не удалось отправить комментарий'),
-          duration: Duration(seconds: 3),
+        SnackBar(
+          content: Text(
+            isRu
+                ? 'Не удалось отправить комментарий'
+                : 'Failed to post comment',
+          ),
+          duration: const Duration(seconds: 3),
         ),
       );
     }
@@ -2035,11 +2056,16 @@ class _PostInfoCardState extends State<_PostInfoCard> {
   Future<void> _handleVote(int score) async {
     final provider = widget.e621Provider;
     if (provider == null) return;
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     if (!provider.isAuthorized) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(
-          content: Text('Для голосования на e621 настройте API-ключ в Источниках'),
-          duration: Duration(seconds: 3),
+        SnackBar(
+          content: Text(
+            isRu
+                ? 'Для голосования на e621 настройте API-ключ в Источниках'
+                : 'To vote on e621, configure API key in Sources',
+          ),
+          duration: const Duration(seconds: 3),
         ),
       );
       return;
@@ -2059,9 +2085,15 @@ class _PostInfoCardState extends State<_PostInfoCard> {
           content: Text(
             success
                 ? (score > 0
-                    ? 'Голос ЗА (+1) отправлен на e621!'
-                    : 'Голос ПРОТИВ (-1) отправлен на e621!')
-                : 'Не удалось отправить голос',
+                    ? (isRu
+                        ? 'Голос ЗА (+1) отправлен на e621!'
+                        : 'Upvote (+1) sent to e621!')
+                    : (isRu
+                        ? 'Голос ПРОТИВ (-1) отправлен на e621!'
+                        : 'Downvote (-1) sent to e621!'))
+                : (isRu
+                    ? 'Не удалось отправить голос'
+                    : 'Failed to send vote'),
           ),
           duration: const Duration(seconds: 2),
         ),
@@ -2333,7 +2365,7 @@ class _PostInfoCardState extends State<_PostInfoCard> {
                               : scheme.onSurfaceVariant,
                         ),
                         onPressed: _isVoting ? null : () => _handleVote(1),
-                        tooltip: 'Голос ЗА (+1)',
+                        tooltip: strings.ru ? 'Голос ЗА (+1)' : 'Vote UP (+1)',
                       ),
                       IconButton(
                         visualDensity: VisualDensity.compact,
@@ -2350,7 +2382,9 @@ class _PostInfoCardState extends State<_PostInfoCard> {
                               : scheme.onSurfaceVariant,
                         ),
                         onPressed: _isVoting ? null : () => _handleVote(-1),
-                        tooltip: 'Голос ПРОТИВ (-1)',
+                        tooltip: strings.ru
+                            ? 'Голос ПРОТИВ (-1)'
+                            : 'Vote DOWN (-1)',
                       ),
                     ],
                   ],

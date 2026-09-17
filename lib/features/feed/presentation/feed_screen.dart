@@ -123,6 +123,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final feed = ref.watch(feedControllerProvider);
     final settings =
         ref.watch(appSettingsProvider).value ?? AppSettings.defaults;
@@ -208,19 +209,19 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
             if (feed.value != null && feed.value!.selectedTags.isNotEmpty)
               IconButton(
                 icon: const Icon(Icons.bookmark_add_rounded),
-                tooltip: 'Сохранить пресет',
+                tooltip: isRu ? 'Сохранить пресет' : 'Save preset',
                 onPressed: () => _saveCurrentPreset(
                     context, feed.value!.selectedTags, settings),
               ),
             IconButton(
               icon: Icon(_gridModeIcon(settings.gridMode)),
-              tooltip: 'Вид сетки',
+              tooltip: isRu ? 'Вид сетки' : 'Grid view',
               onPressed: () => _cycleGridMode(settings),
             ),
           ],
           floatingActionButton: _showScrollToTop
               ? FloatingActionButton.small(
-                  tooltip: 'Наверх',
+                  tooltip: isRu ? 'Наверх' : 'Scroll to top',
                   onPressed: () {
                     _scrollController.animateTo(
                       0,
@@ -620,26 +621,27 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
 
   Future<String?> _showSavePresetDialog(
       BuildContext context, String tags) async {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final ctrl = TextEditingController(text: tags);
     return showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Сохранить пресет'),
+        title: Text(isRu ? 'Сохранить пресет' : 'Save preset'),
         content: TextField(
           controller: ctrl,
-          decoration: const InputDecoration(
-            labelText: 'Название пресета',
+          decoration: InputDecoration(
+            labelText: isRu ? 'Название пресета' : 'Preset name',
           ),
           autofocus: true,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Отмена'),
+            child: Text(isRu ? 'Отмена' : 'Cancel'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-            child: const Text('Сохранить'),
+            child: Text(isRu ? 'Сохранить' : 'Save'),
           ),
         ],
       ),
@@ -812,23 +814,26 @@ class _SearchPresetsBar extends StatelessWidget {
           final active = currentTags.join(' ') == tags;
           return GestureDetector(
             onLongPress: () {
+              final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
               showDialog<void>(
                 context: context,
                 builder: (ctx) => AlertDialog(
                   title: Text('«$name»'),
-                  content: Text('Теги: $tags'),
+                  content: Text('${isRu ? "Теги" : "Tags"}: $tags'),
                   actions: [
                     TextButton(
                       onPressed: () {
                         Navigator.pop(ctx);
                         onDelete(raw);
                       },
-                      child: const Text('Удалить',
-                          style: TextStyle(color: Colors.red)),
+                      child: Text(
+                        isRu ? 'Удалить' : 'Delete',
+                        style: const TextStyle(color: Colors.red),
+                      ),
                     ),
                     FilledButton(
                       onPressed: () => Navigator.pop(ctx),
-                      child: const Text('Закрыть'),
+                      child: Text(isRu ? 'Закрыть' : 'Close'),
                     ),
                   ],
                 ),

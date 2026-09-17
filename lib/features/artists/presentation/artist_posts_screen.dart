@@ -205,6 +205,7 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
   }
 
   void _showAnnouncements() {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final theme = Theme.of(context);
     showModalBottomSheet<void>(
       context: context,
@@ -243,7 +244,7 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Личные сообщения и анонсы',
+                          isRu ? 'Личные сообщения и анонсы' : 'Direct messages & announcements',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             letterSpacing: -0.2,
@@ -298,7 +299,7 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            'Нет сообщений или рассылок',
+                            isRu ? 'Нет сообщений или рассылок' : 'No messages or announcements',
                             style: theme.textTheme.titleSmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w600,
@@ -389,7 +390,7 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
                                   IconButton(
                                     icon: const Icon(Icons.copy_rounded,
                                         size: 17),
-                                    tooltip: 'Скопировать текст',
+                                    tooltip: isRu ? 'Скопировать текст' : 'Copy text',
                                     visualDensity: VisualDensity.compact,
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints(),
@@ -399,10 +400,11 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
                                       );
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
-                                        const SnackBar(
-                                          content:
-                                              Text('Текст сообщения скопирован'),
-                                          duration: Duration(seconds: 2),
+                                        SnackBar(
+                                          content: Text(isRu
+                                              ? 'Текст сообщения скопирован'
+                                              : 'Message text copied'),
+                                          duration: const Duration(seconds: 2),
                                         ),
                                       );
                                     },
@@ -421,7 +423,7 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
                                 const SizedBox(height: 12),
                                 CreatorLinkChips(
                                   links: creatorLinks,
-                                  title: 'Ссылки из сообщения',
+                                  title: isRu ? 'Ссылки из сообщения' : 'Links from message',
                                 ),
                               ],
                               if (detectedCloudLinks.isNotEmpty) ...[
@@ -476,6 +478,8 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
     final gifCount = _posts.where(MediaUrlSelector.isGif).length;
     final textCount = _posts.where((p) => p.fileType == 'text').length;
 
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
       child: SingleChildScrollView(
@@ -484,7 +488,7 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
           children: [
             FilterChip(
               selected: _selectedTypes.isEmpty,
-              label: Text('Все (${_posts.length})'),
+              label: Text(isRu ? 'Все (${_posts.length})' : 'All (${_posts.length})'),
               onSelected: (_) => setState(() => _selectedTypes.clear()),
             ),
             const SizedBox(width: 8),
@@ -495,7 +499,7 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
                   color: _selectedTypes.contains('photo')
                         ? scheme.onPrimaryContainer
                         : scheme.onSurfaceVariant),
-              label: Text('Фото ($photoCount)'),
+              label: Text(isRu ? 'Фото ($photoCount)' : 'Photo ($photoCount)'),
               onSelected: (selected) {
                 setState(() {
                   if (selected) {
@@ -514,7 +518,7 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
                   color: _selectedTypes.contains('video')
                         ? scheme.onPrimaryContainer
                         : scheme.onSurfaceVariant),
-              label: Text('Видео ($videoCount)'),
+              label: Text(isRu ? 'Видео ($videoCount)' : 'Video ($videoCount)'),
               onSelected: (selected) {
                 setState(() {
                   if (selected) {
@@ -534,7 +538,7 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
                     color: _selectedTypes.contains('audio')
                         ? scheme.onPrimaryContainer
                         : scheme.onSurfaceVariant),
-                label: Text('Аудио ($audioCount)'),
+                label: Text(isRu ? 'Аудио ($audioCount)' : 'Audio ($audioCount)'),
                 onSelected: (selected) {
                   setState(() {
                     if (selected) {
@@ -574,7 +578,7 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
                     color: _selectedTypes.contains('text')
                         ? scheme.onPrimaryContainer
                         : scheme.onSurfaceVariant),
-                label: Text('Текст ($textCount)'),
+                label: Text(isRu ? 'Текст ($textCount)' : 'Text ($textCount)'),
                 onSelected: (selected) {
                   setState(() {
                     if (selected) {
@@ -673,6 +677,7 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final settings =
         ref.watch(appSettingsProvider).value ?? AppSettings.defaults;
     final favoriteKeys = ref.watch(favoriteKeysProvider).value ?? <String>{};
@@ -698,7 +703,9 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
       title: widget.artistName,
       actions: [
         IconButton(
-          tooltip: isArtistFavorite ? 'В избранном' : 'В избранное',
+          tooltip: isArtistFavorite
+              ? (isRu ? 'В избранном' : 'In favorites')
+              : (isRu ? 'В избранное' : 'Add to favorites'),
           icon: Icon(
             isArtistFavorite ? Icons.star_rounded : Icons.star_outline_rounded,
             color: isArtistFavorite ? Colors.amber : null,
@@ -707,7 +714,7 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
         ),
         if (_announcements.isNotEmpty)
           IconButton(
-            tooltip: 'Анонсы автора',
+            tooltip: isRu ? 'Анонсы автора' : 'Author announcements',
             onPressed: _showAnnouncements,
             icon: Badge.count(
               count: _announcements.length,
@@ -715,7 +722,7 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
             ),
           ),
         IconButton(
-          tooltip: 'Обновить',
+          tooltip: isRu ? 'Обновить' : 'Refresh',
           onPressed: _refresh,
           icon: const Icon(Icons.refresh_rounded),
         ),
@@ -724,17 +731,19 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
           ? const Center(child: CircularProgressIndicator())
           : _posts.isEmpty && _error != null
               ? ErrorView(
-                  message: _friendlyArtistPostError(_error!),
+                  message: _friendlyArtistPostError(_error!, isRu),
                   onRetry: _refresh,
                 )
               : _posts.isEmpty
                   ? Column(
                       children: [
                         _buildTagsBar(),
-                        const Expanded(
+                        Expanded(
                           child: EmptyView(
-                            title: 'Нет работ',
-                            message: 'У этого автора пока нет видимых постов.',
+                            title: isRu ? 'Нет работ' : 'No posts',
+                            message: isRu
+                                ? 'У этого автора пока нет видимых постов.'
+                                : 'This artist does not have visible posts yet.',
                           ),
                         ),
                       ],
@@ -755,9 +764,11 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
                                             Icons.filter_alt_off_rounded,
                                             size: 48),
                                         const SizedBox(height: 12),
-                                        const Text(
-                                          'Нет медиа по выбранным фильтрам',
-                                          style: TextStyle(
+                                        Text(
+                                          isRu
+                                              ? 'Нет медиа по выбранным фильтрам'
+                                              : 'No media matching selected filters',
+                                          style: const TextStyle(
                                               fontWeight: FontWeight.w600),
                                         ),
                                         const SizedBox(height: 8),
@@ -768,7 +779,9 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
                                               _selectedTag = null;
                                             });
                                           },
-                                          child: const Text('Сбросить фильтры'),
+                                          child: Text(isRu
+                                              ? 'Сбросить фильтры'
+                                              : 'Reset filters'),
                                         ),
                                       ],
                                     ),
@@ -823,11 +836,13 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
     );
   }
 
-  String _friendlyArtistPostError(Object error) {
+  String _friendlyArtistPostError(Object error, bool isRu) {
     final message = error.toString();
     if (message.contains('HandshakeException') ||
         message.contains('artist works are unavailable')) {
-      return 'Работы автора временно недоступны. Попробуйте обновить позже.';
+      return isRu
+          ? 'Работы автора временно недоступны. Попробуйте обновить позже.'
+          : 'Artist works are temporarily unavailable. Please try again later.';
     }
     return message;
   }

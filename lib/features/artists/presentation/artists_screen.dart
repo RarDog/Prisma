@@ -132,12 +132,14 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
         .toList();
     final favoriteKeys = favoriteItems.map((e) => e.key).toSet();
 
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
+
     return AdaptiveScaffold(
-      title: 'Artists',
+      title: isRu ? 'Авторы' : 'Artists',
       resizeToAvoidBottomInset: false,
       actions: [
         IconButton(
-          tooltip: 'Синхронизация Pawchive',
+          tooltip: isRu ? 'Синхронизация Pawchive' : 'Pawchive sync',
           icon: Badge(
             isLabelVisible: settings.parsedPawchiveAccounts.isNotEmpty,
             backgroundColor: Colors.green,
@@ -147,7 +149,7 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
           onPressed: () => PawchiveAccountsSheet.show(context),
         ),
         IconButton(
-          tooltip: 'Любимые авторы',
+          tooltip: isRu ? 'Любимые авторы' : 'Favorite artists',
           icon: Badge(
             isLabelVisible: favoriteItems.isNotEmpty,
             label: Text('${favoriteItems.length}'),
@@ -230,10 +232,12 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
                                   const Icon(Icons.person_search_outlined,
                                       size: 48),
                                   const SizedBox(height: 12),
-                                  const Text(
-                                    'Нет авторов по выбранным фильтрам',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.w600),
+                                  Text(
+                                    isRu
+                                        ? 'Нет авторов по выбранным фильтрам'
+                                        : 'No artists matching selected filters',
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600),
                                   ),
                                   const SizedBox(height: 8),
                                   FilledButton.tonal(
@@ -242,7 +246,11 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
                                           () => _selectedServices.clear());
                                       _refresh(items);
                                     },
-                                    child: const Text('Показать все сервисы'),
+                                    child: Text(
+                                      isRu
+                                          ? 'Показать все сервисы'
+                                          : 'Show all services',
+                                    ),
                                   ),
                                 ],
                               ),
@@ -564,6 +572,7 @@ class _ArtistsHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
@@ -609,7 +618,7 @@ class _ArtistsHeader extends StatelessWidget {
                         color: isDark ? Colors.white : const Color(0xFF0F172A),
                       ),
                       decoration: InputDecoration(
-                        hintText: 'Поиск авторов...',
+                        hintText: isRu ? 'Поиск авторов...' : 'Search artists...',
                         hintStyle: TextStyle(
                           color: isDark
                               ? Colors.white.withValues(alpha: 0.45)
@@ -639,7 +648,7 @@ class _ArtistsHeader extends StatelessWidget {
                         padding: EdgeInsets.zero,
                         constraints:
                             const BoxConstraints(minWidth: 32, minHeight: 32),
-                        tooltip: 'Очистить',
+                        tooltip: isRu ? 'Очистить' : 'Clear',
                         onPressed: () {
                           searchController.clear();
                           onSearch();
@@ -673,7 +682,7 @@ class _ArtistsHeader extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              'Найти',
+                              isRu ? 'Найти' : 'Search',
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -815,7 +824,7 @@ class _ArtistsHeader extends StatelessWidget {
                       ),
                       child: Center(
                         child: Text(
-                          'Все платформы',
+                          isRu ? 'Все платформы' : 'All platforms',
                           style: TextStyle(
                             fontSize: 11.5,
                             fontWeight: selectedServices.isEmpty
@@ -931,6 +940,7 @@ class _ArtistCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final scheme = theme.colorScheme;
@@ -942,15 +952,15 @@ class _ArtistCard extends StatelessWidget {
       onTap: onTap,
       child: Row(
         children: [
-          _ArtistAvatar(artist: artist, glowColor: sColor),
+          _ArtistAvatar(artist: artist),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  artist.displayName,
+                  artist.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleMedium?.copyWith(
@@ -971,7 +981,7 @@ class _ArtistCard extends StatelessWidget {
                     ),
                     if (artist.postCount != null)
                       _LiquidMiniBadge(
-                        label: '${artist.postCount} постов',
+                        label: '${artist.postCount} ${isRu ? 'постов' : 'posts'}',
                         color: isDark
                             ? Colors.white70
                             : const Color(0xFF64748B),
@@ -989,7 +999,7 @@ class _ArtistCard extends StatelessWidget {
                       final hr = dt.hour.toString().padLeft(2, '0');
                       final min = dt.minute.toString().padLeft(2, '0');
                       return Text(
-                        'Обновлено: $d.$m.$y $hr:$min',
+                        '${isRu ? 'Обновлено' : 'Updated'}: $d.$m.$y $hr:$min',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -1089,6 +1099,7 @@ class _FavoriteArtistsModalState extends State<_FavoriteArtistsModal> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final scheme = theme.colorScheme;
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final selectedFav = widget.favorites.firstWhere(
       (e) => e.key == _selectedKey,
       orElse: () => widget.favorites.isNotEmpty
@@ -1160,7 +1171,7 @@ class _FavoriteArtistsModalState extends State<_FavoriteArtistsModal> {
                           const Icon(Icons.star_rounded, color: Colors.amber, size: 26),
                           const SizedBox(width: 8),
                           Text(
-                            'Любимые авторы',
+                            isRu ? 'Любимые авторы' : 'Favorite artists',
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
@@ -1223,7 +1234,9 @@ class _FavoriteArtistsModalState extends State<_FavoriteArtistsModal> {
                                       Text(
                                         activeAcc != null
                                             ? 'Pawchive: @${activeAcc.username}'
-                                            : 'Pawchive не подключён',
+                                            : (isRu
+                                                ? 'Pawchive не подключён'
+                                                : 'Pawchive not connected'),
                                         style: const TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 12,
@@ -1231,8 +1244,12 @@ class _FavoriteArtistsModalState extends State<_FavoriteArtistsModal> {
                                       ),
                                       Text(
                                         activeAcc != null
-                                            ? '${activeAcc.syncedArtistsCount} авторов в облаке'
-                                            : 'Синхронизируйте избранное с сервером',
+                                            ? (isRu
+                                                ? '${activeAcc.syncedArtistsCount} авторов в облаке'
+                                                : '${activeAcc.syncedArtistsCount} artists in cloud')
+                                            : (isRu
+                                                ? 'Синхронизируйте избранное с сервером'
+                                                : 'Sync favorites with server'),
                                         style: TextStyle(
                                           color: scheme.onSurfaceVariant,
                                           fontSize: 11,
@@ -1252,7 +1269,10 @@ class _FavoriteArtistsModalState extends State<_FavoriteArtistsModal> {
                                   onPressed: () =>
                                       PawchiveAccountsSheet.show(context),
                                   child: Text(
-                                      accounts.isEmpty ? 'Войти' : 'Аккаунты'),
+                                    accounts.isEmpty
+                                        ? (isRu ? 'Войти' : 'Sign in')
+                                        : (isRu ? 'Аккаунты' : 'Accounts'),
+                                  ),
                                 ),
                               ],
                             ),
@@ -1275,14 +1295,16 @@ class _FavoriteArtistsModalState extends State<_FavoriteArtistsModal> {
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                'Список пуст',
+                                isRu ? 'Список пуст' : 'List is empty',
                                 style: theme.textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                'Нажмите на иконку звёздочки ★ на карточке любого автора, чтобы добавить его в избранное и быстро смотреть свежие работы.',
+                                isRu
+                                    ? 'Нажмите на иконку звёздочки ★ на карточке любого автора, чтобы добавить его в избранное и быстро смотреть свежие работы.'
+                                    : 'Tap the star ★ icon on any artist card to favorite them and quickly view their latest works.',
                                 textAlign: TextAlign.center,
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: scheme.onSurfaceVariant,
@@ -1361,6 +1383,7 @@ class _FavoriteArtistsSectionState extends State<_FavoriteArtistsSection> {
 
   @override
   Widget build(BuildContext context) {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     if (widget.favorites.isEmpty) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
@@ -1372,7 +1395,9 @@ class _FavoriteArtistsSectionState extends State<_FavoriteArtistsSection> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Нажмите звёздочку ★ на карточке автора, чтобы добавить его в любимые.',
+                  isRu
+                      ? 'Нажмите звёздочку ★ на карточке автора, чтобы добавить его в любимые.'
+                      : 'Tap the star ★ on an artist card to add them to favorites.',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
@@ -1401,7 +1426,7 @@ class _FavoriteArtistsSectionState extends State<_FavoriteArtistsSection> {
                 const Icon(Icons.star_rounded, color: Colors.amber, size: 20),
                 const SizedBox(width: 6),
                 Text(
-                  'Любимые авторы (${widget.favorites.length})',
+                  '${isRu ? 'Любимые авторы' : 'Favorite artists'} (${widget.favorites.length})',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -1413,12 +1438,15 @@ class _FavoriteArtistsSectionState extends State<_FavoriteArtistsSection> {
                     visualDensity: VisualDensity.compact,
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text('Все работы', style: TextStyle(fontSize: 12)),
-                      SizedBox(width: 2),
-                      Icon(Icons.arrow_forward_rounded, size: 14),
+                      Text(
+                        isRu ? 'Все работы' : 'All works',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      const SizedBox(width: 2),
+                      const Icon(Icons.arrow_forward_rounded, size: 14),
                     ],
                   ),
                 ),
@@ -1589,6 +1617,7 @@ class _FavoriteArtistMediaStripState
 
   @override
   Widget build(BuildContext context) {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final query = ArtistWorkQuery(
       providerId: widget.artist.providerId,
       service: widget.artist.service,
@@ -1613,11 +1642,15 @@ class _FavoriteArtistMediaStripState
         error: (_, __) => const SizedBox.shrink(),
         data: (posts) {
           if (posts.isEmpty) {
-            return const SizedBox(
+            return SizedBox(
               height: 36,
               child: Center(
-                child: Text('Нет доступных фото или видео',
-                    style: TextStyle(fontSize: 12)),
+                child: Text(
+                  isRu
+                      ? 'Нет доступных фото или видео'
+                      : 'No photos or videos available',
+                  style: const TextStyle(fontSize: 12),
+                ),
               ),
             );
           }
@@ -1727,11 +1760,9 @@ class _FavoriteArtistMediaStripState
 class _ArtistAvatar extends StatelessWidget {
   const _ArtistAvatar({
     required this.artist,
-    this.glowColor,
   });
 
   final ArtistProfile artist;
-  final Color? glowColor;
 
   @override
   Widget build(BuildContext context) {
@@ -1739,7 +1770,7 @@ class _ArtistAvatar extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final name = artist.displayName.trim();
     final initials = name.isEmpty ? '?' : name.characters.first.toUpperCase();
-    final accent = glowColor ?? theme.colorScheme.primary;
+    final accent = theme.colorScheme.primary;
 
     final fallback = DecoratedBox(
       decoration: BoxDecoration(

@@ -42,6 +42,8 @@ class GelRuleApp extends ConsumerWidget {
             return MaterialApp.router(
               title: 'Prisma',
               debugShowCheckedModeBanner: false,
+              locale: Locale(appSettings.languageCode),
+              supportedLocales: const [Locale('ru'), Locale('en')],
               theme: buildTheme(
                 Brightness.light,
                 seedColor: appSettings.appSeedColor,
@@ -286,7 +288,9 @@ class _DownloadPanel extends ConsumerWidget {
                   ),
                   const Spacer(),
                   IconButton(
-                    tooltip: paused ? 'Resume queue' : 'Pause queue',
+                    tooltip: paused
+                        ? (strings.ru ? 'Возобновить очередь' : 'Resume queue')
+                        : (strings.ru ? 'Приостановить очередь' : 'Pause queue'),
                     onPressed:
                         paused ? manager.resumeQueue : manager.pauseQueue,
                     icon: Icon(paused
@@ -295,7 +299,7 @@ class _DownloadPanel extends ConsumerWidget {
                   ),
                   if (activeTasks.isNotEmpty)
                     IconButton(
-                      tooltip: 'Cancel active',
+                      tooltip: strings.ru ? 'Отменить активные' : 'Cancel active',
                       onPressed: () {
                         for (final task in activeTasks) {
                           manager.cancel(task.id);
@@ -305,7 +309,7 @@ class _DownloadPanel extends ConsumerWidget {
                     ),
                   if (finishedTasks.isNotEmpty)
                     IconButton(
-                      tooltip: 'Clear finished',
+                      tooltip: strings.ru ? 'Очистить завершенные' : 'Clear finished',
                       onPressed: manager.clearFinished,
                       icon: const Icon(Icons.clear_all_rounded),
                     ),
@@ -334,7 +338,7 @@ class _DownloadPanel extends ConsumerWidget {
                     if (task.status == DownloadTaskStatus.queued ||
                         task.status == DownloadTaskStatus.running)
                       IconButton(
-                        tooltip: 'Cancel',
+                        tooltip: strings.ru ? 'Отмена' : 'Cancel',
                         onPressed: () => ref
                             .read(downloadManagerServiceProvider)
                             .cancel(task.id),

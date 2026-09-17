@@ -25,6 +25,7 @@ class _RecentSearchesState extends State<RecentSearches> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     if (widget.items.isEmpty) {
       return Container(
         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
@@ -38,7 +39,7 @@ class _RecentSearchesState extends State<RecentSearches> {
             ),
             const SizedBox(height: 10),
             Text(
-              'История поиска пуста',
+              isRu ? 'История поиска пуста' : 'Search history is empty',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -72,7 +73,7 @@ class _RecentSearchesState extends State<RecentSearches> {
             ),
             const SizedBox(height: 10),
             Text(
-              'История поиска пуста',
+              isRu ? 'История поиска пуста' : 'Search history is empty',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -218,8 +219,10 @@ class _RecentSearchesState extends State<RecentSearches> {
               ),
               label: Text(
                 _expanded
-                    ? 'Свернуть'
-                    : 'Показать все (${uniqueItems.length})',
+                    ? (isRu ? 'Свернуть' : 'Collapse')
+                    : (isRu
+                        ? 'Показать все (${uniqueItems.length})'
+                        : 'Show all (${uniqueItems.length})'),
               ),
             ),
           ),

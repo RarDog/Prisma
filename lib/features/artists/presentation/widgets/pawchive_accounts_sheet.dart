@@ -52,11 +52,15 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
     super.dispose();
   }
 
+  bool get _isRu =>
+      mounted && (Localizations.maybeLocaleOf(context)?.languageCode == 'ru');
+
   Future<void> _handleLoginCredentials() async {
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
     if (username.isEmpty || password.isEmpty) {
-      setState(() => _errorMessage = 'Введите логин и пароль');
+      setState(() => _errorMessage =
+          _isRu ? 'Введите логин и пароль' : 'Enter username and password');
       return;
     }
 
@@ -106,7 +110,9 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Аккаунт @${account.username} добавлен! Синхронизировано ${account.syncedArtistsCount} авторов.',
+              _isRu
+                  ? 'Аккаунт @${account.username} добавлен! Синхронизировано ${account.syncedArtistsCount} авторов.'
+                  : 'Account @${account.username} added! Synced ${account.syncedArtistsCount} artists.',
             ),
             backgroundColor: Colors.green.shade700,
           ),
@@ -127,7 +133,8 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
     final cookie = _cookieController.text.trim();
     final username = _usernameController.text.trim();
     if (cookie.isEmpty) {
-      setState(() => _errorMessage = 'Введите сессионную куку');
+      setState(() => _errorMessage =
+          _isRu ? 'Введите сессионную куку' : 'Enter session cookie');
       return;
     }
 
@@ -175,7 +182,9 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Кука сохранена! Синхронизировано ${account.syncedArtistsCount} авторов.',
+              _isRu
+                  ? 'Кука сохранена! Синхронизировано ${account.syncedArtistsCount} авторов.'
+                  : 'Cookie saved! Synced ${account.syncedArtistsCount} artists.',
             ),
             backgroundColor: Colors.green.shade700,
           ),
@@ -209,12 +218,16 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
             .saveSettings(result.updatedSettings);
         if (mounted) {
           final pushedMsg = result.pushedToRemoteCount > 0
-              ? ', выгружено в Pawchive: +${result.pushedToRemoteCount}'
+              ? (_isRu
+                  ? ', выгружено в Pawchive: +${result.pushedToRemoteCount}'
+                  : ', pushed to Pawchive: +${result.pushedToRemoteCount}')
               : '';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Синхронизировано: ${result.totalSyncedCount} авторов (+${result.newlyAddedToLocal} новых в приложении$pushedMsg)',
+                _isRu
+                    ? 'Синхронизировано: ${result.totalSyncedCount} авторов (+${result.newlyAddedToLocal} новых в приложении$pushedMsg)'
+                    : 'Synced: ${result.totalSyncedCount} artists (+${result.newlyAddedToLocal} new locally$pushedMsg)',
               ),
             ),
           );
@@ -223,7 +236,9 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Ошибка синхронизации: ${result.errorMessage}'),
+              content: Text(
+                '${_isRu ? "Ошибка синхронизации" : "Sync error"}: ${result.errorMessage}',
+              ),
               backgroundColor: Colors.red.shade700,
             ),
           );
@@ -242,7 +257,13 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
     final totalLocal = settings.favoriteArtists.length;
     if (totalLocal == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('В локальном избранном пока нет авторов')),
+        SnackBar(
+          content: Text(
+            _isRu
+                ? 'В локальном избранном пока нет авторов'
+                : 'No artists in local favorites yet',
+          ),
+        ),
       );
       return;
     }
@@ -250,19 +271,25 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Выгрузить избранное в Pawchive?'),
+        title: Text(
+          _isRu
+              ? 'Выгрузить избранное в Pawchive?'
+              : 'Push favorites to Pawchive?',
+        ),
         content: Text(
-          'Все локальные авторы из приложения ($totalLocal) будут добавлены в избранное аккаунта @${account.username} на сервере Pawchive.',
+          _isRu
+              ? 'Все локальные авторы из приложения ($totalLocal) будут добавлены в избранное аккаунта @${account.username} на сервере Pawchive.'
+              : 'All local artists from app ($totalLocal) will be added to favorites of account @${account.username} on Pawchive server.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Отмена'),
+            child: Text(_isRu ? 'Отмена' : 'Cancel'),
           ),
           FilledButton.icon(
             onPressed: () => Navigator.pop(ctx, true),
             icon: const Icon(Icons.cloud_upload_rounded),
-            label: const Text('Выгрузить'),
+            label: Text(_isRu ? 'Выгрузить' : 'Push'),
           ),
         ],
       ),
@@ -290,7 +317,9 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  'Выгружено ${result.pushedCount} авторов в @${account.username}! Всего в аккаунте: ${result.totalRemoteCount}.',
+                  _isRu
+                      ? 'Выгружено ${result.pushedCount} авторов в @${account.username}! Всего в аккаунте: ${result.totalRemoteCount}.'
+                      : 'Pushed ${result.pushedCount} artists to @${account.username}! Total in account: ${result.totalRemoteCount}.',
                 ),
                 backgroundColor: Colors.green.shade700,
               ),
@@ -299,7 +328,9 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  'Все авторы (${result.totalLocalCandidates}) уже есть в аккаунте @${account.username}.',
+                  _isRu
+                      ? 'Все авторы (${result.totalLocalCandidates}) уже есть в аккаунте @${account.username}.'
+                      : 'All artists (${result.totalLocalCandidates}) are already in @${account.username}.',
                 ),
               ),
             );
@@ -309,7 +340,9 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Ошибка выгрузки: ${result.errorMessage}'),
+              content: Text(
+                '${_isRu ? "Ошибка выгрузки" : "Push error"}: ${result.errorMessage}',
+              ),
               backgroundColor: Colors.red.shade700,
             ),
           );
@@ -336,12 +369,16 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
             .saveSettings(result.updatedSettings);
         if (mounted) {
           final pushedMsg = result.pushedToRemoteCount > 0
-              ? ', выгружено в Pawchive: +${result.pushedToRemoteCount}'
+              ? (_isRu
+                  ? ', выгружено в Pawchive: +${result.pushedToRemoteCount}'
+                  : ', pushed to Pawchive: +${result.pushedToRemoteCount}')
               : '';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Все аккаунты синхронизированы! Всего: ${result.totalSyncedCount} (+${result.newlyAddedToLocal} новых в приложении$pushedMsg)',
+                _isRu
+                    ? 'Все аккаунты синхронизированы! Всего: ${result.totalSyncedCount} (+${result.newlyAddedToLocal} новых в приложении$pushedMsg)'
+                    : 'All accounts synced! Total: ${result.totalSyncedCount} (+${result.newlyAddedToLocal} new locally$pushedMsg)',
               ),
               backgroundColor: Colors.green.shade700,
             ),
@@ -351,7 +388,9 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Ошибка синхронизации: ${result.errorMessage}'),
+              content: Text(
+                '${_isRu ? "Ошибка синхронизации" : "Sync error"}: ${result.errorMessage}',
+              ),
               backgroundColor: Colors.red.shade700,
             ),
           );
@@ -383,21 +422,25 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Удалить аккаунт Pawchive?'),
+        title: Text(
+          _isRu ? 'Удалить аккаунт Pawchive?' : 'Delete Pawchive account?',
+        ),
         content: Text(
-          'Вы уверены, что хотите удалить аккаунт @${target.username}? Локальные авторы останутся в приложении.',
+          _isRu
+              ? 'Вы уверены, что хотите удалить аккаунт @${target.username}? Локальные авторы останутся в приложении.'
+              : 'Are you sure you want to delete account @${target.username}? Local artists will remain in app.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Отмена'),
+            child: Text(_isRu ? 'Отмена' : 'Cancel'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
-            child: const Text('Удалить'),
+            child: Text(_isRu ? 'Удалить' : 'Delete'),
           ),
         ],
       ),
@@ -425,6 +468,7 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
 
   @override
   Widget build(BuildContext context) {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final settings =
@@ -487,7 +531,7 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Аккаунты Pawchive',
+                            isRu ? 'Аккаунты Pawchive' : 'Pawchive accounts',
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
@@ -496,7 +540,9 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
-                            'Синхронизация авторов и избранного',
+                            isRu
+                                ? 'Синхронизация авторов и избранного'
+                                : 'Artist and favorites sync',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: scheme.onSurfaceVariant,
                               fontSize: 12,
@@ -518,7 +564,9 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                                 child: CircularProgressIndicator(strokeWidth: 2),
                               )
                             : const Icon(Icons.sync_rounded, size: 20),
-                        tooltip: 'Синхронизировать все аккаунты',
+                        tooltip: isRu
+                            ? 'Синхронизировать все аккаунты'
+                            : 'Sync all accounts',
                       ),
                     ],
                   ],
@@ -537,7 +585,9 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8, left: 4),
                         child: Text(
-                          'ПОДКЛЮЧЁННЫЕ АККАУНТЫ (${accounts.length})',
+                          isRu
+                              ? 'ПОДКЛЮЧЁННЫЕ АККАУНТЫ (${accounts.length})'
+                              : 'CONNECTED ACCOUNTS (${accounts.length})',
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: scheme.primary,
                             fontWeight: FontWeight.bold,
@@ -545,7 +595,7 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                           ),
                         ),
                       ),
-                      ...accounts.map((acc) => _buildAccountCard(acc, scheme, theme)),
+                      ...accounts.map((acc) => _buildAccountCard(acc, scheme, theme, isRu)),
                       const SizedBox(height: 12),
 
                       // Two-way sync & Export to Pawchive panel
@@ -569,7 +619,9 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      'Двусторонняя синхронизация',
+                                      isRu
+                                          ? 'Двусторонняя синхронизация'
+                                          : 'Bidirectional sync',
                                       style: theme.textTheme.titleSmall?.copyWith(
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -589,7 +641,9 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                                 ],
                               ),
                               Text(
-                                'При обычной синхронизации также выгружать всех локальных авторов на сервер Pawchive.',
+                                isRu
+                                    ? 'При обычной синхронизации также выгружать всех локальных авторов на сервер Pawchive.'
+                                    : 'During normal sync, also upload all local artists to Pawchive server.',
                                 style: TextStyle(
                                   color: scheme.onSurfaceVariant,
                                   fontSize: 12,
@@ -611,7 +665,9 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                                       )
                                     : const Icon(Icons.cloud_upload_rounded, size: 18),
                                 label: Text(
-                                  'Выгрузить избранное (${settings.favoriteArtists.length}) в @${(settings.activePawchiveAccount ?? accounts.first).username}',
+                                  isRu
+                                      ? 'Выгрузить избранное (${settings.favoriteArtists.length}) в @${(settings.activePawchiveAccount ?? accounts.first).username}'
+                                      : 'Push favorites (${settings.favoriteArtists.length}) to @${(settings.activePawchiveAccount ?? accounts.first).username}',
                                 ),
                               ),
                             ],
@@ -625,7 +681,9 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8, left: 4),
                       child: Text(
-                        accounts.isEmpty ? 'ДОБАВИТЬ АККАУНТ' : 'ДОБАВИТЬ ЕЩЁ АККАУНТ',
+                        accounts.isEmpty
+                            ? (isRu ? 'ДОБАВИТЬ АККАУНТ' : 'ADD ACCOUNT')
+                            : (isRu ? 'ДОБАВИТЬ ЕЩЁ АККАУНТ' : 'ADD ANOTHER ACCOUNT'),
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: scheme.primary,
                           fontWeight: FontWeight.bold,
@@ -649,9 +707,9 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                           children: [
                             TabBar(
                               controller: _addTabController,
-                              tabs: const [
-                                Tab(text: 'Логин и пароль'),
-                                Tab(text: 'Session Cookie'),
+                              tabs: [
+                                Tab(text: isRu ? 'Логин и пароль' : 'Login & password'),
+                                const Tab(text: 'Session Cookie'),
                               ],
                             ),
                             const SizedBox(height: 16),
@@ -694,9 +752,11 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                                     children: [
                                       TextField(
                                         controller: _usernameController,
-                                        decoration: const InputDecoration(
-                                          labelText: 'Имя пользователя',
-                                          prefixIcon: Icon(Icons.person_outline_rounded),
+                                        decoration: InputDecoration(
+                                          labelText: isRu
+                                              ? 'Имя пользователя'
+                                              : 'Username',
+                                          prefixIcon: const Icon(Icons.person_outline_rounded),
                                           isDense: true,
                                         ),
                                       ),
@@ -705,7 +765,7 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                                         controller: _passwordController,
                                         obscureText: _obscurePassword,
                                         decoration: InputDecoration(
-                                          labelText: 'Пароль',
+                                          labelText: isRu ? 'Пароль' : 'Password',
                                           prefixIcon: const Icon(Icons.lock_outline_rounded),
                                           isDense: true,
                                           suffixIcon: IconButton(
@@ -733,7 +793,11 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                                                 ),
                                               )
                                             : const Icon(Icons.login_rounded),
-                                        label: const Text('Войти и синхронизировать'),
+                                        label: Text(
+                                          isRu
+                                              ? 'Войти и синхронизировать'
+                                              : 'Sign in & sync',
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -742,9 +806,11 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                                     children: [
                                       TextField(
                                         controller: _usernameController,
-                                        decoration: const InputDecoration(
-                                          labelText: 'Никнейм (необязательно)',
-                                          prefixIcon: Icon(Icons.badge_outlined),
+                                        decoration: InputDecoration(
+                                          labelText: isRu
+                                              ? 'Никнейм (необязательно)'
+                                              : 'Nickname (optional)',
+                                          prefixIcon: const Icon(Icons.badge_outlined),
                                           isDense: true,
                                         ),
                                       ),
@@ -752,10 +818,14 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                                       TextField(
                                         controller: _cookieController,
                                         maxLines: 2,
-                                        decoration: const InputDecoration(
-                                          labelText: 'Сессионная кука',
-                                          hintText: 'session=ey... или значение куки',
-                                          prefixIcon: Icon(Icons.cookie_outlined),
+                                        decoration: InputDecoration(
+                                          labelText: isRu
+                                              ? 'Сессионная кука'
+                                              : 'Session cookie',
+                                          hintText: isRu
+                                              ? 'session=ey... или значение куки'
+                                              : 'session=ey... or cookie value',
+                                          prefixIcon: const Icon(Icons.cookie_outlined),
                                           isDense: true,
                                         ),
                                       ),
@@ -772,7 +842,9 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                                                 ),
                                               )
                                             : const Icon(Icons.check_circle_outline_rounded),
-                                        label: const Text('Сохранить куку'),
+                                        label: Text(
+                                          isRu ? 'Сохранить куку' : 'Save cookie',
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -793,7 +865,8 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
     );
   }
 
-  Widget _buildAccountCard(PawchiveAccount acc, ColorScheme scheme, ThemeData theme) {
+  Widget _buildAccountCard(
+      PawchiveAccount acc, ColorScheme scheme, ThemeData theme, bool isRu) {
     final isSyncing = _syncingAccountId == acc.id;
     final isPushing = _pushingAccountId == acc.id;
     final isBusy = isSyncing || isPushing;
@@ -842,7 +915,7 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  'Активен',
+                  isRu ? 'Активен' : 'Active',
                   style: TextStyle(
                     color: scheme.primary,
                     fontSize: 10,
@@ -856,7 +929,7 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 2),
           child: Text(
-            'Авторов: ${acc.syncedArtistsCount} • ${acc.lastSyncedAt != null ? _formatDate(acc.lastSyncedAt!) : "не синхр."}',
+            '${isRu ? "Авторов" : "Artists"}: ${acc.syncedArtistsCount} • ${acc.lastSyncedAt != null ? _formatDate(acc.lastSyncedAt!, isRu) : (isRu ? "не синхр." : "not synced")}',
             style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -877,7 +950,9 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.cloud_upload_outlined),
-              tooltip: 'Выгрузить локальное избранное в этот аккаунт',
+              tooltip: isRu
+                  ? 'Выгрузить локальное избранное в этот аккаунт'
+                  : 'Push local favorites to this account',
               onPressed: isBusy ? null : () => _pushFavoritesToAccount(acc),
             ),
             IconButton(
@@ -892,7 +967,9 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.sync_rounded),
-              tooltip: 'Синхронизировать этот аккаунт',
+              tooltip: isRu
+                  ? 'Синхронизировать этот аккаунт'
+                  : 'Sync this account',
               onPressed: isBusy ? null : () => _syncSingleAccount(acc),
             ),
             PopupMenuButton<String>(
@@ -911,33 +988,36 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
               },
               itemBuilder: (ctx) => [
                 if (!acc.isActive)
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'active',
                     child: Row(
                       children: [
-                        Icon(Icons.check_circle_outline_rounded, size: 20),
-                        SizedBox(width: 8),
-                        Text('Сделать активным'),
+                        const Icon(Icons.check_circle_outline_rounded, size: 20),
+                        const SizedBox(width: 8),
+                        Text(isRu ? 'Сделать активным' : 'Set as active'),
                       ],
                     ),
                   ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'push',
                   child: Row(
                     children: [
-                      Icon(Icons.cloud_upload_outlined, size: 20),
-                      SizedBox(width: 8),
-                      Text('Выгрузить в Pawchive'),
+                      const Icon(Icons.cloud_upload_outlined, size: 20),
+                      const SizedBox(width: 8),
+                      Text(isRu ? 'Выгрузить в Pawchive' : 'Push to Pawchive'),
                     ],
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'delete',
                   child: Row(
                     children: [
-                      Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
-                      SizedBox(width: 8),
-                      Text('Удалить аккаунт', style: TextStyle(color: Colors.red)),
+                      const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        isRu ? 'Удалить аккаунт' : 'Delete account',
+                        style: const TextStyle(color: Colors.red),
+                      ),
                     ],
                   ),
                 ),
@@ -949,10 +1029,14 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
     );
   }
 
-  String _formatDate(DateTime dt) {
+  String _formatDate(DateTime dt, bool isRu) {
     final now = DateTime.now();
-    if (now.difference(dt).inMinutes < 1) return 'только что';
-    if (now.difference(dt).inHours < 1) return '${now.difference(dt).inMinutes} мин назад';
+    if (now.difference(dt).inMinutes < 1) return isRu ? 'только что' : 'just now';
+    if (now.difference(dt).inHours < 1) {
+      return isRu
+          ? '${now.difference(dt).inMinutes} мин назад'
+          : '${now.difference(dt).inMinutes} min ago';
+    }
     return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 }

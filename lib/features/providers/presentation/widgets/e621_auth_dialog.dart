@@ -61,12 +61,13 @@ class _E621AuthDialogState extends State<E621AuthDialog> {
   }
 
   Future<void> _testAndSave() async {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final login = _loginController.text.trim();
     final apiKey = _apiKeyController.text.trim();
 
     if (login.isEmpty || apiKey.isEmpty) {
       setState(() {
-        _statusMessage = 'Укажите логин и API ключ';
+        _statusMessage = isRu ? 'Укажите логин и API ключ' : 'Enter username and API key';
         _isSuccess = false;
       });
       return;
@@ -112,7 +113,9 @@ class _E621AuthDialogState extends State<E621AuthDialog> {
         setState(() {
           _isLoading = false;
           _isSuccess = true;
-          _statusMessage = 'Успешно авторизован! Лимит тегов снят.';
+          _statusMessage = isRu
+              ? 'Успешно авторизован! Лимит тегов снят.'
+              : 'Successfully authorized! Tag limit removed.';
         });
 
         await Future<void>.delayed(const Duration(milliseconds: 650));
@@ -121,8 +124,9 @@ class _E621AuthDialogState extends State<E621AuthDialog> {
         setState(() {
           _isLoading = false;
           _isSuccess = false;
-          _statusMessage =
-              'Ошибка проверки (код ${response.statusCode}). Проверьте логин и ключ.';
+          _statusMessage = isRu
+              ? 'Ошибка проверки (код ${response.statusCode}). Проверьте логин и ключ.'
+              : 'Verification error (status ${response.statusCode}). Check username and key.';
         });
       }
     } on DioException catch (e) {
@@ -130,18 +134,24 @@ class _E621AuthDialogState extends State<E621AuthDialog> {
         _isLoading = false;
         _isSuccess = false;
         if (e.response?.statusCode == 401) {
-          _statusMessage = 'Неверный логин или API-ключ (401 Unauthorized)';
+          _statusMessage = isRu
+              ? 'Неверный логин или API-ключ (401 Unauthorized)'
+              : 'Invalid username or API key (401 Unauthorized)';
         } else if (e.response?.statusCode == 403) {
-          _statusMessage = 'Доступ запрещен (403 Forbidden). Проверьте API access в профиле e621.';
+          _statusMessage = isRu
+              ? 'Доступ запрещен (403 Forbidden). Проверьте API access в профиле e621.'
+              : 'Access denied (403 Forbidden). Check API access in e621 profile.';
         } else {
-          _statusMessage = 'Ошибка подключения: ${e.message ?? e.toString()}';
+          _statusMessage = isRu
+              ? 'Ошибка подключения: ${e.message ?? e.toString()}'
+              : 'Connection error: ${e.message ?? e.toString()}';
         }
       });
     } catch (e) {
       setState(() {
         _isLoading = false;
         _isSuccess = false;
-        _statusMessage = 'Ошибка: $e';
+        _statusMessage = '${isRu ? 'Ошибка: ' : 'Error: '}$e';
       });
     }
   }
@@ -163,6 +173,7 @@ class _E621AuthDialogState extends State<E621AuthDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final currentLogin = widget.config.customHeaders['query.login'];
@@ -236,7 +247,7 @@ class _E621AuthDialogState extends State<E621AuthDialog> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Авторизация e621',
+                              isRu ? 'Авторизация e621' : 'e621 Authorization',
                               style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: -0.2,
@@ -244,8 +255,12 @@ class _E621AuthDialogState extends State<E621AuthDialog> {
                             ),
                             Text(
                               isAlreadyAuthorized
-                                  ? 'Вход выполнен как $currentLogin'
-                                  : 'Снятие ограничений поиска и функций',
+                                  ? (isRu
+                                      ? 'Вход выполнен как $currentLogin'
+                                      : 'Signed in as $currentLogin')
+                                  : (isRu
+                                      ? 'Снятие ограничений поиска и функций'
+                                      : 'Unlock search limits and features'),
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: isAlreadyAuthorized
                                     ? const Color(0xFF10B981)
@@ -278,22 +293,28 @@ class _E621AuthDialogState extends State<E621AuthDialog> {
                         color: const Color(0xFF0055AA).withValues(alpha: 0.25),
                       ),
                     ),
-                    child: const Column(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _BenefitRow(
                           icon: Icons.check_circle_outline_rounded,
-                          text: 'Снятие лимита в 2 тега (поиск по 4–6+ тегам)',
+                          text: isRu
+                              ? 'Снятие лимита в 2 тега (поиск по 4–6+ тегам)'
+                              : 'Remove 2-tag limit (search with 4-6+ tags)',
                         ),
-                        SizedBox(height: 6),
+                        const SizedBox(height: 6),
                         _BenefitRow(
                           icon: Icons.favorite_border_rounded,
-                          text: 'Серверная синхронизация Избранного (Favorites)',
+                          text: isRu
+                              ? 'Серверная синхронизация Избранного (Favorites)'
+                              : 'Server-side Favorites sync',
                         ),
-                        SizedBox(height: 6),
+                        const SizedBox(height: 6),
                         _BenefitRow(
                           icon: Icons.thumb_up_alt_outlined,
-                          text: 'Голосование за посты (Upvote / Downvote)',
+                          text: isRu
+                              ? 'Голосование за посты (Upvote / Downvote)'
+                              : 'Post voting (Upvote / Downvote)',
                         ),
                       ],
                     ),
@@ -305,7 +326,9 @@ class _E621AuthDialogState extends State<E621AuthDialog> {
                   TextField(
                     controller: _loginController,
                     decoration: InputDecoration(
-                      labelText: 'Имя пользователя (Username на e621)',
+                      labelText: isRu
+                          ? 'Имя пользователя (Username на e621)'
+                          : 'Username (on e621)',
                       prefixIcon: const Icon(Icons.person_outline_rounded),
                       filled: true,
                       fillColor: isDark
@@ -325,7 +348,7 @@ class _E621AuthDialogState extends State<E621AuthDialog> {
                     controller: _apiKeyController,
                     obscureText: _obscureKey,
                     decoration: InputDecoration(
-                      labelText: 'API Ключ (API Key)',
+                      labelText: isRu ? 'API Ключ (API Key)' : 'API Key',
                       prefixIcon: const Icon(Icons.key_rounded),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -360,9 +383,11 @@ class _E621AuthDialogState extends State<E621AuthDialog> {
                         );
                       },
                       icon: const Icon(Icons.open_in_new_rounded, size: 14),
-                      label: const Text(
-                        'Как получить ключ (e621 -> Manage API Access)',
-                        style: TextStyle(fontSize: 12),
+                      label: Text(
+                        isRu
+                            ? 'Как получить ключ (e621 -> Manage API Access)'
+                            : 'How to get API key (e621 -> Manage API Access)',
+                        style: const TextStyle(fontSize: 12),
                       ),
                       style: TextButton.styleFrom(
                         padding: EdgeInsets.zero,
@@ -426,8 +451,8 @@ class _E621AuthDialogState extends State<E621AuthDialog> {
                           onPressed: _isLoading ? null : _clearAuth,
                           icon: const Icon(Icons.logout_rounded,
                               size: 16, color: Color(0xFFEF4444)),
-                          label: const Text('Выйти',
-                              style: TextStyle(color: Color(0xFFEF4444))),
+                          label: Text(isRu ? 'Выйти' : 'Log out',
+                              style: const TextStyle(color: Color(0xFFEF4444))),
                         ),
                         const Spacer(),
                       ] else
@@ -444,7 +469,9 @@ class _E621AuthDialogState extends State<E621AuthDialog> {
                                 ),
                               )
                             : const Icon(Icons.check_rounded, size: 18),
-                        label: Text(_isLoading ? 'Проверка...' : 'Сохранить'),
+                        label: Text(_isLoading
+                            ? (isRu ? 'Проверка...' : 'Checking...')
+                            : (isRu ? 'Сохранить' : 'Save')),
                         style: FilledButton.styleFrom(
                           backgroundColor: const Color(0xFF0055AA),
                           shape: RoundedRectangleBorder(

@@ -27,4 +27,6 @@ enum TopPeriodFilter {
       TopPeriodFilter.allTime => 'За всё время',
     };
   }
+
+  String localizedLabel(bool isRu) => isRu ? labelRu : label;
 }

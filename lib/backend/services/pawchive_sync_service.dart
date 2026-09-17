@@ -74,7 +74,7 @@ class PawchiveSyncService {
     final cleanUser = username.trim();
     final cleanPass = password.trim();
     if (cleanUser.isEmpty || cleanPass.isEmpty) {
-      throw ArgumentError('Логин и пароль не могут быть пустыми');
+      throw ArgumentError('Username and password cannot be empty');
     }
 
     final normalizedBase = baseUrl.endsWith('/')
@@ -113,13 +113,14 @@ class PawchiveSyncService {
       }
 
       if (sessionValue == null || sessionValue.isEmpty) {
-        throw StateError('Не удалось получить сессию. Проверьте данные для входа.');
+        throw StateError(
+            'Could not retrieve session. Please check your credentials.');
       }
 
       // Check if redirect points back to login with flash error
       if (redirectLocation.contains('/account/login') ||
           redirectLocation.contains('/login')) {
-        throw StateError('Неверный логин или пароль');
+        throw StateError('Invalid username or password');
       }
 
       // Check for flash errors in session cookie if present
@@ -130,7 +131,7 @@ class PawchiveSyncService {
         final normalizedB64 = base64Url.normalize(payloadBase64);
         final decoded = utf8.decode(base64Url.decode(normalizedB64));
         if (decoded.contains('is incorrect') || decoded.contains('_flashes')) {
-          throw StateError('Неверный логин или пароль');
+          throw StateError('Invalid username or password');
         }
       } catch (e) {
         if (e is StateError) rethrow;
@@ -155,15 +156,15 @@ class PawchiveSyncService {
     } on DioException catch (e) {
       final code = e.response?.statusCode;
       if (code == 401 || code == 403) {
-        throw StateError('Неверный логин или пароль');
+        throw StateError('Invalid username or password');
       } else if (code != null) {
-        throw StateError('Ошибка сервера Pawchive (HTTP $code)');
+        throw StateError('Pawchive server error (HTTP $code)');
       } else {
-        throw StateError('Ошибка сети: ${e.message ?? e.type.name}');
+        throw StateError('Network error: ${e.message ?? e.type.name}');
       }
     } catch (e) {
       if (e is StateError || e is ArgumentError) rethrow;
-      throw StateError('Ошибка входа в Pawchive: $e');
+      throw StateError('Pawchive login failed: $e');
     }
   }
 
@@ -176,7 +177,7 @@ class PawchiveSyncService {
     final cleanUser = username.trim().isEmpty ? 'Pawchive User' : username.trim();
     final cleanCookie = _normalizeCookie(sessionCookie);
     if (cleanCookie.isEmpty) {
-      throw ArgumentError('Сессионная кука не может быть пустой');
+      throw ArgumentError('Session cookie cannot be empty');
     }
 
     final normalizedBase = baseUrl.endsWith('/')
@@ -202,15 +203,15 @@ class PawchiveSyncService {
     } on DioException catch (e) {
       final code = e.response?.statusCode;
       if (code == 401 || code == 403) {
-        throw StateError('Сессия недействительна или истекла');
+        throw StateError('Session is invalid or expired');
       } else if (code != null) {
-        throw StateError('Ошибка сервера Pawchive (HTTP $code)');
+        throw StateError('Pawchive server error (HTTP $code)');
       } else {
-        throw StateError('Ошибка сети: ${e.message ?? e.type.name}');
+        throw StateError('Network error: ${e.message ?? e.type.name}');
       }
     } catch (e) {
       if (e is StateError || e is ArgumentError) rethrow;
-      throw StateError('Сессия недействительна или истекла: $e');
+      throw StateError('Session is invalid or expired: $e');
     }
   }
 
@@ -231,17 +232,17 @@ class PawchiveSyncService {
         headers: {
           'Cookie': 'session=$cleanCookie',
           'Accept': 'application/json',
-          'User-Agent': 'Prisma/2.0.1 Flutter local booru browser',
+          'User-Agent': 'Prisma/3.8.4 Flutter local booru browser',
         },
         validateStatus: (status) => status != null && status < 500,
       ),
     );
 
     if (response.statusCode == 401 || response.statusCode == 403) {
-      throw StateError('Сессия истекла или недействительна');
+      throw StateError('Session expired or invalid');
     }
     if (response.statusCode != 200) {
-      throw StateError('Ошибка сервера Pawchive (HTTP ${response.statusCode})');
+      throw StateError('Pawchive server error (HTTP ${response.statusCode})');
     }
 
     final data = response.data;
@@ -457,7 +458,7 @@ class PawchiveSyncService {
         newlyAddedToLocal: 0,
         pushedToRemoteCount: 0,
         totalSyncedCount: 0,
-        errorMessage: 'Нет добавленных аккаунтов Pawchive',
+        errorMessage: 'No Pawchive accounts added',
       );
     }
 

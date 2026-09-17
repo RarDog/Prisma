@@ -48,8 +48,9 @@ class _FormattedContentTextState extends State<FormattedContentText> {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } catch (_) {
         if (mounted) {
+          final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Не удалось открыть ссылку: $url')),
+            SnackBar(content: Text(isRu ? 'Не удалось открыть ссылку: $url' : 'Could not open link: $url')),
           );
         }
       }
@@ -159,8 +160,9 @@ class CreatorLinkChips extends StatelessWidget {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } catch (_) {
         if (context.mounted) {
+          final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Не удалось открыть ссылку: $url')),
+            SnackBar(content: Text(isRu ? 'Не удалось открыть ссылку: $url' : 'Could not open link: $url')),
           );
         }
       }

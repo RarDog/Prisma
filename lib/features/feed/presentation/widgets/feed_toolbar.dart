@@ -77,6 +77,7 @@ class _FeedToolbarState extends State<FeedToolbar> {
   }
 
   Widget _buildDesktop(BuildContext context) {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final hasActiveFilters = widget.selectedProviderIds.isNotEmpty || widget.rating != null;
 
     return Padding(
@@ -110,7 +111,9 @@ class _FeedToolbarState extends State<FeedToolbar> {
               ),
               const SizedBox(width: 8),
               IconButton.filledTonal(
-                tooltip: widget.selectionMode ? 'Выйти из выбора (Esc)' : 'Выбрать посты (V)',
+                tooltip: widget.selectionMode
+                    ? (isRu ? 'Выйти из выбора (Esc)' : 'Exit selection (Esc)')
+                    : (isRu ? 'Выбрать посты (V)' : 'Select posts (V)'),
                 onPressed: widget.onToggleSelectionMode,
                 icon: Icon(widget.selectionMode
                     ? Icons.check_box_rounded
@@ -120,32 +123,32 @@ class _FeedToolbarState extends State<FeedToolbar> {
               Badge(
                 isLabelVisible: hasActiveFilters,
                 child: IconButton.filledTonal(
-                  tooltip: 'Провайдеры',
+                  tooltip: isRu ? 'Провайдеры' : 'Providers',
                   onPressed: widget.onProviderFilter,
                   icon: const Icon(Icons.hub_rounded),
                 ),
               ),
               const SizedBox(width: 4),
               IconButton.filledTonal(
-                tooltip: 'Рейтинг',
+                tooltip: isRu ? 'Рейтинг' : 'Rating',
                 onPressed: widget.onRatingFilter,
                 icon: const Icon(Icons.tune_rounded),
               ),
               const SizedBox(width: 4),
               IconButton(
-                tooltip: 'Очистить фильтры',
+                tooltip: isRu ? 'Очистить фильтры' : 'Clear filters',
                 onPressed: widget.onClearFilters,
                 icon: const Icon(Icons.filter_alt_off_rounded),
               ),
               const SizedBox(width: 4),
               IconButton(
-                tooltip: 'Обновить (Ctrl+R / F5)',
+                tooltip: isRu ? 'Обновить (Ctrl+R / F5)' : 'Refresh (Ctrl+R / F5)',
                 onPressed: widget.onRefresh,
                 icon: const Icon(Icons.refresh_rounded),
               ),
               const SizedBox(width: 4),
               IconButton.filledTonal(
-                tooltip: 'Случайный пост (R)',
+                tooltip: isRu ? 'Случайный пост (R)' : 'Random post (R)',
                 onPressed: widget.onRandom,
                 icon: const Icon(Icons.casino_rounded),
               ),
@@ -178,7 +181,7 @@ class _FeedToolbarState extends State<FeedToolbar> {
                 const SizedBox(width: 8),
                 if (widget.providers.isNotEmpty) ...[
                   _LiquidProviderPill(
-                    label: 'Все источники',
+                    label: isRu ? 'Все источники' : 'All sources',
                     isSelected: widget.selectedProviderIds.isEmpty,
                     icon: Icons.all_inclusive_rounded,
                     onTap: () => widget.onQuickProviderToggle('__all__'),
@@ -203,6 +206,7 @@ class _FeedToolbarState extends State<FeedToolbar> {
   }
 
   Widget _buildMobile(BuildContext context) {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final hasActiveFilters = widget.selectedProviderIds.isNotEmpty || widget.rating != null;
 
     return Padding(
@@ -239,7 +243,7 @@ class _FeedToolbarState extends State<FeedToolbar> {
                 isLabelVisible: hasActiveFilters,
                 child: IconButton.filledTonal(
                   visualDensity: VisualDensity.compact,
-                  tooltip: 'Фильтры',
+                  tooltip: isRu ? 'Фильтры' : 'Filters',
                   onPressed: widget.onProviderFilter,
                   icon: const Icon(Icons.tune_rounded, size: 20),
                 ),
@@ -247,14 +251,16 @@ class _FeedToolbarState extends State<FeedToolbar> {
               const SizedBox(width: 4),
               IconButton.filledTonal(
                 visualDensity: VisualDensity.compact,
-                tooltip: 'Случайный пост',
+                tooltip: isRu ? 'Случайный пост' : 'Random post',
                 onPressed: widget.onRandom,
                 icon: const Icon(Icons.casino_rounded, size: 20),
               ),
               const SizedBox(width: 4),
               IconButton.filledTonal(
                 visualDensity: VisualDensity.compact,
-                tooltip: widget.selectionMode ? 'Выйти из выбора' : 'Выбрать посты',
+                tooltip: widget.selectionMode
+                    ? (isRu ? 'Выйти из выбора' : 'Exit selection')
+                    : (isRu ? 'Выбрать посты' : 'Select posts'),
                 onPressed: widget.onToggleSelectionMode,
                 icon: Icon(
                   widget.selectionMode
@@ -285,7 +291,7 @@ class _FeedToolbarState extends State<FeedToolbar> {
               children: [
                 if (hasActiveFilters || widget.selectedTags.isNotEmpty) ...[
                   _LiquidProviderPill(
-                    label: 'Сбросить',
+                    label: isRu ? 'Сбросить' : 'Reset',
                     isSelected: false,
                     icon: Icons.filter_alt_off_rounded,
                     onTap: widget.onClearFilters,
@@ -293,7 +299,7 @@ class _FeedToolbarState extends State<FeedToolbar> {
                   const SizedBox(width: 6),
                 ],
                 _LiquidProviderPill(
-                  label: 'Обновить',
+                  label: isRu ? 'Обновить' : 'Refresh',
                   isSelected: false,
                   icon: Icons.refresh_rounded,
                   onTap: widget.onRefresh,
@@ -302,7 +308,7 @@ class _FeedToolbarState extends State<FeedToolbar> {
                 const _ToolbarDivider(),
                 const SizedBox(width: 6),
                 _LiquidProviderPill(
-                  label: widget.rating ?? 'Рейтинг',
+                  label: widget.rating ?? (isRu ? 'Рейтинг' : 'Rating'),
                   isSelected: widget.rating != null,
                   icon: Icons.shield_outlined,
                   onTap: widget.onRatingFilter,
@@ -319,7 +325,7 @@ class _FeedToolbarState extends State<FeedToolbar> {
                   const _ToolbarDivider(),
                   const SizedBox(width: 6),
                   _LiquidProviderPill(
-                    label: 'Все',
+                    label: isRu ? 'Все' : 'All',
                     isSelected: widget.selectedProviderIds.isEmpty,
                     icon: Icons.all_inclusive_rounded,
                     onTap: () => widget.onQuickProviderToggle('__all__'),
@@ -431,6 +437,7 @@ class _LiquidPeriodTabItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
@@ -479,7 +486,7 @@ class _LiquidPeriodTabItem extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               Text(
-                period.label,
+                period.localizedLabel(isRu),
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,

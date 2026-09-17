@@ -152,7 +152,7 @@ class BackupService {
       if (decoded is! Map<String, dynamic>) {
         return const Error(Failure(
           code: 'invalid_json',
-          message: 'Неверный формат JSON файла',
+          message: 'Invalid JSON file format',
         ));
       }
 
@@ -296,7 +296,7 @@ class BackupService {
     } catch (e) {
       return Error(Failure(
         code: 'import_error',
-        message: 'Ошибка импорта данных: $e',
+        message: 'Failed to import data: $e',
       ));
     }
   }
@@ -489,7 +489,7 @@ class BackupService {
     if (backupJson == null || backupJson.trim().isEmpty) {
       return const Error(Failure(
         code: 'not_found',
-        message: 'Файл автобэкапа не найден',
+        message: 'Auto-backup file not found',
       ));
     }
     return restoreFromJson(backupJson);

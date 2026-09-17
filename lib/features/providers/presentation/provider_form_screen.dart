@@ -587,10 +587,15 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
   }
 
   Future<void> _save() async {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final nameText = _name.text.trim();
     if (nameText.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Укажите название провайдера')),
+        SnackBar(
+          content: Text(
+            isRu ? 'Укажите название провайдера' : 'Enter provider name',
+          ),
+        ),
       );
       return;
     }

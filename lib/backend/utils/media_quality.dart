@@ -29,6 +29,13 @@ class MediaUrlSelector {
     MediaQualityMode mode = MediaQualityMode.auto,
     bool mobile = false,
   }) {
+    if (_isVideo(post)) {
+      return _compact([
+        if (!_looksLikeVideoUrl(post.previewUrl)) post.previewUrl,
+        if (!_looksLikeVideoUrl(post.sampleUrl)) post.sampleUrl,
+        post.previewUrl,
+      ]);
+    }
     return switch (mode) {
       MediaQualityMode.dataSaver => _compact([post.previewUrl, post.sampleUrl]),
       MediaQualityMode.highQuality =>
@@ -40,8 +47,18 @@ class MediaUrlSelector {
   }
 
   static List<String> preview(Post post) {
+    if (_isVideo(post)) {
+      return _compact([
+        if (!_looksLikeVideoUrl(post.previewUrl)) post.previewUrl,
+        if (!_looksLikeVideoUrl(post.sampleUrl)) post.sampleUrl,
+        if (!_looksLikeVideoUrl(post.fileUrl)) post.fileUrl,
+        post.previewUrl,
+      ]);
+    }
     return _compact([post.sampleUrl, post.previewUrl, post.fileUrl]);
   }
+
+  static bool looksLikeVideoUrl(String url) => _looksLikeVideoUrl(url);
 
   static List<String> details(
     Post post, {
