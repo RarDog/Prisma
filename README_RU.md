@@ -17,7 +17,7 @@
 <p align="center">
   <a href="https://github.com/RarDog/Prisma/releases"><img src="https://img.shields.io/github/v/release/RarDog/Prisma?style=flat-square&color=8A2BE2" alt="Релизы" /></a>
   <img src="https://img.shields.io/badge/Flutter-3.47+-02569B?style=flat-square&logo=flutter&logoColor=white" alt="Flutter" />
-  <img src="https://img.shields.io/badge/Платформы-Android%20%7C%20Linux%20%7C%20Windows-00C853?style=flat-square" alt="Платформы" />
+  <img src="https://img.shields.io/badge/Платформы-Android%20%7C%20Linux-00C853?style=flat-square" alt="Платформы" />
   <img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="Лицензия" />
 </p>
 
@@ -28,7 +28,7 @@
 - **📱 Удобная лента**: Masonry-сетка в стиле Pinterest, плитка 1:1 или компактный список.
 - **🎬 Умный медиаплеер**: Автоповорот на весь экран, жесты управления и плавное воспроизведение видео.
 - **🔍 Быстрый поиск**: Моментальные подсказки тегов (0 мс), оператор `and` и фильтры по рейтингу.
-- **🐾 Синхронизация с Pawchive**: Двусторонний обмен избранным с авторами Patreon, Fanbox, Fantia, Boosty и др.
+- **🐾 Синхронизация с Pawchive**: Двусторонний обмен избранным с авторами Patreon, Fanbox, Discord и др.
 - **💾 Офлайн и загрузки**: Сохранение медиа с гибкими шаблонами папок (`{Artist}/{ID}`).
 - **🛡️ Фильтрация контента**: Черный и белый списки по тегам, Safe Mode.
 - **🌑 AMOLED-тема**: Настоящий глубокий черный цвет для экономии батареи на OLED-экранах.
@@ -44,7 +44,7 @@
 | **Rule34** | Booru-контент, видео WebM / MP4, GIF |
 | **e621 / e926** | Фурри- и антро-арт с богатой системой тегов |
 | **Realbooru** | Фотосессии, косплей и реалистичный арт |
-| **Pawchive** | Архивы авторов (Patreon, Fanbox, Fantia, Boosty, Gumroad, Discord) |
+| **Pawchive** | Архивы авторов (Patreon, Fanbox, Discord) |
 
 ---
 
@@ -56,8 +56,9 @@
   - `app-arm64-v8a-release.apk` — для большинства современных смартфонов (64-bit).
   - `app-armeabi-v7a-release.apk` — для старых 32-bit устройств.
   - `app-x86_64-release.apk` — для эмуляторов и хромбуков.
-- **Десктоп**:
-  - Портативные сборки для Linux (`.AppImage`, `.tar.gz`) и Windows (`.zip`).
+- **Linux**:
+  - `Prisma-v4.0.0-linux-x86_64.AppImage` — портативный исполняемый файл AppImage.
+  - `Prisma-v4.0.0-linux-x64.tar.gz` — архив с бинарными файлами.
 
 ---
 
