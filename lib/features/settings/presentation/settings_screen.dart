@@ -2815,11 +2815,6 @@ class _HeroBrandBanner extends StatelessWidget {
             width: 68,
             height: 68,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFE84D8A), Color(0xFF8B5CF6)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
@@ -2829,10 +2824,29 @@ class _HeroBrandBanner extends StatelessWidget {
                 ),
               ],
             ),
-            child: const Icon(
-              Icons.brightness_3_rounded,
-              color: Colors.white,
-              size: 38,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Image.asset(
+                'assets/icon/app_icon.png',
+                width: 68,
+                height: 68,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFE84D8A), Color(0xFF8B5CF6)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Icon(
+                    Icons.palette_rounded,
+                    color: Colors.white,
+                    size: 38,
+                  ),
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 14),
