@@ -1,10 +1,18 @@
 <p align="center">
-  <strong>English</strong> • <a href="README_RU.md">Русский</a>
+  <a href="https://github.com/RarDog/Prisma">
+    <img src="assets/icon/app_icon_rounded.png" width="128" height="128" alt="Prisma Logo" />
+  </a>
 </p>
 
-# Prisma
+<h1 align="center">Prisma</h1>
 
-A clean, fast, and modern cross-platform client for Booru imageboards and creator archives (Pawchive).
+<p align="center">
+  <strong>A clean, fast, and modern cross-platform client for Booru imageboards and creator archives.</strong>
+</p>
+
+<p align="center">
+  <strong>English</strong> • <a href="README_RU.md">Русский</a>
+</p>
 
 <p align="center">
   <a href="https://github.com/RarDog/Prisma/releases"><img src="https://img.shields.io/github/v/release/RarDog/Prisma?style=flat-square&color=8A2BE2" alt="Releases" /></a>
@@ -49,7 +57,8 @@ Pre-built binaries are available on the **[Releases](https://github.com/RarDog/P
   - `app-armeabi-v7a-release.apk` — for older 32-bit Android devices.
   - `app-x86_64-release.apk` — for emulators and Chromebooks.
 - **Desktop**:
-  - Linux (`.tar.gz`) & Windows (`.zip`) portable builds.
+  - Linux (`.AppImage` portable & `.tar.gz` bundle).
+  - Windows (`.zip` portable).
 
 ---
 
