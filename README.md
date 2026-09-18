@@ -61,12 +61,12 @@ Pre-built binaries are available on the **[Releases](https://github.com/RarDog/P
   - `app-x86_64-release.apk` — for emulators and Chromebooks.
   - `app-release.apk` — universal fat APK for all Android devices.
 - **Linux**:
-  - `Prisma-v4.0.1-linux-x86_64.AppImage` — portable standalone executable.
-  - `Prisma-v4.0.1-linux-x64.tar.gz` — portable tarball bundle.
+  - `Prisma-v4.0.2-linux-x86_64.AppImage` — portable standalone executable.
+  - `Prisma-v4.0.2-linux-x64.tar.gz` — portable tarball bundle.
 - **Windows**:
-  - `Prisma-v4.0.1-windows-x64.zip` — portable standalone zip (x64).
+  - `Prisma-v4.0.2-windows-x64.zip` — portable standalone zip (x64).
 - **macOS**:
-  - `Prisma-v4.0.1-macos.zip` — portable app bundle (`Prisma.app`).
+  - `Prisma-v4.0.2-macos.zip` — portable app bundle (`Prisma.app`).
 
 ---
 

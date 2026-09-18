@@ -2304,8 +2304,21 @@ class _ZoomableImageState extends State<_ZoomableImage> {
                     child: Listener(
                       onPointerSignal: (event) {
                         if (event is PointerScrollEvent) {
-                          GestureBinding.instance.pointerSignalResolver
-                              .register(event, (_) {});
+                          final isZoomKey =
+                              HardwareKeyboard.instance.isControlPressed ||
+                                  HardwareKeyboard.instance.isMetaPressed;
+                          if (isZoomKey) {
+                            GestureBinding.instance.pointerSignalResolver
+                                .register(event, (_) {
+                              if (event.scrollDelta.dy < 0) {
+                                _zoomIn();
+                              } else if (event.scrollDelta.dy > 0) {
+                                _zoomOut();
+                              }
+                            });
+                          }
+                          // If Ctrl/Meta is not held, do NOT register any resolver.
+                          // This lets the event bubble up to the parent Scrollable / ListView.
                         }
                       },
                       child: child,

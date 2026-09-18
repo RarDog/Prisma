@@ -4,10 +4,10 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:gel_rule_app/features/settings/presentation/widgets/app_update_dialog.dart';
 import 'app_strings.dart';
 import 'motion.dart';
 import 'router.dart';
@@ -124,75 +124,11 @@ class _AppOverlayState extends ConsumerState<_AppOverlay> with WidgetsBindingObs
   }
 
   Future<void> _showUpdateDialog(AppUpdateInfo info) async {
-    final strings = ref.read(appStringsProvider);
-    await showDialog<void>(
+    await showAppUpdateDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('${strings.appUpdateAvailable}: Prisma ${info.version}'),
-        content: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(info.name),
-                if (info.body.trim().isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    info.body.trim(),
-                    maxLines: 12,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              await ref.read(updateServiceProvider).skipVersion(info);
-              if (context.mounted) Navigator.pop(context);
-            },
-            child: Text(strings.skipThisVersion),
-          ),
-          TextButton(
-            onPressed: () async {
-              await ref.read(updateServiceProvider).remindLater();
-              if (context.mounted) Navigator.pop(context);
-            },
-            child: Text(strings.later),
-          ),
-          FilledButton.icon(
-            onPressed: () async {
-              await _downloadUpdate(info);
-              if (context.mounted) Navigator.pop(context);
-            },
-            icon: const Icon(Icons.download_rounded),
-            label: Text(strings.downloadAndOpen),
-          ),
-        ],
-      ),
+      ref: ref,
+      info: info,
     );
-    ref.invalidate(appSettingsProvider);
-  }
-
-  Future<void> _downloadUpdate(AppUpdateInfo info) async {
-    final updateService = ref.read(updateServiceProvider);
-    final assetUrl = await updateService.assetUrlForCurrentPlatform(info);
-    if (assetUrl == null) {
-      final url = Uri.tryParse(info.htmlUrl);
-      if (url != null) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-      }
-      return;
-    }
-    await ref.read(downloadManagerServiceProvider).startUrl(
-          url: assetUrl,
-          fileName: updateService.assetFileName(info, assetUrl),
-          openAfterDownload: true,
-        );
   }
 
   @override

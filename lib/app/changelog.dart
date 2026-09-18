@@ -1,5 +1,20 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.0.2',
+    title: 'Автообновление для ПК, новый дизайн диалога обновлений и улучшение скролла',
+    titleEn: 'Desktop In-App Auto-Updates, Redesigned Update Dialog & Scroll Polish',
+    bullets: [
+      'Автоматическое обновление из приложения для ПК: бесшовная загрузка, замена старого файла и автоматический перезапуск для Linux AppImage, Windows (installer/portable) и macOS.',
+      'Новый дизайн диалога обновления: премиум-интерфейс для ПК и смартфонов с фирменным значком, градиентным бейджем версии, скроллируемым списком изменений и живым прогрессом загрузки.',
+      'Исправление скролла по фото: колесико мыши при наведении на изображение теперь плавно прокручивает страницу поста вниз и вверх, а масштабирование активируется при зажатом Ctrl/Cmd.',
+    ],
+    bulletsEn: [
+      'Desktop In-App Auto-Updates: seamless download, in-place binary replacement, and automated restart across Linux AppImage, Windows (installer/portable), and macOS.',
+      'Redesigned Update Dialog: modern responsive UI for desktop and mobile featuring branded app badge, scrollable changelog, and live download progress tracking.',
+      'Photo Scroll Fix: mouse wheel scroll over image posts now smoothly scrolls the parent page up and down, with zoom accessible via Ctrl/Cmd + wheel.',
+    ],
+  ),
+  PrismaChange(
     version: '4.0.1',
     title: 'Возвращение Safebooru, доработка бэкапов и обновлённое превью',
     titleEn: 'Safebooru Restoration, Backup System Overhaul & Updated Showcase',

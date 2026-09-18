@@ -11,8 +11,11 @@ class AppUpdateInfo {
     this.apkArmv7Url,
     this.apkX86_64Url,
     this.windowsInstallerUrl,
+    this.windowsZipUrl,
     this.portableZipUrl,
+    this.linuxAppImageUrl,
     this.linuxTarGzUrl,
+    this.macosZipUrl,
   });
 
   final String version;
@@ -31,8 +34,11 @@ class AppUpdateInfo {
   final String? apkX86_64Url;  // app-x86_64-release.apk
 
   final String? windowsInstallerUrl;
+  final String? windowsZipUrl;
   final String? portableZipUrl;
+  final String? linuxAppImageUrl;
   final String? linuxTarGzUrl;
+  final String? macosZipUrl;
 
   /// Returns the best APK URL for [abi], falling back to the generic APK.
   String? apkUrlForAbi(String abi) {
@@ -52,6 +58,9 @@ class AppUpdateInfo {
       apkArmv7Url != null ||
       apkX86_64Url != null ||
       windowsInstallerUrl != null ||
+      windowsZipUrl != null ||
       portableZipUrl != null ||
-      linuxTarGzUrl != null;
+      linuxAppImageUrl != null ||
+      linuxTarGzUrl != null ||
+      macosZipUrl != null;
 }

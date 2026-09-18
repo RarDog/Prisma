@@ -19,6 +19,7 @@ import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/shared/widgets/adaptive_scaffold.dart';
 import 'package:gel_rule_app/shared/widgets/error_view.dart';
 import 'package:gel_rule_app/features/artists/presentation/widgets/pawchive_accounts_sheet.dart';
+import 'package:gel_rule_app/features/settings/presentation/widgets/app_update_dialog.dart';
 import 'settings_controller.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -1667,64 +1668,12 @@ class _SettingsContentState extends ConsumerState<_SettingsContent> {
     WidgetRef ref,
     AppUpdateInfo info,
   ) async {
-    await showDialog<void>(
+    await showAppUpdateDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Prisma ${info.version} is available'),
-        content: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: SingleChildScrollView(
-            child: Text(
-              info.body.trim().isEmpty ? info.name : info.body.trim(),
-              maxLines: 14,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              await ref.read(updateServiceProvider).skipVersion(info);
-              if (context.mounted) Navigator.pop(context);
-            },
-            child: const Text('Skip this version'),
-          ),
-          TextButton(
-            onPressed: () async {
-              await ref.read(updateServiceProvider).remindLater();
-              if (context.mounted) Navigator.pop(context);
-            },
-            child: const Text('Later'),
-          ),
-          FilledButton.icon(
-            onPressed: () async {
-              await _downloadUpdate(ref, info);
-              if (context.mounted) Navigator.pop(context);
-            },
-            icon: const Icon(Icons.download_rounded),
-            label: const Text('Download & open'),
-          ),
-        ],
-      ),
+      ref: ref,
+      info: info,
     );
     ref.invalidate(settingsControllerProvider);
-  }
-
-  Future<void> _downloadUpdate(WidgetRef ref, AppUpdateInfo info) async {
-    final updateService = ref.read(updateServiceProvider);
-    final assetUrl = await updateService.assetUrlForCurrentPlatform(info);
-    if (assetUrl == null) {
-      final url = Uri.tryParse(info.htmlUrl);
-      if (url != null) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-      }
-      return;
-    }
-    await ref.read(downloadManagerServiceProvider).startUrl(
-          url: assetUrl,
-          fileName: updateService.assetFileName(info, assetUrl),
-          openAfterDownload: true,
-        );
   }
 
   Future<void> _showChangelog(BuildContext context) {

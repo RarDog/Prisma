@@ -61,12 +61,12 @@
   - `app-x86_64-release.apk` — для эмуляторов и хромбуков.
   - `app-release.apk` — универсальный APK для любых Android устройств.
 - **Linux**:
-  - `Prisma-v4.0.1-linux-x86_64.AppImage` — портативный исполняемый файл AppImage.
-  - `Prisma-v4.0.1-linux-x64.tar.gz` — архив с бинарными файлами.
+  - `Prisma-v4.0.2-linux-x86_64.AppImage` — портативный исполняемый файл AppImage.
+  - `Prisma-v4.0.2-linux-x64.tar.gz` — архив с бинарными файлами.
 - **Windows**:
-  - `Prisma-v4.0.1-windows-x64.zip` — портативный архив для Windows (x64).
+  - `Prisma-v4.0.2-windows-x64.zip` — портативный архив для Windows (x64).
 - **macOS**:
-  - `Prisma-v4.0.1-macos.zip` — портативный архив приложения (`Prisma.app`).
+  - `Prisma-v4.0.2-macos.zip` — портативный архив приложения (`Prisma.app`).
 
 ---
 
