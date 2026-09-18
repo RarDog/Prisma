@@ -1,14 +1,21 @@
 #!/usr/bin/env bash
 set -e
 
+export APPIMAGE_EXTRACT_AND_RUN=1
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 cd "${ROOT_DIR}"
 
-VERSION=$(grep 'version:' pubspec.yaml | head -n 1 | awk '{print $2}' | cut -d'+' -f1)
+if [ -n "$1" ]; then
+  VERSION="${1#v}"
+else
+  VERSION=$(grep 'version:' pubspec.yaml | head -n 1 | awk '{print $2}' | cut -d'+' -f1)
+fi
+
 if [ -z "$VERSION" ]; then
-  VERSION="3.5.5"
+  VERSION="4.0.1"
 fi
 
 echo "Building AppImage for Prisma v${VERSION}..."
