@@ -51,6 +51,7 @@ cat << 'EOF' > "${APP_DIR}/AppRun"
 HERE="$(dirname "$(readlink -f "${0}")")"
 export PATH="${HERE}/usr/bin:${PATH}"
 export LD_LIBRARY_PATH="${HERE}/lib:${HERE}/usr/lib:${LD_LIBRARY_PATH}"
+export XDG_DATA_DIRS="${HERE}/usr/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
 exec "${HERE}/gel_rule_app" "$@"
 EOF
 chmod +x "${APP_DIR}/AppRun"
@@ -74,14 +75,17 @@ cp "${APP_DIR}/prisma.desktop" "${APP_DIR}/usr/share/applications/prisma.desktop
 
 # Icons
 ICON_SRC="${ROOT_DIR}/macos/Runner/Assets.xcassets/AppIcon.appiconset"
+ROUNDED_ICON="${ROOT_DIR}/assets/icon/app_icon_rounded.png"
 if [ -d "${ICON_SRC}" ]; then
-  for size in 16 32 64 128 256 512 1024; do
+  for size in 16 24 32 48 64 128 256 512; do
     if [ -f "${ICON_SRC}/app_icon_${size}.png" ]; then
       mkdir -p "${APP_DIR}/usr/share/icons/hicolor/${size}x${size}/apps"
       cp "${ICON_SRC}/app_icon_${size}.png" "${APP_DIR}/usr/share/icons/hicolor/${size}x${size}/apps/prisma.png"
     fi
   done
-  cp "${ICON_SRC}/app_icon_512.png" "${APP_DIR}/prisma.png"
+  cp "${ROUNDED_ICON}" "${APP_DIR}/prisma.png"
+  cp "${ROUNDED_ICON}" "${APP_DIR}/.DirIcon"
+  cp "${ROUNDED_ICON}" "${BUNDLE_DIR}/prisma.png"
 fi
 
 # Build AppImage

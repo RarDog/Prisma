@@ -52,6 +52,26 @@ static void my_application_activate(GApplication* application) {
     gtk_window_set_title(window, "Prisma");
   }
 
+  gtk_window_set_default_icon_name("prisma");
+  gtk_window_set_icon_name(window, "prisma");
+
+  g_autofree gchar* exe_path = g_file_read_link("/proc/self/exe", nullptr);
+  if (exe_path != nullptr) {
+    g_autofree gchar* exe_dir = g_path_get_dirname(exe_path);
+    g_autofree gchar* icon_path = g_build_filename(exe_dir, "prisma.png", nullptr);
+    if (g_file_test(icon_path, G_FILE_TEST_EXISTS)) {
+      gtk_window_set_icon_from_file(window, icon_path, nullptr);
+      gtk_window_set_default_icon_from_file(icon_path, nullptr);
+    } else {
+      g_autofree gchar* asset_icon = g_build_filename(
+          exe_dir, "data", "flutter_assets", "assets", "icon", "app_icon_rounded.png", nullptr);
+      if (g_file_test(asset_icon, G_FILE_TEST_EXISTS)) {
+        gtk_window_set_icon_from_file(window, asset_icon, nullptr);
+        gtk_window_set_default_icon_from_file(asset_icon, nullptr);
+      }
+    }
+  }
+
   gtk_window_set_default_size(window, 1280, 720);
 
   g_autoptr(FlDartProject) project = fl_dart_project_new();
