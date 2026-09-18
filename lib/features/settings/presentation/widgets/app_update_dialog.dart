@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:gel_rule_app/app/app.dart';
 import 'package:gel_rule_app/backend/di/backend_providers.dart';
 import 'package:gel_rule_app/features/settings/models/app_update_info.dart';
@@ -89,6 +91,51 @@ class _AppUpdateDialogState extends ConsumerState<AppUpdateDialog> {
       _isDownloading = false;
       _statusText = null;
     });
+  }
+
+  String _getFormattedChangelog(String body, bool isRu) {
+    final trimmed = body.trim();
+    if (trimmed.isEmpty) {
+      return isRu
+          ? 'Улучшения стабильности и исправления ошибок.'
+          : 'Bug fixes and performance improvements.';
+    }
+
+    if (isRu && trimmed.contains('### 🇷🇺')) {
+      final ruIndex = trimmed.indexOf('### 🇷🇺');
+      final enIndex = trimmed.indexOf('### 🇬🇧');
+      final dlIndex = trimmed.indexOf('### 📦');
+
+      String ruText;
+      if (enIndex > ruIndex) {
+        ruText = trimmed.substring(ruIndex, enIndex).trim();
+        ruText = ruText.replaceFirst(RegExp(r'\s*---\s*$'), '');
+      } else {
+        ruText = trimmed.substring(ruIndex).trim();
+      }
+
+      if (dlIndex != -1) {
+        final dlText = trimmed.substring(dlIndex).trim();
+        return '$ruText\n\n---\n\n$dlText';
+      }
+      return ruText;
+    } else if (!isRu && trimmed.contains('### 🇬🇧')) {
+      final enIndex = trimmed.indexOf('### 🇬🇧');
+      final dlIndex = trimmed.indexOf('### 📦');
+
+      String enText;
+      if (dlIndex > enIndex) {
+        enText = trimmed.substring(enIndex, dlIndex).trim();
+        enText = enText.replaceFirst(RegExp(r'\s*---\s*$'), '');
+        final dlText = trimmed.substring(dlIndex).trim();
+        return '$enText\n\n---\n\n$dlText';
+      } else {
+        enText = trimmed.substring(enIndex).trim();
+        return enText;
+      }
+    }
+
+    return trimmed;
   }
 
   @override
@@ -259,15 +306,41 @@ class _AppUpdateDialogState extends ConsumerState<AppUpdateDialog> {
                           ),
                           const SizedBox(height: 8),
                         ],
-                        Text(
-                          widget.info.body.trim().isNotEmpty
-                              ? widget.info.body.trim()
-                              : (isRu
-                                  ? 'Улучшения стабильности и исправления ошибок.'
-                                  : 'Bug fixes and performance improvements.'),
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: scheme.onSurfaceVariant,
-                            height: 1.45,
+                        MarkdownBody(
+                          data: _getFormattedChangelog(widget.info.body, isRu),
+                          selectable: true,
+                          onTapLink: (text, href, title) {
+                            if (href != null) {
+                              launchUrl(
+                                Uri.parse(href),
+                                mode: LaunchMode.externalApplication,
+                              );
+                            }
+                          },
+                          styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+                            p: theme.textTheme.bodyMedium?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                              height: 1.45,
+                            ),
+                            h1: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: scheme.onSurface,
+                            ),
+                            h2: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: scheme.onSurface,
+                            ),
+                            h3: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: scheme.primary,
+                            ),
+                            h4: theme.textTheme.labelLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: scheme.onSurface,
+                            ),
+                            listBullet: theme.textTheme.bodyMedium?.copyWith(
+                              color: scheme.primary,
+                            ),
                           ),
                         ),
                       ],
@@ -339,40 +412,20 @@ class _AppUpdateDialogState extends ConsumerState<AppUpdateDialog> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
                       ),
                       child: Text(isRu ? 'Отмена' : 'Cancel'),
                     ),
                   ],
                 )
               else
-                Row(
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    TextButton(
-                      onPressed: () async {
-                        await ref
-                            .read(updateServiceProvider)
-                            .skipVersion(widget.info);
-                        if (context.mounted) Navigator.pop(context);
-                      },
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                      ),
-                      child: Text(
-                        strings.skipThisVersion,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: scheme.outline,
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
-                    TextButton(
-                      onPressed: () async {
-                        await ref.read(updateServiceProvider).remindLater();
-                        if (context.mounted) Navigator.pop(context);
-                      },
-                      child: Text(strings.later),
-                    ),
-                    const SizedBox(width: 8),
                     FilledButton.icon(
                       onPressed: _startUpdate,
                       style: FilledButton.styleFrom(
@@ -381,17 +434,51 @@ class _AppUpdateDialogState extends ConsumerState<AppUpdateDialog> {
                         ),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16,
-                          vertical: 12,
+                          vertical: 14,
                         ),
                       ),
-                      icon: const Icon(Icons.auto_awesome_rounded, size: 18),
+                      icon: const Icon(Icons.auto_awesome_rounded, size: 20),
                       label: Text(
                         Platform.isAndroid
                             ? (isRu ? 'Скачать и установить' : 'Download & Install')
                             : (isRu
                                 ? 'Обновить и перезапустить'
                                 : 'Update & Restart'),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        TextButton(
+                          onPressed: () async {
+                            await ref
+                                .read(updateServiceProvider)
+                                .skipVersion(widget.info);
+                            if (context.mounted) Navigator.pop(context);
+                          },
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                          ),
+                          child: Text(
+                            strings.skipThisVersion,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: scheme.outline,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () async {
+                            await ref.read(updateServiceProvider).remindLater();
+                            if (context.mounted) Navigator.pop(context);
+                          },
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                          ),
+                          child: Text(strings.later),
+                        ),
+                      ],
                     ),
                   ],
                 ),

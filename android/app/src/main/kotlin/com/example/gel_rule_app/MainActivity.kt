@@ -129,7 +129,7 @@ class MainActivity : FlutterActivity() {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        startActivity(Intent.createChooser(intent, "Open update"))
+        startActivity(intent)
     }
 
     private fun supportedRefreshRates(): List<Double> {

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'package:gel_rule_app/app/app_version.dart';
 import 'package:gel_rule_app/core/errors/failure.dart';
@@ -280,7 +281,13 @@ class UpdateService {
     }
 
     final fileName = assetFileName(info, assetUrl);
-    final tempDir = await Directory.systemTemp.createTemp('prisma_update_');
+    Directory baseTempDir;
+    try {
+      baseTempDir = await getTemporaryDirectory();
+    } catch (_) {
+      baseTempDir = Directory.systemTemp;
+    }
+    final tempDir = await baseTempDir.createTemp('prisma_update_');
     final targetPath = '${tempDir.path}${Platform.pathSeparator}$fileName';
 
     onProgress(0.0, 'Начало загрузки...');
