@@ -37,7 +37,7 @@ jobs:
         shell: pwsh
         run: |
           $tag = "${{ github.ref_name }}"
-          if (-not $tag) { $tag = "v4.0.1" }
+          if (-not $tag) { $tag = "v4.0.3" }
           $zipName = "Prisma-$tag-windows-x64.zip"
           Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath $zipName
           echo "ZIP_NAME=$zipName" >> $env:GITHUB_ENV
@@ -82,7 +82,7 @@ jobs:
       - name: Package macOS Zip
         run: |
           TAG="${{ github.ref_name }}"
-          if [ -z "$TAG" ]; then TAG="v4.0.1"; fi
+          if [ -z "$TAG" ]; then TAG="v4.0.3"; fi
           ZIP_NAME="Prisma-$TAG-macos.zip"
           cd build/macos/Build/Products/Release
           zip -r -y "$GITHUB_WORKSPACE/$ZIP_NAME" Prisma.app
@@ -125,28 +125,26 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Build Android Release APK
-        run: flutter build apk --release
+      - name: Build Android Release Split APKs
+        run: flutter build apk --release --split-per-abi
 
-      - name: Package Android Artifact
-        run: |
-          TAG="${{ github.ref_name }}"
-          if [ -z "$TAG" ]; then TAG="v4.0.1"; fi
-          APK_NAME="Prisma-$TAG-android.apk"
-          cp build/app/outputs/flutter-apk/app-release.apk "$APK_NAME"
-          echo "APK_NAME=$APK_NAME" >> $GITHUB_ENV
-
-      - name: Upload Android Artifact
+      - name: Upload Android Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Prisma-android
-          path: ${{ env.APK_NAME }}
+          name: Prisma-android-split-apks
+          path: |
+            build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+            build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+            build/app/outputs/flutter-apk/app-x86_64-release.apk
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: ${{ env.APK_NAME }}
+          files: |
+            build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+            build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+            build/app/outputs/flutter-apk/app-x86_64-release.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -181,7 +179,7 @@ jobs:
       - name: Package Linux AppImage & Tarball
         run: |
           TAG="${{ github.ref_name }}"
-          if [ -z "$TAG" ]; then TAG="v4.0.1"; fi
+          if [ -z "$TAG" ]; then TAG="v4.0.3"; fi
           chmod +x installer/build_linux_appimage.sh
           ./installer/build_linux_appimage.sh "$TAG"
 

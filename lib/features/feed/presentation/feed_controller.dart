@@ -252,6 +252,7 @@ class FeedController extends AsyncNotifier<FeedState> {
           lastFeedTags: [],
           lastFeedProviderIds: [],
           clearLastFeedRating: true,
+          clearDefaultRatingFilter: true,
           lastFeedTopPeriod: TopPeriodFilter.none.name,
           lastFeedScrollOffset: 0,
         ));
@@ -283,6 +284,9 @@ class FeedController extends AsyncNotifier<FeedState> {
             lastFeedTags: current.selectedTags,
             lastFeedProviderIds: current.selectedProviderIds,
             lastFeedRating: current.ratingFilter,
+            clearLastFeedRating: current.ratingFilter == null,
+            defaultRatingFilter: current.ratingFilter,
+            clearDefaultRatingFilter: current.ratingFilter == null,
             lastFeedTopPeriod: current.topPeriodFilter.name,
             lastFeedScrollOffset: scrollOffset ?? settings.lastFeedScrollOffset,
           ),

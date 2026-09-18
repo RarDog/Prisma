@@ -15,6 +15,7 @@ import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/shared/widgets/adaptive_scaffold.dart';
 import 'package:gel_rule_app/shared/widgets/empty_view.dart';
 import 'package:gel_rule_app/shared/widgets/error_view.dart';
+import 'package:gel_rule_app/shared/widgets/keyboard_shortcut_utils.dart';
 import 'package:gel_rule_app/shared/widgets/post_card.dart';
 import 'package:gel_rule_app/shared/widgets/post_masonry_grid.dart';
 import 'package:gel_rule_app/features/collections/presentation/collection_form_dialog.dart';
@@ -157,13 +158,13 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
       },
       child: Actions(
         actions: {
-          _RefreshIntent: CallbackAction<_RefreshIntent>(
+          _RefreshIntent: NonTextInputAction<_RefreshIntent>(
             onInvoke: (_) {
               ref.read(feedControllerProvider.notifier).refresh();
               return null;
             },
           ),
-          _RandomPostIntent: CallbackAction<_RandomPostIntent>(
+          _RandomPostIntent: NonTextInputAction<_RandomPostIntent>(
             onInvoke: (_) {
               final posts = feed.value?.posts;
               if (posts != null && posts.isNotEmpty) {
@@ -172,7 +173,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
               return null;
             },
           ),
-          _ToggleSelectionIntent: CallbackAction<_ToggleSelectionIntent>(
+          _ToggleSelectionIntent: NonTextInputAction<_ToggleSelectionIntent>(
             onInvoke: (_) {
               setState(() {
                 _selectionMode = !_selectionMode;
@@ -181,13 +182,13 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
               return null;
             },
           ),
-          _ClearSelectionIntent: CallbackAction<_ClearSelectionIntent>(
+          _ClearSelectionIntent: NonTextInputAction<_ClearSelectionIntent>(
             onInvoke: (_) {
               _clearSelection();
               return null;
             },
           ),
-          _SelectVisibleIntent: CallbackAction<_SelectVisibleIntent>(
+          _SelectVisibleIntent: NonTextInputAction<_SelectVisibleIntent>(
             onInvoke: (_) {
               final state = feed.value;
               if (state != null) {
@@ -318,11 +319,13 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                     }
                   },
                   onRatingFilter: () async {
-                    final rating = await showRatingFilterSheet(
+                    final result = await showRatingFilterSheet(
                         context, state.ratingFilter);
-                    await ref
-                        .read(feedControllerProvider.notifier)
-                        .setRating(rating);
+                    if (result != null) {
+                      await ref
+                          .read(feedControllerProvider.notifier)
+                          .setRating(result.rating);
+                    }
                   },
                 ),
                 Expanded(

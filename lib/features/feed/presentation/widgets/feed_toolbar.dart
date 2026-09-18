@@ -674,8 +674,14 @@ Future<List<String>?> showProviderFilterSheet(
   );
 }
 
-Future<String?> showRatingFilterSheet(BuildContext context, String? selected) {
-  return showModalBottomSheet<String?>(
+class RatingFilterResult {
+  const RatingFilterResult(this.rating);
+  final String? rating;
+}
+
+Future<RatingFilterResult?> showRatingFilterSheet(
+    BuildContext context, String? selected) {
+  return showModalBottomSheet<RatingFilterResult?>(
     context: context,
     showDragHandle: true,
     builder: (context) => ListView(
@@ -689,7 +695,7 @@ Future<String?> showRatingFilterSheet(BuildContext context, String? selected) {
                 : Icons.radio_button_off_rounded,
           ),
           title: const Text('Any'),
-          onTap: () => Navigator.pop(context, null),
+          onTap: () => Navigator.pop(context, const RatingFilterResult(null)),
         ),
         for (final rating in ['safe', 'questionable', 'explicit'])
           ListTile(
@@ -699,7 +705,7 @@ Future<String?> showRatingFilterSheet(BuildContext context, String? selected) {
                   : Icons.radio_button_off_rounded,
             ),
             title: Text(rating),
-            onTap: () => Navigator.pop(context, rating),
+            onTap: () => Navigator.pop(context, RatingFilterResult(rating)),
           ),
       ],
     ),

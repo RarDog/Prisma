@@ -214,6 +214,7 @@ class AppSettings {
     String? skippedUpdateVersion,
     String? lastUpdateCheckAt,
     String? defaultRatingFilter,
+    bool clearDefaultRatingFilter = false,
     String? lastFeedRating,
     bool clearLastFeedRating = false,
     List<String>? favoriteArtists,
@@ -280,7 +281,9 @@ class AppSettings {
       lastFeedScrollOffset: lastFeedScrollOffset ?? this.lastFeedScrollOffset,
       skippedUpdateVersion: skippedUpdateVersion ?? this.skippedUpdateVersion,
       lastUpdateCheckAt: lastUpdateCheckAt ?? this.lastUpdateCheckAt,
-      defaultRatingFilter: defaultRatingFilter ?? this.defaultRatingFilter,
+      defaultRatingFilter: clearDefaultRatingFilter
+          ? null
+          : defaultRatingFilter ?? this.defaultRatingFilter,
       lastFeedRating:
           clearLastFeedRating ? null : lastFeedRating ?? this.lastFeedRating,
       amoledMode: amoledMode ?? this.amoledMode,

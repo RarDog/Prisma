@@ -18,6 +18,7 @@ import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/shared/widgets/adaptive_scaffold.dart';
 import 'package:gel_rule_app/shared/widgets/empty_view.dart';
 import 'package:gel_rule_app/shared/widgets/error_view.dart';
+import 'package:gel_rule_app/shared/widgets/keyboard_shortcut_utils.dart';
 import 'package:gel_rule_app/shared/widgets/post_card.dart';
 import 'package:gel_rule_app/shared/widgets/rating_badge.dart';
 import 'package:gel_rule_app/features/collections/presentation/collection_form_dialog.dart';
@@ -110,7 +111,7 @@ final artistPostsProvider =
   return result.data;
 });
 
-class PostDetailsScreen extends ConsumerWidget {
+class PostDetailsScreen extends ConsumerStatefulWidget {
   const PostDetailsScreen({
     required this.providerId,
     required this.postId,
@@ -125,30 +126,71 @@ class PostDetailsScreen extends ConsumerWidget {
   final List<Post>? postsList;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PostDetailsScreen> createState() => _PostDetailsScreenState();
+}
+
+class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
+  late String _activeProviderId;
+  late String _activePostId;
+  Post? _activePost;
+
+  @override
+  void initState() {
+    super.initState();
+    _activeProviderId = widget.providerId;
+    _activePostId = widget.postId;
+    _activePost = widget.initialPost;
+  }
+
+  @override
+  void didUpdateWidget(covariant PostDetailsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.providerId != widget.providerId ||
+        oldWidget.postId != widget.postId) {
+      _activeProviderId = widget.providerId;
+      _activePostId = widget.postId;
+      _activePost = widget.initialPost;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final args = PostDetailsArgs(
-      providerId: providerId,
-      postId: postId,
-      initialPost: initialPost,
+      providerId: _activeProviderId,
+      postId: _activePostId,
+      initialPost: _activePost,
     );
     final post = ref.watch(postDetailsControllerProvider(args));
     final settings =
         ref.watch(appSettingsProvider).value ?? AppSettings.defaults;
     final strings = ref.watch(appStringsProvider);
-    final feedPosts = postsList ??
+    final feedPosts = widget.postsList ??
         ref.watch(feedControllerProvider).value?.posts ??
         const <Post>[];
     final favoriteKeys = ref.watch(favoriteKeysProvider).value ?? <String>{};
+    final isFullscreen = ref.watch(isFullscreenViewerActiveProvider);
     return AdaptiveScaffold(
       title: strings.post,
       actions: [
+        IconButton(
+          tooltip: strings.fullscreen,
+          onPressed: () => _openFullscreen(
+            context,
+            post.valueOrNull ?? _activePost,
+            feedPosts,
+          ),
+          icon: const Icon(Icons.fullscreen_rounded),
+        ),
         IconButton(
           tooltip: strings.close,
           onPressed: () => _close(context),
           icon: const Icon(Icons.close_rounded),
         ),
       ],
-      body: post.when(
+      body: Offstage(
+        key: const ValueKey('post_details_offstage'),
+        offstage: isFullscreen,
+        child: post.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => ErrorView(message: error.toString()),
         data: (post) {
@@ -208,8 +250,12 @@ class PostDetailsScreen extends ConsumerWidget {
               return _MobilePostPager(
                 posts: feedPosts,
                 initialIndex: currentIndex,
+                onLoadMore: () =>
+                    ref.read(feedControllerProvider.notifier).loadNextPage(),
+                onPageChanged: (idx) =>
+                    _handlePagerPageChanged(idx, feedPosts),
                 buildDetails: (context, post, mediaGestureLocked,
-                        onMediaGestureLockChanged) =>
+                        onMediaGestureLockChanged, onPostIndexChanged, isActive) =>
                     _buildMobileDetails(
                   context,
                   ref,
@@ -221,6 +267,8 @@ class PostDetailsScreen extends ConsumerWidget {
                   mediaGestureLocked,
                   onMediaGestureLockChanged,
                   feedPosts,
+                  onPostIndexChanged,
+                  isActive,
                 ),
               );
             }
@@ -258,37 +306,37 @@ class PostDetailsScreen extends ConsumerWidget {
             },
             child: Actions(
               actions: {
-                _PreviousPostIntent: CallbackAction<_PreviousPostIntent>(
+                _PreviousPostIntent: NonTextInputAction<_PreviousPostIntent>(
                   onInvoke: (_) {
                     if (previous != null) _openPost(context, previous);
                     return null;
                   },
                 ),
-                _NextPostIntent: CallbackAction<_NextPostIntent>(
+                _NextPostIntent: NonTextInputAction<_NextPostIntent>(
                   onInvoke: (_) {
                     if (next != null) _openPost(context, next);
                     return null;
                   },
                 ),
-                _ToggleFavoriteIntent: CallbackAction<_ToggleFavoriteIntent>(
+                _ToggleFavoriteIntent: NonTextInputAction<_ToggleFavoriteIntent>(
                   onInvoke: (_) {
                     _toggleFavorite(ref, post, favoriteKeys);
                     return null;
                   },
                 ),
-                _AddCollectionIntent: CallbackAction<_AddCollectionIntent>(
+                _AddCollectionIntent: NonTextInputAction<_AddCollectionIntent>(
                   onInvoke: (_) {
                     _addToCollection(context, ref, post);
                     return null;
                   },
                 ),
-                _CloseIntent: CallbackAction<_CloseIntent>(
+                _CloseIntent: NonTextInputAction<_CloseIntent>(
                   onInvoke: (_) {
                     _close(context);
                     return null;
                   },
                 ),
-                _DownloadIntent: CallbackAction<_DownloadIntent>(
+                _DownloadIntent: NonTextInputAction<_DownloadIntent>(
                   onInvoke: (_) {
                     if (settings.allowDownloads) {
                       _download(context, ref, post);
@@ -335,6 +383,25 @@ class PostDetailsScreen extends ConsumerWidget {
                                       child: PostMediaViewer(
                                         key: ValueKey(post.cacheKey),
                                         post: post,
+                                        postsList: feedPosts,
+                                        onLoadMore: () => ref
+                                            .read(feedControllerProvider.notifier)
+                                            .loadNextPage(),
+                                        onPostIndexChanged: (index) {
+                                          final currentPosts = ref
+                                                  .read(feedControllerProvider)
+                                                  .value
+                                                  ?.posts ??
+                                              feedPosts;
+                                          if (index >= 0 &&
+                                              index < currentPosts.length) {
+                                            final target = currentPosts[index];
+                                            if (target.cacheKey !=
+                                                post.cacheKey) {
+                                              _openPost(context, target);
+                                            }
+                                          }
+                                        },
                                         localFilePath: localMedia?.savedPath,
                                         qualityMode: qualityMode,
                                         notes: notes,
@@ -370,6 +437,25 @@ class PostDetailsScreen extends ConsumerWidget {
                                     child: PostMediaViewer(
                                       key: ValueKey(post.cacheKey),
                                       post: post,
+                                      postsList: feedPosts,
+                                      onLoadMore: () => ref
+                                          .read(feedControllerProvider.notifier)
+                                          .loadNextPage(),
+                                      onPostIndexChanged: (index) {
+                                        final currentPosts = ref
+                                                .read(feedControllerProvider)
+                                                .value
+                                                ?.posts ??
+                                            feedPosts;
+                                        if (index >= 0 &&
+                                            index < currentPosts.length) {
+                                          final target = currentPosts[index];
+                                          if (target.cacheKey !=
+                                              post.cacheKey) {
+                                            _openPost(context, target);
+                                          }
+                                        }
+                                      },
                                       localFilePath: localMedia?.savedPath,
                                       qualityMode: qualityMode,
                                       notes: notes,
@@ -556,6 +642,7 @@ class PostDetailsScreen extends ConsumerWidget {
           );
         },
       ),
+      ),
     );
   }
 
@@ -570,6 +657,8 @@ class PostDetailsScreen extends ConsumerWidget {
     bool mediaGestureLocked,
     ValueChanged<bool>? onMediaGestureLockChanged, [
     List<Post>? feedPosts,
+    ValueChanged<int>? onPostIndexChanged,
+    bool isActive = true,
   ]) {
     final isVideo = MediaUrlSelector.isVideo(post);
     final isAudio = MediaUrlSelector.isAudio(post);
@@ -646,6 +735,12 @@ class PostDetailsScreen extends ConsumerWidget {
                         child: PostMediaViewer(
                           key: ValueKey(post.cacheKey),
                           post: post,
+                          isActive: isActive,
+                          postsList: feedPosts,
+                          onLoadMore: () => ref
+                              .read(feedControllerProvider.notifier)
+                              .loadNextPage(),
+                          onPostIndexChanged: onPostIndexChanged,
                           localFilePath: localMedia?.savedPath,
                           qualityMode: qualityMode,
                           notes: notes,
@@ -683,6 +778,12 @@ class PostDetailsScreen extends ConsumerWidget {
                     child: PostMediaViewer(
                       key: ValueKey(post.cacheKey),
                       post: post,
+                      isActive: isActive,
+                      postsList: feedPosts,
+                      onLoadMore: () => ref
+                          .read(feedControllerProvider.notifier)
+                          .loadNextPage(),
+                      onPostIndexChanged: onPostIndexChanged,
                       localFilePath: localMedia?.savedPath,
                       qualityMode: qualityMode,
                       notes: notes,
@@ -1142,7 +1243,73 @@ class PostDetailsScreen extends ConsumerWidget {
   }
 
   void _openPost(BuildContext context, Post post) {
-    _replacePost(context, post);
+    if (_activePostId == post.id && _activeProviderId == post.providerId) return;
+    setState(() {
+      _activeProviderId = post.providerId;
+      _activePostId = post.id;
+      _activePost = post;
+    });
+    ref.read(viewedHistoryServiceProvider).markViewed(post);
+    ref.invalidate(viewedKeysProvider);
+    ref.invalidate(viewedControllerProvider);
+  }
+
+  void _handlePagerPageChanged(int index, List<Post> feedPosts) {
+    if (index >= 0 && index < feedPosts.length) {
+      final newPost = feedPosts[index];
+      if (_activePostId != newPost.id || _activeProviderId != newPost.providerId) {
+        setState(() {
+          _activeProviderId = newPost.providerId;
+          _activePostId = newPost.id;
+          _activePost = newPost;
+        });
+        ref.read(viewedHistoryServiceProvider).markViewed(newPost);
+        ref.invalidate(viewedKeysProvider);
+        ref.invalidate(viewedControllerProvider);
+      }
+    }
+  }
+
+  Future<void> _openFullscreen(
+    BuildContext context,
+    Post? post,
+    List<Post> feedPosts,
+  ) async {
+    final targetPost = post ?? _activePost;
+    if (targetPost == null) return;
+    final settings =
+        ref.read(appSettingsProvider).value ?? AppSettings.defaults;
+    final qualityMode =
+        MediaQualityMode.fromName(settings.mediaQualityMode);
+    final notes = ref
+            .read(postNotesProvider(PostDetailsArgs(
+              providerId: targetPost.providerId,
+              postId: targetPost.id,
+            )))
+            .value ??
+        const [];
+    final showNotes = ref.read(showPostNotesProvider(targetPost.cacheKey));
+    final localMedia =
+        ref.read(downloadedMediaByKeyProvider(targetPost.cacheKey)).value;
+
+    await openPostFullscreenGallery(
+      context: context,
+      ref: ref,
+      post: targetPost,
+      postsList: feedPosts.isNotEmpty ? feedPosts : [targetPost],
+      qualityMode: qualityMode,
+      notes: notes,
+      showNotes: showNotes,
+      localFilePath: localMedia?.savedPath,
+      onPostChanged: (index) {
+        if (index >= 0 && index < feedPosts.length) {
+          final newPost = feedPosts[index];
+          _openPost(context, newPost);
+        }
+      },
+      onLoadMore: () =>
+          ref.read(feedControllerProvider.notifier).loadNextPage(),
+    );
   }
 
   void _openSimilar(BuildContext context, WidgetRef ref, Post post) {
@@ -1159,19 +1326,6 @@ class PostDetailsScreen extends ConsumerWidget {
     }
     if (url == null || url.isEmpty) return;
     await launchUrl(Uri.parse(url));
-  }
-
-  void _replacePost(BuildContext context, Post post) {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(
-        builder: (ctx) => PostDetailsScreen(
-          providerId: post.providerId,
-          postId: post.id,
-          initialPost: post,
-          postsList: postsList,
-        ),
-      ),
-    );
   }
 
   void _close(BuildContext context) {
@@ -1226,6 +1380,8 @@ class _MobilePostPager extends StatefulWidget {
     required this.posts,
     required this.initialIndex,
     required this.buildDetails,
+    this.onLoadMore,
+    this.onPageChanged,
   });
 
   final List<Post> posts;
@@ -1235,7 +1391,11 @@ class _MobilePostPager extends StatefulWidget {
     Post post,
     bool mediaGestureLocked,
     ValueChanged<bool> onMediaGestureLockChanged,
+    ValueChanged<int>? onPostIndexChanged,
+    bool isActive,
   ) buildDetails;
+  final VoidCallback? onLoadMore;
+  final ValueChanged<int>? onPageChanged;
 
   @override
   State<_MobilePostPager> createState() => _MobilePostPagerState();
@@ -1251,17 +1411,35 @@ class _MobilePostPagerState extends State<_MobilePostPager> {
     super.initState();
     _currentPage = widget.initialIndex;
     _controller = PageController(initialPage: widget.initialIndex);
+    _controller.addListener(_handleScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _prefetchAround(widget.initialIndex);
     });
   }
 
+  void _handleScroll() {
+    if (!_controller.hasClients || _controller.page == null) return;
+    final page = _controller.page!;
+    final rounded = page.round();
+    if ((page - _currentPage).abs() > 0.35 && rounded != _currentPage) {
+      if (mounted) {
+        setState(() {
+          _currentPage = rounded;
+        });
+      }
+    }
+  }
+
   @override
   void didUpdateWidget(covariant _MobilePostPager oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.posts.length != widget.posts.length) {
+      setState(() {});
+    }
     if (oldWidget.initialIndex != widget.initialIndex &&
         widget.initialIndex >= 0 &&
-        widget.initialIndex < widget.posts.length) {
+        widget.initialIndex < widget.posts.length &&
+        widget.initialIndex != _currentPage) {
       _currentPage = widget.initialIndex;
       if (_controller.hasClients) {
         _controller.jumpToPage(widget.initialIndex);
@@ -1274,6 +1452,7 @@ class _MobilePostPagerState extends State<_MobilePostPager> {
 
   @override
   void dispose() {
+    _controller.removeListener(_handleScroll);
     _controller.dispose();
     super.dispose();
   }
@@ -1298,6 +1477,10 @@ class _MobilePostPagerState extends State<_MobilePostPager> {
         onPageChanged: (index) {
           setState(() => _currentPage = index);
           _prefetchAround(index);
+          widget.onPageChanged?.call(index);
+          if (widget.onLoadMore != null && index >= widget.posts.length - 2) {
+            widget.onLoadMore!();
+          }
         },
         itemBuilder: (context, index) {
           final initialPost = widget.posts[index];
@@ -1320,6 +1503,21 @@ class _MobilePostPagerState extends State<_MobilePostPager> {
                     resolvedPost ?? initialPost,
                     _mediaGestureLocked,
                     _setMediaGestureLocked,
+                    (newIndex) {
+                      if (newIndex >= 0 &&
+                          newIndex < widget.posts.length &&
+                          newIndex != _currentPage) {
+                        _currentPage = newIndex;
+                        if (_controller.hasClients) {
+                          _controller.jumpToPage(newIndex);
+                        }
+                        _prefetchAround(newIndex);
+                        ref
+                            .read(viewedHistoryServiceProvider)
+                            .markViewed(widget.posts[newIndex]);
+                      }
+                    },
+                    index == _currentPage,
                   ),
                 ),
               ),

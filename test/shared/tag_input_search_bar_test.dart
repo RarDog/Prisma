@@ -1,4 +1,6 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/shared/widgets/app_search_bar.dart';
@@ -455,6 +457,108 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('genshin'), findsNothing);
+  });
+
+  testWidgets('Escape key hides suggestions first, then unfocuses', (tester) async {
+    await tester.pumpWidget(_Harness(
+      child: TagInputSearchBar(
+        suggestions: const [
+          TagSuggestion(
+            name: 'genshin',
+            category: TagCategory.copyright,
+            postCount: 100,
+            providerId: 'test',
+          ),
+        ],
+        onSubmitted: (_) {},
+      ),
+    ));
+
+    await tester.tap(find.byType(TextField));
+    await tester.enterText(find.byType(TextField), 'gen');
+    await tester.pumpAndSettle();
+
+    expect(find.text('genshin'), findsOneWidget);
+
+    // Press Escape - should hide suggestions
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+
+    expect(find.text('genshin'), findsNothing);
+
+    // TextField still has focus
+    final editable = tester.widget<EditableText>(find.byType(EditableText));
+    expect(editable.focusNode.hasFocus, isTrue);
+
+    // Press Escape again - should unfocus
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+
+    expect(editable.focusNode.hasFocus, isFalse);
+  });
+
+  testWidgets('desktop wide screen does not throw ArgumentError on suggestions dropdown', (tester) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await tester.pumpWidget(_Harness(
+      child: TagInputSearchBar(
+        suggestions: const [
+          TagSuggestion(
+            name: 'genshin',
+            category: TagCategory.copyright,
+            postCount: 100,
+            providerId: 'test',
+          ),
+        ],
+        onSubmitted: (_) {},
+      ),
+    ));
+
+    await tester.tap(find.byType(TextField));
+    await tester.enterText(find.byType(TextField), 'gen');
+    await tester.pumpAndSettle();
+
+    expect(find.text('genshin'), findsOneWidget);
+  });
+
+  testWidgets('clicking tag suggestion with mouse pointer applies suggestion cleanly',
+      (tester) async {
+    String? applied;
+    await tester.pumpWidget(_Harness(
+      child: TagInputSearchBar(
+        suggestions: const [
+          TagSuggestion(
+            name: 'vocaloid',
+            category: TagCategory.copyright,
+            postCount: 500,
+            providerId: 'test',
+          ),
+        ],
+        onSubmitted: (_) {},
+        onSuggestionApplied: (v) => applied = v,
+      ),
+    ));
+
+    await tester.tap(find.byType(TextField));
+    await tester.enterText(find.byType(TextField), 'voca');
+    await tester.pumpAndSettle();
+
+    final item = find.text('vocaloid');
+    expect(item, findsOneWidget);
+
+    final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await gesture.addPointer(location: tester.getCenter(item));
+    await gesture.down(tester.getCenter(item));
+    await tester.pump();
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    expect(applied, 'vocaloid');
   });
 }
 

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -112,9 +113,6 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
   void _handleFocusChanged() {
     if (!mounted) return;
     if (!_focusNode.hasFocus) {
-      if (_portalController.isShowing) {
-        _portalController.hide();
-      }
       if (!_localDirty) {
         final next = widget.initialValue ?? '';
         if (next != _lastExternalValue) {
@@ -188,61 +186,74 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
       child: OverlayPortal(
         controller: _portalController,
         overlayChildBuilder: (context) {
-          final token = _activeToken;
-          final suggestions = _matchingSuggestions;
-          if (suggestions.isEmpty || token.isEmpty) {
-            return const SizedBox.shrink();
-          }
-
-          final screenSize = MediaQuery.sizeOf(context);
-          final renderBox =
-              _fieldKey.currentContext?.findRenderObject() as RenderBox?;
-          final fieldWidth =
-              renderBox?.hasSize == true ? renderBox!.size.width : 360.0;
-          final fieldHeight =
-              renderBox?.hasSize == true ? renderBox!.size.height : 48.0;
-
-          final screenW = screenSize.width;
-          // Substantially wider dropdown:
-          // Mobile (< 600px): use full screen width minus comfortable 24px margins.
-          // Desktop/Tablet (>= 600px): expand to 1.35x field width, up to 780px.
-          final dropdownWidth = screenW < 600
-              ? (screenW - 24.0).clamp(fieldWidth, 580.0)
-              : (fieldWidth * 1.35).clamp(fieldWidth, (screenW - 32.0).clamp(fieldWidth, 780.0));
-
-          // Ensure dropdown stays fully on screen and doesn't get clipped
-          double dxOffset = 0.0;
-          if (renderBox?.hasSize == true && renderBox?.attached == true) {
-            final globalPos = renderBox!.localToGlobal(Offset.zero);
-            final globalRight = globalPos.dx + dropdownWidth;
-            final maxRight = screenW - 12.0;
-            if (globalRight > maxRight) {
-              dxOffset = maxRight - globalRight;
+          try {
+            final token = _activeToken;
+            final suggestions = _matchingSuggestions;
+            if (suggestions.isEmpty || token.isEmpty) {
+              return const SizedBox.shrink();
             }
-            if (globalPos.dx + dxOffset < 12.0) {
-              dxOffset = 12.0 - globalPos.dx;
-            }
-          }
 
-          return CompositedTransformFollower(
-            link: _layerLink,
-            showWhenUnlinked: false,
-            offset: Offset(dxOffset, fieldHeight + 6),
-            child: Align(
-              alignment: Alignment.topLeft,
-              child: TapRegion(
-                groupId: _fieldKey,
-                child: SizedBox(
-                  width: dropdownWidth,
-                  child: _TagSuggestionDropdown(
-                    suggestions: suggestions,
-                    query: token,
-                    onSelected: _applySuggestion,
+            final screenSize = MediaQuery.sizeOf(context);
+            final renderBox =
+                _fieldKey.currentContext?.findRenderObject() as RenderBox?;
+            final fieldWidth =
+                renderBox?.hasSize == true ? renderBox!.size.width : 360.0;
+            final fieldHeight =
+                renderBox?.hasSize == true ? renderBox!.size.height : 48.0;
+
+            final screenW = screenSize.width;
+            final maxAllowedWidth = math.max(180.0, screenW - 24.0);
+            final safeFieldWidth = fieldWidth.clamp(180.0, maxAllowedWidth);
+            final targetWidth = screenW < 600
+                ? maxAllowedWidth
+                : math.min(
+                    maxAllowedWidth,
+                    math.max(safeFieldWidth, safeFieldWidth * 1.25),
+                  );
+            final dropdownWidth = targetWidth
+                .clamp(
+                  math.min(safeFieldWidth, maxAllowedWidth),
+                  maxAllowedWidth,
+                )
+                .toDouble();
+
+            // Ensure dropdown stays fully on screen and doesn't get clipped
+            double dxOffset = 0.0;
+            if (renderBox?.hasSize == true && renderBox?.attached == true) {
+              final globalPos = renderBox!.localToGlobal(Offset.zero);
+              final globalRight = globalPos.dx + dropdownWidth;
+              final maxRight = screenW - 12.0;
+              if (globalRight > maxRight) {
+                dxOffset = maxRight - globalRight;
+              }
+              if (globalPos.dx + dxOffset < 12.0) {
+                dxOffset = 12.0 - globalPos.dx;
+              }
+            }
+
+            return CompositedTransformFollower(
+              link: _layerLink,
+              showWhenUnlinked: false,
+              offset: Offset(dxOffset, fieldHeight + 6),
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: TapRegion(
+                  groupId: _fieldKey,
+                  child: SizedBox(
+                    width: dropdownWidth,
+                    child: _TagSuggestionDropdown(
+                      suggestions: suggestions,
+                      query: token,
+                      onSelected: _applySuggestion,
+                    ),
                   ),
                 ),
               ),
-            ),
-          );
+            );
+          } catch (e, st) {
+            debugPrint('Error in TagInputSearchBar overlay: $e\n$st');
+            return const SizedBox.shrink();
+          }
         },
         child: CompositedTransformTarget(
           link: _layerLink,
@@ -389,6 +400,14 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
         event.logicalKey == LogicalKeyboardKey.numpadEnter) {
       _commitDraft(_controller.text);
       _submit();
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.escape) {
+      if (_portalController.isShowing) {
+        _portalController.hide();
+        return KeyEventResult.handled;
+      }
+      _focusNode.unfocus();
       return KeyEventResult.handled;
     }
     if (event.logicalKey != LogicalKeyboardKey.backspace) {
@@ -593,8 +612,11 @@ class _TagSuggestionDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final screenH = MediaQuery.sizeOf(context).height;
+    final maxDropdownHeight = (screenH * 0.55).clamp(180.0, 420.0);
+
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 820),
+      constraints: BoxConstraints(maxWidth: 820, maxHeight: maxDropdownHeight),
       child: Material(
         elevation: 8,
         shadowColor: Colors.black.withValues(alpha: 0.18),

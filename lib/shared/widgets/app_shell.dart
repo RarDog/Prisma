@@ -11,6 +11,7 @@ import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/features/feed/presentation/feed_controller.dart';
 import 'desktop_shortcuts_dialog.dart';
+import 'keyboard_shortcut_utils.dart';
 
 class AppShell extends ConsumerStatefulWidget {
   const AppShell({
@@ -301,19 +302,19 @@ class _AppShellState extends ConsumerState<AppShell> {
         },
         child: Actions(
           actions: {
-            _NavigateIntent: CallbackAction<_NavigateIntent>(
+            _NavigateIntent: NonTextInputAction<_NavigateIntent>(
               onInvoke: (intent) {
                 _onNavigate(intent.location);
                 return null;
               },
             ),
-            _BackIntent: CallbackAction<_BackIntent>(
+            _BackIntent: NonTextInputAction<_BackIntent>(
               onInvoke: (_) {
                 _handleBack();
                 return null;
               },
             ),
-            _CycleTabIntent: CallbackAction<_CycleTabIntent>(
+            _CycleTabIntent: NonTextInputAction<_CycleTabIntent>(
               onInvoke: (intent) {
                 if (destinations.isEmpty) return null;
                 final currentBranch = widget.navigationShell?.currentIndex ?? 0;
@@ -328,13 +329,13 @@ class _AppShellState extends ConsumerState<AppShell> {
                 return null;
               },
             ),
-            _RefreshIntent: CallbackAction<_RefreshIntent>(
+            _RefreshIntent: NonTextInputAction<_RefreshIntent>(
               onInvoke: (_) {
                 ref.read(feedControllerProvider.notifier).refresh();
                 return null;
               },
             ),
-            _HelpIntent: CallbackAction<_HelpIntent>(
+            _HelpIntent: NonTextInputAction<_HelpIntent>(
               onInvoke: (_) {
                 DesktopShortcutsDialog.show(context);
                 return null;

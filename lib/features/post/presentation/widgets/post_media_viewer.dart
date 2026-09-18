@@ -7,18 +7,106 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:gel_rule_app/app/motion.dart';
+import 'package:gel_rule_app/app/responsive.dart';
 import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/features/feed/presentation/feed_controller.dart';
 import 'package:gel_rule_app/shared/widgets/formatted_content_text.dart';
 
 final Map<String, VideoPlaybackSnapshot> _playbackMemory =
     <String, VideoPlaybackSnapshot>{};
 
-class PostMediaViewer extends StatefulWidget {
+final isFullscreenViewerActiveProvider = StateProvider<bool>((ref) => false);
+
+Map<String, String> getPostMediaHeaders(Post post, [Map<String, String>? extraHeaders]) {
+  String? defaultReferer;
+  final pid = post.providerId.toLowerCase();
+  if (pid.contains('gelbooru')) {
+    defaultReferer = 'https://gelbooru.com/';
+  } else if (pid.contains('safebooru')) {
+    defaultReferer = 'https://safebooru.org/';
+  } else if (pid.contains('rule34')) {
+    defaultReferer = 'https://rule34.xxx/';
+  } else if (pid.contains('realbooru')) {
+    defaultReferer = 'https://realbooru.com/';
+  } else if (pid.contains('danbooru')) {
+    defaultReferer = 'https://danbooru.donmai.us/';
+  } else if (pid.contains('e621') || pid.contains('e926')) {
+    defaultReferer = 'https://e621.net/';
+  } else {
+    final uri = Uri.tryParse(post.fileUrl);
+    if (uri != null && uri.hasScheme && uri.host.isNotEmpty) {
+      defaultReferer = '${uri.scheme}://${uri.host}/';
+    }
+  }
+
+  return {
+    'User-Agent': 'Prisma/2.0.1 Flutter local booru browser',
+    'Accept': '*/*',
+    if (defaultReferer != null) 'Referer': defaultReferer,
+    if (extraHeaders != null) ...extraHeaders,
+  };
+}
+
+Duration getPostVideoPlaybackPosition(String cacheKey) {
+  return _playbackMemory[cacheKey]?.position ?? Duration.zero;
+}
+
+Future<void> openPostFullscreenGallery({
+  required BuildContext context,
+  required WidgetRef ref,
+  required Post post,
+  List<Post>? postsList,
+  MediaQualityMode qualityMode = MediaQualityMode.auto,
+  List<PostNote> notes = const [],
+  bool showNotes = false,
+  String? localFilePath,
+  Duration? initialVideoPosition,
+  ValueChanged<int>? onPostChanged,
+  VoidCallback? onLoadMore,
+}) async {
+  final initPos = initialVideoPosition ??
+      getPostVideoPlaybackPosition(post.cacheKey);
+  ref.read(isFullscreenViewerActiveProvider.notifier).state = true;
+  final posts =
+      (postsList != null && postsList.isNotEmpty) ? postsList : [post];
+  final postIndex = posts.indexWhere((p) => p.cacheKey == post.cacheKey);
+  final initialIndex = postIndex >= 0 ? postIndex : 0;
+
+  int? nextIndex;
+  try {
+    nextIndex = await Navigator.of(context, rootNavigator: true).push<int>(
+      PageRouteBuilder(
+        opaque: false,
+        barrierColor: Colors.black,
+        pageBuilder: (_, __, ___) => _FullscreenImageViewerPage(
+          posts: posts,
+          initialIndex: initialIndex,
+          qualityMode: qualityMode,
+          notes: notes,
+          showNotes: showNotes,
+          headersBuilder: (p) => getPostMediaHeaders(p),
+          localFilePath: localFilePath,
+          initialVideoPosition: initPos,
+          onPostChanged: onPostChanged,
+          onLoadMore: onLoadMore,
+        ),
+      ),
+    );
+  } finally {
+    ref.read(isFullscreenViewerActiveProvider.notifier).state = false;
+  }
+  if (nextIndex != null && nextIndex != initialIndex) {
+    onPostChanged?.call(nextIndex);
+  }
+}
+
+class PostMediaViewer extends ConsumerStatefulWidget {
   const PostMediaViewer({
     required this.post,
     this.localFilePath,
@@ -38,6 +126,10 @@ class PostMediaViewer extends StatefulWidget {
     this.onPlaybackPreferencesChanged,
     this.onVolumeChanged,
     this.onMediaGestureLockChanged,
+    this.postsList,
+    this.onPostIndexChanged,
+    this.onLoadMore,
+    this.isActive = true,
     super.key,
   });
 
@@ -59,12 +151,16 @@ class PostMediaViewer extends StatefulWidget {
   final ValueChanged<VideoPlaybackSnapshot>? onPlaybackPreferencesChanged;
   final ValueChanged<double>? onVolumeChanged;
   final ValueChanged<bool>? onMediaGestureLockChanged;
+  final List<Post>? postsList;
+  final ValueChanged<int>? onPostIndexChanged;
+  final VoidCallback? onLoadMore;
+  final bool isActive;
 
   @override
-  State<PostMediaViewer> createState() => _PostMediaViewerState();
+  ConsumerState<PostMediaViewer> createState() => _PostMediaViewerState();
 }
 
-class _PostMediaViewerState extends State<PostMediaViewer>
+class _PostMediaViewerState extends ConsumerState<PostMediaViewer>
     with AutomaticKeepAliveClientMixin {
   Player? _player;
   VideoController? _controller;
@@ -148,13 +244,14 @@ class _PostMediaViewerState extends State<PostMediaViewer>
     if (oldWidget.initialCoverVideo != widget.initialCoverVideo) {
       _coverVideo = widget.initialCoverVideo;
     }
+    if (oldWidget.isActive != widget.isActive && !widget.isActive) {
+      _player?.pause();
+    }
   }
 
   @override
   void dispose() {
-    if (!_inFullscreen) {
-      _disposeVideo();
-    }
+    _disposeVideo();
     super.dispose();
   }
 
@@ -164,6 +261,11 @@ class _PostMediaViewerState extends State<PostMediaViewer>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    ref.listen<bool>(isFullscreenViewerActiveProvider, (previous, next) {
+      if (next && !widget.fullscreen) {
+        _player?.pause();
+      }
+    });
     if (_isSwf(widget.post)) {
       return const _UnsupportedSwfPanel();
     }
@@ -332,11 +434,14 @@ class _PostMediaViewerState extends State<PostMediaViewer>
       final screenWidth = mq?.size.width ?? 1280;
       final maxCacheWidth =
           (screenWidth * dpr * 1.5).round().clamp(1080, 2560);
+      final isGif = MediaUrlSelector.isGif(widget.post) ||
+          url.toLowerCase().contains('.gif') ||
+          widget.post.fileType.toLowerCase() == 'gif';
       image = CachedNetworkImage(
         key: ValueKey(url),
         imageUrl: url,
         httpHeaders: headers,
-        memCacheWidth: maxCacheWidth,
+        memCacheWidth: isGif ? null : maxCacheWidth,
         fit: BoxFit.contain,
         placeholder: (context, url) =>
             const Center(child: CircularProgressIndicator()),
@@ -355,6 +460,7 @@ class _PostMediaViewerState extends State<PostMediaViewer>
       children: [
         _ZoomableImage(
           onGestureLockChanged: widget.onMediaGestureLockChanged,
+          onTap: widget.fullscreen ? null : () => _openFullscreenImage(context),
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -410,42 +516,57 @@ class _PostMediaViewerState extends State<PostMediaViewer>
       ],
     );
 
-    final interactiveChild = _imageUrls.length > 1
-        ? Shortcuts(
-            shortcuts: {
-              LogicalKeySet(LogicalKeyboardKey.arrowLeft):
-                  const _PrevImageIntent(),
-              LogicalKeySet(LogicalKeyboardKey.keyA): const _PrevImageIntent(),
-              LogicalKeySet(LogicalKeyboardKey.arrowRight):
-                  const _NextImageIntent(),
-              LogicalKeySet(LogicalKeyboardKey.keyD): const _NextImageIntent(),
-            },
-            child: Actions(
-              actions: {
-                _PrevImageIntent: CallbackAction<_PrevImageIntent>(
-                  onInvoke: (_) {
-                    if (_imageIndex > 0) {
-                      setState(() => _imageIndex--);
-                    }
-                    return null;
-                  },
-                ),
-                _NextImageIntent: CallbackAction<_NextImageIntent>(
-                  onInvoke: (_) {
-                    if (_imageIndex < _imageUrls.length - 1) {
-                      setState(() => _imageIndex++);
-                    }
-                    return null;
-                  },
-                ),
-              },
-              child: Focus(
-                autofocus: true,
-                child: child,
-              ),
-            ),
-          )
-        : child;
+    final shortcutsMap = <ShortcutActivator, Intent>{
+      LogicalKeySet(LogicalKeyboardKey.keyF): const _FullscreenImageIntent(),
+    };
+    if (_imageUrls.length > 1) {
+      shortcutsMap[LogicalKeySet(LogicalKeyboardKey.arrowLeft)] =
+          const _PrevImageIntent();
+      shortcutsMap[LogicalKeySet(LogicalKeyboardKey.keyA)] =
+          const _PrevImageIntent();
+      shortcutsMap[LogicalKeySet(LogicalKeyboardKey.arrowRight)] =
+          const _NextImageIntent();
+      shortcutsMap[LogicalKeySet(LogicalKeyboardKey.keyD)] =
+          const _NextImageIntent();
+    }
+
+    final actionsMap = <Type, Action<Intent>>{
+      _FullscreenImageIntent: CallbackAction<_FullscreenImageIntent>(
+        onInvoke: (_) {
+          if (!widget.fullscreen) _openFullscreenImage(context);
+          return null;
+        },
+      ),
+    };
+    if (_imageUrls.length > 1) {
+      actionsMap[_PrevImageIntent] = CallbackAction<_PrevImageIntent>(
+        onInvoke: (_) {
+          if (_imageIndex > 0) {
+            setState(() => _imageIndex--);
+          }
+          return null;
+        },
+      );
+      actionsMap[_NextImageIntent] = CallbackAction<_NextImageIntent>(
+        onInvoke: (_) {
+          if (_imageIndex < _imageUrls.length - 1) {
+            setState(() => _imageIndex++);
+          }
+          return null;
+        },
+      );
+    }
+
+    final interactiveChild = Shortcuts(
+      shortcuts: shortcutsMap,
+      child: Actions(
+        actions: actionsMap,
+        child: Focus(
+          autofocus: true,
+          child: child,
+        ),
+      ),
+    );
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -603,6 +724,8 @@ class _PostMediaViewerState extends State<PostMediaViewer>
     final snapshot = _snapshot();
     _playbackMemory[widget.post.cacheKey] = snapshot;
     widget.onPlaybackSnapshot?.call(snapshot);
+    _player?.pause();
+    _player?.stop();
     _player?.dispose();
     _player = null;
     _controller = null;
@@ -651,35 +774,8 @@ class _PostMediaViewerState extends State<PostMediaViewer>
     return value.contains('swf') || value.contains('.swf');
   }
 
-  Map<String, String> _headersFor(Post post) {
-    String? defaultReferer;
-    final pid = post.providerId.toLowerCase();
-    if (pid.contains('gelbooru')) {
-      defaultReferer = 'https://gelbooru.com/';
-    } else if (pid.contains('safebooru')) {
-      defaultReferer = 'https://safebooru.org/';
-    } else if (pid.contains('rule34')) {
-      defaultReferer = 'https://rule34.xxx/';
-    } else if (pid.contains('realbooru')) {
-      defaultReferer = 'https://realbooru.com/';
-    } else if (pid.contains('danbooru')) {
-      defaultReferer = 'https://danbooru.donmai.us/';
-    } else if (pid.contains('e621') || pid.contains('e926')) {
-      defaultReferer = 'https://e621.net/';
-    } else {
-      final uri = Uri.tryParse(post.fileUrl);
-      if (uri != null && uri.hasScheme && uri.host.isNotEmpty) {
-        defaultReferer = '${uri.scheme}://${uri.host}/';
-      }
-    }
-
-    return {
-      'User-Agent': 'Prisma/2.0.1 Flutter local booru browser',
-      'Accept': '*/*',
-      if (defaultReferer != null) 'Referer': defaultReferer,
-      ...widget.mediaHeaders,
-    };
-  }
+  Map<String, String> _headersFor(Post post) =>
+      getPostMediaHeaders(post, widget.mediaHeaders);
 
   void _advanceImageFallback() {
     if (_imageIndex >= _imageUrls.length - 1) return;
@@ -715,71 +811,73 @@ class _PostMediaViewerState extends State<PostMediaViewer>
 
   Future<void> _openFullscreen(BuildContext context) async {
     final player = _player;
-    final controller = _controller;
-    if (player == null || controller == null) return;
-    final wasPlaying = player.state.playing;
-    setState(() => _inFullscreen = true);
-    if (!context.mounted) return;
-    final result = await Navigator.of(context, rootNavigator: true)
-        .push<VideoPlaybackSnapshot>(
-      PageRouteBuilder(
-        opaque: true,
-        transitionDuration: Duration.zero,
-        reverseTransitionDuration: Duration.zero,
-        pageBuilder: (_, __, ___) => _FullscreenVideoPage(
-          player: player,
-          controller: controller,
-          wasPlaying: wasPlaying,
-          aspectRatio: widget.post.width > 0 && widget.post.height > 0
-              ? widget.post.width / widget.post.height
-              : 16 / 9,
-          loopVideo: _loopVideo,
-          muted: _muted,
-          halfVolume: _halfVolume,
-          coverVideo: _coverVideo,
-          initialVolume: _currentVolume,
-          isSoftwareDecoding: _useSoftwareDecoding,
-          onToggleDecoder: _toggleDecoderMode,
-          errorMessage: _videoError,
-          onRetry: _retryVideo,
-          onChanged: (snapshot) {
-            unawaited(_applyPlaybackSnapshot(snapshot));
-          },
-        ),
-      ),
-    );
-    if (mounted) {
-      setState(() => _inFullscreen = false);
-    } else {
-      player.dispose();
-      return;
-    }
-    if (result != null) {
-      await _applyPlaybackSnapshot(result);
-      if (result.playing && !player.state.playing) {
-        await player.play();
-      } else if (!result.playing && player.state.playing) {
-        await player.pause();
-      }
-      return;
-    }
+    final currentPos = player?.state.position ?? Duration.zero;
+    await _openFullscreenGallery(context, initialVideoPos: currentPos);
   }
 
-  Future<void> _applyPlaybackSnapshot(VideoPlaybackSnapshot snapshot) async {
-    if (!mounted) return;
-    setState(() {
-      _muted = snapshot.muted;
-      _loopVideo = snapshot.loopVideo;
-      _coverVideo = snapshot.coverVideo;
-      _halfVolume = snapshot.halfVolume;
-      _currentVolume = snapshot.volume;
-    });
-    await _applyVolume();
-    await _player?.setPlaylistMode(
-      _loopVideo ? PlaylistMode.single : PlaylistMode.none,
-    );
-    _emitPlaybackPreferences();
-    widget.onVolumeChanged?.call(_currentVolume);
+  Future<void> _openFullscreenImage(BuildContext context) async {
+    await _openFullscreenGallery(context);
+  }
+
+  Future<void> _openFullscreenGallery(
+    BuildContext context, {
+    Duration initialVideoPos = Duration.zero,
+  }) async {
+    final player = _player;
+    final wasPlaying = player?.state.playing ?? false;
+    if (player != null && wasPlaying) {
+      await player.pause();
+    }
+    if (!context.mounted) return;
+    _inFullscreen = true;
+    ref.read(isFullscreenViewerActiveProvider.notifier).state = true;
+    final posts = (widget.postsList != null && widget.postsList!.isNotEmpty)
+        ? widget.postsList!
+        : [widget.post];
+    final postIndex =
+        posts.indexWhere((p) => p.cacheKey == widget.post.cacheKey);
+    final initialIndex = postIndex >= 0 ? postIndex : 0;
+
+    int? nextIndex;
+    try {
+      nextIndex = await Navigator.of(context, rootNavigator: true).push<int>(
+        PageRouteBuilder(
+          opaque: false,
+          barrierColor: Colors.black,
+          pageBuilder: (_, __, ___) => _FullscreenImageViewerPage(
+            posts: posts,
+            initialIndex: initialIndex,
+            qualityMode: widget.qualityMode,
+            notes: widget.notes,
+            showNotes: widget.showNotes,
+            headersBuilder: (p) => _headersFor(p),
+            localFilePath: widget.localFilePath,
+            initialVideoPosition: initialVideoPos,
+            onPostChanged: (idx) {
+              widget.onPostIndexChanged?.call(idx);
+            },
+            onLoadMore: widget.onLoadMore,
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _inFullscreen = false);
+      }
+      ref.read(isFullscreenViewerActiveProvider.notifier).state = false;
+    }
+    if (mounted && nextIndex != null && nextIndex != initialIndex) {
+      widget.onPostIndexChanged?.call(nextIndex);
+    }
+    final memory = _playbackMemory[widget.post.cacheKey];
+    if (memory != null && _player != null) {
+      await _player!.seek(memory.position);
+      if (memory.playing) {
+        await _player!.play();
+      }
+    } else if (mounted && wasPlaying && _player != null) {
+      await _player!.play();
+    }
   }
 
   VideoPlaybackSnapshot _snapshot() {
@@ -877,6 +975,26 @@ class _NextImageIntent extends Intent {
   const _NextImageIntent();
 }
 
+class _FullscreenImageIntent extends Intent {
+  const _FullscreenImageIntent();
+}
+
+class _CloseFullscreenIntent extends Intent {
+  const _CloseFullscreenIntent();
+}
+
+class _ToggleControlsIntent extends Intent {
+  const _ToggleControlsIntent();
+}
+
+class _PrevFullscreenImageIntent extends Intent {
+  const _PrevFullscreenImageIntent();
+}
+
+class _NextFullscreenImageIntent extends Intent {
+  const _NextFullscreenImageIntent();
+}
+
 class _UnsupportedSwfPanel extends StatelessWidget {
   const _UnsupportedSwfPanel();
 
@@ -925,93 +1043,161 @@ class VideoPlaybackSnapshot {
   final double volume;
 }
 
-class _FullscreenVideoPage extends StatefulWidget {
-  const _FullscreenVideoPage({
-    required this.player,
-    required this.controller,
-    required this.wasPlaying,
-    required this.aspectRatio,
-    required this.loopVideo,
-    required this.muted,
-    required this.halfVolume,
-    required this.coverVideo,
-    this.initialVolume = 100.0,
-    required this.isSoftwareDecoding,
-    required this.onToggleDecoder,
-    required this.errorMessage,
-    required this.onRetry,
-    required this.onChanged,
+class _FullscreenImageViewerPage extends ConsumerStatefulWidget {
+  const _FullscreenImageViewerPage({
+    required this.posts,
+    required this.initialIndex,
+    required this.qualityMode,
+    required this.notes,
+    required this.showNotes,
+    required this.headersBuilder,
+    this.localFilePath,
+    this.initialVideoPosition = Duration.zero,
+    this.onPostChanged,
+    this.onLoadMore,
   });
 
-  final Player player;
-  final VideoController controller;
-  final bool wasPlaying;
-  final double aspectRatio;
-  final bool loopVideo;
-  final bool muted;
-  final bool halfVolume;
-  final bool coverVideo;
-  final double initialVolume;
-  final bool isSoftwareDecoding;
-  final VoidCallback onToggleDecoder;
-  final String? errorMessage;
-  final VoidCallback onRetry;
-  final ValueChanged<VideoPlaybackSnapshot> onChanged;
+  final List<Post> posts;
+  final int initialIndex;
+  final MediaQualityMode qualityMode;
+  final List<PostNote> notes;
+  final bool showNotes;
+  final Map<String, String> Function(Post post) headersBuilder;
+  final String? localFilePath;
+  final Duration initialVideoPosition;
+  final ValueChanged<int>? onPostChanged;
+  final VoidCallback? onLoadMore;
+
+  static List<String> _urlsForPost(
+    Post post,
+    MediaQualityMode qualityMode, {
+    String? localFilePath,
+  }) {
+    if (localFilePath != null &&
+        localFilePath.isNotEmpty &&
+        File(localFilePath).existsSync()) {
+      return [localFilePath];
+    }
+    final isGif = MediaUrlSelector.isGif(post) ||
+        post.fileUrl.toLowerCase().contains('.gif') ||
+        post.fileType.toLowerCase() == 'gif';
+    if (isGif) {
+      final result = <String>[];
+      if (post.fileUrl.isNotEmpty) result.add(post.fileUrl);
+      if (post.sampleUrl.isNotEmpty && !result.contains(post.sampleUrl)) {
+        result.add(post.sampleUrl);
+      }
+      if (post.previewUrl.isNotEmpty && !result.contains(post.previewUrl)) {
+        result.add(post.previewUrl);
+      }
+      return result;
+    }
+    final result = <String>[];
+    if (post.sampleUrl.isNotEmpty) result.add(post.sampleUrl);
+    if (post.fileUrl.isNotEmpty && !result.contains(post.fileUrl)) {
+      result.add(post.fileUrl);
+    }
+    if (post.previewUrl.isNotEmpty && !result.contains(post.previewUrl)) {
+      result.add(post.previewUrl);
+    }
+    return result;
+  }
 
   @override
-  State<_FullscreenVideoPage> createState() => _FullscreenVideoPageState();
+  ConsumerState<_FullscreenImageViewerPage> createState() =>
+      _FullscreenImageViewerPageState();
 }
 
-class _FullscreenVideoPageState extends State<_FullscreenVideoPage> {
+class _FullscreenImageViewerPageState
+    extends ConsumerState<_FullscreenImageViewerPage>
+    with SingleTickerProviderStateMixin {
+  late int _currentIndex;
+  late PageController _pageController;
   bool _controlsVisible = true;
-  late bool _coverVideo;
-  late bool _muted;
-  late bool _loopVideo;
-  late bool _halfVolume;
-  late double _currentVolume;
-  late bool _isLandscape;
   Timer? _hideTimer;
+  double _dragOffsetY = 0.0;
+  bool _isCurrentZoomed = false;
+  late bool _showNotes;
+  bool _isLandscape = false;
+  late AnimationController _animController;
+  Animation<double>? _dragAnimation;
 
   @override
   void initState() {
     super.initState();
-    _coverVideo = widget.coverVideo;
-    _muted = widget.muted;
-    _loopVideo = widget.loopVideo;
-    _halfVolume = widget.halfVolume;
-    _currentVolume = widget.initialVolume;
-    _applyVolume();
-    _isLandscape = widget.aspectRatio > 1.05;
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    _applyOrientation();
-    _scheduleControlsHide();
-    if (widget.wasPlaying) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && !widget.player.state.playing) {
-          widget.player.play();
+    _currentIndex = widget.initialIndex.clamp(0, widget.posts.length - 1);
+    _pageController = PageController(initialPage: _currentIndex);
+    _pageController.addListener(_handlePageScroll);
+    _showNotes = widget.showNotes;
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    )..addListener(() {
+        if (_dragAnimation != null) {
+          setState(() => _dragOffsetY = _dragAnimation!.value);
         }
       });
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    _scheduleControlsHide();
+    if (_currentIndex >= widget.posts.length - 3) {
+      widget.onLoadMore?.call();
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _prefetchAround(_currentIndex, widget.posts);
+    });
+  }
+
+  void _handlePageScroll() {
+    if (!_pageController.hasClients || _pageController.page == null) return;
+    final page = _pageController.page!;
+    final rounded = page.round();
+    if ((page - _currentIndex).abs() > 0.35 && rounded != _currentIndex) {
+      if (mounted) {
+        setState(() {
+          _currentIndex = rounded;
+        });
+      }
     }
   }
 
-  void _applyOrientation() {
-    if (_isLandscape) {
-      SystemChrome.setPreferredOrientations([
-        DeviceOrientation.landscapeLeft,
-        DeviceOrientation.landscapeRight,
-      ]);
-    } else {
-      SystemChrome.setPreferredOrientations([
-        DeviceOrientation.portraitUp,
-        DeviceOrientation.portraitDown,
-      ]);
+  void _prefetchAround(int index, List<Post> posts) {
+    if (!mounted) return;
+    for (final targetIndex in [index + 1, index - 1, index + 2]) {
+      if (targetIndex >= 0 && targetIndex < posts.length) {
+        final p = posts[targetIndex];
+        if (!MediaUrlSelector.isVideo(p) && !MediaUrlSelector.isAudio(p)) {
+          final isGif = MediaUrlSelector.isGif(p) ||
+              p.fileUrl.toLowerCase().contains('.gif') ||
+              p.fileType.toLowerCase() == 'gif';
+          final url = isGif
+              ? (p.fileUrl.isNotEmpty ? p.fileUrl : p.sampleUrl)
+              : (p.sampleUrl.isNotEmpty ? p.sampleUrl : p.fileUrl);
+          if (url.isNotEmpty &&
+              !url.startsWith('/') &&
+              !url.startsWith('file://')) {
+            precacheImage(
+              CachedNetworkImageProvider(url, headers: widget.headersBuilder(p)),
+              context,
+            );
+          }
+        }
+      }
     }
   }
 
-  void _toggleOrientation() {
-    setState(() => _isLandscape = !_isLandscape);
-    _applyOrientation();
-    _showControls();
+  void _scheduleControlsHide() {
+    _hideTimer?.cancel();
+    _hideTimer = Timer(const Duration(seconds: 4), () {
+      if (mounted && _controlsVisible && !_isCurrentZoomed) {
+        setState(() => _controlsVisible = false);
+      }
+    });
+  }
+
+  void _showControls() {
+    if (!mounted) return;
+    setState(() => _controlsVisible = true);
+    _scheduleControlsHide();
   }
 
   void _toggleControls() {
@@ -1024,9 +1210,45 @@ class _FullscreenVideoPageState extends State<_FullscreenVideoPage> {
     }
   }
 
+  void _toggleOrientation() {
+    setState(() => _isLandscape = !_isLandscape);
+    if (_isLandscape) {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    } else {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ]);
+    }
+    _showControls();
+  }
+
+  void _close() {
+    Navigator.of(context, rootNavigator: true).pop(_currentIndex);
+  }
+
+  void _onPageChanged(int idx, List<Post> posts) {
+    setState(() {
+      _currentIndex = idx;
+      _isCurrentZoomed = false;
+    });
+    widget.onPostChanged?.call(idx);
+    _showControls();
+    _prefetchAround(idx, posts);
+    if (idx >= posts.length - 3) {
+      widget.onLoadMore?.call();
+    }
+  }
+
   @override
   void dispose() {
     _hideTimer?.cancel();
+    _animController.dispose();
+    _pageController.removeListener(_handlePageScroll);
+    _pageController.dispose();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
       SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
@@ -1041,94 +1263,366 @@ class _FullscreenVideoPageState extends State<_FullscreenVideoPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
+    final backdropAlpha = (1.0 - (_dragOffsetY.abs() / 320.0)).clamp(0.0, 1.0);
+
+    final feedPosts = ref.watch(feedControllerProvider).value?.posts;
+    final List<Post> resolvedPosts;
+    if (feedPosts != null && feedPosts.isNotEmpty) {
+      final hasCurrent = _currentIndex < widget.posts.length &&
+          feedPosts.any((p) => p.cacheKey == widget.posts[_currentIndex].cacheKey);
+      if (hasCurrent || feedPosts.length >= widget.posts.length) {
+        resolvedPosts = feedPosts;
+      } else {
+        resolvedPosts = widget.posts;
+      }
+    } else {
+      resolvedPosts = widget.posts;
+    }
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
-        Navigator.of(context, rootNavigator: true).pop(_snapshot());
+        _close();
       },
       child: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: Colors.black.withValues(alpha: backdropAlpha),
         body: Shortcuts(
           shortcuts: {
-            LogicalKeySet(LogicalKeyboardKey.escape): const _CloseVideoIntent(),
-            LogicalKeySet(LogicalKeyboardKey.space): const _TogglePlayIntent(),
-            LogicalKeySet(LogicalKeyboardKey.keyK): const _TogglePlayIntent(),
-            LogicalKeySet(LogicalKeyboardKey.keyF): const _CloseVideoIntent(),
+            LogicalKeySet(LogicalKeyboardKey.escape): const _CloseFullscreenIntent(),
+            LogicalKeySet(LogicalKeyboardKey.keyF): const _CloseFullscreenIntent(),
+            LogicalKeySet(LogicalKeyboardKey.space): const _ToggleControlsIntent(),
+            LogicalKeySet(LogicalKeyboardKey.arrowLeft): const _PrevFullscreenImageIntent(),
+            LogicalKeySet(LogicalKeyboardKey.keyA): const _PrevFullscreenImageIntent(),
+            LogicalKeySet(LogicalKeyboardKey.arrowRight): const _NextFullscreenImageIntent(),
+            LogicalKeySet(LogicalKeyboardKey.keyD): const _NextFullscreenImageIntent(),
           },
           child: Actions(
             actions: {
-              _CloseVideoIntent: CallbackAction<_CloseVideoIntent>(
+              _CloseFullscreenIntent: CallbackAction<_CloseFullscreenIntent>(
                 onInvoke: (_) {
-                  Navigator.of(context, rootNavigator: true).pop(_snapshot());
+                  _close();
                   return null;
                 },
               ),
-              _TogglePlayIntent: CallbackAction<_TogglePlayIntent>(
+              _ToggleControlsIntent: CallbackAction<_ToggleControlsIntent>(
                 onInvoke: (_) {
-                  widget.player.playOrPause();
-                  _showControls();
+                  _toggleControls();
+                  return null;
+                },
+              ),
+              _PrevFullscreenImageIntent: CallbackAction<_PrevFullscreenImageIntent>(
+                onInvoke: (_) {
+                  if (_currentIndex > 0) {
+                    _pageController.previousPage(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOutCubic,
+                    );
+                    _showControls();
+                  }
+                  return null;
+                },
+              ),
+              _NextFullscreenImageIntent: CallbackAction<_NextFullscreenImageIntent>(
+                onInvoke: (_) {
+                  if (_currentIndex < resolvedPosts.length - 1) {
+                    _pageController.nextPage(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOutCubic,
+                    );
+                    _showControls();
+                  }
                   return null;
                 },
               ),
             },
             child: Focus(
               autofocus: true,
-              child: _VideoSurface(
-                player: widget.player,
-                controller: widget.controller,
-                aspectRatio: widget.aspectRatio,
-                isSoftwareDecoding: widget.isSoftwareDecoding,
-                onToggleDecoder: widget.onToggleDecoder,
-                controlsVisible: _controlsVisible,
-                coverVideo: _coverVideo,
-                muted: _muted,
-                loopVideo: _loopVideo,
-                halfVolume: _halfVolume,
-                initialVolume: _currentVolume,
-                onVolumeChanged: (vol) {
-                  _currentVolume = vol;
-                  widget.onChanged(_snapshot());
-                },
-                fullscreen: true,
-                errorMessage: widget.errorMessage,
-                onTapSurface: _toggleControls,
-                onInteract: _showControls,
-                isLandscape: _isLandscape,
-                onToggleOrientation: _toggleOrientation,
-                onRetry: widget.onRetry,
-                onToggleFit: () {
-                  setState(() => _coverVideo = !_coverVideo);
-                  widget.onChanged(_snapshot());
-                  _showControls();
-                },
-                onToggleMute: () async {
-                  setState(() => _muted = !_muted);
-                  await _applyVolume();
-                  widget.onChanged(_snapshot());
-                  _showControls();
-                },
-                onToggleHalfVolume: () async {
-                  setState(() {
-                    _halfVolume = !_halfVolume;
-                    if (_halfVolume) _muted = false;
-                  });
-                  await _applyVolume();
-                  widget.onChanged(_snapshot());
-                  _showControls();
-                },
-                onToggleLoop: () async {
-                  setState(() => _loopVideo = !_loopVideo);
-                  await widget.player.setPlaylistMode(
-                    _loopVideo ? PlaylistMode.single : PlaylistMode.none,
-                  );
-                  widget.onChanged(_snapshot());
-                  _showControls();
-                },
-                onFullscreen: () => Navigator.of(
-                  context,
-                  rootNavigator: true,
-                ).pop(_snapshot()),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  GestureDetector(
+                    onVerticalDragStart: (details) {
+                      if (_isCurrentZoomed) return;
+                      _animController.stop();
+                    },
+                    onVerticalDragUpdate: (details) {
+                      if (_isCurrentZoomed) return;
+                      setState(() {
+                        _dragOffsetY += details.delta.dy;
+                      });
+                    },
+                    onVerticalDragEnd: (details) {
+                      if (_isCurrentZoomed) return;
+                      final velocity = details.primaryVelocity ?? 0.0;
+                      if (_dragOffsetY.abs() > 100 || velocity.abs() > 500) {
+                        _close();
+                      } else {
+                        _dragAnimation = Tween<double>(
+                          begin: _dragOffsetY,
+                          end: 0.0,
+                        ).animate(
+                          CurvedAnimation(
+                            parent: _animController,
+                            curve: Curves.easeOutCubic,
+                          ),
+                        );
+                        _animController.forward(from: 0.0);
+                      }
+                    },
+                    child: Transform.translate(
+                      offset: Offset(0, _dragOffsetY),
+                      child: Transform.scale(
+                        scale: (1.0 - (_dragOffsetY.abs() / 1500.0)).clamp(0.82, 1.0),
+                        child: PageView.builder(
+                          controller: _pageController,
+                          itemCount: resolvedPosts.length,
+                          physics: _isCurrentZoomed
+                              ? const NeverScrollableScrollPhysics()
+                              : const BouncingScrollPhysics(),
+                          onPageChanged: (idx) => _onPageChanged(idx, resolvedPosts),
+                          itemBuilder: (context, index) {
+                            final currentPost = resolvedPosts[index];
+                            final isInitial = index == widget.initialIndex;
+                            final localPath = isInitial ? widget.localFilePath : null;
+                            final isVideo = MediaUrlSelector.isVideo(currentPost) ||
+                                MediaUrlSelector.isAudio(currentPost) ||
+                                currentPost.cloudLinks.any((l) => l.isStreamable);
+
+                            if (isVideo) {
+                              return _FullscreenVideoItem(
+                                key: ValueKey('fs_vid_${currentPost.cacheKey}'),
+                                post: currentPost,
+                                isActive: index == _currentIndex,
+                                headers: widget.headersBuilder(currentPost),
+                                initialPosition: isInitial
+                                    ? widget.initialVideoPosition
+                                    : Duration.zero,
+                                localFilePath: localPath,
+                                onTap: _toggleControls,
+                              );
+                            }
+
+                            final urls = _FullscreenImageViewerPage._urlsForPost(
+                              currentPost,
+                              widget.qualityMode,
+                              localFilePath: localPath,
+                            );
+                            return _InteractiveFullscreenImageItem(
+                              key: ValueKey('fs_img_${currentPost.cacheKey}'),
+                              urls: urls,
+                              headers: widget.headersBuilder(currentPost),
+                              post: currentPost,
+                              notes: isInitial ? widget.notes : const [],
+                              showNotes: _showNotes,
+                              onZoomChanged: (zoomed) {
+                                if (index == _currentIndex &&
+                                    _isCurrentZoomed != zoomed) {
+                                  setState(() => _isCurrentZoomed = zoomed);
+                                }
+                              },
+                              onTap: _toggleControls,
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Top controls overlay
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: AnimatedOpacity(
+                      opacity: _controlsVisible ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 200),
+                      child: IgnorePointer(
+                        ignoring: !_controlsVisible,
+                        child: Container(
+                          padding: EdgeInsets.only(
+                            top: MediaQuery.of(context).padding.top + 6,
+                            left: 12,
+                            right: 12,
+                            bottom: 16,
+                          ),
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [Colors.black87, Colors.transparent],
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              IconButton(
+                                tooltip: isRu ? 'Закрыть (Esc)' : 'Close (Esc)',
+                                icon: const Icon(
+                                  Icons.close_rounded,
+                                  color: Colors.white,
+                                  size: 26,
+                                ),
+                                onPressed: _close,
+                              ),
+                              const SizedBox(width: 8),
+                              if (resolvedPosts.length > 1)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black45,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Colors.white24,
+                                      width: 0.8,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    '${_currentIndex + 1} / ${resolvedPosts.length}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              const Spacer(),
+                              if (Responsive.isMobile(context))
+                                IconButton(
+                                  tooltip: isRu
+                                      ? 'Повернуть экран'
+                                      : 'Rotate screen',
+                                  icon: Icon(
+                                    _isLandscape
+                                        ? Icons.screen_lock_landscape_rounded
+                                        : Icons.screen_lock_portrait_rounded,
+                                    color: Colors.white,
+                                  ),
+                                  onPressed: _toggleOrientation,
+                                ),
+                              if (widget.notes.isNotEmpty)
+                                IconButton(
+                                  tooltip: isRu
+                                      ? 'Заметки / перевод'
+                                      : 'Notes / translation',
+                                  icon: Icon(
+                                    _showNotes
+                                        ? Icons.subtitles_rounded
+                                        : Icons.subtitles_off_rounded,
+                                    color: _showNotes
+                                        ? Colors.amber
+                                        : Colors.white70,
+                                  ),
+                                  onPressed: () {
+                                    setState(() => _showNotes = !_showNotes);
+                                    _showControls();
+                                  },
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Desktop chevrons
+                  if (resolvedPosts.length > 1 &&
+                      !Responsive.isMobile(context)) ...[
+                    if (_currentIndex > 0)
+                      Positioned(
+                        left: 16,
+                        top: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: AnimatedOpacity(
+                            opacity: _controlsVisible ? 1.0 : 0.0,
+                            duration: const Duration(milliseconds: 200),
+                            child: IgnorePointer(
+                              ignoring: !_controlsVisible,
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () {
+                                    _pageController.previousPage(
+                                      duration:
+                                          const Duration(milliseconds: 250),
+                                      curve: Curves.easeOutCubic,
+                                    );
+                                    _showControls();
+                                  },
+                                  borderRadius: BorderRadius.circular(24),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black45,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white24,
+                                        width: 0.8,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.chevron_left_rounded,
+                                      color: Colors.white,
+                                      size: 28,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    if (_currentIndex < resolvedPosts.length - 1)
+                      Positioned(
+                        right: 16,
+                        top: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: AnimatedOpacity(
+                            opacity: _controlsVisible ? 1.0 : 0.0,
+                            duration: const Duration(milliseconds: 200),
+                            child: IgnorePointer(
+                              ignoring: !_controlsVisible,
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () {
+                                    _pageController.nextPage(
+                                      duration:
+                                          const Duration(milliseconds: 250),
+                                      curve: Curves.easeOutCubic,
+                                    );
+                                    _showControls();
+                                  },
+                                  borderRadius: BorderRadius.circular(24),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black45,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white24,
+                                        width: 0.8,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.chevron_right_rounded,
+                                      color: Colors.white,
+                                      size: 28,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ],
               ),
             ),
           ),
@@ -1136,45 +1630,520 @@ class _FullscreenVideoPageState extends State<_FullscreenVideoPage> {
       ),
     );
   }
+}
 
-  void _showControls() {
-    if (!mounted) return;
-    setState(() => _controlsVisible = true);
+class _FullscreenVideoItem extends StatefulWidget {
+  const _FullscreenVideoItem({
+    required this.post,
+    required this.isActive,
+    required this.headers,
+    this.initialPosition = Duration.zero,
+    this.localFilePath,
+    required this.onTap,
+    super.key,
+  });
+
+  final Post post;
+  final bool isActive;
+  final Map<String, String> headers;
+  final Duration initialPosition;
+  final String? localFilePath;
+  final VoidCallback onTap;
+
+  @override
+  State<_FullscreenVideoItem> createState() => _FullscreenVideoItemState();
+}
+
+class _FullscreenVideoItemState extends State<_FullscreenVideoItem> {
+  Player? _player;
+  VideoController? _controller;
+  bool _initialized = false;
+  bool _controlsVisible = true;
+  Timer? _hideTimer;
+  bool _muted = false;
+  bool _loopVideo = true;
+  bool _coverVideo = false;
+  bool _halfVolume = false;
+  double _volume = 100.0;
+  bool _isLandscape = false;
+  bool _isSoftwareDecoding = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isActive) {
+      _initPlayer();
+    }
+  }
+
+  @override
+  void didUpdateWidget(_FullscreenVideoItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      if (_player == null) {
+        _initPlayer();
+      }
+    } else if (!widget.isActive && oldWidget.isActive) {
+      _player?.pause();
+    }
+  }
+
+  void _initPlayer() {
+    MediaKit.ensureInitialized();
+    final p = Player();
+    final enableHw = !_isSoftwareDecoding;
+    final c = VideoController(
+      p,
+      configuration: VideoControllerConfiguration(
+        enableHardwareAcceleration: enableHw,
+        hwdec: enableHw ? (Platform.isAndroid ? 'auto-safe' : 'auto') : 'no',
+      ),
+    );
+    _player = p;
+    _controller = c;
+    _applyVolume();
+    p.setPlaylistMode(_loopVideo ? PlaylistMode.single : PlaylistMode.none);
+
+    p.stream.error.listen((message) {
+      if (mounted) setState(() => _errorMessage = message);
+    });
+
+    p.stream.position.listen((pos) {
+      if (!mounted) return;
+      _playbackMemory[widget.post.cacheKey] = VideoPlaybackSnapshot(
+        position: pos,
+        playing: p.state.playing,
+        muted: _muted,
+        halfVolume: _halfVolume,
+        loopVideo: _loopVideo,
+        coverVideo: _coverVideo,
+        volume: _volume,
+      );
+    });
+
+    final videoUrls = _buildVideoUrls();
+    if (videoUrls.isNotEmpty) {
+      final src = videoUrls.first;
+      final isLocal = src.startsWith('/') || src.startsWith('file://');
+      p.open(
+        Media(src, httpHeaders: isLocal ? null : widget.headers),
+        play: false,
+      ).then((_) {
+        if (widget.initialPosition > Duration.zero) {
+          p.seek(widget.initialPosition);
+        }
+      }).catchError((err) {
+        if (mounted) setState(() => _errorMessage = err.toString());
+      });
+    }
+
+    if (mounted) {
+      setState(() => _initialized = true);
+    }
     _scheduleControlsHide();
+  }
+
+  List<String> _buildVideoUrls() {
+    final local = widget.localFilePath;
+    if (local != null && local.isNotEmpty && File(local).existsSync()) {
+      return [local];
+    }
+    final list = MediaUrlSelector.isVideo(widget.post)
+        ? List<String>.from(MediaUrlSelector.video(widget.post))
+        : List<String>.from(MediaUrlSelector.audio(widget.post));
+    final cloudStreams = widget.post.cloudLinks
+        .where((l) => l.isStreamable && l.directStreamUrl != null)
+        .map((l) => l.directStreamUrl!);
+    for (final stream in cloudStreams) {
+      if (!list.contains(stream)) list.add(stream);
+    }
+    if (list.isEmpty) {
+      if (widget.post.fileUrl.isNotEmpty) list.add(widget.post.fileUrl);
+      if (widget.post.sampleUrl.isNotEmpty) list.add(widget.post.sampleUrl);
+    }
+    return list;
+  }
+
+  void _applyVolume() {
+    _player?.setVolume(_muted ? 0.0 : _halfVolume ? 50.0 : _volume);
   }
 
   void _scheduleControlsHide() {
     _hideTimer?.cancel();
     _hideTimer = Timer(const Duration(seconds: 3), () {
-      if (mounted && widget.errorMessage == null) {
+      if (mounted && _errorMessage == null) {
         setState(() => _controlsVisible = false);
       }
     });
   }
 
-  Future<void> _applyVolume() async {
-    await widget.player.setVolume(_muted
-        ? 0.0
-        : _halfVolume
-            ? 50.0
-            : _currentVolume);
+  void _toggleControls() {
+    if (!mounted) return;
+    if (_controlsVisible) {
+      _hideTimer?.cancel();
+      setState(() => _controlsVisible = false);
+    } else {
+      setState(() => _controlsVisible = true);
+      _scheduleControlsHide();
+    }
+    widget.onTap();
   }
 
-  VideoPlaybackSnapshot _snapshot() {
-    return VideoPlaybackSnapshot(
-      position: widget.player.state.position,
-      playing: widget.player.state.playing,
-      muted: _muted,
-      halfVolume: _halfVolume,
-      loopVideo: _loopVideo,
+  @override
+  void dispose() {
+    _hideTimer?.cancel();
+    if (_player != null) {
+      final pos = _player!.state.position;
+      final isPlaying = _player!.state.playing;
+      _playbackMemory[widget.post.cacheKey] = VideoPlaybackSnapshot(
+        position: pos,
+        playing: isPlaying,
+        muted: _muted,
+        halfVolume: _halfVolume,
+        loopVideo: _loopVideo,
+        coverVideo: _coverVideo,
+        volume: _volume,
+      );
+    }
+    _player?.pause();
+    _player?.stop();
+    _player?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_initialized || _player == null || _controller == null) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          if (widget.post.previewUrl.isNotEmpty)
+            CachedNetworkImage(
+              imageUrl: widget.post.previewUrl,
+              httpHeaders: widget.headers,
+              fit: BoxFit.contain,
+              errorWidget: (_, __, ___) => const SizedBox.shrink(),
+            ),
+          const Center(
+            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+          ),
+        ],
+      );
+    }
+
+    final double aspect = (widget.post.width > 0 && widget.post.height > 0)
+        ? (widget.post.width / widget.post.height).clamp(0.4, 2.5)
+        : 16 / 9;
+
+    final topOffset = MediaQuery.of(context).padding.top + 50.0;
+
+    return _VideoSurface(
+      player: _player!,
+      controller: _controller!,
+      aspectRatio: aspect,
+      isSoftwareDecoding: _isSoftwareDecoding,
+      topOffset: topOffset,
+      inGallery: true,
+      onToggleDecoder: () {
+        setState(() => _isSoftwareDecoding = !_isSoftwareDecoding);
+        _player?.dispose();
+        _initialized = false;
+        _initPlayer();
+      },
+      controlsVisible: _controlsVisible,
       coverVideo: _coverVideo,
-      volume: _currentVolume,
+      muted: _muted,
+      loopVideo: _loopVideo,
+      halfVolume: _halfVolume,
+      initialVolume: _volume,
+      onVolumeChanged: (v) {
+        _volume = v;
+        _applyVolume();
+      },
+      fullscreen: true,
+      errorMessage: _errorMessage,
+      onTapSurface: _toggleControls,
+      onInteract: () {
+        setState(() => _controlsVisible = true);
+        _scheduleControlsHide();
+      },
+      isLandscape: _isLandscape,
+      onToggleOrientation: () {
+        setState(() => _isLandscape = !_isLandscape);
+        if (_isLandscape) {
+          SystemChrome.setPreferredOrientations([
+            DeviceOrientation.landscapeLeft,
+            DeviceOrientation.landscapeRight,
+          ]);
+        } else {
+          SystemChrome.setPreferredOrientations([
+            DeviceOrientation.portraitUp,
+            DeviceOrientation.portraitDown,
+          ]);
+        }
+      },
+      onRetry: () {
+        setState(() => _errorMessage = null);
+        _player?.dispose();
+        _initialized = false;
+        _initPlayer();
+      },
+      onToggleFit: () => setState(() => _coverVideo = !_coverVideo),
+      onToggleMute: () {
+        setState(() => _muted = !_muted);
+        _applyVolume();
+      },
+      onToggleHalfVolume: () {
+        setState(() => _halfVolume = !_halfVolume);
+        _applyVolume();
+      },
+      onToggleLoop: () {
+        setState(() => _loopVideo = !_loopVideo);
+        _player?.setPlaylistMode(
+          _loopVideo ? PlaylistMode.single : PlaylistMode.none,
+        );
+      },
+      onFullscreen: () => Navigator.of(context, rootNavigator: true).maybePop(),
     );
   }
 }
 
-class _CloseVideoIntent extends Intent {
-  const _CloseVideoIntent();
+class _InteractiveFullscreenImageItem extends StatefulWidget {
+  const _InteractiveFullscreenImageItem({
+    required this.urls,
+    required this.headers,
+    required this.post,
+    required this.notes,
+    required this.showNotes,
+    required this.onZoomChanged,
+    required this.onTap,
+    super.key,
+  });
+
+  final List<String> urls;
+  final Map<String, String> headers;
+  final Post post;
+  final List<PostNote> notes;
+  final bool showNotes;
+  final ValueChanged<bool> onZoomChanged;
+  final VoidCallback onTap;
+
+  @override
+  State<_InteractiveFullscreenImageItem> createState() =>
+      _InteractiveFullscreenImageItemState();
+}
+
+class _InteractiveFullscreenImageItemState
+    extends State<_InteractiveFullscreenImageItem> {
+  final _controller = TransformationController();
+  TapDownDetails? _doubleTapDetails;
+  bool _zoomed = false;
+  int _pointerCount = 0;
+  int _urlIndex = 0;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _zoomIn([Offset? targetOffset]) {
+    final currentScale = _controller.value.getMaxScaleOnAxis();
+    final newScale = (currentScale * 1.4).clamp(1.0, 10.0);
+    final target = targetOffset ??
+        Offset(
+          MediaQuery.of(context).size.width / 2,
+          MediaQuery.of(context).size.height / 2,
+        );
+    _controller.value = Matrix4.identity()
+      ..translateByDouble(
+          -target.dx * (newScale - 1), -target.dy * (newScale - 1), 0, 1)
+      ..scaleByDouble(newScale, newScale, 1, 1);
+    final nextZoomed = newScale > 1.02;
+    if (mounted) setState(() => _zoomed = nextZoomed);
+    widget.onZoomChanged(nextZoomed);
+  }
+
+  void _zoomOut([Offset? targetOffset]) {
+    final currentScale = _controller.value.getMaxScaleOnAxis();
+    final newScale = (currentScale / 1.4).clamp(1.0, 10.0);
+    if (newScale <= 1.02) {
+      _controller.value = Matrix4.identity();
+      if (mounted) setState(() => _zoomed = false);
+      widget.onZoomChanged(false);
+    } else {
+      final target = targetOffset ??
+          Offset(
+            MediaQuery.of(context).size.width / 2,
+            MediaQuery.of(context).size.height / 2,
+          );
+      _controller.value = Matrix4.identity()
+        ..translateByDouble(
+            -target.dx * (newScale - 1), -target.dy * (newScale - 1), 0, 1)
+        ..scaleByDouble(newScale, newScale, 1, 1);
+      if (mounted) setState(() => _zoomed = true);
+      widget.onZoomChanged(true);
+    }
+  }
+
+  void _toggleZoom() {
+    final tap = _doubleTapDetails?.localPosition ?? Offset.zero;
+    if (_zoomed) {
+      _controller.value = Matrix4.identity();
+      if (mounted) setState(() => _zoomed = false);
+      widget.onZoomChanged(false);
+      return;
+    }
+    const scale = 2.8;
+    _controller.value = Matrix4.identity()
+      ..translateByDouble(-tap.dx * (scale - 1), -tap.dy * (scale - 1), 0, 1)
+      ..scaleByDouble(scale, scale, 1, 1);
+    if (mounted) setState(() => _zoomed = true);
+    widget.onZoomChanged(true);
+  }
+
+  void _advanceFallback() {
+    if (_urlIndex < widget.urls.length - 1) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _urlIndex++);
+      });
+    }
+  }
+
+  Widget _buildPlaceholder() {
+    if (widget.post.previewUrl.isNotEmpty) {
+      return CachedNetworkImage(
+        imageUrl: widget.post.previewUrl,
+        httpHeaders: widget.headers,
+        fit: BoxFit.contain,
+        errorWidget: (_, __, ___) => const Center(
+          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white54),
+        ),
+      );
+    }
+    return const Center(
+      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white54),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentUrl = widget.urls.isNotEmpty && _urlIndex < widget.urls.length
+        ? widget.urls[_urlIndex]
+        : widget.post.fileUrl;
+    final isLocal =
+        currentUrl.startsWith('/') || currentUrl.startsWith('file://');
+    final Widget imageWidget;
+    if (isLocal) {
+      final cleanPath = currentUrl.startsWith('file://')
+          ? currentUrl.replaceFirst('file://', '')
+          : currentUrl;
+      imageWidget = Image.file(
+        File(cleanPath),
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => const Center(
+          child: Icon(Icons.broken_image_rounded, size: 64, color: Colors.white54),
+        ),
+      );
+    } else {
+      final mq = MediaQuery.maybeOf(context);
+      final dpr = mq?.devicePixelRatio ?? 1.5;
+      final screenWidth = mq?.size.width ?? 1080;
+      final maxCacheWidth = (screenWidth * dpr).round().clamp(720, 2048);
+      final isGif = MediaUrlSelector.isGif(widget.post) ||
+          currentUrl.toLowerCase().contains('.gif') ||
+          widget.post.fileType.toLowerCase() == 'gif';
+
+      imageWidget = CachedNetworkImage(
+        key: ValueKey(currentUrl),
+        imageUrl: currentUrl,
+        httpHeaders: widget.headers,
+        memCacheWidth: isGif ? null : maxCacheWidth,
+        fit: BoxFit.contain,
+        placeholder: (context, url) => _buildPlaceholder(),
+        errorWidget: (context, url, error) {
+          if (_urlIndex < widget.urls.length - 1) {
+            _advanceFallback();
+            return _buildPlaceholder();
+          }
+          return _DioImageFallback(
+            imageUrl: url,
+            headers: widget.headers,
+            fit: BoxFit.contain,
+            onFailed: () {},
+          );
+        },
+      );
+    }
+
+    final content = Stack(
+      fit: StackFit.expand,
+      children: [
+        imageWidget,
+        if (widget.showNotes && widget.notes.isNotEmpty)
+          _PostNotesOverlay(
+            post: widget.post,
+            notes: widget.notes,
+          ),
+      ],
+    );
+
+    return Listener(
+      onPointerDown: (_) => _pointerCount++,
+      onPointerUp: (_) {
+        if (_pointerCount > 0) _pointerCount--;
+      },
+      onPointerCancel: (_) {
+        if (_pointerCount > 0) _pointerCount--;
+      },
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          if (!_zoomed) {
+            widget.onTap();
+          }
+        },
+        onDoubleTapDown: (details) => _doubleTapDetails = details,
+        onDoubleTap: _toggleZoom,
+        child: InteractiveViewer(
+          transformationController: _controller,
+          minScale: 1.0,
+          maxScale: 10.0,
+          boundaryMargin: const EdgeInsets.all(200),
+          panEnabled: _zoomed,
+          scaleEnabled: _zoomed || _pointerCount >= 2,
+          clipBehavior: Clip.none,
+          onInteractionEnd: (_) {
+            final scale = _controller.value.getMaxScaleOnAxis();
+            final nextZoomed = scale > 1.03;
+            if (!nextZoomed) {
+              _controller.value = Matrix4.identity();
+            }
+            if (mounted) setState(() => _zoomed = nextZoomed);
+            widget.onZoomChanged(nextZoomed);
+          },
+          child: Listener(
+            onPointerSignal: (event) {
+              if (event is PointerScrollEvent) {
+                GestureBinding.instance.pointerSignalResolver
+                    .register(event, (_) {
+                  if (event.scrollDelta.dy < 0) {
+                    _zoomIn(event.localPosition);
+                  } else if (event.scrollDelta.dy > 0) {
+                    _zoomOut(event.localPosition);
+                  }
+                });
+              }
+            },
+            child: Center(
+              child: content,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _AudioSurface extends StatefulWidget {
@@ -1660,6 +2629,8 @@ class _VideoSurface extends StatefulWidget {
     required this.onFullscreen,
     this.isLandscape,
     this.onToggleOrientation,
+    this.topOffset = 0.0,
+    this.inGallery = false,
   });
 
   final Player player;
@@ -1686,6 +2657,8 @@ class _VideoSurface extends StatefulWidget {
   final VoidCallback onFullscreen;
   final bool? isLandscape;
   final VoidCallback? onToggleOrientation;
+  final double topOffset;
+  final bool inGallery;
 
   @override
   State<_VideoSurface> createState() => _VideoSurfaceState();
@@ -1860,15 +2833,17 @@ class _VideoSurfaceState extends State<_VideoSurface> {
                 },
                 onLongPressStart: (_) => _startSpeedBoost(),
                 onLongPressEnd: (_) => _stopSpeedBoost(),
-                onVerticalDragUpdate: (details) {
-                  final x = details.localPosition.dx;
-                  final width = MediaQuery.sizeOf(context).width;
-                  if (x < width * 0.45) {
-                    _adjustBrightness(details.primaryDelta ?? 0.0);
-                  } else if (x > width * 0.55) {
-                    _adjustVolume(details.primaryDelta ?? 0.0);
-                  }
-                },
+                onVerticalDragUpdate: widget.fullscreen
+                    ? (details) {
+                        final x = details.localPosition.dx;
+                        final width = MediaQuery.sizeOf(context).width;
+                        if (x < width * 0.45) {
+                          _adjustBrightness(details.primaryDelta ?? 0.0);
+                        } else if (x > width * 0.55) {
+                          _adjustVolume(details.primaryDelta ?? 0.0);
+                        }
+                      }
+                    : null,
               ),
             ),
             StreamBuilder<bool>(
@@ -1910,6 +2885,8 @@ class _VideoSurfaceState extends State<_VideoSurface> {
                   loopVideo: widget.loopVideo,
                   coverVideo: widget.coverVideo,
                   fullscreen: widget.fullscreen,
+                  topOffset: widget.topOffset,
+                  inGallery: widget.inGallery,
                   isLocked: _isLocked,
                   isLandscape: widget.isLandscape,
                   isSoftwareDecoding: widget.isSoftwareDecoding,
@@ -1999,16 +2976,29 @@ class _VideoSurfaceState extends State<_VideoSurface> {
         },
         child: Focus(
           autofocus: true,
-          child: MouseRegion(
-            onHover: (_) => widget.onInteract(),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(widget.fullscreen ? 0 : 10),
-              child: widget.fullscreen
-                  ? SizedBox.expand(child: child)
-                  : AspectRatio(
-                      aspectRatio: widget.aspectRatio.clamp(0.35, 2.4),
-                      child: child,
-                    ),
+          child: Listener(
+            onPointerSignal: (event) {
+              if (event is PointerScrollEvent && !widget.fullscreen) {
+                final scrollable = Scrollable.maybeOf(context);
+                if (scrollable != null && scrollable.position.hasPixels) {
+                  final pos = scrollable.position;
+                  final target = (pos.pixels + event.scrollDelta.dy)
+                      .clamp(pos.minScrollExtent, pos.maxScrollExtent);
+                  pos.jumpTo(target);
+                }
+              }
+            },
+            child: MouseRegion(
+              onHover: (_) => widget.onInteract(),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(widget.fullscreen ? 0 : 10),
+                child: widget.fullscreen
+                    ? SizedBox.expand(child: child)
+                    : AspectRatio(
+                        aspectRatio: widget.aspectRatio.clamp(0.35, 2.4),
+                        child: child,
+                      ),
+              ),
             ),
           ),
         ),
@@ -2167,10 +3157,12 @@ class _ZoomableImage extends StatefulWidget {
   const _ZoomableImage({
     required this.child,
     this.onGestureLockChanged,
+    this.onTap,
   });
 
   final Widget child;
   final ValueChanged<bool>? onGestureLockChanged;
+  final VoidCallback? onTap;
 
   @override
   State<_ZoomableImage> createState() => _ZoomableImageState();
@@ -2278,6 +3270,11 @@ class _ZoomableImageState extends State<_ZoomableImage> {
                 onPointerCancel: (_) => _releasePointer(),
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    if (!_zoomed) {
+                      widget.onTap?.call();
+                    }
+                  },
                   onDoubleTapDown: (details) => _doubleTapDetails = details,
                   onDoubleTap: _toggleZoom,
                   child: InteractiveViewer(
@@ -2287,7 +3284,7 @@ class _ZoomableImageState extends State<_ZoomableImage> {
                     scaleFactor: 1000000.0,
                     boundaryMargin: const EdgeInsets.all(160),
                     panEnabled: _zoomed,
-                    scaleEnabled: true,
+                    scaleEnabled: _zoomed || _pointerCount >= 2,
                     clipBehavior: Clip.none,
                     onInteractionStart: (_) {
                       if (_pointerCount >= 2 || _zoomed) _setLocked(true);
@@ -2316,9 +3313,15 @@ class _ZoomableImageState extends State<_ZoomableImage> {
                                 _zoomOut();
                               }
                             });
+                          } else {
+                            final scrollable = Scrollable.maybeOf(context);
+                            if (scrollable != null && scrollable.position.hasPixels) {
+                              final pos = scrollable.position;
+                              final target = (pos.pixels + event.scrollDelta.dy)
+                                  .clamp(pos.minScrollExtent, pos.maxScrollExtent);
+                              pos.jumpTo(target);
+                            }
                           }
-                          // If Ctrl/Meta is not held, do NOT register any resolver.
-                          // This lets the event bubble up to the parent Scrollable / ListView.
                         }
                       },
                       child: child,
@@ -2741,6 +3744,8 @@ class _VideoControls extends StatefulWidget {
     required this.loopVideo,
     required this.coverVideo,
     required this.fullscreen,
+    this.topOffset = 0.0,
+    this.inGallery = false,
     required this.isLocked,
     this.isLandscape,
     required this.isSoftwareDecoding,
@@ -2762,6 +3767,8 @@ class _VideoControls extends StatefulWidget {
   final bool loopVideo;
   final bool coverVideo;
   final bool fullscreen;
+  final double topOffset;
+  final bool inGallery;
   final bool isLocked;
   final bool? isLandscape;
   final bool isSoftwareDecoding;
@@ -2792,8 +3799,14 @@ class _VideoControlsState extends State<_VideoControls> {
       return Align(
         alignment: Alignment.topLeft,
         child: SafeArea(
+          top: widget.fullscreen && widget.topOffset == 0,
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.only(
+              top: widget.topOffset > 0 ? widget.topOffset + 8 : 16,
+              left: 16,
+              right: 16,
+              bottom: 16,
+            ),
             child: _RoundControlButton(
               tooltip: isRu ? 'Разблокировать экран' : 'Unlock screen',
               icon: Icons.lock_rounded,
@@ -2818,26 +3831,28 @@ class _VideoControlsState extends State<_VideoControls> {
           children: [
             // Top cinematic gradient with control actions
             Positioned(
-              top: 0,
+              top: widget.topOffset,
               left: 0,
               right: 0,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.black87, Colors.transparent],
-                  ),
+                decoration: BoxDecoration(
+                  gradient: widget.topOffset > 0
+                      ? null
+                      : const LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Colors.black87, Colors.transparent],
+                        ),
                 ),
                 child: SafeArea(
-                  top: widget.fullscreen,
+                  top: widget.fullscreen && widget.topOffset == 0,
                   bottom: false,
                   left: widget.fullscreen,
                   right: widget.fullscreen,
                   child: Row(
                     children: [
-                      if (widget.fullscreen) ...[
+                      if (widget.fullscreen && !widget.inGallery) ...[
                         _RoundControlButton(
                           tooltip: isRu ? 'Закрыть' : 'Close',
                           icon: Icons.arrow_back_rounded,
@@ -2845,7 +3860,9 @@ class _VideoControlsState extends State<_VideoControls> {
                         ),
                         const SizedBox(width: 8),
                       ],
-                      if (widget.fullscreen && widget.onToggleOrientation != null) ...[
+                      if (widget.fullscreen &&
+                          widget.onToggleOrientation != null &&
+                          !widget.inGallery) ...[
                         _RoundControlButton(
                           tooltip: (widget.isLandscape ?? false)
                               ? (isRu ? 'Портретная ориентация' : 'Portrait orientation')

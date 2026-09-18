@@ -1,5 +1,26 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.0.3',
+    title: 'Полноэкранный режим видео и фото, перенос кнопки управления и исправление поиска',
+    titleEn: 'Unified Fullscreen Media Gallery, Relocated Controls & Desktop Search Fixes',
+    bullets: [
+      'Полноэкранный режим для всех видов медиа: видео теперь открывается в единой полноэкранной галерее со свайпами между постами ленты, плавным жестом смахивания и сохранением позиции воспроизведения.',
+      'Перенос кнопки «Во весь экран»: плавающая кнопка убрана с поверхности медиа (больше не перекрывает контент) и перемещена в верхнюю панель поста рядом с кнопкой закрытия.',
+      'Оптимизация производительности: при открытии полноэкранного режима фоновая вкладка поста скрывается (Offstage), а видео ставится на паузу, предотвращая нагрев и перегрузку процессора и GPU на мобильных устройствах.',
+      'Исправление GIF в полноэкранном режиме: анимированные GIF-файлы теперь корректно и плавно воспроизводятся на смартфонах без зависаний.',
+      'Исправление поиска тегов на ПК: горячие клавиши навигации больше не конфликтуют с вводом текста в строку поиска тегов; клик по подсказкам мыши теперь всегда надёжно применяет выбранный тег.',
+      'Улучшение воспроизведения видео: видео в ленте останавливается при перелистывании и больше не стартует на автовоспроизведение при входе в полноэкранный режим.',
+    ],
+    bulletsEn: [
+      'Unified Fullscreen Media Gallery: video posts now open in the unified swipeable fullscreen viewer alongside images and GIFs, supporting drag-to-dismiss and persistent playback position.',
+      'Relocated Fullscreen Button: the floating overlay button was removed from media surfaces to prevent obstruction and placed directly in the top action bar next to the Close button.',
+      'Performance Optimization: background post view is offstaged and background video is automatically paused during fullscreen, preventing unnecessary CPU/GPU load on mobile devices.',
+      'Mobile Fullscreen GIF Fix: animated GIFs now play smoothly in fullscreen without caching freezing.',
+      'Desktop Tag Search Fixes: keyboard shortcuts no longer interfere with tag input search field; clicking dropdown suggestions with mouse applies the tag reliably.',
+      'Video Playback Polish: videos properly stop on swipe in feed, and fullscreen videos no longer autoplay unexpectedly upon opening.',
+    ],
+  ),
+  PrismaChange(
     version: '4.0.2',
     title: 'Автообновление для ПК, новый дизайн диалога обновлений и улучшение скролла',
     titleEn: 'Desktop In-App Auto-Updates, Redesigned Update Dialog & Scroll Polish',

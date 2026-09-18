@@ -40,7 +40,7 @@ class TagChip extends StatelessWidget {
 
     final (Color baseColor, Color textColor) = _colorsForCategory(cat, scheme, isDark);
 
-    final chipWidget = Container(
+    return Container(
       decoration: BoxDecoration(
         color: baseColor.withValues(alpha: isDark ? 0.16 : 0.10),
         borderRadius: BorderRadius.circular(10),
@@ -54,6 +54,7 @@ class TagChip extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(10),
           onTap: onTap,
+          onLongPress: onLongPress,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             child: Row(
@@ -82,13 +83,6 @@ class TagChip extends StatelessWidget {
           ),
         ),
       ),
-    );
-
-    if (onLongPress == null) return chipWidget;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onLongPress: onLongPress,
-      child: chipWidget,
     );
   }
 
