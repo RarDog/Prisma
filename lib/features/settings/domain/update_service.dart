@@ -66,7 +66,7 @@ class UpdateService {
 
   Future<Result<AppUpdateInfo?>> checkForUpdates({
     bool force = false,
-    UpdateSource source = UpdateSource.gitea,
+    UpdateSource source = UpdateSource.github,
   }) async {
     final settingsResult = await _settingsService.getSettings();
     final settings = settingsResult is Success<AppSettings>
@@ -100,7 +100,7 @@ class UpdateService {
 
   Future<AppUpdateInfo> _latestAllowedRelease(
     AppSettings settings, {
-    UpdateSource source = UpdateSource.gitea,
+    UpdateSource source = UpdateSource.github,
   }) async {
     final isGitea = source == UpdateSource.gitea;
     final rUrl = isGitea ? giteaReleasesUrl : githubReleasesUrl;
@@ -241,7 +241,16 @@ class UpdateService {
       return info.apkUrlForAbi(abi);
     }
     if (Platform.isLinux) {
-      return info.linuxAppImageUrl ?? info.linuxTarGzUrl ?? info.portableZipUrl;
+      final isAppImage = Platform.environment.containsKey('APPIMAGE');
+      if (isAppImage) {
+        if (info.linuxAppImageUrl != null) {
+          return info.linuxAppImageUrl;
+        }
+        throw Exception(
+          'Обновление в формате AppImage недоступно для этой версии на сервере обновлений.',
+        );
+      }
+      return info.linuxTarGzUrl ?? info.portableZipUrl ?? info.linuxAppImageUrl;
     }
     if (Platform.isWindows) {
       return info.windowsInstallerUrl ?? info.windowsZipUrl ?? info.portableZipUrl;
@@ -262,7 +271,12 @@ class UpdateService {
       return 'Prisma-v${info.version}-linux-x86_64.AppImage';
     }
     if (Platform.isAndroid) return 'Prisma-v${info.version}-android.apk';
-    if (Platform.isLinux) return 'Prisma-v${info.version}-linux-x64.tar.gz';
+    if (Platform.isLinux) {
+      if (Platform.environment.containsKey('APPIMAGE')) {
+        return 'Prisma-v${info.version}-linux-x86_64.AppImage';
+      }
+      return 'Prisma-v${info.version}-linux-x64.tar.gz';
+    }
     if (Platform.isWindows) return 'Prisma-v${info.version}-windows-x64.zip';
     if (Platform.isMacOS) return 'Prisma-v${info.version}-macos.zip';
     return 'PrismaPortable-v${info.version}.zip';
@@ -339,8 +353,17 @@ class UpdateService {
   Future<void> _installLinuxUpdate(String downloadedPath) async {
     await Process.run('chmod', ['+x', downloadedPath]);
 
+    final isAppImageFile = downloadedPath.endsWith('.AppImage') ||
+        downloadedPath.toLowerCase().endsWith('.appimage');
+
     final runningAppImage = Platform.environment['APPIMAGE'];
     if (runningAppImage != null && runningAppImage.isNotEmpty) {
+      if (!isAppImageFile) {
+        throw Exception(
+          'Скачанный файл не является AppImage и не может заменить текущий запускаемый файл.',
+        );
+      }
+
       final appImageFile = File(runningAppImage);
       if (appImageFile.existsSync()) {
         final oldBackup = '$runningAppImage.old';
@@ -361,12 +384,18 @@ class UpdateService {
       }
     }
 
-    if (downloadedPath.endsWith('.AppImage')) {
+    if (isAppImageFile) {
       await Process.start(downloadedPath, [], mode: ProcessStartMode.detached);
       exit(0);
     } else if (downloadedPath.endsWith('.tar.gz') || downloadedPath.endsWith('.tgz')) {
       final appDir = File(Platform.resolvedExecutable).parent.path;
-      await Process.run('tar', ['-xzf', downloadedPath, '-C', appDir]);
+      final res = await Process.run(
+        'tar',
+        ['--unlink-first', '-xzf', downloadedPath, '-C', appDir],
+      );
+      if (res.exitCode != 0) {
+        await Process.run('tar', ['-xzf', downloadedPath, '-C', appDir]);
+      }
       await Process.start(Platform.resolvedExecutable, [], mode: ProcessStartMode.detached);
       exit(0);
     }
@@ -380,13 +409,17 @@ class UpdateService {
 
     final exePath = Platform.resolvedExecutable;
     final exeDir = File(exePath).parent.path;
+    final cleanExeDir = exeDir.replaceAll('/', '\\').replaceAll(RegExp(r'\\+$'), '');
+    final cleanDownloadedPath = downloadedPath.replaceAll('/', '\\');
+    final cleanExePath = exePath.replaceAll('/', '\\');
+
     final scriptPath = '${Directory.systemTemp.path}\\prisma_apply_update.bat';
     final scriptContent = '''
 @echo off
 timeout /t 2 /nobreak >nul
-tar -xf "$downloadedPath" -C "$exeDir"
-del /f /q "$downloadedPath"
-start "" "$exePath"
+tar -xf "$cleanDownloadedPath" -C "$cleanExeDir"
+del /f /q "$cleanDownloadedPath"
+start "" "$cleanExePath"
 del /f /q "%~f0"
 ''';
     await File(scriptPath).writeAsString(scriptContent);
@@ -414,6 +447,7 @@ sleep 2
 rm -rf "$appBundlePath"
 unzip -q -o "$downloadedPath" -d "$parentDir"
 rm -f "$downloadedPath"
+xattr -dr com.apple.quarantine "$appBundlePath" 2>/dev/null || true
 open "$appBundlePath"
 rm -f "\$0"
 ''';

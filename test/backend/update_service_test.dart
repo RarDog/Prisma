@@ -32,6 +32,10 @@ void main() {
       service.assetFileName(info, 'https://github.com/RarDog/Prisma/releases/download/v2.0.2/unknown-linux'),
       'Prisma-v2.0.2-linux-x64.tar.gz',
     );
+    expect(
+      service.assetFileName(info, 'https://github.com/RarDog/Prisma/releases/download/v2.0.2/Prisma-v2.0.2-linux-x86_64.AppImage'),
+      'Prisma-v2.0.2-linux-x86_64.AppImage',
+    );
   });
 }
 
