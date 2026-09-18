@@ -42,14 +42,12 @@
 
 ## 🌐 Supported Sources
 
-| Source | Content |
-|---|---|
-| **Safebooru** | Anime art, wallpapers, tag search & comments (Safe for work) |
-| **Gelbooru** | Artworks, anime, tag taxonomy |
-| **Rule34** | Booru media, WebM / MP4 / GIF |
-| **e621 / e926** | Anthro & furry art, tag search |
-| **Realbooru** | Cosplay and realistic photography |
-| **Pawchive** | Creator archives (Patreon, Fanbox, Discord) |
+- **Safebooru**
+- **Gelbooru**
+- **Rule34**
+- **e621 / e926**
+- **Realbooru**
+- **Pawchive**
 
 ---
 
