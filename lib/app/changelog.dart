@@ -1,5 +1,28 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.0.4',
+    title: 'Надёжная мультиплатформенная система обновлений и улучшение интерфейса',
+    titleEn: 'Robust Multiplatform In-App Updates & Update Dialog Polish',
+    bullets: [
+      'Linux AppImage: гарантированная загрузка и безопасная замена только исполняемых .AppImage файлов, исключая случайную подмену архивами.',
+      'Linux Tarball: добавлен флаг --unlink-first при распаковке, решающий проблему блокировки занятых файлов ядра Linux (Text file busy).',
+      'Windows: нормализация путей и экранирования в скрипте обновления prisma_apply_update.bat для безошибочной работы встроенного tar.',
+      'macOS: автоматическое снятие карантинного атрибута Gatekeeper (com.apple.quarantine) для предотвращения системных блокировок при перезапуске.',
+      'Android: исправлена ошибка FileProvider при установке APK за счёт расширения конфигурации разрешённых путей и сохранения во внутренний кэш.',
+      'Диалог обновлений: полноценная поддержка разметки Markdown, локализация списка изменений под язык системы и адаптивная раскладка кнопок без обрезания текста.',
+      'GitHub по умолчанию: автопроверка обновлений переведена на GitHub Releases с полным набором актуальных бинарников.',
+    ],
+    bulletsEn: [
+      'Linux AppImage: guaranteed download and atomic replacement of executable .AppImage binaries only, preventing unintended archive substitutions.',
+      'Linux Tarball: added --unlink-first extraction flag to bypass Linux kernel "Text file busy" errors during in-place executable updates.',
+      'Windows: path normalization and quote escaping in prisma_apply_update.bat to ensure reliable extraction by Windows tar.',
+      'macOS: automatic Gatekeeper quarantine removal (com.apple.quarantine) avoiding "damaged app" system warnings on restart.',
+      'Android: fixed FileProvider path resolution crash by properly configuring root paths and caching directly to app cache directory.',
+      'Update Dialog: rich Markdown changelog rendering, automatic single-language changelog filtering, and adaptive button layouts preventing label truncation.',
+      'Default GitHub Source: automatic update checks now default directly to GitHub Releases with comprehensive binary builds.',
+    ],
+  ),
+  PrismaChange(
     version: '4.0.3',
     title: 'Полноэкранный режим видео и фото, перенос кнопки управления и исправление поиска',
     titleEn: 'Unified Fullscreen Media Gallery, Relocated Controls & Desktop Search Fixes',
