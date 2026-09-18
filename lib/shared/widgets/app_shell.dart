@@ -505,30 +505,25 @@ class _DesktopShellState extends State<_DesktopShell>
                                         width: 44,
                                         height: 44,
                                         decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            begin: Alignment.topLeft,
-                                            end: Alignment.bottomRight,
-                                            colors: [
-                                              scheme.primary,
-                                              scheme.tertiary,
-                                            ],
-                                          ),
                                           borderRadius:
                                               BorderRadius.circular(14),
                                           boxShadow: [
                                             BoxShadow(
                                               color: scheme.primary
-                                                  .withValues(alpha: 0.35),
-                                              blurRadius: 12,
-                                              offset: const Offset(0, 3),
+                                                  .withValues(alpha: 0.25),
+                                              blurRadius: 10,
+                                              offset: const Offset(0, 2),
                                             ),
                                           ],
                                         ),
-                                        child: const Center(
-                                          child: Icon(
-                                            Icons.auto_awesome_rounded,
-                                            color: Colors.white,
-                                            size: 24,
+                                        child: ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(14),
+                                          child: Image.asset(
+                                            'assets/icon/app_icon_rounded.png',
+                                            width: 44,
+                                            height: 44,
+                                            fit: BoxFit.cover,
                                           ),
                                         ),
                                       ),
@@ -546,7 +541,7 @@ class _DesktopShellState extends State<_DesktopShell>
                                                       MainAxisAlignment.center,
                                                   children: [
                                                     Text(
-                                                      'Lunaris',
+                                                      'Prisma',
                                                       maxLines: 1,
                                                       softWrap: false,
                                                       style: theme
@@ -580,7 +575,7 @@ class _DesktopShellState extends State<_DesktopShell>
                                                         ),
                                                       ),
                                                       child: Text(
-                                                        'v3.7.2',
+                                                        'v4.0.0',
                                                         style: TextStyle(
                                                           fontSize: 10,
                                                           fontWeight:

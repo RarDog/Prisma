@@ -173,6 +173,16 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
                       ),
                       const SizedBox(width: 8),
                       _PresetChip(
+                        name: 'Safebooru',
+                        color: const Color(0xFF0284C7),
+                        onTap: () => _applyPreset(
+                          name: 'Safebooru',
+                          baseUrl: 'https://safebooru.org',
+                          apiType: 'safebooru',
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _PresetChip(
                         name: 'Danbooru',
                         color: const Color(0xFF3B82F6),
                         onTap: () => _applyPreset(
@@ -267,6 +277,10 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
                         DropdownMenuItem(
                           value: 'rule34',
                           child: Text('Rule34 (compatible)'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'safebooru',
+                          child: Text('Safebooru (compatible)'),
                         ),
                         DropdownMenuItem(
                           value: 'danbooru',

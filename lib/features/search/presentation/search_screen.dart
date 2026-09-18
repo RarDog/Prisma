@@ -347,6 +347,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         color: const Color(0xFF8B5CF6),
                         tags: const [
                           'provider:gelbooru',
+                          'provider:safebooru',
                           'provider:danbooru',
                           'provider:e621',
                           'provider:rule34',

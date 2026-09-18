@@ -21,6 +21,10 @@
   <img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="Лицензия" />
 </p>
 
+<p align="center">
+  <img src="assets/preview.png" width="900" alt="Превью Prisma" />
+</p>
+
 ---
 
 ## ✨ Возможности
@@ -40,6 +44,7 @@
 
 | Источник | Контент |
 |---|---|
+| **Safebooru** | Аниме-арты, обои, поиск по тегам и комментарии (Safe for work) |
 | **Gelbooru** | Аниме-арты, теги, авторы |
 | **Rule34** | Booru-контент, видео WebM / MP4, GIF |
 | **e621 / e926** | Фурри- и антро-арт с богатой системой тегов |
@@ -56,9 +61,12 @@
   - `app-arm64-v8a-release.apk` — для большинства современных смартфонов (64-bit).
   - `app-armeabi-v7a-release.apk` — для старых 32-bit устройств.
   - `app-x86_64-release.apk` — для эмуляторов и хромбуков.
+  - `app-release.apk` — универсальный APK для любых Android устройств.
 - **Linux**:
-  - `Prisma-v4.0.0-linux-x86_64.AppImage` — портативный исполняемый файл AppImage.
-  - `Prisma-v4.0.0-linux-x64.tar.gz` — архив с бинарными файлами.
+  - `Prisma-v4.0.1-linux-x86_64.AppImage` — портативный исполняемый файл AppImage.
+  - `Prisma-v4.0.1-linux-x64.tar.gz` — архив с бинарными файлами.
+
+---
 
 ---
 

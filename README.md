@@ -21,6 +21,10 @@
   <img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License" />
 </p>
 
+<p align="center">
+  <img src="assets/preview.png" width="900" alt="Prisma Preview" />
+</p>
+
 ---
 
 ## ✨ Features
@@ -40,6 +44,7 @@
 
 | Source | Content |
 |---|---|
+| **Safebooru** | Anime art, wallpapers, tag search & comments (Safe for work) |
 | **Gelbooru** | Artworks, anime, tag taxonomy |
 | **Rule34** | Booru media, WebM / MP4 / GIF |
 | **e621 / e926** | Anthro & furry art, tag search |
@@ -56,9 +61,12 @@ Pre-built binaries are available on the **[Releases](https://github.com/RarDog/P
   - `app-arm64-v8a-release.apk` — recommended for most modern phones (64-bit).
   - `app-armeabi-v7a-release.apk` — for older 32-bit Android devices.
   - `app-x86_64-release.apk` — for emulators and Chromebooks.
+  - `app-release.apk` — universal fat APK for all Android devices.
 - **Linux**:
-  - `Prisma-v4.0.0-linux-x86_64.AppImage` — portable standalone executable.
-  - `Prisma-v4.0.0-linux-x64.tar.gz` — portable tarball bundle.
+  - `Prisma-v4.0.1-linux-x86_64.AppImage` — portable standalone executable.
+  - `Prisma-v4.0.1-linux-x64.tar.gz` — portable tarball bundle.
+
+---
 
 ---
 

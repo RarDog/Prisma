@@ -72,21 +72,35 @@ EOF
 
 mkdir -p "${APP_DIR}/usr/share/applications"
 cp "${APP_DIR}/prisma.desktop" "${APP_DIR}/usr/share/applications/prisma.desktop"
+cp "${APP_DIR}/prisma.desktop" "${APP_DIR}/usr/share/applications/com.example.gel_rule_app.desktop"
+cp "${APP_DIR}/prisma.desktop" "${APP_DIR}/com.example.gel_rule_app.desktop"
 
-# Icons
-ICON_SRC="${ROOT_DIR}/macos/Runner/Assets.xcassets/AppIcon.appiconset"
+# Icons: Generate all standard resolutions directly from the supersampled round icon
 ROUNDED_ICON="${ROOT_DIR}/assets/icon/app_icon_rounded.png"
-if [ -d "${ICON_SRC}" ]; then
-  for size in 16 24 32 48 64 128 256 512; do
-    if [ -f "${ICON_SRC}/app_icon_${size}.png" ]; then
-      mkdir -p "${APP_DIR}/usr/share/icons/hicolor/${size}x${size}/apps"
-      cp "${ICON_SRC}/app_icon_${size}.png" "${APP_DIR}/usr/share/icons/hicolor/${size}x${size}/apps/prisma.png"
-    fi
-  done
-  cp "${ROUNDED_ICON}" "${APP_DIR}/prisma.png"
-  cp "${ROUNDED_ICON}" "${APP_DIR}/.DirIcon"
-  cp "${ROUNDED_ICON}" "${BUNDLE_DIR}/prisma.png"
-fi
+python3 - << PYEOF
+from PIL import Image
+import os
+
+src_path = "${ROUNDED_ICON}"
+app_dir = "${APP_DIR}"
+bundle_dir = "${BUNDLE_DIR}"
+src = Image.open(src_path)
+
+sizes = [16, 24, 32, 48, 64, 128, 256, 512]
+for size in sizes:
+    resized = src.resize((size, size), Image.Resampling.LANCZOS)
+    hicolor_dir = f"{app_dir}/usr/share/icons/hicolor/{size}x{size}/apps"
+    os.makedirs(hicolor_dir, exist_ok=True)
+    resized.save(f"{hicolor_dir}/prisma.png")
+    resized.save(f"{hicolor_dir}/com.example.gel_rule_app.png")
+
+# AppDir roots
+src.save(f"{app_dir}/prisma.png")
+src.save(f"{app_dir}/com.example.gel_rule_app.png")
+src.save(f"{app_dir}/.DirIcon", format="PNG")
+src.save(f"{bundle_dir}/prisma.png")
+print("Icons generated successfully for all resolutions.")
+PYEOF
 
 # Build AppImage
 echo "Generating AppImage with ${APPIMAGETOOL}..."

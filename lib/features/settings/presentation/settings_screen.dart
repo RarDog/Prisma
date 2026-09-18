@@ -151,6 +151,11 @@ class _SettingsContentState extends ConsumerState<_SettingsContent> {
       ),
     ];
 
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final maxSettingsWidth = screenWidth >= 1400
+        ? 1280.0
+        : (screenWidth >= 1000 ? 1120.0 : 860.0);
+
     return Column(
       children: [
         // Pinned Top Category Quick Navigation (Frosted Glass)
@@ -174,7 +179,7 @@ class _SettingsContentState extends ConsumerState<_SettingsContent> {
               child: Align(
                 alignment: Alignment.center,
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 860),
+                  constraints: BoxConstraints(maxWidth: maxSettingsWidth),
                   child: _CategoryQuickNav(
                     categories: navCategories,
                     onSelect: _scrollTo,
@@ -198,7 +203,7 @@ class _SettingsContentState extends ConsumerState<_SettingsContent> {
             child: Align(
               alignment: Alignment.topCenter,
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 860),
+                constraints: BoxConstraints(maxWidth: maxSettingsWidth),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -879,9 +884,7 @@ class _SettingsContentState extends ConsumerState<_SettingsContent> {
                       onCheckUpdates: () => _checkUpdates(context, ref),
                       onShowChangelog: () => _showChangelog(context),
                       onExportJson: () => _exportJson(context, ref),
-                      onImportJson: () => _importDialog(context, ref),
-                      onExportBackup: () => _exportBackupFile(context, ref),
-                      onImportBackup: () => _importBackupFile(context, ref),
+                      onImportJson: () => _importJson(context, ref),
                       onSaveAutoBackup: () => _saveAutoBackupNow(context, ref),
                       onRestoreAutoBackup: () =>
                           _restoreFromPersistentBackup(context, ref),
@@ -1028,28 +1031,224 @@ class _SettingsContentState extends ConsumerState<_SettingsContent> {
 
   Future<void> _exportJson(BuildContext context, WidgetRef ref) async {
     final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
-    final json =
-        await ref.read(settingsControllerProvider.notifier).exportJson();
-    await Clipboard.setData(ClipboardData(text: json));
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          isRu ? 'JSON настроек скопирован' : 'Settings JSON copied',
+    final theme = Theme.of(context);
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: theme.colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (bottomSheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                isRu ? 'JSON Экспорт' : 'JSON Export',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.file_download_rounded,
+                    color: theme.colorScheme.onPrimaryContainer,
+                  ),
+                ),
+                title: Text(isRu ? 'Сохранить как файл .json' : 'Save as .json file'),
+                subtitle: Text(
+                  isRu
+                      ? 'Полный бэкап настроек, аккаунтов, избранного и коллекций'
+                      : 'Complete snapshot of settings, accounts, favorites and collections',
+                ),
+                onTap: () async {
+                  Navigator.pop(bottomSheetContext);
+                  final success = await ref.read(backupServiceProvider).exportBackup();
+                  if (!context.mounted) return;
+                  if (success) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          isRu
+                              ? 'Бэкап успешно сохранен в файл'
+                              : 'Backup saved to file successfully',
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
+              const SizedBox(height: 6),
+              ListTile(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.copy_all_rounded,
+                    color: theme.colorScheme.onSecondaryContainer,
+                  ),
+                ),
+                title: Text(isRu ? 'Скопировать JSON в буфер' : 'Copy JSON to clipboard'),
+                subtitle: Text(
+                  isRu
+                      ? 'Скопировать текстовый JSON полного бэкапа'
+                      : 'Copy full backup formatted JSON text to clipboard',
+                ),
+                onTap: () async {
+                  Navigator.pop(bottomSheetContext);
+                  final json = await ref.read(backupServiceProvider).createBackupJson();
+                  await Clipboard.setData(ClipboardData(text: json));
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        isRu
+                            ? 'Полный JSON бэкапа скопирован в буфер обмена'
+                            : 'Full backup JSON copied to clipboard',
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Future<void> _exportBackupFile(BuildContext context, WidgetRef ref) async {
+  Future<void> _importJson(BuildContext context, WidgetRef ref) async {
     final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
-    final success = await ref.read(backupServiceProvider).exportBackup();
-    if (!context.mounted) return;
-    if (success) {
+    final theme = Theme.of(context);
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: theme.colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (bottomSheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                isRu ? 'JSON Импорт' : 'JSON Import',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.file_open_rounded,
+                    color: theme.colorScheme.onPrimaryContainer,
+                  ),
+                ),
+                title: Text(isRu ? 'Выбрать файл .json' : 'Choose .json file'),
+                subtitle: Text(
+                  isRu
+                      ? 'Восстановление из ранее сохраненного файла бэкапа'
+                      : 'Restore from a previously saved backup file',
+                ),
+                onTap: () async {
+                  Navigator.pop(bottomSheetContext);
+                  final result = await ref.read(backupServiceProvider).importBackup();
+                  if (!context.mounted || result == null) return;
+                  _handleRestoreResult(context, ref, result, isRu);
+                },
+              ),
+              const SizedBox(height: 6),
+              ListTile(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.paste_rounded,
+                    color: theme.colorScheme.onSecondaryContainer,
+                  ),
+                ),
+                title: Text(isRu ? 'Вставить JSON текст' : 'Paste JSON text'),
+                subtitle: Text(
+                  isRu
+                      ? 'Вставить текст JSON из буфера обмена вручную'
+                      : 'Paste raw JSON string manually from clipboard',
+                ),
+                onTap: () {
+                  Navigator.pop(bottomSheetContext);
+                  _importDialog(context, ref);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _handleRestoreResult(
+    BuildContext context,
+    WidgetRef ref,
+    Result<AppSettings> result,
+    bool isRu,
+  ) {
+    if (result is Success<AppSettings>) {
+      ref.invalidate(appSettingsProvider);
+      ref.invalidate(settingsControllerProvider);
+      ref.invalidate(providerRepositoryProvider);
+      ref.invalidate(providerManagerProvider);
+      ref.invalidate(favoriteRepositoryProvider);
+      ref.invalidate(collectionRepositoryProvider);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            isRu ? 'Бэкап сохранен / отправлен' : 'Backup saved / shared',
+            isRu
+                ? 'Все данные (настройки, провайдеры, избранное, коллекции) успешно импортированы!'
+                : 'All data (settings, providers, favorites, collections) successfully imported!',
+          ),
+        ),
+      );
+    } else if (result is Error<AppSettings>) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${isRu ? "Ошибка импорта" : "Import error"}: ${result.failure.message}',
           ),
         ),
       );
@@ -1063,12 +1262,13 @@ class _SettingsContentState extends ConsumerState<_SettingsContent> {
         .saveAutoBackupToPersistentStorage(force: true);
     if (!context.mounted) return;
     if (success) {
+      final path = ref.read(backupServiceProvider).lastPersistentBackupPath ?? '';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             isRu
-                ? 'Данные сохранены в хранилище Prisma!'
-                : 'Data saved to Prisma storage!',
+                ? 'Автобэкап успешно сохранен!${path.isNotEmpty ? " ($path)" : ""}'
+                : 'Auto-backup saved successfully!${path.isNotEmpty ? " ($path)" : ""}',
           ),
         ),
       );
@@ -1091,61 +1291,7 @@ class _SettingsContentState extends ConsumerState<_SettingsContent> {
     final result =
         await ref.read(backupServiceProvider).restoreFromPersistentStorage();
     if (!context.mounted) return;
-    if (result is Success<AppSettings>) {
-      ref.invalidate(appSettingsProvider);
-      ref.invalidate(settingsControllerProvider);
-      ref.invalidate(providerRepositoryProvider);
-      ref.invalidate(favoriteRepositoryProvider);
-      ref.invalidate(collectionRepositoryProvider);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            isRu
-                ? 'Все данные успешно восстановлены из автобэкапа!'
-                : 'All data successfully restored from backup!',
-          ),
-        ),
-      );
-    } else if (result is Error<AppSettings>) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '${isRu ? "Ошибка восстановления" : "Restore error"}: ${result.failure.message}',
-          ),
-        ),
-      );
-    }
-  }
-
-  Future<void> _importBackupFile(BuildContext context, WidgetRef ref) async {
-    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
-    final result = await ref.read(backupServiceProvider).importBackup();
-    if (!context.mounted) return;
-    if (result == null) return;
-    if (result is Success<AppSettings>) {
-      ref.invalidate(appSettingsProvider);
-      ref.invalidate(settingsControllerProvider);
-      ref.invalidate(providerRepositoryProvider);
-      ref.invalidate(favoriteRepositoryProvider);
-      ref.invalidate(collectionRepositoryProvider);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            isRu
-                ? 'Все данные успешно импортированы!'
-                : 'All data successfully imported!',
-          ),
-        ),
-      );
-    } else if (result is Error<AppSettings>) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '${isRu ? "Ошибка импорта" : "Import error"}: ${result.failure.message}',
-          ),
-        ),
-      );
-    }
+    _handleRestoreResult(context, ref, result, isRu);
   }
 
   Future<void> _importDialog(BuildContext context, WidgetRef ref) async {
@@ -1154,12 +1300,30 @@ class _SettingsContentState extends ConsumerState<_SettingsContent> {
     await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(isRu ? 'Импорт настроек' : 'Import settings'),
-        content: TextField(
-          controller: controller,
-          minLines: 6,
-          maxLines: 12,
-          decoration: const InputDecoration(labelText: 'JSON'),
+        title: Text(isRu ? 'Импорт JSON' : 'Import JSON'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              isRu
+                  ? 'Вставьте JSON настроек или полного бэкапа:'
+                  : 'Paste settings or full backup JSON:',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: controller,
+              minLines: 5,
+              maxLines: 10,
+              decoration: InputDecoration(
+                hintText: '{\n  "version": 3,\n  ...\n}',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -1168,10 +1332,12 @@ class _SettingsContentState extends ConsumerState<_SettingsContent> {
           ),
           FilledButton(
             onPressed: () async {
-              await ref
-                  .read(settingsControllerProvider.notifier)
-                  .importJson(controller.text);
-              if (context.mounted) Navigator.pop(context);
+              final text = controller.text.trim();
+              if (text.isEmpty) return;
+              Navigator.pop(context);
+              final result = await ref.read(backupServiceProvider).restoreFromJson(text);
+              if (!context.mounted) return;
+              _handleRestoreResult(context, ref, result, isRu);
             },
             child: Text(isRu ? 'Импортировать' : 'Import'),
           ),
@@ -2768,8 +2934,6 @@ class _HeroBrandBanner extends StatelessWidget {
     required this.onShowChangelog,
     required this.onExportJson,
     required this.onImportJson,
-    required this.onExportBackup,
-    required this.onImportBackup,
     this.onSaveAutoBackup,
     this.onRestoreAutoBackup,
   });
@@ -2781,8 +2945,6 @@ class _HeroBrandBanner extends StatelessWidget {
   final VoidCallback onShowChangelog;
   final VoidCallback onExportJson;
   final VoidCallback onImportJson;
-  final VoidCallback onExportBackup;
-  final VoidCallback onImportBackup;
   final VoidCallback? onSaveAutoBackup;
   final VoidCallback? onRestoreAutoBackup;
 
@@ -3008,32 +3170,6 @@ class _HeroBrandBanner extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: onExportBackup,
-                      icon: const Icon(Icons.file_upload_rounded, size: 18),
-                      label: Text(
-                        isRu ? 'Экспорт бэкапа' : 'Export backup',
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: onImportBackup,
-                      icon: const Icon(Icons.file_download_rounded, size: 18),
-                      label: Text(
-                        isRu ? 'Импорт бэкапа' : 'Import backup',
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
               Row(
                 children: [
                   Expanded(

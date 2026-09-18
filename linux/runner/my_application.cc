@@ -25,23 +25,56 @@ static void my_application_activate(GApplication* application) {
   GtkWindow* window =
       GTK_WINDOW(gtk_application_window_new(GTK_APPLICATION(application)));
 
-  // Use a header bar when running in GNOME as this is the common style used
-  // by applications and is the setup most users will be using (e.g. Ubuntu
-  // desktop).
-  // If running on X and not using GNOME then just use a traditional title bar
-  // in case the window manager does more exotic layout, e.g. tiling.
-  // If running on Wayland assume the header bar will work (may need changing
-  // if future cases occur).
-  gboolean use_header_bar = TRUE;
-#ifdef GDK_WINDOWING_X11
-  GdkScreen* screen = gtk_window_get_screen(window);
-  if (GDK_IS_X11_SCREEN(screen)) {
-    const gchar* wm_name = gdk_x11_screen_get_window_manager_name(screen);
-    if (g_strcmp0(wm_name, "GNOME Shell") != 0) {
-      use_header_bar = FALSE;
+  // Prefer dark theme for GTK elements
+  GtkSettings* gtk_settings = gtk_settings_get_default();
+  if (gtk_settings != nullptr) {
+    g_object_set(gtk_settings, "gtk-application-prefer-dark-theme", TRUE, nullptr);
+  }
+
+  // Determine whether to use a GtkHeaderBar or native window decorations (SSD).
+  // In KDE Plasma / KWin, XFCE, Cinnamon, tiling WMs, etc., native decorations
+  // integrate seamlessly with the user's desktop theme and avoid thick alien bars.
+  // GtkHeaderBar is only suitable when explicitly running under GNOME Shell.
+  gboolean use_header_bar = FALSE;
+
+  const gchar* xdg_desktop = g_getenv("XDG_CURRENT_DESKTOP");
+  const gchar* kde_session = g_getenv("KDE_FULL_SESSION");
+  const gchar* desktop_session = g_getenv("DESKTOP_SESSION");
+
+  gboolean is_kde = (kde_session != nullptr && g_strcmp0(kde_session, "true") == 0);
+  if (!is_kde && xdg_desktop != nullptr) {
+    g_autofree gchar* upper = g_utf8_strup(xdg_desktop, -1);
+    if (g_strstr_len(upper, -1, "KDE") != nullptr || g_strstr_len(upper, -1, "PLASMA") != nullptr) {
+      is_kde = TRUE;
     }
   }
+  if (!is_kde && desktop_session != nullptr) {
+    g_autofree gchar* upper = g_utf8_strup(desktop_session, -1);
+    if (g_strstr_len(upper, -1, "KDE") != nullptr || g_strstr_len(upper, -1, "PLASMA") != nullptr) {
+      is_kde = TRUE;
+    }
+  }
+
+  if (!is_kde) {
+    if (xdg_desktop != nullptr) {
+      g_autofree gchar* upper = g_utf8_strup(xdg_desktop, -1);
+      if (g_strstr_len(upper, -1, "GNOME") != nullptr) {
+        use_header_bar = TRUE;
+      }
+    }
+#ifdef GDK_WINDOWING_X11
+    GdkScreen* screen = gtk_window_get_screen(window);
+    if (GDK_IS_X11_SCREEN(screen)) {
+      const gchar* wm_name = gdk_x11_screen_get_window_manager_name(screen);
+      if (wm_name != nullptr && g_strcmp0(wm_name, "GNOME Shell") == 0) {
+        use_header_bar = TRUE;
+      } else {
+        use_header_bar = FALSE;
+      }
+    }
 #endif
+  }
+
   if (use_header_bar) {
     GtkHeaderBar* header_bar = GTK_HEADER_BAR(gtk_header_bar_new());
     gtk_widget_show(GTK_WIDGET(header_bar));
@@ -49,6 +82,7 @@ static void my_application_activate(GApplication* application) {
     gtk_header_bar_set_show_close_button(header_bar, TRUE);
     gtk_window_set_titlebar(window, GTK_WIDGET(header_bar));
   } else {
+    gtk_window_set_titlebar(window, nullptr);
     gtk_window_set_title(window, "Prisma");
   }
 
@@ -59,16 +93,21 @@ static void my_application_activate(GApplication* application) {
   if (exe_path != nullptr) {
     g_autofree gchar* exe_dir = g_path_get_dirname(exe_path);
     g_autofree gchar* icon_path = g_build_filename(exe_dir, "prisma.png", nullptr);
-    if (g_file_test(icon_path, G_FILE_TEST_EXISTS)) {
+    if (!g_file_test(icon_path, G_FILE_TEST_EXISTS)) {
+      g_clear_pointer(&icon_path, g_free);
+      icon_path = g_build_filename(
+          exe_dir, "data", "flutter_assets", "assets", "icon", "app_icon_rounded.png", nullptr);
+    }
+    if (icon_path != nullptr && g_file_test(icon_path, G_FILE_TEST_EXISTS)) {
+      GError* pix_err = nullptr;
+      GdkPixbuf* pixbuf = gdk_pixbuf_new_from_file(icon_path, &pix_err);
+      if (pixbuf != nullptr) {
+        gtk_window_set_icon(window, pixbuf);
+        gtk_window_set_default_icon(pixbuf);
+        g_object_unref(pixbuf);
+      }
       gtk_window_set_icon_from_file(window, icon_path, nullptr);
       gtk_window_set_default_icon_from_file(icon_path, nullptr);
-    } else {
-      g_autofree gchar* asset_icon = g_build_filename(
-          exe_dir, "data", "flutter_assets", "assets", "icon", "app_icon_rounded.png", nullptr);
-      if (g_file_test(asset_icon, G_FILE_TEST_EXISTS)) {
-        gtk_window_set_icon_from_file(window, asset_icon, nullptr);
-        gtk_window_set_default_icon_from_file(asset_icon, nullptr);
-      }
     }
   }
 

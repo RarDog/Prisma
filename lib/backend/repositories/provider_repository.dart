@@ -41,12 +41,26 @@ class ProviderRepository {
         updatedAt: now,
       ),
       ContentProviderConfig(
+        id: 'safebooru',
+        name: 'Safebooru',
+        baseUrl: 'https://safebooru.org',
+        apiType: 'safebooru',
+        enabled: true,
+        priority: 2,
+        timeoutSeconds: 20,
+        customHeaders: const {
+          'User-Agent': 'Prisma/4.0.0 Flutter local booru browser',
+        },
+        createdAt: now,
+        updatedAt: now,
+      ),
+      ContentProviderConfig(
         id: 'realbooru',
         name: 'Realbooru',
         baseUrl: 'https://realbooru.com',
         apiType: 'realbooru_html',
         enabled: true,
-        priority: 2,
+        priority: 3,
         timeoutSeconds: 20,
         customHeaders: const {},
         createdAt: now,
@@ -58,7 +72,7 @@ class ProviderRepository {
         baseUrl: 'https://e621.net',
         apiType: 'e621',
         enabled: true,
-        priority: 3,
+        priority: 4,
         timeoutSeconds: 20,
         customHeaders: const {
           'User-Agent': 'Prisma/2.0.2 Flutter local booru browser',
@@ -72,7 +86,7 @@ class ProviderRepository {
         baseUrl: 'https://e926.net',
         apiType: 'e621',
         enabled: true,
-        priority: 4,
+        priority: 5,
         timeoutSeconds: 20,
         customHeaders: const {
           'User-Agent': 'Prisma/2.0.2 Flutter local booru browser',
@@ -86,7 +100,7 @@ class ProviderRepository {
         baseUrl: 'https://pawchive.pw',
         apiType: 'pawchive',
         enabled: true,
-        priority: 5,
+        priority: 6,
         timeoutSeconds: 20,
         customHeaders: const {},
         createdAt: now,
@@ -100,7 +114,6 @@ class ProviderRepository {
       final existingProviders =
           await isar.providerConfigEntitys.where().findAll();
       const removedIds = {
-        'safebooru',
         'konachan',
         'yandere',
         'xbooru',

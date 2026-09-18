@@ -656,6 +656,8 @@ class _PostMediaViewerState extends State<PostMediaViewer>
     final pid = post.providerId.toLowerCase();
     if (pid.contains('gelbooru')) {
       defaultReferer = 'https://gelbooru.com/';
+    } else if (pid.contains('safebooru')) {
+      defaultReferer = 'https://safebooru.org/';
     } else if (pid.contains('rule34')) {
       defaultReferer = 'https://rule34.xxx/';
     } else if (pid.contains('realbooru')) {

@@ -313,6 +313,11 @@ class ProviderCard extends StatelessWidget {
           Icons.photo_library_rounded,
           'Rule34',
         ),
+      'safebooru' => (
+          const Color(0xFF0284C7),
+          Icons.shield_rounded,
+          'Safebooru',
+        ),
       'paheal' => (
           const Color(0xFFF97316),
           Icons.filter_hdr_rounded,

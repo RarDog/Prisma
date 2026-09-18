@@ -1,5 +1,22 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.0.1',
+    title: 'Возвращение Safebooru, доработка бэкапов и обновлённое превью',
+    titleEn: 'Safebooru Restoration, Backup System Overhaul & Updated Showcase',
+    bullets: [
+      'Возвращение Safebooru: полноценный провайдер с поддержкой поиска, автокомплита тегов, сортировки по популярности, комментариев и корректных заголовков.',
+      'Переработка резервного копирования: очищен интерфейс, расширен JSON экспорт/импорт (файл или буфер обмена) и надёжное автоматическое сохранение (Auto-Sync) с мгновенным обновлением интерфейса.',
+      'Улучшения для десктопа: адаптивное отображение экрана настроек для широких мониторов и поддержка нативного оформления окон KDE/X11.',
+      'Обновлённая документация: высококачественный промо-рендер приложения в README.',
+    ],
+    bulletsEn: [
+      'Safebooru Restoration: full-featured provider with DAPI search, tag autocomplete, popularity sorting, comments, and proper headers.',
+      'Backup System Overhaul: streamlined UI, versatile JSON export/import (file picker or clipboard), and robust Auto-Sync with live UI refresh.',
+      'Desktop Enhancements: adaptive wide-screen Settings layout and native KDE/X11 window decoration support.',
+      'Updated Documentation: high-resolution app showcase mockups in README.',
+    ],
+  ),
+  PrismaChange(
     version: '4.0.0',
     title: 'Новый брендинг и иконка, 100% двуязычность и масштабные улучшения Realbooru',
     titleEn: 'Brand New Icon & Branding, 100% Bilingual Parity & Realbooru Overhaul',

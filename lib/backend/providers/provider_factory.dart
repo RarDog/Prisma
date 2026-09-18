@@ -12,6 +12,7 @@ import 'pawchive_provider.dart';
 import 'realbooru_html_provider.dart';
 import 'rule34_provider.dart';
 import 'rule34_paheal_provider.dart';
+import 'safebooru_provider.dart';
 
 class ProviderFactory {
   ContentProvider create(ContentProviderConfig config) {
@@ -49,6 +50,14 @@ class ProviderFactory {
         );
       case 'rule34':
         return Rule34Provider(
+          id: config.id,
+          name: config.name,
+          baseUrl: config.baseUrl,
+          dioClient: client,
+          queryParameters: queryParameters,
+        );
+      case 'safebooru':
+        return SafebooruProvider(
           id: config.id,
           name: config.name,
           baseUrl: config.baseUrl,
