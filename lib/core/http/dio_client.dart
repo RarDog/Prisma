@@ -4,8 +4,8 @@ import 'dart:math';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
-import '../errors/app_exception.dart';
-import '../utils/result.dart';
+import 'package:gel_rule_app/core/errors/app_exception.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
 
 class DioClient {
   DioClient({

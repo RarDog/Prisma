@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../../backend/models/post.dart';
-import '../../../../backend/providers/e621_provider.dart';
+import 'package:gel_rule_app/core/models/post.dart';
+import 'package:gel_rule_app/sources/booru/e621_provider.dart';
 import 'e621_pool_sheet.dart';
 
 class PostPoolsCard extends StatelessWidget {

@@ -8,9 +8,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
-import '../../app/motion.dart';
-import '../../backend/backend.dart';
-import '../../core/utils/result.dart';
+import 'package:gel_rule_app/app/motion.dart';
+import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
 import 'blur_content.dart';
 import 'loading_skeleton.dart';
 import 'rating_badge.dart';

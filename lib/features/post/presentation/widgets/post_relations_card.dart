@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../../backend/models/post.dart';
+import 'package:gel_rule_app/core/models/post.dart';
 
 class PostRelationsCard extends StatelessWidget {
   const PostRelationsCard({

@@ -1,9 +1,9 @@
 import 'package:isar/isar.dart';
 
-import '../database/app_database.dart';
-import '../database/database_service.dart';
-import '../utils/result.dart';
-import '../../backend/models/post.dart';
+import 'package:gel_rule_app/core/database/app_database.dart';
+import 'package:gel_rule_app/core/database/database_service.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:gel_rule_app/core/models/post.dart';
 
 class CacheService {
   CacheService(this._databaseService);

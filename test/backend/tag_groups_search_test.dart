@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/backend/providers/provider_manager.dart';
+import 'package:gel_rule_app/sources/provider_manager.dart';
 
 void main() {
   group('Tag groups splitting: space groups together, and separates streams', () {

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../../backend/backend.dart';
-import '../../../../shared/widgets/provider_status_badge.dart';
+import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/shared/widgets/provider_status_badge.dart';
 
 class ProviderHealthTile extends StatefulWidget {
   const ProviderHealthTile({

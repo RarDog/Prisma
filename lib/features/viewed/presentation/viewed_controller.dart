@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../backend/backend.dart';
-import '../../../core/utils/result.dart';
+import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
 
 final viewedControllerProvider =
     AsyncNotifierProvider<ViewedController, List<ViewedTimelineGroup>>(

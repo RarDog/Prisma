@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/backend/models/tag_suggestion.dart';
-import 'package:gel_rule_app/backend/services/tag_cache_service.dart';
+import 'package:gel_rule_app/core/models/tag_suggestion.dart';
+import 'package:gel_rule_app/features/search/domain/tag_cache_service.dart';
 
 void main() {
   late Directory tempDir;

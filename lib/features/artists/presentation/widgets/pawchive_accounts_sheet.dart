@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../app/app.dart';
-import '../../../../backend/backend.dart';
-import '../../../settings/presentation/settings_controller.dart';
+import 'package:gel_rule_app/app/app.dart';
+import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
 
 class PawchiveAccountsSheet extends ConsumerStatefulWidget {
   const PawchiveAccountsSheet({super.key});

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/backend/models/search_history.dart';
-import 'package:gel_rule_app/backend/repositories/search_repository.dart';
-import 'package:gel_rule_app/backend/services/search_service.dart';
+import 'package:gel_rule_app/features/search/models/search_history.dart';
+import 'package:gel_rule_app/features/search/data/search_repository.dart';
+import 'package:gel_rule_app/features/search/domain/search_service.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 
 class FakeSearchRepository implements SearchRepository {

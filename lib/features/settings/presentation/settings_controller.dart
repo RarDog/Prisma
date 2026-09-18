@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../app/app.dart';
-import '../../../app/app_version.dart';
-import '../../../backend/backend.dart';
-import '../../../core/utils/logger.dart';
-import '../../../core/utils/result.dart';
+import 'package:gel_rule_app/app/app.dart';
+import 'package:gel_rule_app/app/app_version.dart';
+import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/core/utils/logger.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
 
 final settingsControllerProvider =
     AsyncNotifierProvider<SettingsController, AppSettings>(

@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/backend/models/app_update_info.dart';
-import 'package:gel_rule_app/backend/services/settings_service.dart';
-import 'package:gel_rule_app/backend/services/update_service.dart';
+import 'package:gel_rule_app/features/settings/models/app_update_info.dart';
+import 'package:gel_rule_app/features/settings/domain/settings_service.dart';
+import 'package:gel_rule_app/features/settings/domain/update_service.dart';
 import 'package:gel_rule_app/core/database/database_service.dart';
 
 void main() {

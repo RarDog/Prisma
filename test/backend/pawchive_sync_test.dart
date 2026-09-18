@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/backend/models/favorite_artist_item.dart';
-import 'package:gel_rule_app/backend/models/pawchive_account.dart';
-import 'package:gel_rule_app/backend/services/pawchive_sync_service.dart';
-import 'package:gel_rule_app/backend/services/settings_service.dart';
+import 'package:gel_rule_app/features/favorites/models/favorite_artist_item.dart';
+import 'package:gel_rule_app/features/artists/models/pawchive_account.dart';
+import 'package:gel_rule_app/features/artists/domain/pawchive_sync_service.dart';
+import 'package:gel_rule_app/features/settings/domain/settings_service.dart';
 
 class _FakeAdapter implements HttpClientAdapter {
   _FakeAdapter(this.handler);

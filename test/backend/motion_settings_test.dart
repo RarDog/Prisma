@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gel_rule_app/app/motion.dart';
-import 'package:gel_rule_app/backend/services/settings_service.dart';
+import 'package:gel_rule_app/features/settings/domain/settings_service.dart';
 
 void main() {
   test('app settings json roundtrip keeps motion settings', () {

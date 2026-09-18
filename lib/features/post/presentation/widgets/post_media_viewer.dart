@@ -11,9 +11,9 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../../app/motion.dart';
-import '../../../../backend/backend.dart';
-import '../../../../shared/widgets/formatted_content_text.dart';
+import 'package:gel_rule_app/app/motion.dart';
+import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/shared/widgets/formatted_content_text.dart';
 
 final Map<String, VideoPlaybackSnapshot> _playbackMemory =
     <String, VideoPlaybackSnapshot>{};

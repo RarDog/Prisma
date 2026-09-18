@@ -6,15 +6,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../app/app.dart';
-import '../../../app/app_navigator.dart';
-import '../../../app/responsive.dart';
-import '../../../backend/backend.dart';
-import '../../../shared/widgets/adaptive_scaffold.dart';
-import '../../../shared/widgets/confirm_dialog.dart';
-import '../../../shared/widgets/error_view.dart';
-import '../../../shared/widgets/post_masonry_grid.dart';
-import '../../favorites/presentation/favorites_controller.dart';
+import 'package:gel_rule_app/app/app.dart';
+import 'package:gel_rule_app/app/app_navigator.dart';
+import 'package:gel_rule_app/app/responsive.dart';
+import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/shared/widgets/adaptive_scaffold.dart';
+import 'package:gel_rule_app/shared/widgets/confirm_dialog.dart';
+import 'package:gel_rule_app/shared/widgets/error_view.dart';
+import 'package:gel_rule_app/shared/widgets/post_masonry_grid.dart';
+import 'package:gel_rule_app/features/favorites/presentation/favorites_controller.dart';
 import 'viewed_controller.dart';
 
 class ViewedScreen extends ConsumerStatefulWidget {

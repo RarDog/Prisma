@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../backend/backend.dart';
+import 'package:gel_rule_app/backend/backend.dart';
 
 class AppSearchBar extends StatefulWidget {
   const AppSearchBar({

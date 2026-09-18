@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/backend/models/artist_announcement.dart';
-import 'package:gel_rule_app/backend/models/artist_link.dart';
-import 'package:gel_rule_app/backend/models/artist_tag.dart';
-import 'package:gel_rule_app/backend/models/artist_work_query.dart';
+import 'package:gel_rule_app/features/artists/models/artist_announcement.dart';
+import 'package:gel_rule_app/features/artists/models/artist_link.dart';
+import 'package:gel_rule_app/features/artists/models/artist_tag.dart';
+import 'package:gel_rule_app/features/artists/models/artist_work_query.dart';
 
 void main() {
   group('Pawchive API Features Tests', () {

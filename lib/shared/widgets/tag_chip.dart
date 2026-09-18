@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../backend/models/tag_suggestion.dart';
+import 'package:gel_rule_app/core/models/tag_suggestion.dart';
 
 class TagChip extends StatelessWidget {
   const TagChip({

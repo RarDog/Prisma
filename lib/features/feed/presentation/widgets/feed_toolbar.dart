@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 
-import '../../../../app/responsive.dart';
-import '../../../../backend/backend.dart';
-import '../../../../shared/widgets/app_search_bar.dart';
+import 'package:gel_rule_app/app/responsive.dart';
+import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/shared/widgets/app_search_bar.dart';
 
 class FeedToolbar extends StatefulWidget {
   const FeedToolbar({

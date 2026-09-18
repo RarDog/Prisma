@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/backend/models/content_provider_config.dart';
-import 'package:gel_rule_app/backend/providers/provider_factory.dart';
-import 'package:gel_rule_app/backend/providers/rule34_provider.dart';
+import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
+import 'package:gel_rule_app/sources/provider_factory.dart';
+import 'package:gel_rule_app/sources/booru/rule34_provider.dart';
 
 void main() {
   test('ProviderFactory creates Rule34Provider with credentials', () {

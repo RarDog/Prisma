@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/backend/models/post.dart';
-import 'package:gel_rule_app/backend/services/feed_service.dart';
-import 'package:gel_rule_app/backend/services/settings_service.dart';
+import 'package:gel_rule_app/core/models/post.dart';
+import 'package:gel_rule_app/features/feed/domain/feed_service.dart';
+import 'package:gel_rule_app/features/settings/domain/settings_service.dart';
 
 void main() {
   group('feed tag filters', () {

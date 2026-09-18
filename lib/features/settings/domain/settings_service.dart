@@ -1,0 +1,856 @@
+import 'dart:convert';
+
+import 'package:isar/isar.dart';
+
+import 'package:gel_rule_app/core/database/app_database.dart';
+import 'package:gel_rule_app/core/database/database_service.dart';
+import 'package:gel_rule_app/core/errors/failure.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
+import 'package:gel_rule_app/features/artists/models/pawchive_account.dart';
+import 'package:gel_rule_app/core/models/provider_diagnostics.dart';
+import 'package:gel_rule_app/features/providers/data/provider_repository.dart';
+
+class AppSettings {
+  const AppSettings({
+    required this.enabledProviderIds,
+    required this.nsfwEnabled,
+    required this.cacheTtlHours,
+    required this.cacheMaxItems,
+    required this.providerPriority,
+    required this.themeMode,
+    required this.languageCode,
+    required this.appSeedColor,
+    required this.hiddenTabs,
+    required this.allowExperimentalUpdates,
+    required this.desktopColumns,
+    required this.mobileColumns,
+    required this.blurExplicitContent,
+    required this.allowDownloads,
+    required this.autoDownloadFavorites,
+    required this.selectedFeedProviderIds,
+    required this.showPostBadges,
+    required this.defaultTopPeriodFilter,
+    required this.blacklistedTags,
+    required this.whitelistedTags,
+    required this.smartBlacklistRules,
+    required this.hideViewedPosts,
+    required this.mediaQualityMode,
+    required this.motionRefreshMode,
+    required this.autoBatterySaver60Hz,
+    required this.videoPlayerMuted,
+    this.videoPlayerVolume = 100.0,
+    required this.videoPlayerHalfVolume,
+    required this.videoPlayerLoop,
+    required this.videoPlayerCover,
+    required this.videoPlaybackPositions,
+    required this.hiddenPostKeys,
+    required this.diagnosticLogLines,
+    required this.lastFeedTags,
+    required this.lastFeedProviderIds,
+    required this.lastFeedTopPeriod,
+    required this.lastFeedScrollOffset,
+    this.favoriteArtists = const [],
+    this.pawchiveAccounts = const [],
+    this.pawchiveBidirectionalSync = false,
+    this.skippedUpdateVersion,
+    this.lastUpdateCheckAt,
+    this.defaultRatingFilter,
+    this.lastFeedRating,
+    this.amoledMode = false,
+    this.useDynamicColor = false,
+    this.gridMode = 'masonry',
+    this.searchPresets = const [],
+    this.downloadPathTemplate = '{Artist}/{ID}',
+    this.searchHistoryLimit = 500,
+    this.tagCacheLimit = 5000,
+    this.lastActiveLocation = '/',
+    this.hasCompletedOnboarding = false,
+  });
+
+  final bool hasCompletedOnboarding;
+  final String lastActiveLocation;
+  final List<String> favoriteArtists;
+  final List<String> pawchiveAccounts;
+  final bool pawchiveBidirectionalSync;
+  final List<String> enabledProviderIds;
+  final bool nsfwEnabled;
+  final int cacheTtlHours;
+  final int cacheMaxItems;
+  final Map<String, int> providerPriority;
+  final String themeMode;
+  final String languageCode;
+  final int appSeedColor;
+  final List<String> hiddenTabs;
+  final bool allowExperimentalUpdates;
+  final int desktopColumns;
+  final int mobileColumns;
+  final bool blurExplicitContent;
+  final bool allowDownloads;
+  final bool autoDownloadFavorites;
+  final List<String> selectedFeedProviderIds;
+  final bool showPostBadges;
+  final String defaultTopPeriodFilter;
+  final List<String> blacklistedTags;
+  final List<String> whitelistedTags;
+  final List<String> smartBlacklistRules;
+  final bool hideViewedPosts;
+  final String mediaQualityMode;
+  final String motionRefreshMode;
+  final bool autoBatterySaver60Hz;
+  final bool videoPlayerMuted;
+  final double videoPlayerVolume;
+  final bool videoPlayerHalfVolume;
+  final bool videoPlayerLoop;
+  final bool videoPlayerCover;
+  final Map<String, int> videoPlaybackPositions;
+  final List<String> hiddenPostKeys;
+  final List<String> diagnosticLogLines;
+  final List<String> lastFeedTags;
+  final List<String> lastFeedProviderIds;
+  final String lastFeedTopPeriod;
+  final double lastFeedScrollOffset;
+  final String? skippedUpdateVersion;
+  final String? lastUpdateCheckAt;
+  final String? defaultRatingFilter;
+  final String? lastFeedRating;
+  final bool amoledMode;
+  final bool useDynamicColor;
+  final String gridMode;
+  final List<String> searchPresets;
+  final String downloadPathTemplate;
+  final int searchHistoryLimit;
+  final int tagCacheLimit;
+
+  static const defaults = AppSettings(
+    enabledProviderIds: ['gelbooru', 'rule34', 'realbooru'],
+    nsfwEnabled: true,
+    cacheTtlHours: 24,
+    cacheMaxItems: 2000,
+    providerPriority: {'gelbooru': 0, 'rule34': 1, 'realbooru': 2},
+    favoriteArtists: [],
+    pawchiveAccounts: [],
+    pawchiveBidirectionalSync: false,
+    themeMode: 'dark',
+    languageCode: 'ru',
+    appSeedColor: 0xFFE84D8A,
+    hiddenTabs: [],
+    allowExperimentalUpdates: false,
+    desktopColumns: 5,
+    mobileColumns: 2,
+    blurExplicitContent: true,
+    allowDownloads: true,
+    autoDownloadFavorites: true,
+    selectedFeedProviderIds: [],
+    showPostBadges: true,
+    defaultTopPeriodFilter: 'none',
+    blacklistedTags: [],
+    whitelistedTags: [],
+    smartBlacklistRules: [],
+    hideViewedPosts: false,
+    mediaQualityMode: 'auto',
+    motionRefreshMode: 'auto',
+    autoBatterySaver60Hz: true,
+    videoPlayerMuted: false,
+    videoPlayerVolume: 100.0,
+    videoPlayerHalfVolume: false,
+    videoPlayerLoop: false,
+    videoPlayerCover: false,
+    videoPlaybackPositions: {},
+    hiddenPostKeys: [],
+    diagnosticLogLines: [],
+    lastFeedTags: [],
+    lastFeedProviderIds: [],
+    lastFeedTopPeriod: 'none',
+    lastFeedScrollOffset: 0,
+    skippedUpdateVersion: null,
+    lastUpdateCheckAt: null,
+    defaultRatingFilter: null,
+    lastFeedRating: null,
+    searchHistoryLimit: 500,
+    tagCacheLimit: 5000,
+    lastActiveLocation: '/',
+    hasCompletedOnboarding: false,
+  );
+
+  AppSettings copyWith({
+    List<String>? enabledProviderIds,
+    bool? nsfwEnabled,
+    int? cacheTtlHours,
+    int? cacheMaxItems,
+    Map<String, int>? providerPriority,
+    String? themeMode,
+    String? languageCode,
+    int? appSeedColor,
+    List<String>? hiddenTabs,
+    bool? allowExperimentalUpdates,
+    int? desktopColumns,
+    int? mobileColumns,
+    bool? blurExplicitContent,
+    bool? allowDownloads,
+    bool? autoDownloadFavorites,
+    List<String>? selectedFeedProviderIds,
+    bool? showPostBadges,
+    String? defaultTopPeriodFilter,
+    List<String>? blacklistedTags,
+    List<String>? whitelistedTags,
+    List<String>? smartBlacklistRules,
+    bool? hideViewedPosts,
+    String? mediaQualityMode,
+    String? motionRefreshMode,
+    bool? autoBatterySaver60Hz,
+    bool? videoPlayerMuted,
+    double? videoPlayerVolume,
+    bool? videoPlayerHalfVolume,
+    bool? videoPlayerLoop,
+    bool? videoPlayerCover,
+    Map<String, int>? videoPlaybackPositions,
+    List<String>? hiddenPostKeys,
+    List<String>? diagnosticLogLines,
+    List<String>? lastFeedTags,
+    List<String>? lastFeedProviderIds,
+    String? lastFeedTopPeriod,
+    double? lastFeedScrollOffset,
+    String? skippedUpdateVersion,
+    String? lastUpdateCheckAt,
+    String? defaultRatingFilter,
+    String? lastFeedRating,
+    bool clearLastFeedRating = false,
+    List<String>? favoriteArtists,
+    List<String>? pawchiveAccounts,
+    bool? pawchiveBidirectionalSync,
+    bool? amoledMode,
+    bool? useDynamicColor,
+    String? gridMode,
+    List<String>? searchPresets,
+    String? downloadPathTemplate,
+    int? searchHistoryLimit,
+    int? tagCacheLimit,
+    String? lastActiveLocation,
+    bool? hasCompletedOnboarding,
+  }) {
+    return AppSettings(
+      lastActiveLocation: lastActiveLocation ?? this.lastActiveLocation,
+      favoriteArtists: favoriteArtists ?? this.favoriteArtists,
+      pawchiveAccounts: pawchiveAccounts ?? this.pawchiveAccounts,
+      pawchiveBidirectionalSync:
+          pawchiveBidirectionalSync ?? this.pawchiveBidirectionalSync,
+      enabledProviderIds: enabledProviderIds ?? this.enabledProviderIds,
+      nsfwEnabled: nsfwEnabled ?? this.nsfwEnabled,
+      cacheTtlHours: cacheTtlHours ?? this.cacheTtlHours,
+      cacheMaxItems: cacheMaxItems ?? this.cacheMaxItems,
+      providerPriority: providerPriority ?? this.providerPriority,
+      themeMode: themeMode ?? this.themeMode,
+      languageCode: languageCode ?? this.languageCode,
+      appSeedColor: appSeedColor ?? this.appSeedColor,
+      hiddenTabs: hiddenTabs ?? this.hiddenTabs,
+      allowExperimentalUpdates:
+          allowExperimentalUpdates ?? this.allowExperimentalUpdates,
+      desktopColumns: desktopColumns ?? this.desktopColumns,
+      mobileColumns: mobileColumns ?? this.mobileColumns,
+      blurExplicitContent: blurExplicitContent ?? this.blurExplicitContent,
+      allowDownloads: allowDownloads ?? this.allowDownloads,
+      autoDownloadFavorites:
+          autoDownloadFavorites ?? this.autoDownloadFavorites,
+      selectedFeedProviderIds:
+          selectedFeedProviderIds ?? this.selectedFeedProviderIds,
+      showPostBadges: showPostBadges ?? this.showPostBadges,
+      defaultTopPeriodFilter:
+          defaultTopPeriodFilter ?? this.defaultTopPeriodFilter,
+      blacklistedTags: blacklistedTags ?? this.blacklistedTags,
+      whitelistedTags: whitelistedTags ?? this.whitelistedTags,
+      smartBlacklistRules: smartBlacklistRules ?? this.smartBlacklistRules,
+      hideViewedPosts: hideViewedPosts ?? this.hideViewedPosts,
+      mediaQualityMode: mediaQualityMode ?? this.mediaQualityMode,
+      motionRefreshMode: motionRefreshMode ?? this.motionRefreshMode,
+      autoBatterySaver60Hz: autoBatterySaver60Hz ?? this.autoBatterySaver60Hz,
+      videoPlayerMuted: videoPlayerMuted ?? this.videoPlayerMuted,
+      videoPlayerVolume: videoPlayerVolume ?? this.videoPlayerVolume,
+      videoPlayerHalfVolume:
+          videoPlayerHalfVolume ?? this.videoPlayerHalfVolume,
+      videoPlayerLoop: videoPlayerLoop ?? this.videoPlayerLoop,
+      videoPlayerCover: videoPlayerCover ?? this.videoPlayerCover,
+      videoPlaybackPositions:
+          videoPlaybackPositions ?? this.videoPlaybackPositions,
+      hiddenPostKeys: hiddenPostKeys ?? this.hiddenPostKeys,
+      diagnosticLogLines: diagnosticLogLines ?? this.diagnosticLogLines,
+      lastFeedTags: lastFeedTags ?? this.lastFeedTags,
+      lastFeedProviderIds: lastFeedProviderIds ?? this.lastFeedProviderIds,
+      lastFeedTopPeriod: lastFeedTopPeriod ?? this.lastFeedTopPeriod,
+      lastFeedScrollOffset: lastFeedScrollOffset ?? this.lastFeedScrollOffset,
+      skippedUpdateVersion: skippedUpdateVersion ?? this.skippedUpdateVersion,
+      lastUpdateCheckAt: lastUpdateCheckAt ?? this.lastUpdateCheckAt,
+      defaultRatingFilter: defaultRatingFilter ?? this.defaultRatingFilter,
+      lastFeedRating:
+          clearLastFeedRating ? null : lastFeedRating ?? this.lastFeedRating,
+      amoledMode: amoledMode ?? this.amoledMode,
+      useDynamicColor: useDynamicColor ?? this.useDynamicColor,
+      gridMode: gridMode ?? this.gridMode,
+      searchPresets: searchPresets ?? this.searchPresets,
+      downloadPathTemplate: downloadPathTemplate ?? this.downloadPathTemplate,
+      searchHistoryLimit: searchHistoryLimit ?? this.searchHistoryLimit,
+      tagCacheLimit: tagCacheLimit ?? this.tagCacheLimit,
+      hasCompletedOnboarding:
+          hasCompletedOnboarding ?? this.hasCompletedOnboarding,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'favoriteArtists': favoriteArtists,
+        'pawchiveAccounts': pawchiveAccounts,
+        'pawchiveBidirectionalSync': pawchiveBidirectionalSync,
+        'enabledProviderIds': enabledProviderIds,
+        'nsfwEnabled': nsfwEnabled,
+        'cacheTtlHours': cacheTtlHours,
+        'cacheMaxItems': cacheMaxItems,
+        'providerPriority': providerPriority,
+        'themeMode': themeMode,
+        'languageCode': languageCode,
+        'appSeedColor': appSeedColor,
+        'hiddenTabs': hiddenTabs,
+        'allowExperimentalUpdates': allowExperimentalUpdates,
+        'desktopColumns': desktopColumns,
+        'mobileColumns': mobileColumns,
+        'blurExplicitContent': blurExplicitContent,
+        'allowDownloads': allowDownloads,
+        'autoDownloadFavorites': autoDownloadFavorites,
+        'selectedFeedProviderIds': selectedFeedProviderIds,
+        'showPostBadges': showPostBadges,
+        'defaultTopPeriodFilter': defaultTopPeriodFilter,
+        'blacklistedTags': blacklistedTags,
+        'whitelistedTags': whitelistedTags,
+        'smartBlacklistRules': smartBlacklistRules,
+        'hideViewedPosts': hideViewedPosts,
+        'mediaQualityMode': mediaQualityMode,
+        'motionRefreshMode': motionRefreshMode,
+        'autoBatterySaver60Hz': autoBatterySaver60Hz,
+        'videoPlayerMuted': videoPlayerMuted,
+        'videoPlayerVolume': videoPlayerVolume,
+        'videoPlayerHalfVolume': videoPlayerHalfVolume,
+        'videoPlayerLoop': videoPlayerLoop,
+        'videoPlayerCover': videoPlayerCover,
+        'videoPlaybackPositions': videoPlaybackPositions,
+        'hiddenPostKeys': hiddenPostKeys,
+        'diagnosticLogLines': diagnosticLogLines,
+        'lastFeedTags': lastFeedTags,
+        'lastFeedProviderIds': lastFeedProviderIds,
+        'lastFeedTopPeriod': lastFeedTopPeriod,
+        'lastFeedScrollOffset': lastFeedScrollOffset,
+        'skippedUpdateVersion': skippedUpdateVersion,
+        'lastUpdateCheckAt': lastUpdateCheckAt,
+        'defaultRatingFilter': defaultRatingFilter,
+        'lastFeedRating': lastFeedRating,
+        'amoledMode': amoledMode,
+        'useDynamicColor': useDynamicColor,
+        'gridMode': gridMode,
+        'searchPresets': searchPresets,
+        'downloadPathTemplate': downloadPathTemplate,
+        'searchHistoryLimit': searchHistoryLimit,
+        'tagCacheLimit': tagCacheLimit,
+        'lastActiveLocation': lastActiveLocation,
+        'hasCompletedOnboarding': hasCompletedOnboarding,
+      };
+
+  factory AppSettings.fromJson(Map<String, dynamic> json) => AppSettings(
+        enabledProviderIds: List<String>.from(
+          (json['enabledProviderIds'] as List?) ?? defaults.enabledProviderIds,
+        ),
+        nsfwEnabled: (json['nsfwEnabled'] as bool?) ?? defaults.nsfwEnabled,
+        cacheTtlHours:
+            (json['cacheTtlHours'] as num?)?.toInt() ?? defaults.cacheTtlHours,
+        cacheMaxItems:
+            (json['cacheMaxItems'] as num?)?.toInt() ?? defaults.cacheMaxItems,
+        providerPriority: Map<String, int>.from(
+          (json['providerPriority'] as Map?) ?? defaults.providerPriority,
+        ),
+        themeMode: (json['themeMode'] as String?) ?? defaults.themeMode,
+        languageCode:
+            (json['languageCode'] as String?) ?? defaults.languageCode,
+        appSeedColor:
+            (json['appSeedColor'] as num?)?.toInt() ?? defaults.appSeedColor,
+        hiddenTabs: List<String>.from(
+            (json['hiddenTabs'] as List?) ?? defaults.hiddenTabs),
+        allowExperimentalUpdates: (json['allowExperimentalUpdates'] as bool?) ??
+            defaults.allowExperimentalUpdates,
+        desktopColumns: (json['desktopColumns'] as num?)?.toInt() ??
+            defaults.desktopColumns,
+        mobileColumns:
+            (json['mobileColumns'] as num?)?.toInt() ?? defaults.mobileColumns,
+        blurExplicitContent: (json['blurExplicitContent'] as bool?) ??
+            defaults.blurExplicitContent,
+        allowDownloads:
+            (json['allowDownloads'] as bool?) ?? defaults.allowDownloads,
+        autoDownloadFavorites: (json['autoDownloadFavorites'] as bool?) ??
+            defaults.autoDownloadFavorites,
+        selectedFeedProviderIds: List<String>.from(
+          (json['selectedFeedProviderIds'] as List?) ??
+              defaults.selectedFeedProviderIds,
+        ),
+        showPostBadges:
+            (json['showPostBadges'] as bool?) ?? defaults.showPostBadges,
+        defaultTopPeriodFilter: (json['defaultTopPeriodFilter'] as String?) ??
+            defaults.defaultTopPeriodFilter,
+        blacklistedTags: List<String>.from(
+          (json['blacklistedTags'] as List?) ?? defaults.blacklistedTags,
+        ),
+        whitelistedTags: List<String>.from(
+          (json['whitelistedTags'] as List?) ?? defaults.whitelistedTags,
+        ),
+        smartBlacklistRules: List<String>.from(
+          (json['smartBlacklistRules'] as List?) ??
+              (json['blacklistedTags'] as List?) ??
+              defaults.smartBlacklistRules,
+        ),
+        hideViewedPosts:
+            (json['hideViewedPosts'] as bool?) ?? defaults.hideViewedPosts,
+        mediaQualityMode:
+            (json['mediaQualityMode'] as String?) ?? defaults.mediaQualityMode,
+        motionRefreshMode: (json['motionRefreshMode'] as String?) ??
+            defaults.motionRefreshMode,
+        autoBatterySaver60Hz: (json['autoBatterySaver60Hz'] as bool?) ??
+            defaults.autoBatterySaver60Hz,
+        videoPlayerMuted:
+            (json['videoPlayerMuted'] as bool?) ?? defaults.videoPlayerMuted,
+        videoPlayerVolume: (json['videoPlayerVolume'] as num?)?.toDouble() ??
+            defaults.videoPlayerVolume,
+        videoPlayerHalfVolume: (json['videoPlayerHalfVolume'] as bool?) ??
+            defaults.videoPlayerHalfVolume,
+        videoPlayerLoop:
+            (json['videoPlayerLoop'] as bool?) ?? defaults.videoPlayerLoop,
+        videoPlayerCover:
+            (json['videoPlayerCover'] as bool?) ?? defaults.videoPlayerCover,
+        videoPlaybackPositions: Map<String, int>.from(
+          (json['videoPlaybackPositions'] as Map?) ??
+              defaults.videoPlaybackPositions,
+        ),
+        hiddenPostKeys: List<String>.from(
+          (json['hiddenPostKeys'] as List?) ?? defaults.hiddenPostKeys,
+        ),
+        diagnosticLogLines: List<String>.from(
+          (json['diagnosticLogLines'] as List?) ?? defaults.diagnosticLogLines,
+        ),
+        lastFeedTags: List<String>.from(
+          (json['lastFeedTags'] as List?) ?? defaults.lastFeedTags,
+        ),
+        lastFeedProviderIds: List<String>.from(
+          (json['lastFeedProviderIds'] as List?) ??
+              (json['selectedFeedProviderIds'] as List?) ??
+              defaults.lastFeedProviderIds,
+        ),
+        lastFeedTopPeriod: (json['lastFeedTopPeriod'] as String?) ??
+            (json['defaultTopPeriodFilter'] as String?) ??
+            defaults.lastFeedTopPeriod,
+        lastFeedScrollOffset:
+            (json['lastFeedScrollOffset'] as num?)?.toDouble() ??
+                defaults.lastFeedScrollOffset,
+        favoriteArtists: List<String>.from(
+          (json['favoriteArtists'] as List?) ?? defaults.favoriteArtists,
+        ),
+        pawchiveAccounts: List<String>.from(
+          (json['pawchiveAccounts'] as List?) ?? defaults.pawchiveAccounts,
+        ),
+        pawchiveBidirectionalSync:
+            (json['pawchiveBidirectionalSync'] as bool?) ??
+                defaults.pawchiveBidirectionalSync,
+        skippedUpdateVersion: json['skippedUpdateVersion'] as String?,
+        lastUpdateCheckAt: json['lastUpdateCheckAt'] as String?,
+        defaultRatingFilter: json['defaultRatingFilter'] as String?,
+        lastFeedRating: json['lastFeedRating'] as String?,
+        amoledMode: (json['amoledMode'] as bool?) ?? false,
+        useDynamicColor: (json['useDynamicColor'] as bool?) ?? false,
+        gridMode: (json['gridMode'] as String?) ?? 'masonry',
+        searchPresets: List<String>.from(
+          (json['searchPresets'] as List?) ?? const [],
+        ),
+        downloadPathTemplate:
+            (json['downloadPathTemplate'] as String?) ?? '{Artist}/{ID}',
+        searchHistoryLimit: (json['searchHistoryLimit'] as num?)?.toInt() ??
+            defaults.searchHistoryLimit,
+        tagCacheLimit: (json['tagCacheLimit'] as num?)?.toInt() ??
+            defaults.tagCacheLimit,
+        lastActiveLocation: (json['lastActiveLocation'] as String?) ??
+            defaults.lastActiveLocation,
+        hasCompletedOnboarding:
+            (json['hasCompletedOnboarding'] as bool?) ?? false,
+      );
+
+  List<PawchiveAccount> get parsedPawchiveAccounts {
+    final list = <PawchiveAccount>[];
+    for (final raw in pawchiveAccounts) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is Map<String, dynamic>) {
+          list.add(PawchiveAccount.fromJson(decoded));
+        }
+      } catch (_) {}
+    }
+    return list;
+  }
+
+  PawchiveAccount? get activePawchiveAccount {
+    final accounts = parsedPawchiveAccounts;
+    if (accounts.isEmpty) return null;
+    return accounts.firstWhere((a) => a.isActive, orElse: () => accounts.first);
+  }
+}
+
+class SettingsService {
+  SettingsService(
+    this._databaseService, {
+    ProviderRepository? providerRepository,
+    this.onDataChanged,
+  }) : _providerRepository = providerRepository;
+
+  final DatabaseService _databaseService;
+  final ProviderRepository? _providerRepository;
+  final void Function()? onDataChanged;
+  static const _settingsKey = 'app_settings';
+
+  Future<Result<AppSettings>> getSettings() {
+    return _databaseService.safeRead((isar) async {
+      final entity = await isar.appSettingEntitys
+          .filter()
+          .keyEqualTo(_settingsKey)
+          .findFirst();
+      if (entity == null) return AppSettings.defaults;
+      return AppSettings.fromJson(
+          jsonDecode(entity.jsonValue) as Map<String, dynamic>);
+    });
+  }
+
+  Future<Result<void>> updateSettings(AppSettings settings) async {
+    final res = await _databaseService.safeWrite((isar) async {
+      await isar.appSettingEntitys.put(
+        AppSettingEntity()
+          ..key = _settingsKey
+          ..jsonValue = jsonEncode(settings.toJson())
+          ..updatedAt = DateTime.now(),
+      );
+    });
+    if (res is Success) onDataChanged?.call();
+    return res;
+  }
+
+  Future<Result<void>> saveEnabledProviders(List<String> providerIds) async {
+    final result = await getSettings();
+    if (result is Error<AppSettings>) return Error(result.failure);
+    final settings = (result as Success<AppSettings>).data;
+    final updateResult = await updateSettings(
+        settings.copyWith(enabledProviderIds: providerIds));
+    if (updateResult is Error<void>) return updateResult;
+
+    final repository = _providerRepository;
+    if (repository == null) return updateResult;
+
+    final providersResult = await repository.getProviders();
+    if (providersResult is Error<List<ContentProviderConfig>>) {
+      return Error(providersResult.failure);
+    }
+    final enabled = providerIds.toSet();
+    for (final provider
+        in (providersResult as Success<List<ContentProviderConfig>>).data) {
+      await repository.saveProvider(
+        provider.copyWith(
+          enabled: enabled.contains(provider.id),
+          updatedAt: DateTime.now(),
+        ),
+      );
+    }
+    return updateResult;
+  }
+
+  Future<Result<void>> saveNsfwFilter(bool enabled) async {
+    final result = await getSettings();
+    if (result is Error<AppSettings>) return Error(result.failure);
+    final settings = (result as Success<AppSettings>).data;
+    return updateSettings(settings.copyWith(nsfwEnabled: enabled));
+  }
+
+  Future<Result<void>> saveLastActiveLocation(String location) async {
+    final result = await getSettings();
+    if (result is Error<AppSettings>) return Error(result.failure);
+    final settings = (result as Success<AppSettings>).data;
+    if (settings.lastActiveLocation == location) return const Success(null);
+    return updateSettings(settings.copyWith(lastActiveLocation: location));
+  }
+
+  Future<Result<void>> saveCacheSettings({
+    required int ttlHours,
+    required int maxItems,
+  }) async {
+    final result = await getSettings();
+    if (result is Error<AppSettings>) return Error(result.failure);
+    final settings = (result as Success<AppSettings>).data;
+    return updateSettings(
+      settings.copyWith(cacheTtlHours: ttlHours, cacheMaxItems: maxItems),
+    );
+  }
+
+  Future<Result<void>> hidePostKey(String cacheKey) async {
+    final result = await getSettings();
+    if (result is Error<AppSettings>) return Error(result.failure);
+    final settings = (result as Success<AppSettings>).data;
+    final hidden = <String>{...settings.hiddenPostKeys, cacheKey}.toList()
+      ..sort();
+    return updateSettings(settings.copyWith(hiddenPostKeys: hidden));
+  }
+
+  Future<Result<void>> unhidePostKey(String cacheKey) async {
+    final result = await getSettings();
+    if (result is Error<AppSettings>) return Error(result.failure);
+    final settings = (result as Success<AppSettings>).data;
+    return updateSettings(
+      settings.copyWith(
+        hiddenPostKeys:
+            settings.hiddenPostKeys.where((key) => key != cacheKey).toList(),
+      ),
+    );
+  }
+
+  Future<Result<void>> clearHiddenPosts() async {
+    final result = await getSettings();
+    if (result is Error<AppSettings>) return Error(result.failure);
+    final settings = (result as Success<AppSettings>).data;
+    return updateSettings(settings.copyWith(hiddenPostKeys: const []));
+  }
+
+  Future<Result<int>> importBlacklistFromE621(List<String> incomingTags) async {
+    final result = await getSettings();
+    if (result is Error<AppSettings>) return Error(result.failure);
+    final settings = (result as Success<AppSettings>).data;
+
+    final currentTags = settings.blacklistedTags.toSet();
+    final currentRules = settings.smartBlacklistRules.toSet();
+    int addedCount = 0;
+
+    for (final raw in incomingTags) {
+      final line = raw.trim();
+      if (line.isEmpty) continue;
+
+      if (line.contains(' ') ||
+          line.startsWith('rating:') ||
+          line.startsWith('score:')) {
+        if (!currentRules.contains(line)) {
+          currentRules.add(line);
+          addedCount++;
+        }
+      } else {
+        final cleanTag = line.toLowerCase();
+        if (!currentTags.contains(cleanTag)) {
+          currentTags.add(cleanTag);
+          addedCount++;
+        }
+      }
+    }
+
+    if (addedCount == 0) return const Success(0);
+
+    final updated = settings.copyWith(
+      blacklistedTags: currentTags.toList(),
+      smartBlacklistRules: currentRules.toList(),
+    );
+    final saveResult = await updateSettings(updated);
+    if (saveResult is Error<void>) return Error(saveResult.failure);
+    return Success(addedCount);
+  }
+
+  Future<Result<void>> saveVideoPlaybackPosition(
+    String cacheKey,
+    int milliseconds, {
+    int maxEntries = 300,
+  }) async {
+    if (cacheKey.isEmpty || milliseconds < 1000) return const Success(null);
+    final result = await getSettings();
+    if (result is Error<AppSettings>) return Error(result.failure);
+    final settings = (result as Success<AppSettings>).data;
+    final existing = settings.videoPlaybackPositions[cacheKey] ?? 0;
+    if ((existing - milliseconds).abs() < 1000) return const Success(null);
+    final positions = <String, int>{
+      ...settings.videoPlaybackPositions,
+      cacheKey: milliseconds,
+    };
+    if (positions.length > maxEntries) {
+      final removeCount = positions.length - maxEntries;
+      for (final key in positions.keys.take(removeCount).toList()) {
+        positions.remove(key);
+      }
+    }
+    return updateSettings(settings.copyWith(videoPlaybackPositions: positions));
+  }
+
+  Future<Result<void>> setVideoPlayerVolume(double volume) async {
+    final result = await getSettings();
+    if (result is Error<AppSettings>) return Error(result.failure);
+    final settings = (result as Success<AppSettings>).data;
+    final clamped = volume.clamp(0.0, 100.0);
+    if ((settings.videoPlayerVolume - clamped).abs() < 0.01) {
+      return const Success(null);
+    }
+    return updateSettings(settings.copyWith(videoPlayerVolume: clamped));
+  }
+
+  Future<Result<void>> appendDiagnosticLog(String message) async {
+    final result = await getSettings();
+    if (result is Error<AppSettings>) return Error(result.failure);
+    final settings = (result as Success<AppSettings>).data;
+    final line = '${DateTime.now().toIso8601String()}  $message';
+    final lines = [...settings.diagnosticLogLines, line];
+    return updateSettings(
+      settings.copyWith(
+        diagnosticLogLines:
+            lines.length > 200 ? lines.sublist(lines.length - 200) : lines,
+      ),
+    );
+  }
+
+  Future<Result<void>> clearDiagnosticLogs() async {
+    final result = await getSettings();
+    if (result is Error<AppSettings>) return Error(result.failure);
+    final settings = (result as Success<AppSettings>).data;
+    return updateSettings(settings.copyWith(diagnosticLogLines: const []));
+  }
+
+  Future<Result<String>> buildDiagnosticsReport({
+    required String appVersion,
+    required int buildNumber,
+  }) async {
+    final settingsResult = await getSettings();
+    if (settingsResult is Error<AppSettings>) {
+      return Error(settingsResult.failure);
+    }
+    final settings = (settingsResult as Success<AppSettings>).data;
+    final providers = <ContentProviderConfig>[];
+    final diagnostics = <String>[];
+    final repository = _providerRepository;
+    if (repository != null) {
+      final providersResult = await repository.getProviders(enabledOnly: false);
+      if (providersResult is Success<List<ContentProviderConfig>>) {
+        providers.addAll(providersResult.data);
+      }
+      final diagnosticsResult = await repository.getDiagnostics();
+      if (diagnosticsResult is Success<List<ProviderDiagnostics>>) {
+        for (final item in diagnosticsResult.data) {
+          diagnostics.add(
+            '${item.providerId}: ${item.lastResultCount} posts, '
+            'lastSearchAt=${item.lastSearchAt}, '
+            'error=${item.lastErrorMessage ?? 'none'}',
+          );
+        }
+      }
+    }
+    final enabledProviders =
+        providers.where((provider) => provider.enabled).map((p) => p.id);
+    return Success(
+      const JsonEncoder.withIndent('  ').convert({
+        'app': {
+          'name': 'Prisma',
+          'version': appVersion,
+          'build': buildNumber,
+          'generatedAt': DateTime.now().toIso8601String(),
+        },
+        'settingsSummary': {
+          'themeMode': settings.themeMode,
+          'languageCode': settings.languageCode,
+          'appSeedColor': settings.appSeedColor,
+          'hiddenTabs': settings.hiddenTabs,
+          'allowExperimentalUpdates': settings.allowExperimentalUpdates,
+          'nsfwEnabled': settings.nsfwEnabled,
+          'blurExplicitContent': settings.blurExplicitContent,
+          'mediaQualityMode': settings.mediaQualityMode,
+          'motionRefreshMode': settings.motionRefreshMode,
+          'autoBatterySaver60Hz': settings.autoBatterySaver60Hz,
+          'cacheTtlHours': settings.cacheTtlHours,
+          'cacheMaxItems': settings.cacheMaxItems,
+          'hiddenPosts': settings.hiddenPostKeys.length,
+          'blacklistRules': settings.smartBlacklistRules.length,
+          'whitelistTags': settings.whitelistedTags.length,
+          'hideViewedPosts': settings.hideViewedPosts,
+        },
+        'providers': {
+          'enabled': enabledProviders.toList(),
+          'all': providers
+              .map((provider) => {
+                    'id': provider.id,
+                    'name': provider.name,
+                    'apiType': provider.apiType,
+                    'enabled': provider.enabled,
+                    'priority': provider.priority,
+                    'baseUrl': provider.baseUrl,
+                  })
+              .toList(),
+        },
+        'recentLogs': settings.diagnosticLogLines.take(60).toList(),
+        'providerDiagnostics': diagnostics,
+      }),
+    );
+  }
+
+  Future<Result<String>> exportSettingsToJson() async {
+    final result = await getSettings();
+    if (result is Error<AppSettings>) return Error(result.failure);
+    final settings = (result as Success<AppSettings>).data;
+    final providers = <ContentProviderConfig>[];
+    final repository = _providerRepository;
+    if (repository != null) {
+      final providersResult = await repository.getProviders(enabledOnly: false);
+      if (providersResult is Success<List<ContentProviderConfig>>) {
+        providers.addAll(providersResult.data);
+      }
+    }
+    return Success(
+      const JsonEncoder.withIndent('  ').convert({
+        'schemaVersion': 2,
+        'settings': settings.toJson(),
+        'filters': {
+          'blacklistedTags': settings.blacklistedTags,
+          'whitelistedTags': settings.whitelistedTags,
+          'smartBlacklistRules': settings.smartBlacklistRules,
+          'hiddenPostKeys': settings.hiddenPostKeys,
+        },
+        'providers': providers.map((provider) => provider.toJson()).toList(),
+      }),
+    );
+  }
+
+  Future<Result<void>> importSettingsFromJson(String json) async {
+    try {
+      final decoded = jsonDecode(json) as Map<String, dynamic>;
+      final settingsJson =
+          (decoded['settings'] as Map?)?.cast<String, dynamic>() ?? decoded;
+      final filtersJson =
+          (decoded['filters'] as Map?)?.cast<String, dynamic>() ?? const {};
+      for (final key in [
+        'blacklistedTags',
+        'whitelistedTags',
+        'smartBlacklistRules',
+        'hiddenPostKeys',
+      ]) {
+        settingsJson.putIfAbsent(key, () => filtersJson[key]);
+      }
+      final settings = AppSettings.fromJson(settingsJson);
+      final result = await updateSettings(settings);
+      if (result is Error<void>) return result;
+      final repository = _providerRepository;
+      final providerItems = decoded['providers'];
+      if (repository != null && providerItems is List) {
+        for (final item in providerItems.whereType<Map>()) {
+          await repository.saveProvider(
+            ContentProviderConfig.fromJson(
+              Map<String, dynamic>.from(item),
+            ).copyWith(updatedAt: DateTime.now()),
+          );
+        }
+      }
+      await saveEnabledProviders(settings.enabledProviderIds);
+      return result;
+    } catch (error) {
+      return Error(
+        Failure(
+          code: 'settings_import',
+          message: 'Invalid settings JSON',
+          details: error,
+        ),
+      );
+    }
+  }
+}

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../../backend/backend.dart';
+import 'package:gel_rule_app/backend/backend.dart';
 
 class RecentSearches extends StatefulWidget {
   const RecentSearches({

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../../backend/backend.dart';
+import 'package:gel_rule_app/backend/backend.dart';
 import 'e621_auth_dialog.dart';
 
 class ProviderCard extends StatelessWidget {

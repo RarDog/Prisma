@@ -1,17 +1,17 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/backend/mappers/danbooru_mapper.dart';
-import 'package:gel_rule_app/backend/mappers/e621_mapper.dart';
-import 'package:gel_rule_app/backend/mappers/gelbooru_mapper.dart';
-import 'package:gel_rule_app/backend/mappers/moebooru_mapper.dart';
-import 'package:gel_rule_app/backend/mappers/rule34_mapper.dart';
-import 'package:gel_rule_app/backend/models/content_provider_config.dart';
-import 'package:gel_rule_app/backend/models/top_period_filter.dart';
-import 'package:gel_rule_app/backend/providers/custom_provider.dart';
-import 'package:gel_rule_app/backend/providers/provider_factory.dart';
-import 'package:gel_rule_app/backend/providers/realbooru_html_provider.dart';
-import 'package:gel_rule_app/backend/repositories/provider_repository.dart';
+import 'package:gel_rule_app/sources/mappers/danbooru_mapper.dart';
+import 'package:gel_rule_app/sources/mappers/e621_mapper.dart';
+import 'package:gel_rule_app/sources/mappers/gelbooru_mapper.dart';
+import 'package:gel_rule_app/sources/mappers/moebooru_mapper.dart';
+import 'package:gel_rule_app/sources/mappers/rule34_mapper.dart';
+import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
+import 'package:gel_rule_app/core/models/top_period_filter.dart';
+import 'package:gel_rule_app/sources/booru/custom_provider.dart';
+import 'package:gel_rule_app/sources/provider_factory.dart';
+import 'package:gel_rule_app/sources/booru/realbooru_html_provider.dart';
+import 'package:gel_rule_app/features/providers/data/provider_repository.dart';
 import 'package:gel_rule_app/core/http/dio_client.dart';
 
 void main() {

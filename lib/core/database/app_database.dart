@@ -3,15 +3,15 @@ import 'dart:convert';
 import 'package:isar/isar.dart' hide Collection;
 import 'package:path_provider/path_provider.dart';
 
-import '../../backend/models/collection.dart';
-import '../../backend/models/content_provider_config.dart';
-import '../../backend/models/favorite.dart';
-import '../../backend/models/post.dart';
-import '../../backend/models/provider_diagnostics.dart';
-import '../../backend/models/provider_health.dart';
-import '../../backend/models/search_history.dart';
-import '../../backend/models/viewed_post.dart';
-import '../../backend/models/downloaded_media.dart';
+import 'package:gel_rule_app/features/collections/models/collection.dart';
+import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
+import 'package:gel_rule_app/features/favorites/models/favorite.dart';
+import 'package:gel_rule_app/core/models/post.dart';
+import 'package:gel_rule_app/core/models/provider_diagnostics.dart';
+import 'package:gel_rule_app/core/models/provider_health.dart';
+import 'package:gel_rule_app/features/search/models/search_history.dart';
+import 'package:gel_rule_app/features/viewed/models/viewed_post.dart';
+import 'package:gel_rule_app/features/downloads/models/downloaded_media.dart';
 
 part 'app_database.g.dart';
 

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/backend/models/creator_link.dart';
+import 'package:gel_rule_app/features/artists/models/creator_link.dart';
 
 void main() {
   group('CreatorLink extractor and classification tests', () {

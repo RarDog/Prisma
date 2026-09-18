@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
-import '../../app/responsive.dart';
-import '../../backend/backend.dart';
+import 'package:gel_rule_app/app/responsive.dart';
+import 'package:gel_rule_app/backend/backend.dart';
 import 'loading_skeleton.dart';
 import 'post_card.dart';
 

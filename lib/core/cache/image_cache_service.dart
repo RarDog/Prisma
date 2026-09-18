@@ -1,4 +1,4 @@
-import '../../backend/models/post.dart';
+import 'package:gel_rule_app/core/models/post.dart';
 
 class ImageCacheService {
   String previewCacheKey(Post post) => 'preview:${post.providerId}:${post.id}';

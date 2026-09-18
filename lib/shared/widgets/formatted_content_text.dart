@@ -2,7 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../backend/models/creator_link.dart';
+import 'package:gel_rule_app/features/artists/models/creator_link.dart';
 
 class FormattedContentText extends StatefulWidget {
   const FormattedContentText({

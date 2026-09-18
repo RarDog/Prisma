@@ -2,11 +2,11 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../app/app.dart';
-import '../../../app/app_navigator.dart';
-import '../../../backend/backend.dart';
-import '../../../core/utils/result.dart';
-import '../../../shared/widgets/adaptive_scaffold.dart';
+import 'package:gel_rule_app/app/app.dart';
+import 'package:gel_rule_app/app/app_navigator.dart';
+import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:gel_rule_app/shared/widgets/adaptive_scaffold.dart';
 import 'settings_controller.dart';
 
 final hiddenPostRowsProvider = FutureProvider<List<HiddenPostRow>>((ref) async {

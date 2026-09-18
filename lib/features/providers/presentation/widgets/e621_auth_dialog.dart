@@ -5,7 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../../backend/models/content_provider_config.dart';
+import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
 
 class E621AuthDialog extends StatefulWidget {
   const E621AuthDialog({

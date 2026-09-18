@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../../app/app_strings.dart';
-import '../../../../backend/models/cloud_media_link.dart';
-import '../../../../backend/models/creator_link.dart';
-import '../../../../shared/widgets/formatted_content_text.dart';
+import 'package:gel_rule_app/app/app_strings.dart';
+import 'package:gel_rule_app/features/downloads/models/cloud_media_link.dart';
+import 'package:gel_rule_app/features/artists/models/creator_link.dart';
+import 'package:gel_rule_app/shared/widgets/formatted_content_text.dart';
 
 class CloudMirrorsCard extends StatefulWidget {
   const CloudMirrorsCard({

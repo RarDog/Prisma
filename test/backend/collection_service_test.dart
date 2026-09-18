@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/backend/models/collection.dart';
-import 'package:gel_rule_app/backend/models/post.dart';
-import 'package:gel_rule_app/backend/repositories/collection_repository.dart';
-import 'package:gel_rule_app/backend/services/collection_service.dart';
+import 'package:gel_rule_app/features/collections/models/collection.dart';
+import 'package:gel_rule_app/core/models/post.dart';
+import 'package:gel_rule_app/features/collections/data/collection_repository.dart';
+import 'package:gel_rule_app/features/collections/domain/collection_service.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 
 class FakeCollectionRepository implements CollectionRepository {

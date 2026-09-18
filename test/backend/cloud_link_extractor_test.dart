@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/backend/models/cloud_media_link.dart';
-import 'package:gel_rule_app/backend/services/cloud_link_extractor.dart';
+import 'package:gel_rule_app/features/downloads/models/cloud_media_link.dart';
+import 'package:gel_rule_app/features/downloads/domain/cloud_link_extractor.dart';
 
 void main() {
   group('CloudLinkExtractor tests', () {

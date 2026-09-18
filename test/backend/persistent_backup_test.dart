@@ -1,11 +1,11 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/backend/models/collection.dart';
-import 'package:gel_rule_app/backend/models/favorite.dart';
-import 'package:gel_rule_app/backend/models/search_history.dart';
-import 'package:gel_rule_app/backend/services/backup_service.dart';
-import 'package:gel_rule_app/backend/services/settings_service.dart';
+import 'package:gel_rule_app/features/collections/models/collection.dart';
+import 'package:gel_rule_app/features/favorites/models/favorite.dart';
+import 'package:gel_rule_app/features/search/models/search_history.dart';
+import 'package:gel_rule_app/features/settings/domain/backup_service.dart';
+import 'package:gel_rule_app/features/settings/domain/settings_service.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 
 class _FakeSettingsService extends Fake implements SettingsService {

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../backend/backend.dart';
+import 'package:gel_rule_app/backend/backend.dart';
 
 enum MotionRefreshMode {
   auto('Auto'),

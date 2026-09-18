@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../app/app.dart';
-import '../../../backend/backend.dart';
-import '../../../shared/widgets/adaptive_scaffold.dart';
-import '../../../shared/widgets/confirm_dialog.dart';
-import '../../../shared/widgets/error_view.dart';
+import 'package:gel_rule_app/app/app.dart';
+import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/shared/widgets/adaptive_scaffold.dart';
+import 'package:gel_rule_app/shared/widgets/confirm_dialog.dart';
+import 'package:gel_rule_app/shared/widgets/error_view.dart';
 import 'collection_form_dialog.dart';
 import 'collections_controller.dart';
 

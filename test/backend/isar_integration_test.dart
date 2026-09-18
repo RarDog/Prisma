@@ -2,16 +2,16 @@ import 'dart:ffi' show Abi;
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/backend/models/content_provider_config.dart';
-import 'package:gel_rule_app/backend/models/post.dart';
-import 'package:gel_rule_app/backend/repositories/collection_repository.dart';
-import 'package:gel_rule_app/backend/repositories/favorite_repository.dart';
-import 'package:gel_rule_app/backend/repositories/post_repository.dart';
-import 'package:gel_rule_app/backend/repositories/provider_repository.dart';
-import 'package:gel_rule_app/backend/repositories/viewed_post_repository.dart';
-import 'package:gel_rule_app/backend/services/collection_service.dart';
-import 'package:gel_rule_app/backend/services/settings_service.dart';
-import 'package:gel_rule_app/backend/services/viewed_history_service.dart';
+import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
+import 'package:gel_rule_app/core/models/post.dart';
+import 'package:gel_rule_app/features/collections/data/collection_repository.dart';
+import 'package:gel_rule_app/features/favorites/data/favorite_repository.dart';
+import 'package:gel_rule_app/features/feed/data/post_repository.dart';
+import 'package:gel_rule_app/features/providers/data/provider_repository.dart';
+import 'package:gel_rule_app/features/viewed/data/viewed_post_repository.dart';
+import 'package:gel_rule_app/features/collections/domain/collection_service.dart';
+import 'package:gel_rule_app/features/settings/domain/settings_service.dart';
+import 'package:gel_rule_app/features/viewed/domain/viewed_history_service.dart';
 import 'package:gel_rule_app/core/cache/cache_service.dart';
 import 'package:gel_rule_app/core/database/app_database.dart';
 import 'package:gel_rule_app/core/database/database_service.dart';
@@ -82,6 +82,7 @@ void main() {
     expect(providers.map((provider) => provider.id), [
       'gelbooru',
       'rule34',
+      'safebooru',
       'realbooru',
       'e621',
       'e926',
@@ -97,7 +98,11 @@ void main() {
     expect(realbooru.enabled, isTrue);
     expect(realbooru.apiType, 'realbooru_html');
     expect(realbooru.baseUrl, 'https://realbooru.com');
-    expect(providers.where((provider) => provider.id == 'safebooru'), isEmpty);
+    final safebooru =
+        providers.singleWhere((provider) => provider.id == 'safebooru');
+    expect(safebooru.enabled, isTrue);
+    expect(safebooru.apiType, 'safebooru');
+    expect(safebooru.baseUrl, 'https://safebooru.org');
     expect(providers.where((provider) => provider.id == 'konachan'), isEmpty);
     expect(providers.where((provider) => provider.id == 'yandere'), isEmpty);
     expect(providers.where((provider) => provider.id == 'xbooru'), isEmpty);

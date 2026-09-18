@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/backend/models/content_provider_config.dart';
-import 'package:gel_rule_app/backend/providers/gelbooru_provider.dart';
-import 'package:gel_rule_app/backend/providers/provider_factory.dart';
+import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
+import 'package:gel_rule_app/sources/booru/gelbooru_provider.dart';
+import 'package:gel_rule_app/sources/provider_factory.dart';
 import 'package:gel_rule_app/core/http/dio_client.dart';
 
 void main() {

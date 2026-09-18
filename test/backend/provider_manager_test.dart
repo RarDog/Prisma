@@ -1,14 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/backend/models/content_provider_config.dart';
-import 'package:gel_rule_app/backend/models/post.dart';
-import 'package:gel_rule_app/backend/models/provider_diagnostics.dart';
-import 'package:gel_rule_app/backend/models/provider_health.dart';
-import 'package:gel_rule_app/backend/models/tag_suggestion.dart';
-import 'package:gel_rule_app/backend/models/top_period_filter.dart';
-import 'package:gel_rule_app/backend/providers/content_provider.dart';
-import 'package:gel_rule_app/backend/providers/provider_factory.dart';
-import 'package:gel_rule_app/backend/providers/provider_manager.dart';
-import 'package:gel_rule_app/backend/repositories/provider_repository.dart';
+import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
+import 'package:gel_rule_app/core/models/post.dart';
+import 'package:gel_rule_app/core/models/provider_diagnostics.dart';
+import 'package:gel_rule_app/core/models/provider_health.dart';
+import 'package:gel_rule_app/core/models/tag_suggestion.dart';
+import 'package:gel_rule_app/core/models/top_period_filter.dart';
+import 'package:gel_rule_app/sources/interfaces/content_provider.dart';
+import 'package:gel_rule_app/sources/provider_factory.dart';
+import 'package:gel_rule_app/sources/provider_manager.dart';
+import 'package:gel_rule_app/features/providers/data/provider_repository.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 
 class FakeProviderRepository implements ProviderRepository {

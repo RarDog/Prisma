@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/backend/models/downloaded_media.dart';
-import 'package:gel_rule_app/backend/services/downloaded_media_service.dart';
+import 'package:gel_rule_app/features/downloads/models/downloaded_media.dart';
+import 'package:gel_rule_app/features/downloads/domain/downloaded_media_service.dart';
 import 'package:gel_rule_app/features/post/presentation/widgets/post_action_bar.dart';
 
 void main() {

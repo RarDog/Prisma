@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/backend/models/post.dart';
-import 'package:gel_rule_app/backend/providers/e621_provider.dart';
+import 'package:gel_rule_app/core/models/post.dart';
+import 'package:gel_rule_app/sources/booru/e621_provider.dart';
 
 void main() {
   group('e621 tag sanitizer', () {

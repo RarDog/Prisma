@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../backend/models/post.dart';
-import '../features/post/presentation/post_details_screen.dart';
-import '../features/post/presentation/similar_posts_screen.dart';
+import 'package:gel_rule_app/core/models/post.dart';
+import 'package:gel_rule_app/features/post/presentation/post_details_screen.dart';
+import 'package:gel_rule_app/features/post/presentation/similar_posts_screen.dart';
 
 class AppNavigator {
   const AppNavigator._();
