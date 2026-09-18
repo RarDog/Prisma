@@ -17,7 +17,7 @@
 <p align="center">
   <a href="https://github.com/RarDog/Prisma/releases"><img src="https://img.shields.io/github/v/release/RarDog/Prisma?style=flat-square&color=8A2BE2" alt="Releases" /></a>
   <img src="https://img.shields.io/badge/Flutter-3.47+-02569B?style=flat-square&logo=flutter&logoColor=white" alt="Flutter" />
-  <img src="https://img.shields.io/badge/Platform-Android%20%7C%20Linux-00C853?style=flat-square" alt="Platforms" />
+  <img src="https://img.shields.io/badge/Platform-Android%20%7C%20Linux%20%7C%20Windows%20%7C%20macOS-00C853?style=flat-square" alt="Platforms" />
   <img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License" />
 </p>
 
@@ -63,8 +63,10 @@ Pre-built binaries are available on the **[Releases](https://github.com/RarDog/P
 - **Linux**:
   - `Prisma-v4.0.1-linux-x86_64.AppImage` — portable standalone executable.
   - `Prisma-v4.0.1-linux-x64.tar.gz` — portable tarball bundle.
-
----
+- **Windows**:
+  - `Prisma-v4.0.1-windows-x64.zip` — portable standalone zip (x64).
+- **macOS**:
+  - `Prisma-v4.0.1-macos.zip` — portable app bundle (`Prisma.app`).
 
 ---
 

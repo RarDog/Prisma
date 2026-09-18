@@ -17,7 +17,7 @@
 <p align="center">
   <a href="https://github.com/RarDog/Prisma/releases"><img src="https://img.shields.io/github/v/release/RarDog/Prisma?style=flat-square&color=8A2BE2" alt="Релизы" /></a>
   <img src="https://img.shields.io/badge/Flutter-3.47+-02569B?style=flat-square&logo=flutter&logoColor=white" alt="Flutter" />
-  <img src="https://img.shields.io/badge/Платформы-Android%20%7C%20Linux-00C853?style=flat-square" alt="Платформы" />
+  <img src="https://img.shields.io/badge/Платформы-Android%20%7C%20Linux%20%7C%20Windows%20%7C%20macOS-00C853?style=flat-square" alt="Платформы" />
   <img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="Лицензия" />
 </p>
 
@@ -63,8 +63,10 @@
 - **Linux**:
   - `Prisma-v4.0.1-linux-x86_64.AppImage` — портативный исполняемый файл AppImage.
   - `Prisma-v4.0.1-linux-x64.tar.gz` — архив с бинарными файлами.
-
----
+- **Windows**:
+  - `Prisma-v4.0.1-windows-x64.zip` — портативный архив для Windows (x64).
+- **macOS**:
+  - `Prisma-v4.0.1-macos.zip` — портативный архив приложения (`Prisma.app`).
 
 ---
 
