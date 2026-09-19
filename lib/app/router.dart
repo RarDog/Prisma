@@ -20,6 +20,7 @@ import 'package:gel_rule_app/features/settings/presentation/cache_manager_screen
 import 'package:gel_rule_app/features/settings/presentation/hidden_posts_screen.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_screen.dart';
 import 'package:gel_rule_app/features/viewed/presentation/viewed_screen.dart';
+import 'package:gel_rule_app/shared/widgets/animated_branch_container.dart';
 import 'package:gel_rule_app/shared/widgets/app_shell.dart';
 
 final branchNavKeys = List.generate(8, (_) => GlobalKey<NavigatorState>());
@@ -33,7 +34,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/onboarding',
         builder: (context, state) => const OnboardingScreen(),
       ),
-      StatefulShellRoute.indexedStack(
+      StatefulShellRoute(
+        navigatorContainerBuilder: (context, navigationShell, children) =>
+            AnimatedBranchContainer(
+          currentIndex: navigationShell.currentIndex,
+          children: children,
+        ),
         builder: (context, state, navigationShell) => AppShell(
           navigationShell: navigationShell,
           child: navigationShell,
