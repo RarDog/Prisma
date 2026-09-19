@@ -373,7 +373,18 @@ class UpdateService {
         } catch (_) {}
 
         appImageFile.renameSync(oldBackup);
-        File(downloadedPath).renameSync(runningAppImage);
+        try {
+          _safeMoveFile(downloadedPath, runningAppImage);
+        } catch (e) {
+          // Rollback on failure so the original AppImage is not lost or broken
+          try {
+            if (!File(runningAppImage).existsSync() && File(oldBackup).existsSync()) {
+              File(oldBackup).renameSync(runningAppImage);
+            }
+          } catch (_) {}
+          rethrow;
+        }
+
         await Process.run('chmod', ['+x', runningAppImage]);
         try {
           File(oldBackup).deleteSync();
@@ -399,6 +410,21 @@ class UpdateService {
       await Process.start(Platform.resolvedExecutable, [], mode: ProcessStartMode.detached);
       exit(0);
     }
+  }
+
+  void _safeMoveFile(String sourcePath, String targetPath) {
+    final source = File(sourcePath);
+    try {
+      source.renameSync(targetPath);
+      return;
+    } on FileSystemException {
+      // Fallback for cross-device links (e.g. /tmp on tmpfs to /home on disk)
+    }
+
+    source.copySync(targetPath);
+    try {
+      source.deleteSync();
+    } catch (_) {}
   }
 
   Future<void> _installWindowsUpdate(String downloadedPath) async {
