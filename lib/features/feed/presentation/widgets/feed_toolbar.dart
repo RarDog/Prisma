@@ -130,24 +130,34 @@ class _FeedToolbarState extends State<FeedToolbar> {
               scrollDirection: Axis.horizontal,
               primary: false,
               children: [
-                if (hasActiveFilters || widget.selectedTags.isNotEmpty) ...[
-                  _LiquidProviderPill(
-                    label: isRu ? 'Сбросить' : 'Reset',
-                    isSelected: false,
-                    icon: Icons.filter_alt_off_rounded,
-                    onTap: widget.onClearFilters,
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                _LiquidProviderPill(
-                  label: isRu ? 'Обновить' : 'Refresh',
-                  isSelected: false,
-                  icon: Icons.refresh_rounded,
-                  onTap: widget.onRefresh,
+                _LiquidPeriodTabs(
+                  selectedPeriod: widget.topPeriodFilter,
+                  onChanged: widget.onTopPeriodChanged,
                 ),
                 const SizedBox(width: 8),
                 const _ToolbarDivider(),
                 const SizedBox(width: 8),
+                if (widget.providers.isNotEmpty) ...[
+                  _LiquidProviderPill(
+                    label: isRu ? 'Все источники' : 'All sources',
+                    isSelected: widget.selectedProviderIds.isEmpty,
+                    icon: Icons.all_inclusive_rounded,
+                    onTap: () => widget.onQuickProviderToggle('__all__'),
+                  ),
+                  const SizedBox(width: 6),
+                  for (final provider in widget.providers) ...[
+                    _LiquidProviderPill(
+                      label: provider.name,
+                      isSelected: widget.selectedProviderIds.contains(provider.id),
+                      icon: Icons.hub_rounded,
+                      onTap: () => widget.onQuickProviderToggle(provider.id),
+                    ),
+                    const SizedBox(width: 6),
+                  ],
+                  const SizedBox(width: 2),
+                  const _ToolbarDivider(),
+                  const SizedBox(width: 8),
+                ],
                 _LiquidProviderPill(
                   label: widget.rating ?? (isRu ? 'Рейтинг' : 'Rating'),
                   isSelected: widget.rating != null,
@@ -155,12 +165,21 @@ class _FeedToolbarState extends State<FeedToolbar> {
                   onTap: widget.onRatingFilter,
                 ),
                 const SizedBox(width: 8),
-                const _ToolbarDivider(),
-                const SizedBox(width: 8),
-                _LiquidPeriodTabs(
-                  selectedPeriod: widget.topPeriodFilter,
-                  onChanged: widget.onTopPeriodChanged,
+                _LiquidProviderPill(
+                  label: isRu ? 'Обновить' : 'Refresh',
+                  isSelected: false,
+                  icon: Icons.refresh_rounded,
+                  onTap: widget.onRefresh,
                 ),
+                if (hasActiveFilters || widget.selectedTags.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  _LiquidProviderPill(
+                    label: isRu ? 'Сбросить' : 'Reset',
+                    isSelected: false,
+                    icon: Icons.filter_alt_off_rounded,
+                    onTap: widget.onClearFilters,
+                  ),
+                ],
               ],
             ),
           ),
@@ -253,6 +272,27 @@ class _FeedToolbarState extends State<FeedToolbar> {
                   selectedPeriod: widget.topPeriodFilter,
                   onChanged: widget.onTopPeriodChanged,
                 ),
+                if (widget.providers.isNotEmpty) ...[
+                  const SizedBox(width: 6),
+                  const _ToolbarDivider(),
+                  const SizedBox(width: 6),
+                  _LiquidProviderPill(
+                    label: isRu ? 'Все' : 'All',
+                    isSelected: widget.selectedProviderIds.isEmpty,
+                    icon: Icons.all_inclusive_rounded,
+                    onTap: () => widget.onQuickProviderToggle('__all__'),
+                  ),
+                  const SizedBox(width: 6),
+                  for (final provider in widget.providers) ...[
+                    _LiquidProviderPill(
+                      label: provider.name,
+                      isSelected: widget.selectedProviderIds.contains(provider.id),
+                      icon: Icons.hub_rounded,
+                      onTap: () => widget.onQuickProviderToggle(provider.id),
+                    ),
+                    const SizedBox(width: 6),
+                  ],
+                ],
               ],
             ),
           ),
