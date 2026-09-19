@@ -37,7 +37,7 @@ jobs:
         shell: pwsh
         run: |
           $tag = "${{ github.ref_name }}"
-          if (-not $tag) { $tag = "v4.0.3" }
+          if (-not $tag) { $tag = "v4.0.5" }
           $zipName = "Prisma-$tag-windows-x64.zip"
           Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath $zipName
           echo "ZIP_NAME=$zipName" >> $env:GITHUB_ENV
@@ -82,7 +82,7 @@ jobs:
       - name: Package macOS Zip
         run: |
           TAG="${{ github.ref_name }}"
-          if [ -z "$TAG" ]; then TAG="v4.0.3"; fi
+          if [ -z "$TAG" ]; then TAG="v4.0.5"; fi
           ZIP_NAME="Prisma-$TAG-macos.zip"
           cd build/macos/Build/Products/Release
           zip -r -y "$GITHUB_WORKSPACE/$ZIP_NAME" Prisma.app
@@ -179,7 +179,7 @@ jobs:
       - name: Package Linux AppImage & Tarball
         run: |
           TAG="${{ github.ref_name }}"
-          if [ -z "$TAG" ]; then TAG="v4.0.3"; fi
+          if [ -z "$TAG" ]; then TAG="v4.0.5"; fi
           chmod +x installer/build_linux_appimage.sh
           ./installer/build_linux_appimage.sh "$TAG"
 

@@ -84,12 +84,17 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
     super.didUpdateWidget(oldWidget);
     final nextQuery = widget.initialQuery;
     if (nextQuery != null &&
-        nextQuery.isNotEmpty &&
         nextQuery != oldWidget.initialQuery) {
       _appliedInitialQuery = nextQuery;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _applySearchQuery(nextQuery);
+      });
+    } else if (nextQuery == null && oldWidget.initialQuery != null) {
+      _appliedInitialQuery = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _applySearchQuery('');
       });
     }
   }
@@ -421,7 +426,11 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
   }
 
   Future<void> _applySearchQuery(String query) async {
-    await ref.read(feedControllerProvider.notifier).search(query);
+    final currentTags =
+        ref.read(feedControllerProvider).value?.selectedTags.join(' ') ?? '';
+    if (currentTags != query) {
+      await ref.read(feedControllerProvider.notifier).search(query);
+    }
     if (_scrollController.hasClients) {
       _scrollController.jumpTo(0);
     }

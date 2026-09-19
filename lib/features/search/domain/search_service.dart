@@ -17,6 +17,9 @@ class SearchService {
   final SearchRepository _repository;
   final ProviderManager? _providerManager;
   final TagCacheService? _tagCacheService;
+  final _historyChangesController = StreamController<void>.broadcast();
+
+  Stream<void> get historyChanges => _historyChangesController.stream;
 
   TagCacheService? get tagCacheService => _tagCacheService;
 
@@ -66,7 +69,11 @@ class SearchService {
       );
     }
 
-    return _repository.save(history, maxItems: maxHistory);
+    final result = await _repository.save(history, maxItems: maxHistory);
+    if (!_historyChangesController.isClosed) {
+      _historyChangesController.add(null);
+    }
+    return result;
   }
 
   Future<Result<List<SearchHistory>>> recentSearches({int? limit}) {
@@ -158,12 +165,27 @@ class SearchService {
     return Success(sorted.take(limit).toList(growable: false));
   }
 
-  Future<Result<bool>> deleteHistoryItem(String historyId) =>
-      _repository.delete(historyId);
+  Future<Result<bool>> deleteHistoryItem(String historyId) async {
+    final result = await _repository.delete(historyId);
+    if (!_historyChangesController.isClosed) {
+      _historyChangesController.add(null);
+    }
+    return result;
+  }
 
-  Future<Result<void>> clearHistory() => _repository.clear();
+  Future<Result<void>> clearHistory() async {
+    final result = await _repository.clear();
+    if (!_historyChangesController.isClosed) {
+      _historyChangesController.add(null);
+    }
+    return result;
+  }
 
   Future<void> clearTagCache() async {
     await _tagCacheService?.clear();
+  }
+
+  void dispose() {
+    _historyChangesController.close();
   }
 }

@@ -60,7 +60,6 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
   Timer? _debounce;
   List<String> _tags = [];
   String _lastExternalValue = '';
-  bool _localDirty = false;
 
   @override
   void initState() {
@@ -84,12 +83,16 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
   void didUpdateWidget(covariant TagInputSearchBar oldWidget) {
     super.didUpdateWidget(oldWidget);
     final next = widget.initialValue ?? '';
-    final externalChanged = next != _lastExternalValue;
-    final externalCleared = next.isEmpty && _lastExternalValue.isNotEmpty;
-    if (externalChanged && (externalCleared || !_isEditing)) {
+    final externalChanged =
+        widget.initialValue != oldWidget.initialValue;
+    if (externalChanged && (!_focusNode.hasFocus || next != _query)) {
+      final oldTagCount = _tags.length;
       _setFromQuery(next);
       _lastExternalValue = next;
-      _localDirty = false;
+      if (_tags.length > oldTagCount) {
+        _scrollToEnd();
+      }
+      setState(() {});
     }
     if (oldWidget.suggestions != widget.suggestions) {
       _syncSuggestions();
@@ -112,15 +115,7 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
 
   void _handleFocusChanged() {
     if (!mounted) return;
-    if (!_focusNode.hasFocus) {
-      if (!_localDirty) {
-        final next = widget.initialValue ?? '';
-        if (next != _lastExternalValue) {
-          _setFromQuery(next);
-          _lastExternalValue = next;
-        }
-      }
-    } else {
+    if (_focusNode.hasFocus) {
       _syncSuggestions();
     }
     setState(() {});
@@ -164,15 +159,14 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
 
   void _scrollToEnd() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_tagScrollController.hasClients) {
-        final max = _tagScrollController.position.maxScrollExtent;
-        final target = (max - 40).clamp(0.0, max);
-        _tagScrollController.animateTo(
-          target,
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-        );
-      }
+      if (!mounted || !_tagScrollController.hasClients) return;
+      final max = _tagScrollController.position.maxScrollExtent;
+      if (max <= 0) return;
+      _tagScrollController.animateTo(
+        max,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+      );
     });
   }
 
@@ -298,37 +292,40 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
                                   _buildTagChip(context, tag),
                                   const SizedBox(width: 6),
                                 ],
-                                ConstrainedBox(
-                                  constraints: BoxConstraints(
-                                    minWidth: _tags.isEmpty ? 120 : 64,
-                                    maxWidth: 300,
-                                  ),
-                                  child: Focus(
-                                    onKeyEvent: _handleKeyEvent,
-                                    child: TextField(
-                                      controller: _controller,
-                                      focusNode: _focusNode,
-                                      autocorrect: false,
-                                      enableSuggestions: false,
-                                      textInputAction:
-                                          TextInputAction.search,
-                                      onSubmitted: (_) => _submit(),
-                                      onChanged: _handleDraftChanged,
-                                      decoration: InputDecoration(
-                                        isDense: true,
-                                        border: InputBorder.none,
-                                        enabledBorder: InputBorder.none,
-                                        focusedBorder: InputBorder.none,
-                                        filled: false,
-                                        contentPadding:
-                                            const EdgeInsets.symmetric(
-                                          vertical: 8,
+                                IntrinsicWidth(
+                                  stepWidth: 10,
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      minWidth: _tags.isEmpty ? 140 : 48,
+                                      maxWidth: 240,
+                                    ),
+                                    child: Focus(
+                                      onKeyEvent: _handleKeyEvent,
+                                      child: TextField(
+                                        controller: _controller,
+                                        focusNode: _focusNode,
+                                        autocorrect: false,
+                                        enableSuggestions: false,
+                                        textInputAction:
+                                            TextInputAction.search,
+                                        onSubmitted: (_) => _submit(),
+                                        onChanged: _handleDraftChanged,
+                                        decoration: InputDecoration(
+                                          isDense: true,
+                                          border: InputBorder.none,
+                                          enabledBorder: InputBorder.none,
+                                          focusedBorder: InputBorder.none,
+                                          filled: false,
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                            vertical: 8,
+                                          ),
+                                          hintText: _tags.isEmpty
+                                              ? widget.hintText
+                                              : 'tag',
+                                          prefixIcon: null,
+                                          suffixIcon: null,
                                         ),
-                                        hintText: _tags.isEmpty
-                                            ? widget.hintText
-                                            : 'tag',
-                                        prefixIcon: null,
-                                        suffixIcon: null,
                                       ),
                                     ),
                                   ),
@@ -427,7 +424,6 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
   }
 
   void _handleDraftChanged(String value) {
-    _localDirty = true;
     if (value.trim().isEmpty) {
       _debounce?.cancel();
       if (_portalController.isShowing) {
@@ -453,7 +449,6 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
   void _commitDraft(String value) {
     final additions = _parseTags(value);
     if (additions.isEmpty) return;
-    _localDirty = true;
     setState(() {
       for (final tag in additions) {
         if (tag.toLowerCase() == 'and' || !_tags.contains(tag)) {
@@ -476,7 +471,6 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
     }
     _commitDraft(_controller.text);
     _lastExternalValue = _query;
-    _localDirty = false;
     _focusNode.unfocus();
     widget.onSubmitted(_query);
   }
@@ -486,7 +480,6 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
     if (_portalController.isShowing) {
       _portalController.hide();
     }
-    _localDirty = false;
     setState(() {
       _tags = [];
       _controller.clear();
@@ -499,7 +492,6 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
   }
 
   void _editTag(String tag) {
-    _localDirty = true;
     if (_portalController.isShowing) {
       _portalController.hide();
     }
@@ -515,7 +507,6 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
   }
 
   void _removeTag(String tag) {
-    _localDirty = true;
     if (_portalController.isShowing) {
       _portalController.hide();
     }
@@ -531,7 +522,6 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
 
   void _applySuggestion(String suggestion) {
     final draft = _controller.text.trim();
-    _localDirty = true;
     setState(() {
       if (draft.isNotEmpty) {
         final tokens = _parseTags(draft);
@@ -565,7 +555,6 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
   }
 
   void _notifyChanged() {
-    _localDirty = true;
     widget.onChanged?.call(_query);
     _syncSuggestions();
   }
@@ -594,8 +583,6 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
     final raw = draft.split(RegExp(r'\s+')).last;
     return raw.trim();
   }
-
-  bool get _isEditing => _focusNode.hasFocus || _localDirty;
 }
 
 class _TagSuggestionDropdown extends StatelessWidget {

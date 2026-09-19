@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 
 import 'package:gel_rule_app/app/responsive.dart';
@@ -65,7 +66,7 @@ class _FeedToolbarState extends State<FeedToolbar> {
   @override
   void didUpdateWidget(covariant FeedToolbar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.selectedTags != widget.selectedTags) {
+    if (!listEquals(oldWidget.selectedTags, widget.selectedTags)) {
       _query = widget.selectedTags.join(' ');
     }
   }

@@ -1,5 +1,20 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.0.5',
+    title: 'Мгновенная синхронизация тегов, реактивная история поиска и улучшение поисковой строки',
+    titleEn: 'Instant Tag Synchronization, Reactive Search History & Search Bar Polish',
+    bullets: [
+      'Синхронизация тегов из поста: теги, добавленные из-под поста («Искать только этот тег», «Добавить к поиску», «Исключить» и др.), теперь сразу отображаются в поисковой строке и ленте без необходимости перезапуска приложения.',
+      'Реактивная история поиска: список недавних поисковых запросов на экране поиска теперь обновляется мгновенно в реальном времени при сохранении, удалении или очистке, не требуя повторного входа в приложение.',
+      'Исправление прокрутки поисковой строки: устранена чрезмерная горизонтальная прокрутка при добавлении новых тегов, скрывавшая чипы за левым краем экрана. Поле ввода оптимизировано по ширине, а скролл плавно подводится к новому тегу.',
+    ],
+    bulletsEn: [
+      'Instant Post Tag Synchronization: tags selected under posts ("Search only this tag", "Add to search", "Exclude", etc.) now immediately reflect as chips in the search bar and feed without needing an app restart.',
+      'Reactive Live Search History: recent searches on the search screen now update in real-time immediately upon searching, removing items, or clearing history without reopening the app.',
+      'Search Bar Scroll Polish: eliminated excessive horizontal overscroll when adding new tags that pushed chips off-screen. Text field width is now dynamically constrained and smoothly scrolls directly to new tags.',
+    ],
+  ),
+  PrismaChange(
     version: '4.0.4',
     title: 'Надёжная мультиплатформенная система обновлений и улучшение интерфейса',
     titleEn: 'Robust Multiplatform In-App Updates & Update Dialog Polish',

@@ -41,12 +41,20 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
                 }
               });
             },
-            onTap: (tag) => context.go('/?q=${Uri.encodeQueryComponent(tag)}'),
+            onTap: (tag) => _navigateToFeed(context, tag),
             onLongPress: (tag) =>
                 _showTagActionSheet(context, tag: tag, group: entry.key),
           ),
       ],
     );
+  }
+
+  void _navigateToFeed(BuildContext context, String query) {
+    ref.read(feedControllerProvider.notifier).search(query);
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+    context.go('/?q=${Uri.encodeQueryComponent(query)}');
   }
 
   void _showTagActionSheet(
@@ -118,7 +126,7 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
                     title: Text(isRu ? 'Искать только этот тег' : 'Search only this tag'),
                     onTap: () {
                       Navigator.pop(modalContext);
-                      context.go('/?q=${Uri.encodeQueryComponent(tag)}');
+                      _navigateToFeed(context, tag);
                     },
                   ),
                   ListTile(
@@ -132,7 +140,7 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
                       final nextQuery = currentTags.contains(tag)
                           ? currentTags.join(' ')
                           : [...currentTags, tag].join(' ');
-                      context.go('/?q=${Uri.encodeQueryComponent(nextQuery)}');
+                      _navigateToFeed(context, nextQuery);
                     },
                   ),
                   ListTile(
@@ -144,7 +152,7 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
                           .where((t) => t != tag && t != '-$tag')
                           .toList();
                       final nextQuery = [...filtered, '-$tag'].join(' ');
-                      context.go('/?q=${Uri.encodeQueryComponent(nextQuery)}');
+                      _navigateToFeed(context, nextQuery);
                     },
                   ),
                   ListTile(
@@ -208,7 +216,7 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
                       title: Text(isRu ? 'Все работы этого автора' : 'All works by this artist'),
                       onTap: () {
                         Navigator.pop(modalContext);
-                        context.go('/?q=${Uri.encodeQueryComponent(tag)}');
+                        _navigateToFeed(context, tag);
                       },
                     ),
                 ],

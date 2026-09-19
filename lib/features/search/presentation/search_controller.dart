@@ -12,12 +12,30 @@ final searchControllerProvider =
 class SearchController extends AsyncNotifier<SearchState> {
   Timer? _suggestionDebounce;
   int _suggestionRequestId = 0;
+  StreamSubscription<void>? _historySubscription;
 
   @override
   Future<SearchState> build() async {
-    ref.onDispose(() => _suggestionDebounce?.cancel());
+    _historySubscription?.cancel();
+    _historySubscription = ref
+        .watch(searchServiceProvider)
+        .historyChanges
+        .listen((_) => unawaited(reloadHistory()));
+    ref.onDispose(() {
+      _suggestionDebounce?.cancel();
+      _historySubscription?.cancel();
+    });
     final recent = await _recent();
     return SearchState(recent: recent);
+  }
+
+  Future<void> reloadHistory() async {
+    final recent = await _recent();
+    if (state.hasValue) {
+      state = AsyncData(
+        (state.value ?? const SearchState()).copyWith(recent: recent),
+      );
+    }
   }
 
   Future<void> updateQuery(String query) async {
