@@ -165,6 +165,9 @@ class PawchiveProvider
         : null;
     final filtered = allArtists.where((artist) {
       final artistService = artist.service.toLowerCase();
+      if (artistService != 'patreon' && artistService != 'fanbox') {
+        return false;
+      }
       final matchService = activeServices != null
           ? activeServices.contains(artistService)
           : service == null ||
@@ -381,7 +384,11 @@ class PawchiveProvider
             url: '$baseUrl/$service/user/$artistId',
           );
         })
-        .where((artist) => artist.id.isNotEmpty)
+        .where((artist) {
+          if (artist.id.isEmpty) return false;
+          final s = artist.service.toLowerCase();
+          return s == 'patreon' || s == 'fanbox';
+        })
         .toList(growable: false);
   }
 

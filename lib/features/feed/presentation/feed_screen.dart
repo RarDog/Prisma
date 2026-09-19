@@ -212,6 +212,22 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
           title: 'Feed',
           titleWidget: const _FeedTitle(),
           actions: [
+            IconButton(
+              icon: Icon(
+                _selectionMode
+                    ? Icons.check_box_rounded
+                    : Icons.check_box_outline_blank_rounded,
+              ),
+              tooltip: _selectionMode
+                  ? (isRu ? 'Выйти из выбора (Esc)' : 'Exit selection (Esc)')
+                  : (isRu ? 'Выбрать посты (V)' : 'Select posts (V)'),
+              onPressed: () {
+                setState(() {
+                  _selectionMode = !_selectionMode;
+                  if (!_selectionMode) _selectedKeys.clear();
+                });
+              },
+            ),
             if (feed.value != null && feed.value!.selectedTags.isNotEmpty)
               IconButton(
                 icon: const Icon(Icons.bookmark_add_rounded),

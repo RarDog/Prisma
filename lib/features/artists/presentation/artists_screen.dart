@@ -182,12 +182,12 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
             WidgetsBinding.instance
                 .addPostFrameCallback((_) => _refresh(items));
           }
-          final displayedArtists = _selectedServices.isEmpty
-              ? _artists
-              : _artists
-                  .where((a) =>
-                      _selectedServices.contains(a.service.toLowerCase()))
-                  .toList(growable: false);
+          final displayedArtists = _artists.where((a) {
+            final s = a.service.toLowerCase();
+            if (s != 'patreon' && s != 'fanbox') return false;
+            if (_selectedServices.isEmpty) return true;
+            return _selectedServices.contains(s);
+          }).toList(growable: false);
 
           return Column(
             children: [
@@ -564,9 +564,6 @@ class _ArtistsHeader extends StatelessWidget {
   static const _availableServices = [
     'patreon',
     'fanbox',
-    'fantia',
-    'boosty',
-    'discord',
   ];
 
   @override

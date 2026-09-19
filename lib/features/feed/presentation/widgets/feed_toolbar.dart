@@ -110,49 +110,6 @@ class _FeedToolbarState extends State<FeedToolbar> {
                   },
                 ),
               ),
-              const SizedBox(width: 8),
-              IconButton.filledTonal(
-                tooltip: widget.selectionMode
-                    ? (isRu ? 'Выйти из выбора (Esc)' : 'Exit selection (Esc)')
-                    : (isRu ? 'Выбрать посты (V)' : 'Select posts (V)'),
-                onPressed: widget.onToggleSelectionMode,
-                icon: Icon(widget.selectionMode
-                    ? Icons.check_box_rounded
-                    : Icons.check_box_outline_blank_rounded),
-              ),
-              const SizedBox(width: 4),
-              Badge(
-                isLabelVisible: hasActiveFilters,
-                child: IconButton.filledTonal(
-                  tooltip: isRu ? 'Провайдеры' : 'Providers',
-                  onPressed: widget.onProviderFilter,
-                  icon: const Icon(Icons.hub_rounded),
-                ),
-              ),
-              const SizedBox(width: 4),
-              IconButton.filledTonal(
-                tooltip: isRu ? 'Рейтинг' : 'Rating',
-                onPressed: widget.onRatingFilter,
-                icon: const Icon(Icons.tune_rounded),
-              ),
-              const SizedBox(width: 4),
-              IconButton(
-                tooltip: isRu ? 'Очистить фильтры' : 'Clear filters',
-                onPressed: widget.onClearFilters,
-                icon: const Icon(Icons.filter_alt_off_rounded),
-              ),
-              const SizedBox(width: 4),
-              IconButton(
-                tooltip: isRu ? 'Обновить (Ctrl+R / F5)' : 'Refresh (Ctrl+R / F5)',
-                onPressed: widget.onRefresh,
-                icon: const Icon(Icons.refresh_rounded),
-              ),
-              const SizedBox(width: 4),
-              IconButton.filledTonal(
-                tooltip: isRu ? 'Случайный пост (R)' : 'Random post (R)',
-                onPressed: widget.onRandom,
-                icon: const Icon(Icons.casino_rounded),
-              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -173,31 +130,37 @@ class _FeedToolbarState extends State<FeedToolbar> {
               scrollDirection: Axis.horizontal,
               primary: false,
               children: [
-                _LiquidPeriodTabs(
-                  selectedPeriod: widget.topPeriodFilter,
-                  onChanged: widget.onTopPeriodChanged,
+                if (hasActiveFilters || widget.selectedTags.isNotEmpty) ...[
+                  _LiquidProviderPill(
+                    label: isRu ? 'Сбросить' : 'Reset',
+                    isSelected: false,
+                    icon: Icons.filter_alt_off_rounded,
+                    onTap: widget.onClearFilters,
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                _LiquidProviderPill(
+                  label: isRu ? 'Обновить' : 'Refresh',
+                  isSelected: false,
+                  icon: Icons.refresh_rounded,
+                  onTap: widget.onRefresh,
                 ),
                 const SizedBox(width: 8),
                 const _ToolbarDivider(),
                 const SizedBox(width: 8),
-                if (widget.providers.isNotEmpty) ...[
-                  _LiquidProviderPill(
-                    label: isRu ? 'Все источники' : 'All sources',
-                    isSelected: widget.selectedProviderIds.isEmpty,
-                    icon: Icons.all_inclusive_rounded,
-                    onTap: () => widget.onQuickProviderToggle('__all__'),
-                  ),
-                  const SizedBox(width: 6),
-                  for (final provider in widget.providers) ...[
-                    _LiquidProviderPill(
-                      label: provider.name,
-                      isSelected: widget.selectedProviderIds.contains(provider.id),
-                      icon: Icons.hub_rounded,
-                      onTap: () => widget.onQuickProviderToggle(provider.id),
-                    ),
-                    const SizedBox(width: 6),
-                  ],
-                ],
+                _LiquidProviderPill(
+                  label: widget.rating ?? (isRu ? 'Рейтинг' : 'Rating'),
+                  isSelected: widget.rating != null,
+                  icon: Icons.shield_outlined,
+                  onTap: widget.onRatingFilter,
+                ),
+                const SizedBox(width: 8),
+                const _ToolbarDivider(),
+                const SizedBox(width: 8),
+                _LiquidPeriodTabs(
+                  selectedPeriod: widget.topPeriodFilter,
+                  onChanged: widget.onTopPeriodChanged,
+                ),
               ],
             ),
           ),
@@ -237,37 +200,6 @@ class _FeedToolbarState extends State<FeedToolbar> {
                     _query = '';
                     widget.onSearch('');
                   },
-                ),
-              ),
-              const SizedBox(width: 6),
-              Badge(
-                isLabelVisible: hasActiveFilters,
-                child: IconButton.filledTonal(
-                  visualDensity: VisualDensity.compact,
-                  tooltip: isRu ? 'Фильтры' : 'Filters',
-                  onPressed: widget.onProviderFilter,
-                  icon: const Icon(Icons.tune_rounded, size: 20),
-                ),
-              ),
-              const SizedBox(width: 4),
-              IconButton.filledTonal(
-                visualDensity: VisualDensity.compact,
-                tooltip: isRu ? 'Случайный пост' : 'Random post',
-                onPressed: widget.onRandom,
-                icon: const Icon(Icons.casino_rounded, size: 20),
-              ),
-              const SizedBox(width: 4),
-              IconButton.filledTonal(
-                visualDensity: VisualDensity.compact,
-                tooltip: widget.selectionMode
-                    ? (isRu ? 'Выйти из выбора' : 'Exit selection')
-                    : (isRu ? 'Выбрать посты' : 'Select posts'),
-                onPressed: widget.onToggleSelectionMode,
-                icon: Icon(
-                  widget.selectionMode
-                      ? Icons.check_box_rounded
-                      : Icons.check_box_outline_blank_rounded,
-                  size: 20,
                 ),
               ),
             ],
@@ -321,27 +253,6 @@ class _FeedToolbarState extends State<FeedToolbar> {
                   selectedPeriod: widget.topPeriodFilter,
                   onChanged: widget.onTopPeriodChanged,
                 ),
-                if (widget.providers.isNotEmpty) ...[
-                  const SizedBox(width: 6),
-                  const _ToolbarDivider(),
-                  const SizedBox(width: 6),
-                  _LiquidProviderPill(
-                    label: isRu ? 'Все' : 'All',
-                    isSelected: widget.selectedProviderIds.isEmpty,
-                    icon: Icons.all_inclusive_rounded,
-                    onTap: () => widget.onQuickProviderToggle('__all__'),
-                  ),
-                  const SizedBox(width: 6),
-                  for (final provider in widget.providers) ...[
-                    _LiquidProviderPill(
-                      label: provider.name,
-                      isSelected: widget.selectedProviderIds.contains(provider.id),
-                      icon: Icons.hub_rounded,
-                      onTap: () => widget.onQuickProviderToggle(provider.id),
-                    ),
-                    const SizedBox(width: 6),
-                  ],
-                ],
               ],
             ),
           ),
