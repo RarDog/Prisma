@@ -1,5 +1,22 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.0.6',
+    title: 'Плавная анимация вкладок, просторная поисковая строка и оптимизация списка авторов',
+    titleEn: 'Smooth Tab Transitions, Expanded Feed Search Bar & Curated Artist Platforms',
+    bullets: [
+      'Плавная анимация переходов между вкладками (Fade-Through): переключение между Лентой, Поиском, Любимым и другими вкладками теперь сопровождается мягким растворением и лёгким микро-зумом (Material 3). Полностью сохраняется состояние, позиция скролла и открытый контент всех экранов.',
+      'Просторная строка поиска в Ленте: поисковая строка расширена на 100% ширины строки — теги теперь отображаются свободно без сжатия.',
+      'Перенос селектора постов: кнопка режима множественного выбора постов перенесена в верхнюю панель на одну линию с заголовком «Prisma Лента».',
+      'Оптимизация вкладки «Авторы»: в фильтрах и каталоге авторов оставлены только активные и поддерживаемые платформы — Patreon и Pixiv Fanbox, исключены пустые и неработающие сервисы.',
+    ],
+    bulletsEn: [
+      'Smooth Tab Fade-Through Transitions: seamless Material 3 fade-and-scale animations when navigating between Feed, Search, Favorites, and other tabs, with 100% preservation of screen states, scroll positions, and loaded content.',
+      'Expanded Feed Search Bar: search bar now utilizes 100% of row width for comfortable tag chip display without horizontal cramping.',
+      'Relocated Selection Mode Button: post batch-selection mode toggle moved to top AppBar on the same line as the "Prisma Feed" title.',
+      'Curated Artist Platforms: focused the Artists tab on active, populated platforms (Patreon and Pixiv Fanbox), removing empty or unsupported service filters.',
+    ],
+  ),
+  PrismaChange(
     version: '4.0.5',
     title: 'Мгновенная синхронизация тегов, реактивная история поиска и улучшение поисковой строки',
     titleEn: 'Instant Tag Synchronization, Reactive Search History & Search Bar Polish',
