@@ -1,5 +1,16 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.0.7',
+    title: 'Возвращение источников в панель фильтров ленты',
+    titleEn: 'Restored Provider Chips in Feed Filter Bar',
+    bullets: [
+      'Источники в ленте: в горизонтальную строку фильтров возвращены плашки выбора провайдеров («Все источники», Danbooru, Gelbooru и др.) рядом с периодами и рейтингом. Поисковая строка выше остаётся просторной на 100% ширины.',
+    ],
+    bulletsEn: [
+      'Feed Provider Chips: restored provider selection pills ("All sources", Danbooru, Gelbooru, etc.) into the horizontal filter bar alongside period and rating filters, keeping the top search bar 100% wide.',
+    ],
+  ),
+  PrismaChange(
     version: '4.0.6',
     title: 'Плавная анимация вкладок, просторная поисковая строка и оптимизация списка авторов',
     titleEn: 'Smooth Tab Transitions, Expanded Feed Search Bar & Curated Artist Platforms',
