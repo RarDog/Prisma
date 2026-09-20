@@ -106,12 +106,15 @@ class UpdateService {
     final rUrl = isGitea ? giteaReleasesUrl : githubReleasesUrl;
     final latestUrl = isGitea ? giteaLatestReleaseUrl : githubLatestReleaseUrl;
 
+    // Both release APIs expose public release metadata. Never embed a
+    // personal access token in the application binary or source repository.
     final options = Options(
       headers: isGitea
-          ? {
-              'Authorization': 'token 1c744d6044d756759d7b1f693c94c80cf70d75fa',
+          ? const {
+              'User-Agent': 'Prisma-App',
+              'Accept': 'application/json',
             }
-          : {
+          : const {
               'User-Agent': 'Prisma-App',
               'Accept': 'application/vnd.github+json',
             },
