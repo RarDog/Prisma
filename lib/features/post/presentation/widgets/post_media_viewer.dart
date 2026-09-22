@@ -38,6 +38,11 @@ Map<String, String> getPostMediaHeaders(Post post, [Map<String, String>? extraHe
     defaultReferer = 'https://danbooru.donmai.us/';
   } else if (pid.contains('e621') || pid.contains('e926')) {
     defaultReferer = 'https://e621.net/';
+  } else if (pid.contains('pixiv') ||
+      post.fileUrl.contains('pximg.net') ||
+      post.previewUrl.contains('pximg.net') ||
+      post.sampleUrl.contains('pximg.net')) {
+    defaultReferer = 'https://www.pixiv.net/';
   } else {
     final uri = Uri.tryParse(post.fileUrl);
     if (uri != null && uri.hasScheme && uri.host.isNotEmpty) {

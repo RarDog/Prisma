@@ -520,6 +520,8 @@ class _PostCardState extends ConsumerState<PostCard>
     return {
       'User-Agent': 'Prisma/2.0.1 Flutter local booru browser',
       'Accept': '*/*',
+      if (lower.contains('pixiv') || lower.contains('pximg'))
+        'Referer': 'https://www.pixiv.net/',
       if (lower.contains('gelbooru')) 'Referer': 'https://gelbooru.com/',
       if (lower.contains('realbooru'))
         'User-Agent':

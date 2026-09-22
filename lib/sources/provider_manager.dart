@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
+import 'package:gel_rule_app/core/errors/app_exception.dart';
 import 'package:gel_rule_app/core/errors/failure.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
@@ -336,13 +338,18 @@ class ProviderManager {
             lastResultCount: providerPosts.length,
           ),
         );
-      } catch (_) {
+      } catch (error) {
+        final errorMsg = error is AppException
+            ? error.message
+            : (error is DioException
+                ? (error.message ?? error.toString())
+                : error.toString());
         await _repository.saveDiagnostics(
           ProviderDiagnostics(
             providerId: provider.id,
             lastSearchAt: DateTime.now(),
             lastResultCount: 0,
-            lastErrorMessage: 'Search failed',
+            lastErrorMessage: errorMsg,
           ),
         );
         await _repository.saveHealth(
@@ -351,7 +358,7 @@ class ProviderManager {
             status: ProviderStatus.offline,
             pingMs: 0,
             lastCheckedAt: DateTime.now(),
-            errorMessage: 'Search failed',
+            errorMessage: errorMsg,
           ),
         );
         _scheduleSoftSearchRetry(
@@ -481,13 +488,18 @@ class ProviderManager {
             ),
           );
         }
-      } catch (_) {
+      } catch (error) {
+        final errorMsg = error is AppException
+            ? error.message
+            : (error is DioException
+                ? (error.message ?? error.toString())
+                : error.toString());
         await _repository.saveDiagnostics(
           ProviderDiagnostics(
             providerId: provider.id,
             lastSearchAt: DateTime.now(),
             lastResultCount: 0,
-            lastErrorMessage: 'Search failed after retry',
+            lastErrorMessage: 'Search failed after retry: $errorMsg',
           ),
         );
       } finally {

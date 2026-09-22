@@ -303,6 +303,11 @@ class ProviderCard extends StatelessWidget {
 
   static (Color, IconData, String) _engineInfo(String apiType) {
     return switch (apiType.toLowerCase()) {
+      'pixiv' => (
+          const Color(0xFF0096FA),
+          Icons.palette_rounded,
+          'Pixiv',
+        ),
       'gelbooru' => (
           const Color(0xFF10B981),
           Icons.image_search_rounded,

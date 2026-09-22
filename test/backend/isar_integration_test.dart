@@ -87,7 +87,13 @@ void main() {
       'e621',
       'e926',
       'pawchive',
+      'pixiv',
     ]);
+    final pixiv =
+        providers.singleWhere((provider) => provider.id == 'pixiv');
+    expect(pixiv.enabled, isTrue);
+    expect(pixiv.apiType, 'pixiv');
+    expect(pixiv.baseUrl, 'https://www.pixiv.net');
     final pawchive =
         providers.singleWhere((provider) => provider.id == 'pawchive');
     expect(pawchive.enabled, isTrue);

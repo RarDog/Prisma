@@ -1616,12 +1616,7 @@ class _MobilePostPagerState extends State<_MobilePostPager> {
     }
   }
 
-  Map<String, String> _headersFor(Post post) {
-    return const {
-      'User-Agent': 'Prisma/2.0.1 Flutter local booru browser',
-      'Accept': '*/*',
-    };
-  }
+  Map<String, String> _headersFor(Post post) => getPostMediaHeaders(post);
 }
 
 class _KeepAlivePostPage extends StatefulWidget {
@@ -1690,6 +1685,7 @@ class _NeighborStrip extends StatelessWidget {
                 imageUrl: post.previewUrl.isNotEmpty
                     ? post.previewUrl
                     : post.sampleUrl,
+                httpHeaders: getPostMediaHeaders(post),
                 memCacheWidth: 160,
                 memCacheHeight: 160,
                 fit: BoxFit.cover,

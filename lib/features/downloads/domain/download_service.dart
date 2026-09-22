@@ -228,6 +228,8 @@ class DownloadService {
       'Accept': lower.contains('realbooru') || lower.contains('paheal')
           ? 'video/webm,video/mp4,image/avif,image/webp,image/apng,image/*,*/*;q=0.8'
           : '*/*',
+      if (lower.contains('pixiv') || lower.contains('pximg'))
+        'Referer': 'https://www.pixiv.net/',
       if (lower.contains('gelbooru')) 'Referer': 'https://gelbooru.com/',
       if (lower.contains('rule34') && !lower.contains('paheal'))
         'Referer': 'https://rule34.xxx/',

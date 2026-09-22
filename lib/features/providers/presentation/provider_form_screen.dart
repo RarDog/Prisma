@@ -27,9 +27,11 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
   late final TextEditingController _apiKey;
   late final TextEditingController _userId;
   late final TextEditingController _login;
+  late final TextEditingController _phpsessid;
   late String _apiType;
   late bool _enabled;
   bool _obscureApiKey = true;
+  bool _obscurePhpsessid = true;
   bool _isSaving = false;
 
   @override
@@ -50,6 +52,10 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
     _userId =
         TextEditingController(text: config?.customHeaders['query.user_id']);
     _login = TextEditingController(text: config?.customHeaders['query.login']);
+    _phpsessid = TextEditingController(
+      text: config?.customHeaders['phpsessid'] ??
+          config?.customHeaders['PHPSESSID'],
+    );
     _apiType = config?.apiType ?? 'gelbooru';
     _enabled = config?.enabled ?? true;
   }
@@ -64,6 +70,7 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
     _apiKey.dispose();
     _userId.dispose();
     _login.dispose();
+    _phpsessid.dispose();
     super.dispose();
   }
 
@@ -231,6 +238,16 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
                           apiType: 'paheal',
                         ),
                       ),
+                      const SizedBox(width: 8),
+                      _PresetChip(
+                        name: 'Pixiv',
+                        color: const Color(0xFF0096FA),
+                        onTap: () => _applyPreset(
+                          name: 'Pixiv',
+                          baseUrl: 'https://www.pixiv.net',
+                          apiType: 'pixiv',
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -270,6 +287,10 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
                         if (val != null) setState(() => _apiType = val);
                       },
                       items: const [
+                        DropdownMenuItem(
+                          value: 'pixiv',
+                          child: Text('Pixiv (Web AJAX)'),
+                        ),
                         DropdownMenuItem(
                           value: 'gelbooru',
                           child: Text('Gelbooru (compatible)'),
@@ -483,6 +504,63 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
                       hint: 'username',
                       icon: Icons.account_circle_outlined,
                     ),
+                    // PHPSESSID — only for Pixiv
+                    if (_apiType == 'pixiv') ...[
+                      const SizedBox(height: 14),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0096FA)
+                              .withValues(alpha: isDark ? 0.14 : 0.08),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: const Color(0xFF0096FA)
+                                .withValues(alpha: isDark ? 0.35 : 0.22),
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(
+                              Icons.cookie_outlined,
+                              size: 18,
+                              color: Color(0xFF0096FA),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                isRu
+                                    ? 'Для Pixiv: откройте DevTools в браузере → Application → Cookies → pixiv.net и скопируйте значение PHPSESSID. Даёт доступ к ленте подписок.'
+                                    : 'For Pixiv: open DevTools → Application → Cookies → pixiv.net and copy the PHPSESSID value. Enables following feed.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      _GlassTextField(
+                        controller: _phpsessid,
+                        label: 'PHPSESSID (Pixiv Cookie)',
+                        hint: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+                        icon: Icons.vpn_lock_rounded,
+                        obscureText: _obscurePhpsessid,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePhpsessid
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                            size: 18,
+                          ),
+                          onPressed: () => setState(
+                              () => _obscurePhpsessid = !_obscurePhpsessid),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -642,6 +720,14 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
       putQuery('api_key', _apiKey.text);
       putQuery('user_id', _userId.text);
       putQuery('login', _login.text);
+      // Save PHPSESSID for Pixiv
+      final phpsessidVal = _phpsessid.text.trim();
+      if (phpsessidVal.isNotEmpty) {
+        customHeaders['phpsessid'] = phpsessidVal;
+      } else {
+        customHeaders.remove('phpsessid');
+        customHeaders.remove('PHPSESSID');
+      }
 
       final config = ContentProviderConfig(
         id: id,
@@ -671,7 +757,8 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
 
   Map<String, String> _visibleHeaders(Map<String, String> headers) {
     return Map<String, String>.from(headers)
-      ..removeWhere((key, _) => key.startsWith('query.'));
+      ..removeWhere(
+          (key, _) => key.startsWith('query.') || key.toLowerCase() == 'phpsessid');
   }
 }
 

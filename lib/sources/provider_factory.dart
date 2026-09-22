@@ -12,6 +12,7 @@ import 'package:gel_rule_app/sources/booru/pawchive_provider.dart';
 import 'package:gel_rule_app/sources/booru/realbooru_html_provider.dart';
 import 'package:gel_rule_app/sources/booru/rule34_provider.dart';
 import 'package:gel_rule_app/sources/booru/rule34_paheal_provider.dart';
+import 'package:gel_rule_app/sources/booru/pixiv_provider.dart';
 import 'package:gel_rule_app/sources/booru/safebooru_provider.dart';
 
 class ProviderFactory {
@@ -32,6 +33,13 @@ class ProviderFactory {
         headers['Authorization'] = 'Basic $basicAuth';
         headers['User-Agent'] = 'Prisma/3.6.6 (by $login on e621)';
       }
+    } else if (config.apiType.toLowerCase() == 'pixiv') {
+      headers.putIfAbsent('Referer', () => 'https://www.pixiv.net/');
+      headers.putIfAbsent(
+        'User-Agent',
+        () =>
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+      );
     }
 
     final client = DioClient(
@@ -40,6 +48,18 @@ class ProviderFactory {
       headers: headers,
     );
     switch (config.apiType.toLowerCase()) {
+      case 'pixiv':
+        // Read PHPSESSID from customHeaders (key 'phpsessid' or 'PHPSESSID')
+        final phpsessid = config.customHeaders['phpsessid'] ??
+            config.customHeaders['PHPSESSID'];
+        return PixivProvider(
+          id: config.id,
+          name: config.name,
+          baseUrl: config.baseUrl,
+          dioClient: client,
+          queryParameters: queryParameters,
+          phpsessid: phpsessid?.isNotEmpty == true ? phpsessid : null,
+        );
       case 'gelbooru':
         return GelbooruProvider(
           id: config.id,
