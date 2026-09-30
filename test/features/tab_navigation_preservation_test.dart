@@ -16,9 +16,10 @@ void main() {
       expect(AppShell.branchIndexForLocation('/collections/123'), 4);
       expect(AppShell.branchIndexForLocation('/artists'), 5);
       expect(AppShell.branchIndexForLocation('/artists/pawchive/patreon/99'), 5);
-      expect(AppShell.branchIndexForLocation('/providers'), 6);
-      expect(AppShell.branchIndexForLocation('/settings'), 7);
-      expect(AppShell.branchIndexForLocation('/settings/hidden'), 7);
+      expect(AppShell.branchIndexForLocation('/manga'), 6);
+      expect(AppShell.branchIndexForLocation('/providers'), 7);
+      expect(AppShell.branchIndexForLocation('/settings'), 8);
+      expect(AppShell.branchIndexForLocation('/settings/hidden'), 8);
 
       expect(AppShell.locationForBranchIndex(0), '/');
       expect(AppShell.locationForBranchIndex(1), '/search');
@@ -26,8 +27,9 @@ void main() {
       expect(AppShell.locationForBranchIndex(3), '/viewed');
       expect(AppShell.locationForBranchIndex(4), '/collections');
       expect(AppShell.locationForBranchIndex(5), '/artists');
-      expect(AppShell.locationForBranchIndex(6), '/providers');
-      expect(AppShell.locationForBranchIndex(7), '/settings');
+      expect(AppShell.locationForBranchIndex(6), '/manga');
+      expect(AppShell.locationForBranchIndex(7), '/providers');
+      expect(AppShell.locationForBranchIndex(8), '/settings');
     });
 
     test('AppSettings preserves lastActiveLocation in JSON serialization', () {

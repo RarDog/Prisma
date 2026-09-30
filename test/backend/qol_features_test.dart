@@ -60,6 +60,7 @@ void main() {
       expect(restored.gridMode, equals('grid'));
       expect(restored.searchPresets, equals(['{"name":"Favs","tags":"cat"}']));
       expect(restored.downloadPathTemplate, equals('{Provider}/{Artist}'));
+      expect(restored.mangaReaderRtl, isTrue);
     });
 
     test('DownloadService resolveSubDir replaces template variables correctly', () {

@@ -522,6 +522,7 @@ class _PostCardState extends ConsumerState<PostCard>
       'Accept': '*/*',
       if (lower.contains('pixiv') || lower.contains('pximg'))
         'Referer': 'https://www.pixiv.net/',
+      if (lower.contains('nhentai')) 'Referer': 'https://nhentai.net/',
       if (lower.contains('gelbooru')) 'Referer': 'https://gelbooru.com/',
       if (lower.contains('realbooru'))
         'User-Agent':

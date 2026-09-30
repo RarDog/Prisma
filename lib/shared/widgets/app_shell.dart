@@ -37,13 +37,15 @@ class AppShell extends ConsumerStatefulWidget {
       mobileLabel: 'Boards',
     ),
     _Destination('artists', 'Artists', Icons.person_search_rounded, '/artists'),
+    _Destination('manga', 'Manga', Icons.menu_book_rounded, '/manga', mobileLabel: 'Manga'),
     _Destination('providers', 'Providers', Icons.hub_rounded, '/providers'),
     _Destination('settings', 'Settings', Icons.settings_rounded, '/settings'),
   ];
 
   static int branchIndexForLocation(String location) {
-    if (location.startsWith('/settings')) return 7;
-    if (location.startsWith('/providers')) return 6;
+    if (location.startsWith('/settings')) return 8;
+    if (location.startsWith('/providers')) return 7;
+    if (location.startsWith('/manga')) return 6;
     if (location.startsWith('/artists')) return 5;
     if (location.startsWith('/collections')) return 4;
     if (location.startsWith('/viewed')) return 3;
@@ -59,8 +61,9 @@ class AppShell extends ConsumerStatefulWidget {
       3 => '/viewed',
       4 => '/collections',
       5 => '/artists',
-      6 => '/providers',
-      7 => '/settings',
+      6 => '/manga',
+      7 => '/providers',
+      8 => '/settings',
       _ => '/',
     };
   }
@@ -952,7 +955,34 @@ class _RailButton extends StatelessWidget {
   }
 }
 
-class _MobileShell extends StatelessWidget {
+class ShellBottomBarVisibilityNotifier extends Notifier<bool> {
+  int _activeHideCount = 0;
+
+  @override
+  bool build() => false;
+
+  void pushHide() {
+    _activeHideCount++;
+    if (!state) state = true;
+  }
+
+  void popHide() {
+    if (_activeHideCount > 0) {
+      _activeHideCount--;
+    }
+    final shouldHide = _activeHideCount > 0;
+    if (state != shouldHide) {
+      state = shouldHide;
+    }
+  }
+}
+
+final shellHideBottomBarProvider =
+    NotifierProvider<ShellBottomBarVisibilityNotifier, bool>(
+  ShellBottomBarVisibilityNotifier.new,
+);
+
+class _MobileShell extends ConsumerStatefulWidget {
   const _MobileShell({
     required this.child,
     required this.destinations,
@@ -967,52 +997,137 @@ class _MobileShell extends StatelessWidget {
   final int? currentBranchIndex;
 
   @override
+  ConsumerState<_MobileShell> createState() => _MobileShellState();
+}
+
+class _MobileShellState extends ConsumerState<_MobileShell>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _animController;
+  late final Animation<double> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 320),
+      value: 1.0,
+    );
+    _slideAnimation = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final items = destinations
+    ref.listen<bool>(shellHideBottomBarProvider, (previous, hide) {
+      if (hide) {
+        _animController.reverse();
+      } else {
+        _animController.forward();
+      }
+    });
+
+    final shouldHide = ref.watch(shellHideBottomBarProvider);
+    if (shouldHide &&
+        _animController.status != AnimationStatus.reverse &&
+        _animController.value > 0) {
+      _animController.reverse();
+    } else if (!shouldHide &&
+        _animController.status != AnimationStatus.forward &&
+        _animController.value < 1.0) {
+      _animController.forward();
+    }
+
+    final items = widget.destinations
         .where((item) =>
             item.location != '/providers' && item.location != '/settings')
-        .take(6)
         .toList();
     final location = GoRouterState.of(context).uri.path;
-    final activeBranch = currentBranchIndex ??
+    final activeBranch = widget.currentBranchIndex ??
         AppShell.branchIndexForLocation(location);
     final selected = items.indexWhere(
       (item) => AppShell.branchIndexForLocation(item.location) == activeBranch,
     );
     final isKeyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
-    final bottomInset = isKeyboardOpen
-        ? 0.0
-        : 76.0 + MediaQuery.paddingOf(context).bottom;
 
     return Scaffold(
       extendBody: true,
-      body: MediaQuery(
-        data: MediaQuery.of(context).copyWith(
-          viewInsets: MediaQuery.of(context).viewInsets.copyWith(bottom: 0),
-          padding: MediaQuery.of(context).padding.copyWith(
-                bottom: bottomInset,
-              ),
-        ),
-        child: child,
+      body: AnimatedBuilder(
+        animation: _slideAnimation,
+        builder: (context, child) {
+          final maxInset = 76.0 + MediaQuery.paddingOf(context).bottom;
+          final currentBottomInset = isKeyboardOpen
+              ? 0.0
+              : lerpDouble(0.0, maxInset, _slideAnimation.value)!;
+          return MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              viewInsets: MediaQuery.of(context).viewInsets.copyWith(bottom: 0),
+              padding: MediaQuery.of(context).padding.copyWith(
+                    bottom: currentBottomInset,
+                  ),
+            ),
+            child: child!,
+          );
+        },
+        child: widget.child,
       ),
-      floatingActionButton: (activeBranch == 7 || isKeyboardOpen)
+      floatingActionButton: (activeBranch == 8 || isKeyboardOpen)
           ? null
-          : Padding(
-              padding: const EdgeInsets.only(bottom: 0, right: 2),
-              child: _LiquidGlassSettingsButton(
-                ru: ru,
-                onTap: () => onNavigate('/settings'),
+          : AnimatedBuilder(
+              animation: _slideAnimation,
+              builder: (context, child) {
+                if (_slideAnimation.value == 0.0) {
+                  return const SizedBox.shrink();
+                }
+                return Transform.translate(
+                  offset: Offset(0, (1.0 - _slideAnimation.value) * 80.0),
+                  child: Opacity(
+                    opacity: _slideAnimation.value.clamp(0.0, 1.0),
+                    child: child,
+                  ),
+                );
+              },
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 0, right: 2),
+                child: _LiquidGlassSettingsButton(
+                  ru: widget.ru,
+                  onTap: () => widget.onNavigate('/settings'),
+                ),
               ),
             ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: isKeyboardOpen
           ? null
-          : _LiquidGlassBottomBar(
-              selectedIndex: selected < 0 ? 0 : selected,
-              onDestinationSelected: (index) =>
-                  onNavigate(items[index].location),
-              items: items,
-              ru: ru,
+          : AnimatedBuilder(
+              animation: _slideAnimation,
+              builder: (context, child) {
+                if (_slideAnimation.value == 0.0) {
+                  return const SizedBox.shrink();
+                }
+                return Transform.translate(
+                  offset: Offset(0, (1.0 - _slideAnimation.value) * 110.0),
+                  child: Opacity(
+                    opacity: _slideAnimation.value.clamp(0.0, 1.0),
+                    child: child,
+                  ),
+                );
+              },
+              child: _LiquidGlassBottomBar(
+                selectedIndex: selected < 0 ? 0 : selected,
+                onDestinationSelected: (index) =>
+                    widget.onNavigate(items[index].location),
+                items: items,
+                ru: widget.ru,
+              ),
             ),
     );
   }
@@ -1226,7 +1341,7 @@ class _LiquidNavItem extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SizedBox(
-                height: 32,
+                height: 30,
                 child: Center(
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 200),
@@ -1237,7 +1352,7 @@ class _LiquidNavItem extends StatelessWidget {
                     child: Icon(
                       destination.icon,
                       key: ValueKey('${destination.id}_$isSelected'),
-                      size: isSelected ? 22 : 20,
+                      size: isSelected ? 21 : 19,
                       color: isSelected
                           ? scheme.onPrimaryContainer
                           : (isDark
@@ -1249,17 +1364,17 @@ class _LiquidNavItem extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 1),
               AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 200),
                 style: TextStyle(
-                  fontSize: 10.5,
+                  fontSize: 9.5,
                   fontWeight:
                       isSelected ? FontWeight.w700 : FontWeight.w500,
                   color: isSelected
                       ? (isDark ? scheme.primary : scheme.onSurface)
                       : scheme.onSurfaceVariant.withValues(alpha: 0.75),
-                  letterSpacing: -0.2,
+                  letterSpacing: -0.3,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -1402,6 +1517,7 @@ class _Destination {
       'viewed' => '\u0418\u0441\u0442\u043e\u0440\u0438\u044f',
       'collections' => '\u041a\u043e\u043b\u043b\u0435\u043a\u0446\u0438\u0438',
       'artists' => '\u0410\u0440\u0442\u0438\u0441\u0442\u044b',
+      'manga' => '\u041c\u0430\u043d\u0433\u0430',
       'providers' =>
         '\u041f\u0440\u043e\u0432\u0430\u0439\u0434\u0435\u0440\u044b',
       'settings' => '\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438',

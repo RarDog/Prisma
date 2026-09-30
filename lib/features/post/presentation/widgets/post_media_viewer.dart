@@ -43,6 +43,17 @@ Map<String, String> getPostMediaHeaders(Post post, [Map<String, String>? extraHe
       post.previewUrl.contains('pximg.net') ||
       post.sampleUrl.contains('pximg.net')) {
     defaultReferer = 'https://www.pixiv.net/';
+  } else if (pid.contains('nhentai') ||
+      post.fileUrl.contains('nhentai.net') ||
+      post.previewUrl.contains('nhentai.net') ||
+      post.sampleUrl.contains('nhentai.net')) {
+    defaultReferer = 'https://nhentai.net/';
+  } else if (pid.contains('mangadex') ||
+      post.fileUrl.contains('mangadex.org') ||
+      post.previewUrl.contains('mangadex.org') ||
+      post.sampleUrl.contains('mangadex.org') ||
+      post.fileUrl.contains('mangadex.network')) {
+    defaultReferer = 'https://mangadex.org/';
   } else {
     final uri = Uri.tryParse(post.fileUrl);
     if (uri != null && uri.hasScheme && uri.host.isNotEmpty) {

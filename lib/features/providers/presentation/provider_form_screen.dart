@@ -248,6 +248,26 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
                           apiType: 'pixiv',
                         ),
                       ),
+                      const SizedBox(width: 8),
+                      _PresetChip(
+                        name: 'nHentai',
+                        color: const Color(0xFFED2553),
+                        onTap: () => _applyPreset(
+                          name: 'nHentai',
+                          baseUrl: 'https://nhentai.net',
+                          apiType: 'nhentai',
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _PresetChip(
+                        name: 'MangaDex',
+                        color: const Color(0xFFFF6740),
+                        onTap: () => _applyPreset(
+                          name: 'MangaDex',
+                          baseUrl: 'https://api.mangadex.org',
+                          apiType: 'mangadex',
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -287,6 +307,14 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
                         if (val != null) setState(() => _apiType = val);
                       },
                       items: const [
+                        DropdownMenuItem(
+                          value: 'mangadex',
+                          child: Text('MangaDex (Official Manga API)'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'nhentai',
+                          child: Text('nHentai (Manga/Comics API)'),
+                        ),
                         DropdownMenuItem(
                           value: 'pixiv',
                           child: Text('Pixiv (Web AJAX)'),

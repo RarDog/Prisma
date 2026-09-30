@@ -2807,6 +2807,7 @@ class _TabVisibilityEditor extends StatelessWidget {
     'viewed': ('Viewed', Icons.history_rounded),
     'collections': ('Collections', Icons.collections_bookmark_rounded),
     'artists': ('Artists', Icons.person_rounded),
+    'manga': ('Manga', Icons.menu_book_rounded),
   };
 
   @override
@@ -2824,6 +2825,7 @@ class _TabVisibilityEditor extends StatelessWidget {
         'viewed' => 'История',
         'collections' => 'Коллекции',
         'artists' => 'Авторы',
+        'manga' => 'Манга',
         _ => defaultLabel,
       };
     }

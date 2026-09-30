@@ -16,6 +16,7 @@ import 'package:gel_rule_app/features/providers/presentation/provider_check_scre
 import 'package:gel_rule_app/features/providers/presentation/provider_form_screen.dart';
 import 'package:gel_rule_app/features/providers/presentation/providers_screen.dart';
 import 'package:gel_rule_app/features/search/presentation/search_screen.dart';
+import 'package:gel_rule_app/features/manga/presentation/manga_screen.dart';
 import 'package:gel_rule_app/features/settings/presentation/cache_manager_screen.dart';
 import 'package:gel_rule_app/features/settings/presentation/hidden_posts_screen.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_screen.dart';
@@ -23,7 +24,7 @@ import 'package:gel_rule_app/features/viewed/presentation/viewed_screen.dart';
 import 'package:gel_rule_app/shared/widgets/animated_branch_container.dart';
 import 'package:gel_rule_app/shared/widgets/app_shell.dart';
 
-final branchNavKeys = List.generate(8, (_) => GlobalKey<NavigatorState>());
+final branchNavKeys = List.generate(9, (_) => GlobalKey<NavigatorState>());
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final showOnboarding = ref.watch(shouldShowOnboardingProvider);
@@ -128,6 +129,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             navigatorKey: branchNavKeys[6],
             routes: [
               GoRoute(
+                path: '/manga',
+                builder: (context, state) => const MangaScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            navigatorKey: branchNavKeys[7],
+            routes: [
+              GoRoute(
                 path: '/providers',
                 builder: (context, state) => const ProvidersScreen(),
                 routes: [
@@ -148,7 +158,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
-            navigatorKey: branchNavKeys[7],
+            navigatorKey: branchNavKeys[8],
             routes: [
               GoRoute(
                 path: '/settings',

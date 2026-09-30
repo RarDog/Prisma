@@ -303,6 +303,11 @@ class ProviderCard extends StatelessWidget {
 
   static (Color, IconData, String) _engineInfo(String apiType) {
     return switch (apiType.toLowerCase()) {
+      'nhentai' => (
+          const Color(0xFFED2553),
+          Icons.menu_book_rounded,
+          'nHentai (Manga/Comics)',
+        ),
       'pixiv' => (
           const Color(0xFF0096FA),
           Icons.palette_rounded,

@@ -12,6 +12,8 @@ import 'package:gel_rule_app/sources/booru/pawchive_provider.dart';
 import 'package:gel_rule_app/sources/booru/realbooru_html_provider.dart';
 import 'package:gel_rule_app/sources/booru/rule34_provider.dart';
 import 'package:gel_rule_app/sources/booru/rule34_paheal_provider.dart';
+import 'package:gel_rule_app/sources/booru/mangadex_provider.dart';
+import 'package:gel_rule_app/sources/booru/nhentai_provider.dart';
 import 'package:gel_rule_app/sources/booru/pixiv_provider.dart';
 import 'package:gel_rule_app/sources/booru/safebooru_provider.dart';
 
@@ -40,6 +42,19 @@ class ProviderFactory {
         () =>
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
       );
+    } else if (config.apiType.toLowerCase() == 'nhentai') {
+      headers.putIfAbsent('Referer', () => 'https://nhentai.net/');
+      headers.putIfAbsent(
+        'User-Agent',
+        () =>
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
+      );
+    } else if (config.apiType.toLowerCase() == 'mangadex') {
+      headers.putIfAbsent('Referer', () => 'https://mangadex.org/');
+      headers.putIfAbsent(
+        'User-Agent',
+        () => 'Prisma/3.6.6 Flutter MangaDex Client',
+      );
     }
 
     final client = DioClient(
@@ -48,6 +63,22 @@ class ProviderFactory {
       headers: headers,
     );
     switch (config.apiType.toLowerCase()) {
+      case 'mangadex':
+        return MangaDexProvider(
+          id: config.id,
+          name: config.name,
+          baseUrl: config.baseUrl,
+          dioClient: client,
+          queryParameters: queryParameters,
+        );
+      case 'nhentai':
+        return NHentaiProvider(
+          id: config.id,
+          name: config.name,
+          baseUrl: config.baseUrl,
+          dioClient: client,
+          queryParameters: queryParameters,
+        );
       case 'pixiv':
         // Read PHPSESSID from customHeaders (key 'phpsessid' or 'PHPSESSID')
         final phpsessid = config.customHeaders['phpsessid'] ??

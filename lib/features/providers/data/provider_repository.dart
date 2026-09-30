@@ -122,6 +122,37 @@ class ProviderRepository {
         createdAt: now,
         updatedAt: now,
       ),
+      ContentProviderConfig(
+        id: 'nhentai',
+        name: 'nhentai',
+        baseUrl: 'https://nhentai.net',
+        apiType: 'nhentai',
+        enabled: true,
+        priority: 8,
+        timeoutSeconds: 25,
+        customHeaders: const {
+          'Referer': 'https://nhentai.net/',
+          'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
+        },
+        createdAt: now,
+        updatedAt: now,
+      ),
+      ContentProviderConfig(
+        id: 'mangadex',
+        name: 'MangaDex',
+        baseUrl: 'https://api.mangadex.org',
+        apiType: 'mangadex',
+        enabled: true,
+        priority: 9,
+        timeoutSeconds: 25,
+        customHeaders: const {
+          'Referer': 'https://mangadex.org/',
+          'User-Agent': 'Prisma/3.6.6 Flutter MangaDex Client',
+        },
+        createdAt: now,
+        updatedAt: now,
+      ),
     ];
   }
 

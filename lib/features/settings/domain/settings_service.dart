@@ -66,9 +66,11 @@ class AppSettings {
     this.tagCacheLimit = 5000,
     this.lastActiveLocation = '/',
     this.hasCompletedOnboarding = false,
+    this.mangaReaderRtl = true,
   });
 
   final bool hasCompletedOnboarding;
+  final bool mangaReaderRtl;
   final String lastActiveLocation;
   final List<String> favoriteArtists;
   final List<String> pawchiveAccounts;
@@ -171,6 +173,7 @@ class AppSettings {
     tagCacheLimit: 5000,
     lastActiveLocation: '/',
     hasCompletedOnboarding: false,
+    mangaReaderRtl: true,
   );
 
   AppSettings copyWith({
@@ -229,6 +232,7 @@ class AppSettings {
     int? tagCacheLimit,
     String? lastActiveLocation,
     bool? hasCompletedOnboarding,
+    bool? mangaReaderRtl,
   }) {
     return AppSettings(
       lastActiveLocation: lastActiveLocation ?? this.lastActiveLocation,
@@ -295,6 +299,7 @@ class AppSettings {
       tagCacheLimit: tagCacheLimit ?? this.tagCacheLimit,
       hasCompletedOnboarding:
           hasCompletedOnboarding ?? this.hasCompletedOnboarding,
+      mangaReaderRtl: mangaReaderRtl ?? this.mangaReaderRtl,
     );
   }
 
@@ -352,6 +357,7 @@ class AppSettings {
         'tagCacheLimit': tagCacheLimit,
         'lastActiveLocation': lastActiveLocation,
         'hasCompletedOnboarding': hasCompletedOnboarding,
+        'mangaReaderRtl': mangaReaderRtl,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) => AppSettings(
@@ -475,6 +481,8 @@ class AppSettings {
             defaults.lastActiveLocation,
         hasCompletedOnboarding:
             (json['hasCompletedOnboarding'] as bool?) ?? false,
+        mangaReaderRtl:
+            (json['mangaReaderRtl'] as bool?) ?? defaults.mangaReaderRtl,
       );
 
   List<PawchiveAccount> get parsedPawchiveAccounts {

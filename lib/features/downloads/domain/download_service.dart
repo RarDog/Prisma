@@ -230,6 +230,7 @@ class DownloadService {
           : '*/*',
       if (lower.contains('pixiv') || lower.contains('pximg'))
         'Referer': 'https://www.pixiv.net/',
+      if (lower.contains('nhentai')) 'Referer': 'https://nhentai.net/',
       if (lower.contains('gelbooru')) 'Referer': 'https://gelbooru.com/',
       if (lower.contains('rule34') && !lower.contains('paheal'))
         'Referer': 'https://rule34.xxx/',
