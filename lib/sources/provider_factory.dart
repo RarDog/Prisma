@@ -18,6 +18,12 @@ import 'package:gel_rule_app/sources/booru/pixiv_provider.dart';
 import 'package:gel_rule_app/sources/booru/safebooru_provider.dart';
 
 class ProviderFactory {
+  final Map<String, DioClient> _clientCache = {};
+
+  void clearCache() {
+    _clientCache.clear();
+  }
+
   ContentProvider create(ContentProviderConfig config) {
     final headers = Map<String, String>.from(config.customHeaders)
       ..removeWhere((key, _) => key.startsWith('query.'));
@@ -57,10 +63,15 @@ class ProviderFactory {
       );
     }
 
-    final client = DioClient(
-      baseUrl: config.baseUrl,
-      timeout: Duration(seconds: config.timeoutSeconds),
-      headers: headers,
+    final clientKey =
+        '${config.id}_${config.baseUrl}_${config.timeoutSeconds}_${headers.entries.map((e) => '${e.key}:${e.value}').join(';')}';
+    final client = _clientCache.putIfAbsent(
+      clientKey,
+      () => DioClient(
+        baseUrl: config.baseUrl,
+        timeout: Duration(seconds: config.timeoutSeconds),
+        headers: headers,
+      ),
     );
     switch (config.apiType.toLowerCase()) {
       case 'mangadex':
@@ -123,6 +134,7 @@ class ProviderFactory {
           baseUrl: config.baseUrl,
           dioClient: client,
         );
+      case 'realbooru':
       case 'realbooru_html':
         return RealbooruHtmlProvider(
           id: config.id,

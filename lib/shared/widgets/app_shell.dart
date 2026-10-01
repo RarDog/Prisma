@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -70,11 +72,15 @@ class AppShell extends ConsumerStatefulWidget {
 
   static List<_Destination> _visibleDestinations(
     AppSettings settings,
-    bool hasArtists,
-  ) {
+    bool hasArtists, {
+    bool isDesktop = false,
+  }) {
+    final isDesktopPlatform =
+        !kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS);
     return destinations.where((item) {
       if (settings.hiddenTabs.contains(item.id)) return false;
       if (item.id == 'artists' && !hasArtists) return false;
+      if (item.id == 'manga' && (isDesktop || isDesktopPlatform)) return false;
       return true;
     }).toList(growable: false);
   }
@@ -127,7 +133,11 @@ class _AppShellState extends ConsumerState<AppShell> {
   void _maybeRestoreLastActiveTab(AppSettings? settings) {
     if (_restoredTab || settings == null) return;
     final lastLocation = settings.lastActiveLocation;
-    if (lastLocation.isNotEmpty && lastLocation != '/') {
+    final isDesktopPlatform =
+        !kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS);
+    if (lastLocation.isNotEmpty &&
+        lastLocation != '/' &&
+        (!isDesktopPlatform || !lastLocation.startsWith('/manga'))) {
       final idx = AppShell.branchIndexForLocation(lastLocation);
       if (idx > 0 && widget.navigationShell != null) {
         _restoredTab = true;
@@ -236,8 +246,12 @@ class _AppShellState extends ConsumerState<AppShell> {
         ref.watch(appSettingsProvider).value ?? AppSettings.defaults;
     final artistConfigs =
         ref.watch(_enabledArtistConfigsProvider).value ?? const [];
-    final destinations =
-        AppShell._visibleDestinations(settings, artistConfigs.isNotEmpty);
+    final isDesktop = Responsive.isDesktop(context);
+    final destinations = AppShell._visibleDestinations(
+      settings,
+      artistConfigs.isNotEmpty,
+      isDesktop: isDesktop,
+    );
     final ru = settings.languageCode == 'ru';
 
     return PopScope(

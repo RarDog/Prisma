@@ -133,6 +133,12 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
   late String _activeProviderId;
   late String _activePostId;
   Post? _activePost;
+  bool _mediaGestureLocked = false;
+
+  void _setMediaGestureLocked(bool locked) {
+    if (_mediaGestureLocked == locked) return;
+    setState(() => _mediaGestureLocked = locked);
+  }
 
   @override
   void initState() {
@@ -160,7 +166,7 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
       postId: _activePostId,
       initialPost: _activePost,
     );
-    final post = ref.watch(postDetailsControllerProvider(args));
+    final postAsync = ref.watch(postDetailsControllerProvider(args));
     final settings =
         ref.watch(appSettingsProvider).value ?? AppSettings.defaults;
     final strings = ref.watch(appStringsProvider);
@@ -176,7 +182,7 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
           tooltip: strings.fullscreen,
           onPressed: () => _openFullscreen(
             context,
-            post.valueOrNull ?? _activePost,
+            postAsync.valueOrNull ?? _activePost,
             feedPosts,
           ),
           icon: const Icon(Icons.fullscreen_rounded),
@@ -190,11 +196,19 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
       body: Offstage(
         key: const ValueKey('post_details_offstage'),
         offstage: isFullscreen,
-        child: post.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => ErrorView(message: error.toString()),
-        data: (post) {
-          if (post == null) return const EmptyView(title: 'Post not found');
+        child: Builder(
+          builder: (context) {
+            final effectivePost = postAsync.valueOrNull ?? _activePost;
+            if (effectivePost == null) {
+              if (postAsync.isLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (postAsync.hasError) {
+                return ErrorView(message: postAsync.error.toString());
+              }
+              return const EmptyView(title: 'Post not found');
+            }
+            final post = effectivePost;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             ref.read(viewedHistoryServiceProvider).markViewed(post);
             ref.invalidate(viewedKeysProvider);
@@ -216,14 +230,19 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
           final fileSizeBytes = localMedia != null
               ? DownloadedMediaService.getFileSizeSync(localMedia)
               : null;
-          final isDownloading = ref.watch(downloadTasksProvider).value?.any(
+          final isDownloading = ref.watch(
+            downloadTasksProvider.select(
+              (tasks) =>
+                  tasks.value?.any(
                     (t) =>
                         (t.post?.cacheKey == post.cacheKey ||
                             t.id == post.cacheKey) &&
                         (t.status == DownloadTaskStatus.running ||
                             t.status == DownloadTaskStatus.queued),
                   ) ??
-              false;
+                  false,
+            ),
+          );
           final notesAsync = ref.watch(postNotesProvider(PostDetailsArgs(
               providerId: post.providerId, postId: post.id)));
           final notes = notesAsync.value ?? const [];
@@ -246,32 +265,6 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
               providerInstance is E621Provider ? providerInstance : null;
 
           if (Responsive.isMobile(context)) {
-            if (currentIndex >= 0 && feedPosts.length > 1) {
-              return _MobilePostPager(
-                posts: feedPosts,
-                initialIndex: currentIndex,
-                onLoadMore: () =>
-                    ref.read(feedControllerProvider.notifier).loadNextPage(),
-                onPageChanged: (idx) =>
-                    _handlePagerPageChanged(idx, feedPosts),
-                buildDetails: (context, post, mediaGestureLocked,
-                        onMediaGestureLockChanged, onPostIndexChanged, isActive) =>
-                    _buildMobileDetails(
-                  context,
-                  ref,
-                  post,
-                  settings,
-                  favoriteKeys,
-                  qualityMode,
-                  strings,
-                  mediaGestureLocked,
-                  onMediaGestureLockChanged,
-                  feedPosts,
-                  onPostIndexChanged,
-                  isActive,
-                ),
-              );
-            }
             return _buildMobileDetails(
               context,
               ref,
@@ -280,9 +273,11 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
               favoriteKeys,
               qualityMode,
               strings,
-              false,
-              null,
+              _mediaGestureLocked,
+              _setMediaGestureLocked,
               feedPosts,
+              (newIndex) => _handlePagerPageChanged(newIndex, feedPosts),
+              true,
             );
           }
           return Shortcuts(
@@ -667,14 +662,19 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
     final fileSizeBytes = localMedia != null
         ? DownloadedMediaService.getFileSizeSync(localMedia)
         : null;
-    final isDownloading = ref.watch(downloadTasksProvider).value?.any(
+    final isDownloading = ref.watch(
+      downloadTasksProvider.select(
+        (tasks) =>
+            tasks.value?.any(
               (t) =>
                   (t.post?.cacheKey == post.cacheKey ||
                       t.id == post.cacheKey) &&
                   (t.status == DownloadTaskStatus.running ||
                       t.status == DownloadTaskStatus.queued),
             ) ??
-        false;
+            false,
+      ),
+    );
     final notesAsync = ref.watch(postNotesProvider(PostDetailsArgs(
         providerId: post.providerId, postId: post.id)));
     final notes = notesAsync.value ?? const [];
@@ -695,6 +695,13 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
         ref.watch(postProviderInstanceProvider(post.providerId)).value;
     final e621Provider =
         providerInstance is E621Provider ? providerInstance : null;
+    final posts = feedPosts;
+    final hasMultiplePosts = posts != null && posts.length > 1;
+    final currentIndex = (posts != null && hasMultiplePosts)
+        ? posts.indexWhere(
+            (item) => item.providerId == post.providerId && item.id == post.id,
+          )
+        : 0;
 
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
@@ -710,245 +717,284 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
           120 + MediaQuery.paddingOf(context).bottom,
         ),
         children: [
-          GestureDetector(
-            behavior: HitTestBehavior.deferToChild,
-            onDoubleTap:
-                isVideo ? null : () => _toggleFavorite(ref, post, favoriteKeys),
-            onLongPress: isVideo
-                ? null
-                : () =>
-                    _showMobileQuickActions(context, ref, post, favoriteKeys),
-            child: (isVideo || isAudio)
-                ? Center(
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxHeight: isAudio
-                            ? 340
-                            : MediaQuery.sizeOf(context).height * 0.70,
-                      ),
-                      child: AspectRatio(
-                        aspectRatio: isAudio
-                            ? 1.3
-                            : ((post.width > 0 && post.height > 0)
-                                ? (post.width / post.height).clamp(0.45, 2.4)
-                                : (16 / 9)),
-                        child: PostMediaViewer(
-                          key: ValueKey(post.cacheKey),
-                          post: post,
-                          isActive: isActive,
-                          postsList: feedPosts,
-                          onLoadMore: () => ref
-                              .read(feedControllerProvider.notifier)
-                              .loadNextPage(),
-                          onPostIndexChanged: onPostIndexChanged,
-                          localFilePath: localMedia?.savedPath,
-                          qualityMode: qualityMode,
-                          notes: notes,
-                          showNotes: showNotes,
-                          mediaHeaders:
-                              ref.watch(postMediaHeadersProvider(post)).value ??
-                                  const {},
-                          initialPosition: Duration(
-                            milliseconds:
-                                settings.videoPlaybackPositions[post.cacheKey] ??
-                                    0,
+          if (posts != null && posts.length > 1)
+            _MobileMediaCarousel(
+              key: const ValueKey('mobile_media_carousel'),
+              posts: posts,
+              initialIndex: currentIndex >= 0 ? currentIndex : 0,
+              activePost: post,
+              settings: settings,
+              favoriteKeys: favoriteKeys,
+              qualityMode: qualityMode,
+              onPageChanged: (newIndex) => onPostIndexChanged?.call(newIndex),
+              onLoadMore: () =>
+                  ref.read(feedControllerProvider.notifier).loadNextPage(),
+              onMediaGestureLockChanged: onMediaGestureLockChanged,
+              onToggleFavorite: (r, p) => _toggleFavorite(r, p, favoriteKeys),
+              onShowQuickActions: (ctx, r, p) =>
+                  _showMobileQuickActions(ctx, r, p, favoriteKeys),
+              onSaveVideoSnapshot: (r, p, s) => _saveVideoSnapshot(r, p, s),
+              onSaveVideoPreferences: (r, s) => _saveVideoPreferences(r, s),
+            )
+          else
+            GestureDetector(
+              behavior: HitTestBehavior.deferToChild,
+              onDoubleTap:
+                  isVideo ? null : () => _toggleFavorite(ref, post, favoriteKeys),
+              onLongPress: isVideo
+                  ? null
+                  : () =>
+                      _showMobileQuickActions(context, ref, post, favoriteKeys),
+              child: (isVideo || isAudio)
+                  ? Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxHeight: isAudio
+                              ? 340
+                              : MediaQuery.sizeOf(context).height * 0.70,
+                        ),
+                        child: AspectRatio(
+                          aspectRatio: isAudio
+                              ? 1.3
+                              : ((post.width > 0 && post.height > 0)
+                                  ? (post.width / post.height).clamp(0.45, 2.4)
+                                  : (16 / 9)),
+                          child: PostMediaViewer(
+                            key: ValueKey(post.cacheKey),
+                            post: post,
+                            isActive: isActive,
+                            postsList: feedPosts,
+                            onLoadMore: () => ref
+                                .read(feedControllerProvider.notifier)
+                                .loadNextPage(),
+                            onPostIndexChanged: onPostIndexChanged,
+                            localFilePath: localMedia?.savedPath,
+                            qualityMode: qualityMode,
+                            notes: notes,
+                            showNotes: showNotes,
+                            mediaHeaders:
+                                ref.watch(postMediaHeadersProvider(post)).value ??
+                                    const {},
+                            initialPosition: Duration(
+                              milliseconds:
+                                  settings.videoPlaybackPositions[post.cacheKey] ??
+                                      0,
+                            ),
+                            initialLoop: settings.videoPlayerLoop,
+                            initialMuted: settings.videoPlayerMuted,
+                            initialCoverVideo: settings.videoPlayerCover,
+                            initialHalfVolume: settings.videoPlayerHalfVolume,
+                            initialVolume: settings.videoPlayerVolume,
+                            onVolumeChanged: (vol) => ref
+                                .read(settingsControllerProvider.notifier)
+                                .setVideoPlayerVolume(vol),
+                            onPlaybackSnapshot: (snapshot) =>
+                                _saveVideoSnapshot(ref, post, snapshot),
+                            onPlaybackPreferencesChanged: (snapshot) =>
+                                _saveVideoPreferences(ref, snapshot),
+                            onMediaGestureLockChanged: (locked) {
+                              onMediaGestureLockChanged?.call(locked);
+                            },
                           ),
-                          initialLoop: settings.videoPlayerLoop,
-                          initialMuted: settings.videoPlayerMuted,
-                          initialCoverVideo: settings.videoPlayerCover,
-                          initialHalfVolume: settings.videoPlayerHalfVolume,
-                          initialVolume: settings.videoPlayerVolume,
-                          onVolumeChanged: (vol) => ref
-                              .read(settingsControllerProvider.notifier)
-                              .setVideoPlayerVolume(vol),
-                          onPlaybackSnapshot: (snapshot) =>
-                              _saveVideoSnapshot(ref, post, snapshot),
-                          onPlaybackPreferencesChanged: (snapshot) =>
-                              _saveVideoPreferences(ref, snapshot),
-                          onMediaGestureLockChanged: (locked) {
-                            onMediaGestureLockChanged?.call(locked);
-                          },
                         ),
                       ),
-                    ),
-                  )
-                : SizedBox(
-                    width: double.infinity,
-                    height: MediaQuery.sizeOf(context).height * 0.62,
-                    child: PostMediaViewer(
-                      key: ValueKey(post.cacheKey),
-                      post: post,
-                      isActive: isActive,
-                      postsList: feedPosts,
-                      onLoadMore: () => ref
-                          .read(feedControllerProvider.notifier)
-                          .loadNextPage(),
-                      onPostIndexChanged: onPostIndexChanged,
-                      localFilePath: localMedia?.savedPath,
-                      qualityMode: qualityMode,
-                      notes: notes,
-                      showNotes: showNotes,
-                      mediaHeaders:
-                          ref.watch(postMediaHeadersProvider(post)).value ??
-                              const {},
-                      initialPosition: Duration(
-                        milliseconds:
-                            settings.videoPlaybackPositions[post.cacheKey] ?? 0,
+                    )
+                  : SizedBox(
+                      width: double.infinity,
+                      height: MediaQuery.sizeOf(context).height * 0.62,
+                      child: PostMediaViewer(
+                        key: ValueKey(post.cacheKey),
+                        post: post,
+                        isActive: isActive,
+                        postsList: feedPosts,
+                        onLoadMore: () => ref
+                            .read(feedControllerProvider.notifier)
+                            .loadNextPage(),
+                        onPostIndexChanged: onPostIndexChanged,
+                        localFilePath: localMedia?.savedPath,
+                        qualityMode: qualityMode,
+                        notes: notes,
+                        showNotes: showNotes,
+                        mediaHeaders:
+                            ref.watch(postMediaHeadersProvider(post)).value ??
+                                const {},
+                        initialPosition: Duration(
+                          milliseconds:
+                              settings.videoPlaybackPositions[post.cacheKey] ?? 0,
+                        ),
+                        initialLoop: settings.videoPlayerLoop,
+                        initialMuted: settings.videoPlayerMuted,
+                        initialCoverVideo: settings.videoPlayerCover,
+                        initialHalfVolume: settings.videoPlayerHalfVolume,
+                        initialVolume: settings.videoPlayerVolume,
+                        onVolumeChanged: (vol) => ref
+                            .read(settingsControllerProvider.notifier)
+                            .setVideoPlayerVolume(vol),
+                        onPlaybackSnapshot: (snapshot) =>
+                            _saveVideoSnapshot(ref, post, snapshot),
+                        onPlaybackPreferencesChanged: (snapshot) =>
+                            _saveVideoPreferences(ref, snapshot),
+                        onMediaGestureLockChanged: (locked) {
+                          onMediaGestureLockChanged?.call(locked);
+                        },
                       ),
-                      initialLoop: settings.videoPlayerLoop,
-                      initialMuted: settings.videoPlayerMuted,
-                      initialCoverVideo: settings.videoPlayerCover,
-                      initialHalfVolume: settings.videoPlayerHalfVolume,
-                      initialVolume: settings.videoPlayerVolume,
-                      onVolumeChanged: (vol) => ref
-                          .read(settingsControllerProvider.notifier)
-                          .setVideoPlayerVolume(vol),
-                      onPlaybackSnapshot: (snapshot) =>
-                          _saveVideoSnapshot(ref, post, snapshot),
-                      onPlaybackPreferencesChanged: (snapshot) =>
-                          _saveVideoPreferences(ref, snapshot),
-                      onMediaGestureLockChanged: (locked) {
-                        onMediaGestureLockChanged?.call(locked);
+                    ),
+            ),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            switchInCurve: Curves.easeOut,
+            switchOutCurve: Curves.easeIn,
+            child: KeyedSubtree(
+              key: ValueKey(post.cacheKey),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (!MediaUrlSelector.isVideo(post) &&
+                      !MediaUrlSelector.isAudio(post) &&
+                      (post.providerId.toLowerCase().contains('e621') ||
+                          post.providerId.toLowerCase().contains('e926') ||
+                          post.hasNotes)) ...[
+                    const SizedBox(height: 8),
+                    Center(
+                      child: _GoogleTranslateButton(
+                        hasNotes: notes.isNotEmpty,
+                        isLoading: notesAsync.isLoading,
+                        showNotes: showNotes,
+                        notesCount: notes.length,
+                        isRu: strings.ru,
+                        onToggle: () {
+                          ref
+                              .read(showPostNotesProvider(post.cacheKey).notifier)
+                              .state = !showNotes;
+                        },
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  PostActionBar(
+                    isFavorite: favoriteKeys.contains(post.cacheKey),
+                    labels: _postActionLabels(strings),
+                    downloaded: localMedia != null,
+                    isDownloading: isDownloading,
+                    onFavorite: () => _toggleFavorite(ref, post, favoriteKeys),
+                    onCollection: () => _addToCollection(context, ref, post),
+                    onOpen: () => launchUrl(Uri.parse(post.fileUrl)),
+                    onOpenSource: () => _openSourcePage(ref, post),
+                    onCopy: () => Clipboard.setData(ClipboardData(text: post.fileUrl)),
+                    onSimilar: () => _openSimilar(context, ref, post),
+                    onHide: () => _hidePost(context, ref, post),
+                    onDownload: settings.allowDownloads
+                        ? () => _download(context, ref, post)
+                        : null,
+                    onDeleteLocalFile: () => _deleteLocalFile(context, ref, post),
+                    onShare: () => _sharePost(context, ref, post),
+                  ),
+                  const SizedBox(height: 12),
+                  _PostInfoCard(
+                    post: post,
+                    strings: strings,
+                    localMedia: localMedia,
+                    fileSizeBytes: fileSizeBytes,
+                    e621Provider: e621Provider,
+                  ),
+                  _ArtistPostsCard(post: post),
+                  if (post.hasRelations) ...[
+                    const SizedBox(height: 12),
+                    PostRelationsCard(
+                      post: post,
+                      onOpenPostId: (targetId) =>
+                          _openPostById(context, post.providerId, targetId),
+                    ),
+                  ],
+                  if (post.hasPools && e621Provider != null) ...[
+                    const SizedBox(height: 12),
+                    PostPoolsCard(
+                      post: post,
+                      provider: e621Provider,
+                      onOpenComic: (poolId, currentPost, [targetId]) =>
+                          _openComic(context, e621Provider, poolId, currentPost, targetId),
+                      onOpenPostId: (targetId) =>
+                          _openPostById(context, post.providerId, targetId),
+                    ),
+                  ],
+                  if (shouldShowCloudCard) ...[
+                    const SizedBox(height: 12),
+                    CloudMirrorsCard(
+                      links: post.cloudLinks,
+                      strings: strings,
+                      commentary: isTextOnly ? null : post.commentary,
+                      onPlayStream: (streamUrl) => launchUrl(
+                        Uri.parse(streamUrl),
+                        mode: LaunchMode.externalApplication,
+                      ),
+                      onDownloadStream: settings.allowDownloads
+                          ? (streamUrl) => _downloadUrl(context, ref, post, streamUrl)
+                          : null,
+                    ),
+                  ],
+                  if (posts != null && posts.length > 1) ...[
+                    const SizedBox(height: 12),
+                    _NeighborStrip(
+                      posts: posts,
+                      currentIndex: currentIndex >= 0 ? currentIndex : 0,
+                      onOpen: (p) {
+                        final idx = posts.indexWhere(
+                          (item) =>
+                              item.providerId == p.providerId && item.id == p.id,
+                        );
+                        if (idx != -1) {
+                          onPostIndexChanged?.call(idx);
+                        }
                       },
                     ),
-                  ),
-          ),
-          if (!MediaUrlSelector.isVideo(post) &&
-              !MediaUrlSelector.isAudio(post) &&
-              (post.providerId.toLowerCase().contains('e621') ||
-                  post.providerId.toLowerCase().contains('e926') ||
-                  post.hasNotes)) ...[
-            const SizedBox(height: 8),
-            Center(
-              child: _GoogleTranslateButton(
-                hasNotes: notes.isNotEmpty,
-                isLoading: notesAsync.isLoading,
-                showNotes: showNotes,
-                notesCount: notes.length,
-                isRu: strings.ru,
-                onToggle: () {
-                  ref
-                      .read(showPostNotesProvider(post.cacheKey).notifier)
-                      .state = !showNotes;
-                },
-              ),
-            ),
-          ],
-          const SizedBox(height: 12),
-          PostActionBar(
-            isFavorite: favoriteKeys.contains(post.cacheKey),
-            labels: _postActionLabels(strings),
-            downloaded: localMedia != null,
-            isDownloading: isDownloading,
-            onFavorite: () => _toggleFavorite(ref, post, favoriteKeys),
-            onCollection: () => _addToCollection(context, ref, post),
-            onOpen: () => launchUrl(Uri.parse(post.fileUrl)),
-            onOpenSource: () => _openSourcePage(ref, post),
-            onCopy: () => Clipboard.setData(ClipboardData(text: post.fileUrl)),
-            onSimilar: () => _openSimilar(context, ref, post),
-            onHide: () => _hidePost(context, ref, post),
-            onDownload: settings.allowDownloads
-                ? () => _download(context, ref, post)
-                : null,
-            onDeleteLocalFile: () => _deleteLocalFile(context, ref, post),
-            onShare: () => _sharePost(context, ref, post),
-          ),
-          const SizedBox(height: 12),
-          _PostInfoCard(
-            post: post,
-            strings: strings,
-            localMedia: localMedia,
-            fileSizeBytes: fileSizeBytes,
-            e621Provider: e621Provider,
-          ),
-          _ArtistPostsCard(post: post),
-          if (post.hasRelations) ...[
-            const SizedBox(height: 12),
-            PostRelationsCard(
-              post: post,
-              onOpenPostId: (targetId) =>
-                  _openPostById(context, post.providerId, targetId),
-            ),
-          ],
-          if (post.hasPools && e621Provider != null) ...[
-            const SizedBox(height: 12),
-            PostPoolsCard(
-              post: post,
-              provider: e621Provider,
-              onOpenComic: (poolId, currentPost, [targetId]) =>
-                  _openComic(context, e621Provider, poolId, currentPost, targetId),
-              onOpenPostId: (targetId) =>
-                  _openPostById(context, post.providerId, targetId),
-            ),
-          ],
-          if (shouldShowCloudCard) ...[
-            const SizedBox(height: 12),
-            CloudMirrorsCard(
-              links: post.cloudLinks,
-              strings: strings,
-              commentary: isTextOnly ? null : post.commentary,
-              onPlayStream: (streamUrl) => launchUrl(
-                Uri.parse(streamUrl),
-                mode: LaunchMode.externalApplication,
-              ),
-              onDownloadStream: settings.allowDownloads
-                  ? (streamUrl) => _downloadUrl(context, ref, post, streamUrl)
-                  : null,
-            ),
-          ],
-          if (feedPosts != null && feedPosts.length > 1) ...[
-            const SizedBox(height: 12),
-            _NeighborStrip(
-              posts: feedPosts,
-              currentIndex: feedPosts.indexWhere(
-                (item) =>
-                    item.providerId == post.providerId && item.id == post.id,
-              ),
-              onOpen: (p) => _openPost(context, p),
-            ),
-          ],
-          const SizedBox(height: 12),
-          Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? Theme.of(context).colorScheme.surfaceContainerHigh.withValues(alpha: 0.70)
-                  : Theme.of(context).colorScheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.white.withValues(alpha: 0.12)
-                    : Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.40),
-                width: 1.1,
-              ),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: ExpansionTile(
-              tilePadding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-              childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-              initiallyExpanded: false,
-              shape: const Border(),
-              collapsedShape: const Border(),
-              leading: Icon(
-                Icons.tag_rounded,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              title: Text(
-                '${strings.tags} (${post.cleanTags.length})',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
+                  ],
+                  const SizedBox(height: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Theme.of(context).colorScheme.surfaceContainerHigh.withValues(alpha: 0.70)
+                          : Theme.of(context).colorScheme.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white.withValues(alpha: 0.12)
+                            : Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.40),
+                        width: 1.1,
+                      ),
                     ),
+                    clipBehavior: Clip.antiAlias,
+                    child: ExpansionTile(
+                      tilePadding:
+                          const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                      childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                      initiallyExpanded: false,
+                      shape: const Border(),
+                      collapsedShape: const Border(),
+                      leading: Icon(
+                        Icons.tag_rounded,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      title: Text(
+                        '${strings.tags} (${post.cleanTags.length})',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                      children: [
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: PostTagsPanel(post: post),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _CommentsSection(post: post),
+                ],
               ),
-              children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: PostTagsPanel(post: post),
-                ),
-              ],
             ),
           ),
-          const SizedBox(height: 12),
-          _CommentsSection(post: post),
           const SizedBox(height: 24),
         ],
       ),
@@ -1375,226 +1421,94 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
   }
 }
 
-class _MobilePostPager extends StatefulWidget {
-  const _MobilePostPager({
+class _MobileMediaCarousel extends StatefulWidget {
+  const _MobileMediaCarousel({
     required this.posts,
     required this.initialIndex,
-    required this.buildDetails,
+    required this.activePost,
+    required this.settings,
+    required this.favoriteKeys,
+    required this.qualityMode,
+    required this.onPageChanged,
     this.onLoadMore,
-    this.onPageChanged,
+    this.onMediaGestureLockChanged,
+    this.onToggleFavorite,
+    this.onShowQuickActions,
+    this.onSaveVideoSnapshot,
+    this.onSaveVideoPreferences,
+    super.key,
   });
 
   final List<Post> posts;
   final int initialIndex;
-  final Widget Function(
-    BuildContext context,
-    Post post,
-    bool mediaGestureLocked,
-    ValueChanged<bool> onMediaGestureLockChanged,
-    ValueChanged<int>? onPostIndexChanged,
-    bool isActive,
-  ) buildDetails;
+  final Post activePost;
+  final AppSettings settings;
+  final Set<String> favoriteKeys;
+  final MediaQualityMode qualityMode;
+  final ValueChanged<int> onPageChanged;
   final VoidCallback? onLoadMore;
-  final ValueChanged<int>? onPageChanged;
+  final ValueChanged<bool>? onMediaGestureLockChanged;
+  final void Function(WidgetRef ref, Post post)? onToggleFavorite;
+  final void Function(BuildContext context, WidgetRef ref, Post post)? onShowQuickActions;
+  final void Function(WidgetRef ref, Post post, VideoPlaybackSnapshot snapshot)? onSaveVideoSnapshot;
+  final void Function(WidgetRef ref, VideoPlaybackSnapshot snapshot)? onSaveVideoPreferences;
 
   @override
-  State<_MobilePostPager> createState() => _MobilePostPagerState();
+  State<_MobileMediaCarousel> createState() => _MobileMediaCarouselState();
 }
 
-class _MobilePostPagerState extends State<_MobilePostPager> {
+class _MobileMediaCarouselState extends State<_MobileMediaCarousel>
+    with AutomaticKeepAliveClientMixin {
   late final PageController _controller;
+  late int _currentPage;
   bool _mediaGestureLocked = false;
-  late int _currentPage = widget.initialIndex;
+  bool _isUserScrolling = false;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
-    _currentPage = widget.initialIndex;
-    _controller = PageController(initialPage: widget.initialIndex);
-    _controller.addListener(_handleScroll);
+    _currentPage = widget.initialIndex.clamp(0, widget.posts.length - 1);
+    _controller = PageController(initialPage: _currentPage);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _prefetchAround(widget.initialIndex);
+      if (mounted) {
+        _prefetchAround(_currentPage);
+      }
     });
   }
 
-  void _handleScroll() {
-    if (!_controller.hasClients || _controller.page == null) return;
-    final page = _controller.page!;
-    final rounded = page.round();
-    if ((page - _currentPage).abs() > 0.35 && rounded != _currentPage) {
-      if (mounted) {
-        setState(() {
-          _currentPage = rounded;
-        });
-      }
-    }
-  }
-
   @override
-  void didUpdateWidget(covariant _MobilePostPager oldWidget) {
+  void didUpdateWidget(covariant _MobileMediaCarousel oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.posts.length != widget.posts.length) {
-      setState(() {});
-    }
-    if (oldWidget.initialIndex != widget.initialIndex &&
+    if (widget.initialIndex != _currentPage &&
         widget.initialIndex >= 0 &&
-        widget.initialIndex < widget.posts.length &&
-        widget.initialIndex != _currentPage) {
+        widget.initialIndex < widget.posts.length) {
       _currentPage = widget.initialIndex;
-      if (_controller.hasClients) {
+      if (!_isUserScrolling &&
+          _controller.hasClients &&
+          _controller.page?.round() != widget.initialIndex) {
         _controller.jumpToPage(widget.initialIndex);
       }
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _prefetchAround(widget.initialIndex);
+        if (mounted) {
+          _prefetchAround(widget.initialIndex);
+        }
       });
     }
   }
 
   @override
   void dispose() {
-    _controller.removeListener(_handleScroll);
     _controller.dispose();
     super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final pager = ScrollConfiguration(
-      behavior: ScrollConfiguration.of(context).copyWith(
-        dragDevices: {
-          PointerDeviceKind.touch,
-          PointerDeviceKind.mouse,
-          PointerDeviceKind.trackpad,
-          PointerDeviceKind.stylus,
-        },
-      ),
-      child: PageView.builder(
-        controller: _controller,
-        physics: _mediaGestureLocked
-            ? const NeverScrollableScrollPhysics()
-            : const PageScrollPhysics(),
-        itemCount: widget.posts.length,
-        onPageChanged: (index) {
-          setState(() => _currentPage = index);
-          _prefetchAround(index);
-          widget.onPageChanged?.call(index);
-          if (widget.onLoadMore != null && index >= widget.posts.length - 2) {
-            widget.onLoadMore!();
-          }
-        },
-        itemBuilder: (context, index) {
-          final initialPost = widget.posts[index];
-        return Consumer(
-          builder: (context, ref, _) {
-            final args = PostDetailsArgs(
-              providerId: initialPost.providerId,
-              postId: initialPost.id,
-              initialPost: initialPost,
-            );
-            final post = ref.watch(postDetailsControllerProvider(args));
-            return post.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, _) => ErrorView(message: error.toString()),
-              data: (resolvedPost) => _KeepAlivePostPage(
-                child: KeyedSubtree(
-                  key: ValueKey((resolvedPost ?? initialPost).cacheKey),
-                  child: widget.buildDetails(
-                    context,
-                    resolvedPost ?? initialPost,
-                    _mediaGestureLocked,
-                    _setMediaGestureLocked,
-                    (newIndex) {
-                      if (newIndex >= 0 &&
-                          newIndex < widget.posts.length &&
-                          newIndex != _currentPage) {
-                        _currentPage = newIndex;
-                        if (_controller.hasClients) {
-                          _controller.jumpToPage(newIndex);
-                        }
-                        _prefetchAround(newIndex);
-                        ref
-                            .read(viewedHistoryServiceProvider)
-                            .markViewed(widget.posts[newIndex]);
-                      }
-                    },
-                    index == _currentPage,
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    ),
-  );
-
-    if (widget.posts.length <= 1) return pager;
-
-    // Show the page indicator overlay only for comic/pool lists.
-    final isComic = widget.posts.first.hasPools;
-    if (!isComic) return pager;
-
-    return Stack(
-      children: [
-        pager,
-        Positioned(
-          top: MediaQuery.paddingOf(context).top + 10,
-          left: 0,
-          right: 0,
-          child: Center(
-            child: IgnorePointer(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.60),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.18),
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.auto_stories_rounded,
-                            size: 14, color: Colors.white),
-                        const SizedBox(width: 6),
-                        Builder(
-                          builder: (ctx) {
-                            final isRu = Localizations.maybeLocaleOf(ctx)?.languageCode == 'ru';
-                            return Text(
-                              isRu
-                                  ? 'Комикс • Стр. ${_currentPage + 1} из ${widget.posts.length}'
-                                  : 'Comic • Page ${_currentPage + 1} of ${widget.posts.length}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: -0.2,
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
   }
 
   void _setMediaGestureLocked(bool locked) {
     if (_mediaGestureLocked == locked) return;
     setState(() => _mediaGestureLocked = locked);
+    widget.onMediaGestureLockChanged?.call(locked);
   }
 
   void _prefetchAround(int index) {
@@ -1609,18 +1523,166 @@ class _MobilePostPagerState extends State<_MobilePostPager> {
       ].where((url) => url.trim().isNotEmpty).toSet();
       for (final url in urls) {
         precacheImage(
-          CachedNetworkImageProvider(url, headers: _headersFor(post)),
+          CachedNetworkImageProvider(url, headers: getPostMediaHeaders(post)),
           context,
         );
       }
     }
   }
 
-  Map<String, String> _headersFor(Post post) => getPostMediaHeaders(post);
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    final currentPost = (_currentPage >= 0 && _currentPage < widget.posts.length)
+        ? (widget.posts[_currentPage].id == widget.activePost.id
+            ? widget.activePost
+            : widget.posts[_currentPage])
+        : widget.activePost;
+
+    final isVideo = MediaUrlSelector.isVideo(currentPost);
+    final isAudio = MediaUrlSelector.isAudio(currentPost);
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final carouselHeight = isAudio
+        ? 340.0
+        : (isVideo
+            ? screenHeight * 0.70
+            : screenHeight * 0.62);
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOutCubic,
+      height: carouselHeight,
+      width: double.infinity,
+      child: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(
+          dragDevices: {
+            PointerDeviceKind.touch,
+            PointerDeviceKind.mouse,
+            PointerDeviceKind.trackpad,
+            PointerDeviceKind.stylus,
+          },
+        ),
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            if (notification is ScrollStartNotification) {
+              _isUserScrolling = true;
+            } else if (notification is ScrollEndNotification) {
+              _isUserScrolling = false;
+            }
+            return false;
+          },
+          child: PageView.builder(
+            controller: _controller,
+            physics: _mediaGestureLocked
+                ? const NeverScrollableScrollPhysics()
+                : const PageScrollPhysics(),
+            itemCount: widget.posts.length,
+            onPageChanged: (index) {
+              _currentPage = index;
+              widget.onPageChanged(index);
+              _prefetchAround(index);
+              if (widget.onLoadMore != null && index >= widget.posts.length - 2) {
+                widget.onLoadMore!();
+              }
+            },
+            itemBuilder: (context, index) {
+              final postItem = widget.posts[index];
+              final isActivePage = index == _currentPage;
+              final targetPost = (isActivePage && postItem.id == widget.activePost.id)
+                  ? widget.activePost
+                  : postItem;
+
+              return _KeepAlivePostPage(
+                key: ValueKey(postItem.cacheKey),
+                child: Consumer(
+                builder: (context, ref, _) {
+                  final notesAsync = ref.watch(postNotesProvider(PostDetailsArgs(
+                    providerId: targetPost.providerId,
+                    postId: targetPost.id,
+                  )));
+                  final notes = notesAsync.value ?? const [];
+                  final showNotes = ref.watch(showPostNotesProvider(targetPost.cacheKey));
+                  final localMedia = ref.watch(downloadedMediaByKeyProvider(targetPost.cacheKey)).value;
+                  final mediaHeaders = ref.watch(postMediaHeadersProvider(targetPost)).value ?? const {};
+                  final itemIsVideo = MediaUrlSelector.isVideo(targetPost);
+                  final itemIsAudio = MediaUrlSelector.isAudio(targetPost);
+
+                  final mediaViewer = PostMediaViewer(
+                    key: ValueKey(targetPost.cacheKey),
+                    post: targetPost,
+                    isActive: isActivePage,
+                    postsList: widget.posts,
+                    onLoadMore: widget.onLoadMore,
+                    onPostIndexChanged: (newIdx) {
+                      widget.onPageChanged(newIdx);
+                    },
+                    localFilePath: localMedia?.savedPath,
+                    qualityMode: widget.qualityMode,
+                    notes: notes,
+                    showNotes: showNotes,
+                    mediaHeaders: mediaHeaders,
+                    initialPosition: Duration(
+                      milliseconds: widget.settings.videoPlaybackPositions[targetPost.cacheKey] ?? 0,
+                    ),
+                    initialLoop: widget.settings.videoPlayerLoop,
+                    initialMuted: widget.settings.videoPlayerMuted,
+                    initialCoverVideo: widget.settings.videoPlayerCover,
+                    initialHalfVolume: widget.settings.videoPlayerHalfVolume,
+                    initialVolume: widget.settings.videoPlayerVolume,
+                    onVolumeChanged: (vol) => ref
+                        .read(settingsControllerProvider.notifier)
+                        .setVideoPlayerVolume(vol),
+                    onPlaybackSnapshot: (snapshot) =>
+                        widget.onSaveVideoSnapshot?.call(ref, targetPost, snapshot),
+                    onPlaybackPreferencesChanged: (snapshot) =>
+                        widget.onSaveVideoPreferences?.call(ref, snapshot),
+                    onMediaGestureLockChanged: (locked) =>
+                        _setMediaGestureLocked(locked),
+                  );
+
+                  return GestureDetector(
+                    behavior: HitTestBehavior.deferToChild,
+                    onDoubleTap: itemIsVideo
+                        ? null
+                        : () => widget.onToggleFavorite?.call(ref, targetPost),
+                    onLongPress: itemIsVideo
+                        ? null
+                        : () => widget.onShowQuickActions?.call(context, ref, targetPost),
+                    child: (itemIsVideo || itemIsAudio)
+                        ? Center(
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxHeight: itemIsAudio
+                                    ? 340
+                                    : screenHeight * 0.70,
+                              ),
+                              child: AspectRatio(
+                                aspectRatio: itemIsAudio
+                                    ? 1.3
+                                    : ((targetPost.width > 0 && targetPost.height > 0)
+                                        ? (targetPost.width / targetPost.height).clamp(0.45, 2.4)
+                                        : (16 / 9)),
+                                child: mediaViewer,
+                              ),
+                            ),
+                          )
+                        : SizedBox.expand(
+                            child: mediaViewer,
+                          ),
+                  );
+                },
+              ),
+            );
+          },
+        ),
+        ),
+      ),
+    );
+  }
 }
 
 class _KeepAlivePostPage extends StatefulWidget {
-  const _KeepAlivePostPage({required this.child});
+  const _KeepAlivePostPage({required this.child, super.key});
 
   final Widget child;
 

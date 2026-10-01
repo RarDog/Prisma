@@ -69,11 +69,15 @@ class CacheService {
   }
 
   Future<void> _evictOverflow(Isar isar, int maxItems) async {
-    final entities = await isar.cachedPostEntitys.where().findAll();
-    if (entities.length <= maxItems) return;
-    entities.sort((a, b) => b.cachedAt.compareTo(a.cachedAt));
-    final overflowIds =
-        entities.skip(maxItems).map((entity) => entity.isarId).toList();
+    final count = await isar.cachedPostEntitys.count();
+    if (count <= maxItems) return;
+    final toDelete = count - maxItems;
+    final overflowIds = await isar.cachedPostEntitys
+        .where()
+        .sortByCachedAt()
+        .limit(toDelete)
+        .isarIdProperty()
+        .findAll();
     await isar.cachedPostEntitys.deleteAll(overflowIds);
   }
 }

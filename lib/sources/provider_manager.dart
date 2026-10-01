@@ -109,6 +109,30 @@ class ProviderManager {
     return Success(providers);
   }
 
+  Future<Result<List<ContentProviderConfig>>> loadMangaConfigs({
+    bool enabledOnly = true,
+  }) async {
+    final result = await loadConfigs(enabledOnly: enabledOnly);
+    if (result is Error<List<ContentProviderConfig>>) {
+      return Error(result.failure);
+    }
+    final configs = (result as Success<List<ContentProviderConfig>>)
+        .data
+        .where(_isMangaConfig)
+        .toList()
+      ..sort((a, b) => a.priority.compareTo(b.priority));
+    return Success(configs);
+  }
+
+  Future<Result<List<ContentProvider>>> activeMangaProviders() async {
+    final result = await loadMangaConfigs();
+    if (result is Error<List<ContentProviderConfig>>) {
+      return Error(result.failure);
+    }
+    final configs = (result as Success<List<ContentProviderConfig>>).data;
+    return Success(configs.map(_factory.create).toList());
+  }
+
   Future<Result<void>> enableProvider(String id, bool enabled) async {
     final result = await _repository.getProvider(id);
     return result.fold(
@@ -782,16 +806,26 @@ class ProviderManager {
     return type == 'pawchive';
   }
 
-  static bool _isFeedConfig(ContentProviderConfig config) {
+  static bool _isMangaConfig(ContentProviderConfig config) {
     final type = config.apiType.toLowerCase();
-    return type != 'pawchive';
+    final id = config.id.toLowerCase();
+    final base = config.baseUrl.toLowerCase();
+    return type == 'mangadex' ||
+        type == 'nhentai' ||
+        id == 'mangadex' ||
+        id == 'nhentai' ||
+        base.contains('mangadex') ||
+        base.contains('nhentai');
+  }
+
+  static bool _isFeedConfig(ContentProviderConfig config) {
+    return !_isArtistConfig(config) && !_isMangaConfig(config);
   }
 
   static bool _isLegacyRemovedConfig(ContentProviderConfig config) {
     final id = config.id.toLowerCase();
     final type = config.apiType.toLowerCase();
     return id == 'cosbooru' ||
-        type == 'realbooru' ||
         type == 'kemono' ||
         type == 'coomer' ||
         id == 'kemono' ||

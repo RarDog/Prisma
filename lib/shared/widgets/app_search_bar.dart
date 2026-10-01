@@ -113,6 +113,20 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
     super.dispose();
   }
 
+  void _requestFocusAndShowKeyboard() {
+    if (_focusNode.hasFocus) {
+      _focusNode.unfocus();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        FocusScope.of(context).requestFocus(_focusNode);
+        SystemChannels.textInput.invokeMethod<void>('TextInput.show');
+      });
+    } else {
+      FocusScope.of(context).requestFocus(_focusNode);
+      SystemChannels.textInput.invokeMethod<void>('TextInput.show');
+    }
+  }
+
   void _handleFocusChanged() {
     if (!mounted) return;
     if (_focusNode.hasFocus) {
@@ -266,7 +280,7 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
             ),
             child: InkWell(
               borderRadius: BorderRadius.circular(22),
-              onTap: _focusNode.requestFocus,
+              onTap: _requestFocusAndShowKeyboard,
               child: Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
@@ -308,6 +322,11 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
                                         enableSuggestions: false,
                                         textInputAction:
                                             TextInputAction.search,
+                                        onTap: () {
+                                          SystemChannels.textInput
+                                              .invokeMethod<void>(
+                                                  'TextInput.show');
+                                        },
                                         onSubmitted: (_) => _submit(),
                                         onChanged: _handleDraftChanged,
                                         decoration: InputDecoration(

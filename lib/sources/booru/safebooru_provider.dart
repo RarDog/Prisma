@@ -51,7 +51,6 @@ class SafebooruProvider extends GelbooruProvider {
           'limit': limit,
           'tags': [
             ...tags,
-            if (rating != null && rating.isNotEmpty) 'rating:$rating',
             ...topTags,
           ].join(' '),
           ...queryParameters,

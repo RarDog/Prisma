@@ -13,18 +13,64 @@ final settingsControllerProvider =
 class SettingsController extends AsyncNotifier<AppSettings> {
   @override
   Future<AppSettings> build() async {
-    final result = await ref.read(settingsServiceProvider).getSettings();
-    return result is Success<AppSettings> ? result.data : AppSettings.defaults;
+    try {
+      final result = await ref.read(settingsServiceProvider).getSettings();
+      return result is Success<AppSettings> ? result.data : AppSettings.defaults;
+    } catch (_) {
+      return AppSettings.defaults;
+    }
   }
 
   Future<void> saveSettings(AppSettings settings) async {
-    await ref.read(settingsServiceProvider).updateSettings(settings);
     state = AsyncData(settings);
+    try {
+      await ref.read(settingsServiceProvider).updateSettings(settings);
+    } catch (e) {
+      const AppLogger().debug('Could not persist settings', e);
+    }
     ref.invalidate(appSettingsProvider);
   }
 
+  Future<void> saveMangaCatalogState({
+    String? rating,
+    double? scrollOffset,
+    String? providerId,
+  }) async {
+    final current = state.valueOrNull ?? AppSettings.defaults;
+    final updated = current.copyWith(
+      mangaSelectedRating: rating ?? current.mangaSelectedRating,
+      mangaScrollOffset: scrollOffset ?? current.mangaScrollOffset,
+      mangaSelectedProviderId: providerId ?? current.mangaSelectedProviderId,
+    );
+    await saveSettings(updated);
+  }
+
+  Future<void> saveMangaReaderSettings({
+    required String readingMode,
+    required bool isRtl,
+  }) async {
+    final current = state.valueOrNull ?? AppSettings.defaults;
+    final updated = current.copyWith(
+      mangaReadingMode: readingMode,
+      mangaReaderRtl: isRtl,
+    );
+    await saveSettings(updated);
+  }
+
+  Future<void> saveMangaVolumeNavigation({
+    required bool enabled,
+    bool? invert,
+  }) async {
+    final current = state.valueOrNull ?? AppSettings.defaults;
+    final updated = current.copyWith(
+      mangaVolumeNavigation: enabled,
+      mangaInvertVolumeKeys: invert ?? current.mangaInvertVolumeKeys,
+    );
+    await saveSettings(updated);
+  }
+
   Future<void> setVideoPlayerVolume(double volume) async {
-    final current = state.value ?? AppSettings.defaults;
+    final current = state.valueOrNull ?? AppSettings.defaults;
     final clamped = volume.clamp(0.0, 100.0);
     if ((current.videoPlayerVolume - clamped).abs() < 0.01) return;
     final updated = current.copyWith(videoPlayerVolume: clamped);

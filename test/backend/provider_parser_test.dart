@@ -274,7 +274,7 @@ void main() {
     );
   });
 
-  test('provider factory treats Realbooru api type as unsupported', () {
+  test('provider factory creates Realbooru provider from legacy realbooru api type', () {
     final now = DateTime(2026);
     final provider = ProviderFactory().create(ContentProviderConfig(
       id: 'realbooru',
@@ -289,7 +289,7 @@ void main() {
       updatedAt: now,
     ));
 
-    expect(provider, isA<UnsupportedCustomProvider>());
+    expect(provider, isA<RealbooruHtmlProvider>());
   });
 
   test('provider factory creates Realbooru HTML provider', () {

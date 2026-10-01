@@ -7,12 +7,13 @@ import 'package:gel_rule_app/features/post/presentation/similar_posts_screen.dar
 class AppNavigator {
   const AppNavigator._();
 
-  static void openPost(
+  static Future<void> openPost(
     BuildContext context, {
     required Post post,
     List<Post>? postsList,
-  }) {
-    Navigator.of(context).push(
+  }) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (ctx) => PostDetailsScreen(
           providerId: post.providerId,
@@ -22,13 +23,15 @@ class AppNavigator {
         ),
       ),
     );
+    FocusManager.instance.primaryFocus?.unfocus();
   }
 
-  static void openSimilarPosts(
+  static Future<void> openSimilarPosts(
     BuildContext context, {
     required Post post,
-  }) {
-    Navigator.of(context).push(
+  }) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (ctx) => SimilarPostsScreen(
           providerId: post.providerId,
@@ -37,5 +40,6 @@ class AppNavigator {
         ),
       ),
     );
+    FocusManager.instance.primaryFocus?.unfocus();
   }
 }

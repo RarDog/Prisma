@@ -558,6 +558,91 @@ class MangaDexProvider
     }
   }
 
+  /// Fetches directly related manga (prequel, sequel, spin-off, etc.)
+  Future<List<Post>> fetchRelatedManga(String mangaId) async {
+    try {
+      final response = await _dio.get<dynamic>(
+        '/manga/$mangaId',
+        queryParameters: {
+          'includes[]': ['manga'],
+          ..._queryParameters,
+        },
+      );
+      _checkResponse(response);
+      final data = response.data;
+      if (data is! Map || data['data'] is! Map) return [];
+      final rels = data['data']['relationships'] as List<dynamic>? ?? [];
+      final relatedIds = <String>[];
+      for (final rel in rels) {
+        if (rel is Map && rel['type'] == 'manga') {
+          final id = rel['id']?.toString();
+          if (id != null && id.isNotEmpty) {
+            relatedIds.add(id);
+          }
+        }
+      }
+      if (relatedIds.isEmpty) return [];
+
+      final searchRes = await _dio.get<dynamic>(
+        '/manga',
+        queryParameters: {
+          'ids[]': relatedIds.take(10).toList(),
+          'includes[]': ['cover_art', 'author', 'artist'],
+          'contentRating[]': const ['safe', 'suggestive', 'erotica', 'pornographic'],
+          ..._queryParameters,
+        },
+      );
+      _checkResponse(searchRes);
+      return MangaDexMapper.postsFromSearchResponse(
+        searchRes.data,
+        providerId: id,
+        providerName: name,
+      );
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// Fetches recommended or similar manga based on tags or genres
+  Future<List<Post>> fetchRecommendations(Post currentManga, {int limit = 12}) async {
+    try {
+      final tagIds = <String>[];
+      for (final tag in currentManga.tags) {
+        final id = _findTagId(tag);
+        if (id != null) {
+          tagIds.add(id);
+          if (tagIds.length >= 3) break;
+        }
+      }
+
+      final queryParams = <String, dynamic>{
+        'limit': limit + 2,
+        'order[followedCount]': 'desc',
+        'contentRating[]': const ['safe', 'suggestive', 'erotica', 'pornographic'],
+        'includes[]': ['cover_art', 'author', 'artist'],
+        ..._queryParameters,
+      };
+
+      if (tagIds.isNotEmpty) {
+        queryParams['includedTags[]'] = tagIds;
+      }
+
+      final searchRes = await _dio.get<dynamic>(
+        '/manga',
+        queryParameters: queryParams,
+      );
+      _checkResponse(searchRes);
+      final posts = MangaDexMapper.postsFromSearchResponse(
+        searchRes.data,
+        providerId: id,
+        providerName: name,
+      );
+      return posts.where((p) => p.id != currentManga.id).take(limit).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
   @override
   Future<List<TagSuggestion>> suggestTags(String query, {int limit = 20}) async {
     final clean = query.trim().toLowerCase();

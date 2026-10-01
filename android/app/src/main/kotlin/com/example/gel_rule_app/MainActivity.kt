@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.BatteryManager
 import android.os.Environment
 import android.provider.MediaStore
+import android.view.KeyEvent
 import androidx.core.content.FileProvider
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -16,6 +17,9 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 
 class MainActivity : FlutterActivity() {
+    private var volumeNavigationEnabled = false
+    private var volumeChannel: MethodChannel? = null
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "rulegel/downloads")
@@ -71,6 +75,44 @@ class MainActivity : FlutterActivity() {
                     result.error("device_failed", error.message, null)
                 }
             }
+        volumeChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "rulegel/volume_keys").apply {
+            setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "enableVolumeNavigation" -> {
+                        volumeNavigationEnabled = true
+                        result.success(true)
+                    }
+                    "disableVolumeNavigation" -> {
+                        volumeNavigationEnabled = false
+                        result.success(true)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+        }
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (volumeNavigationEnabled) {
+            when (keyCode) {
+                KeyEvent.KEYCODE_VOLUME_UP -> {
+                    volumeChannel?.invokeMethod("onVolumeKeyDown", "up")
+                    return true
+                }
+                KeyEvent.KEYCODE_VOLUME_DOWN -> {
+                    volumeChannel?.invokeMethod("onVolumeKeyDown", "down")
+                    return true
+                }
+            }
+        }
+        return super.onKeyDown(keyCode, event)
+    }
+
+    override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
+        if (volumeNavigationEnabled && (keyCode == KeyEvent.KEYCODE_VOLUME_UP || keyCode == KeyEvent.KEYCODE_VOLUME_DOWN)) {
+            return true
+        }
+        return super.onKeyUp(keyCode, event)
     }
 
     private fun saveToDownloads(path: String, fileName: String, mimeType: String, subDir: String? = null): String {

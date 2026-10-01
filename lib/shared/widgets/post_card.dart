@@ -62,16 +62,20 @@ class _PostCardState extends ConsumerState<PostCard>
   bool _hovered = false;
   Post? _resolvedPost;
   bool _showHeart = false;
-  late final AnimationController _heartController;
-  late final Animation<double> _heartScale;
-  late final Animation<double> _heartOpacity;
+  AnimationController? _heartController;
+  Animation<double>? _heartScale;
+  Animation<double>? _heartOpacity;
 
   @override
   void initState() {
     super.initState();
     _resolvedPost = _resolvedRealbooruPosts[widget.post.cacheKey];
     _maybeResolveRealbooruPost();
-    _heartController = AnimationController(
+  }
+
+  void _ensureHeartAnimation() {
+    if (_heartController != null) return;
+    final controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
@@ -86,32 +90,34 @@ class _PostCardState extends ConsumerState<PostCard>
           weight: 30),
       TweenSequenceItem(
           tween: Tween(begin: 1.0, end: 1.0), weight: 30),
-    ]).animate(_heartController);
+    ]).animate(controller);
     _heartOpacity = TweenSequence<double>([
       TweenSequenceItem(tween: ConstantTween(1.0), weight: 60),
       TweenSequenceItem(
           tween: Tween(begin: 1.0, end: 0.0)
               .chain(CurveTween(curve: Curves.easeIn)),
           weight: 40),
-    ]).animate(_heartController);
-    _heartController.addStatusListener((status) {
+    ]).animate(controller);
+    controller.addStatusListener((status) {
       if (status == AnimationStatus.completed && mounted) {
         setState(() => _showHeart = false);
-        _heartController.reset();
+        controller.reset();
       }
     });
+    _heartController = controller;
   }
 
   @override
   void dispose() {
-    _heartController.dispose();
+    _heartController?.dispose();
     super.dispose();
   }
 
   void _triggerDoubleTapFavorite() {
     widget.onFavorite();
+    _ensureHeartAnimation();
     setState(() => _showHeart = true);
-    _heartController.forward();
+    _heartController?.forward();
   }
 
   @override
@@ -379,15 +385,18 @@ class _PostCardState extends ConsumerState<PostCard>
                     ),
                   ),
               // Double-tap heart animation overlay
-              if (_showHeart)
+              if (_showHeart &&
+                  _heartController != null &&
+                  _heartOpacity != null &&
+                  _heartScale != null)
                 Positioned.fill(
                   child: Center(
                     child: AnimatedBuilder(
-                      animation: _heartController,
+                      animation: _heartController!,
                       builder: (context, _) => Opacity(
-                        opacity: _heartOpacity.value,
+                        opacity: _heartOpacity!.value,
                         child: Transform.scale(
-                          scale: _heartScale.value,
+                          scale: _heartScale!.value,
                           child: const Icon(
                             Icons.favorite_rounded,
                             color: Colors.white,

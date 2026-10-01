@@ -45,20 +45,23 @@ class RealbooruHtmlProvider
       _ => const ['sort:score:desc'],
     };
     final effectiveTags = [
-      if (tags.isEmpty && topTags.isEmpty) 'all',
       ...tags,
-      if (rating != null && rating.isNotEmpty) 'rating:$rating',
+      if (rating != null && rating.isNotEmpty && rating.toLowerCase() != 'all')
+        'rating:$rating',
       if (topTags.isNotEmpty &&
           !tags.any((t) => t.startsWith('sort:') || t.startsWith('order:')))
         ...topTags,
     ].where((t) => t.isNotEmpty).join(' ');
+
+    final queryTags =
+        effectiveTags.trim().isEmpty ? 'all' : effectiveTags.trim();
 
     final response = await _dio.get<String>(
       '/index.php',
       queryParameters: {
         'page': 'post',
         's': 'list',
-        'tags': effectiveTags.isEmpty ? 'all' : effectiveTags,
+        'tags': queryTags,
         'pid': page * limit,
       },
       options: Options(responseType: ResponseType.plain),
@@ -94,7 +97,7 @@ class RealbooruHtmlProvider
   Future<ProviderHealth> checkHealth() async {
     final startedAt = DateTime.now();
     try {
-      final posts = await searchPosts(tags: const ['all'], page: 0, limit: 1);
+      final posts = await searchPosts(tags: const [], page: 0, limit: 1);
       return ProviderHealth(
         providerId: id,
         status: posts.isEmpty ? ProviderStatus.offline : ProviderStatus.online,

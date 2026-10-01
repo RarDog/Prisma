@@ -300,10 +300,33 @@ class GelbooruProvider
       throw ProviderUnavailableException(message);
 
   List<String> _topTags(TopPeriodFilter period) {
+    final now = DateTime.now();
     return switch (period) {
+      TopPeriodFilter.none => const [],
+      TopPeriodFilter.day => [
+          'sort:score:desc',
+          'date:>=${_date(now.subtract(const Duration(days: 1)))}',
+        ],
+      TopPeriodFilter.week => [
+          'sort:score:desc',
+          'date:>=${_date(now.subtract(const Duration(days: 7)))}',
+        ],
+      TopPeriodFilter.month => [
+          'sort:score:desc',
+          'date:>=${_date(now.subtract(const Duration(days: 31)))}',
+        ],
+      TopPeriodFilter.year => [
+          'sort:score:desc',
+          'date:>=${_date(DateTime(now.year - 1, now.month, now.day))}',
+        ],
       TopPeriodFilter.allTime => const ['sort:score:desc'],
-      _ => const [],
     };
+  }
+
+  String _date(DateTime value) {
+    return '${value.year.toString().padLeft(4, '0')}-'
+        '${value.month.toString().padLeft(2, '0')}-'
+        '${value.day.toString().padLeft(2, '0')}';
   }
 
   List<PostComment> _commentsFromResponse(dynamic data, String postId) {

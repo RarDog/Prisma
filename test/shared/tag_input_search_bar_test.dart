@@ -560,6 +560,23 @@ void main() {
 
     expect(applied, 'vocaloid');
   });
+
+  testWidgets('tapping outer search bar container requests focus and soft keyboard', (tester) async {
+    await tester.pumpWidget(_Harness(
+      child: TagInputSearchBar(
+        onSubmitted: (_) {},
+      ),
+    ));
+
+    final textField = tester.widget<TextField>(find.byType(TextField));
+    expect(textField.focusNode!.hasFocus, isFalse);
+
+    // Tap on the InkWell search bar container (search icon area)
+    await tester.tap(find.byIcon(Icons.search_rounded));
+    await tester.pumpAndSettle();
+
+    expect(textField.focusNode!.hasFocus, isTrue);
+  });
 }
 
 class _Harness extends StatelessWidget {

@@ -38,15 +38,18 @@ class ViewedPostRepository {
 
   Future<Result<Set<String>>> keys() {
     return _databaseService.safeRead((isar) async {
-      final items = await isar.viewedPostEntitys.where().findAll();
-      return items.map((item) => item.viewedKey).toSet();
+      final keys =
+          await isar.viewedPostEntitys.where().viewedKeyProperty().findAll();
+      return keys.toSet();
     });
   }
 
-  Future<Result<List<ViewedPost>>> recent() {
+  Future<Result<List<ViewedPost>>> recent({int? limit}) {
     return _databaseService.safeRead((isar) async {
-      final items = await isar.viewedPostEntitys.where().findAll();
-      items.sort((a, b) => b.viewedAt.compareTo(a.viewedAt));
+      final query = isar.viewedPostEntitys.where().sortByViewedAtDesc();
+      final items = limit != null
+          ? await query.limit(limit).findAll()
+          : await query.findAll();
       return items.map((item) => item.toModel()).toList();
     });
   }

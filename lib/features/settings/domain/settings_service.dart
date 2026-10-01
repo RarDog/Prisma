@@ -67,10 +67,22 @@ class AppSettings {
     this.lastActiveLocation = '/',
     this.hasCompletedOnboarding = false,
     this.mangaReaderRtl = true,
+    this.mangaSelectedRating = 'All',
+    this.mangaScrollOffset = 0.0,
+    this.mangaSelectedProviderId = 'mangadex',
+    this.mangaReadingMode = 'pagedRtl',
+    this.mangaVolumeNavigation = true,
+    this.mangaInvertVolumeKeys = false,
   });
 
   final bool hasCompletedOnboarding;
   final bool mangaReaderRtl;
+  final String mangaSelectedRating;
+  final double mangaScrollOffset;
+  final String mangaSelectedProviderId;
+  final String mangaReadingMode;
+  final bool mangaVolumeNavigation;
+  final bool mangaInvertVolumeKeys;
   final String lastActiveLocation;
   final List<String> favoriteArtists;
   final List<String> pawchiveAccounts;
@@ -174,6 +186,12 @@ class AppSettings {
     lastActiveLocation: '/',
     hasCompletedOnboarding: false,
     mangaReaderRtl: true,
+    mangaSelectedRating: 'All',
+    mangaScrollOffset: 0.0,
+    mangaSelectedProviderId: 'mangadex',
+    mangaReadingMode: 'pagedRtl',
+    mangaVolumeNavigation: true,
+    mangaInvertVolumeKeys: false,
   );
 
   AppSettings copyWith({
@@ -233,6 +251,12 @@ class AppSettings {
     String? lastActiveLocation,
     bool? hasCompletedOnboarding,
     bool? mangaReaderRtl,
+    String? mangaSelectedRating,
+    double? mangaScrollOffset,
+    String? mangaSelectedProviderId,
+    String? mangaReadingMode,
+    bool? mangaVolumeNavigation,
+    bool? mangaInvertVolumeKeys,
   }) {
     return AppSettings(
       lastActiveLocation: lastActiveLocation ?? this.lastActiveLocation,
@@ -300,6 +324,15 @@ class AppSettings {
       hasCompletedOnboarding:
           hasCompletedOnboarding ?? this.hasCompletedOnboarding,
       mangaReaderRtl: mangaReaderRtl ?? this.mangaReaderRtl,
+      mangaSelectedRating: mangaSelectedRating ?? this.mangaSelectedRating,
+      mangaScrollOffset: mangaScrollOffset ?? this.mangaScrollOffset,
+      mangaSelectedProviderId:
+          mangaSelectedProviderId ?? this.mangaSelectedProviderId,
+      mangaReadingMode: mangaReadingMode ?? this.mangaReadingMode,
+      mangaVolumeNavigation:
+          mangaVolumeNavigation ?? this.mangaVolumeNavigation,
+      mangaInvertVolumeKeys:
+          mangaInvertVolumeKeys ?? this.mangaInvertVolumeKeys,
     );
   }
 
@@ -358,6 +391,12 @@ class AppSettings {
         'lastActiveLocation': lastActiveLocation,
         'hasCompletedOnboarding': hasCompletedOnboarding,
         'mangaReaderRtl': mangaReaderRtl,
+        'mangaSelectedRating': mangaSelectedRating,
+        'mangaScrollOffset': mangaScrollOffset,
+        'mangaSelectedProviderId': mangaSelectedProviderId,
+        'mangaReadingMode': mangaReadingMode,
+        'mangaVolumeNavigation': mangaVolumeNavigation,
+        'mangaInvertVolumeKeys': mangaInvertVolumeKeys,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) => AppSettings(
@@ -483,6 +522,20 @@ class AppSettings {
             (json['hasCompletedOnboarding'] as bool?) ?? false,
         mangaReaderRtl:
             (json['mangaReaderRtl'] as bool?) ?? defaults.mangaReaderRtl,
+        mangaSelectedRating: (json['mangaSelectedRating'] as String?) ??
+            defaults.mangaSelectedRating,
+        mangaScrollOffset:
+            (json['mangaScrollOffset'] as num?)?.toDouble() ??
+                defaults.mangaScrollOffset,
+        mangaSelectedProviderId:
+            (json['mangaSelectedProviderId'] as String?) ??
+                defaults.mangaSelectedProviderId,
+        mangaReadingMode: (json['mangaReadingMode'] as String?) ??
+            defaults.mangaReadingMode,
+        mangaVolumeNavigation: (json['mangaVolumeNavigation'] as bool?) ??
+            defaults.mangaVolumeNavigation,
+        mangaInvertVolumeKeys: (json['mangaInvertVolumeKeys'] as bool?) ??
+            defaults.mangaInvertVolumeKeys,
       );
 
   List<PawchiveAccount> get parsedPawchiveAccounts {
@@ -583,6 +636,50 @@ class SettingsService {
     final settings = (result as Success<AppSettings>).data;
     if (settings.lastActiveLocation == location) return const Success(null);
     return updateSettings(settings.copyWith(lastActiveLocation: location));
+  }
+
+  Future<Result<void>> saveMangaCatalogState({
+    String? rating,
+    double? scrollOffset,
+    String? providerId,
+  }) async {
+    final result = await getSettings();
+    if (result is Error<AppSettings>) return Error(result.failure);
+    final settings = (result as Success<AppSettings>).data;
+    final updated = settings.copyWith(
+      mangaSelectedRating: rating ?? settings.mangaSelectedRating,
+      mangaScrollOffset: scrollOffset ?? settings.mangaScrollOffset,
+      mangaSelectedProviderId: providerId ?? settings.mangaSelectedProviderId,
+    );
+    return updateSettings(updated);
+  }
+
+  Future<Result<void>> saveMangaReaderMode({
+    required String readingMode,
+    required bool isRtl,
+  }) async {
+    final result = await getSettings();
+    if (result is Error<AppSettings>) return Error(result.failure);
+    final settings = (result as Success<AppSettings>).data;
+    final updated = settings.copyWith(
+      mangaReadingMode: readingMode,
+      mangaReaderRtl: isRtl,
+    );
+    return updateSettings(updated);
+  }
+
+  Future<Result<void>> saveMangaVolumeNavigation({
+    required bool enabled,
+    bool? invert,
+  }) async {
+    final result = await getSettings();
+    if (result is Error<AppSettings>) return Error(result.failure);
+    final settings = (result as Success<AppSettings>).data;
+    final updated = settings.copyWith(
+      mangaVolumeNavigation: enabled,
+      mangaInvertVolumeKeys: invert ?? settings.mangaInvertVolumeKeys,
+    );
+    return updateSettings(updated);
   }
 
   Future<Result<void>> saveCacheSettings({

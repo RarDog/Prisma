@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' hide appBuildNumber;
@@ -2815,6 +2816,8 @@ class _TabVisibilityEditor extends StatelessWidget {
     final theme = Theme.of(context);
     final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final hidden = hiddenTabs.toSet();
+    final isDesktopPlatform =
+        !kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS);
 
     String tabLabel(String key, String defaultLabel) {
       if (!isRu) return defaultLabel;
@@ -2855,7 +2858,8 @@ class _TabVisibilityEditor extends StatelessWidget {
           runSpacing: 8,
           children: [
             for (final entry in tabs.entries)
-              FilterChip(
+              if (!isDesktopPlatform || entry.key != 'manga')
+                FilterChip(
                 selected: !hidden.contains(entry.key),
                 avatar: Icon(entry.value.$2, size: 16),
                 label: Text(tabLabel(entry.key, entry.value.$1)),

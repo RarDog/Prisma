@@ -212,7 +212,7 @@ void main() {
     expect(result.data.map((item) => item.providerId).toSet(), {'a', 'b'});
     expect(repository.health['c']?.status, ProviderStatus.offline);
     expect(repository.diagnostics['a']?.lastResultCount, 1);
-    expect(repository.diagnostics['c']?.lastErrorMessage, 'Search failed');
+    expect(repository.diagnostics['c']?.lastErrorMessage, 'Exception: fail');
   });
 
   test('all providers results are naturally mixed without provider blocks',
@@ -425,5 +425,33 @@ void main() {
     await manager.suggestTags('cat', limit: 4);
 
     expect(provider.suggestionCalls, 1);
+  });
+
+  test('loadFeedConfigs excludes mangadex and nhentai while loadMangaConfigs includes them', () async {
+    final repository = FakeProviderRepository()
+      ..configs['gelbooru'] = config('gelbooru', 0).copyWith(apiType: 'gelbooru')
+      ..configs['rule34'] = config('rule34', 1).copyWith(apiType: 'rule34')
+      ..configs['mangadex'] = config('mangadex', 2).copyWith(apiType: 'mangadex')
+      ..configs['nhentai'] = config('nhentai', 3).copyWith(apiType: 'nhentai');
+
+    final manager = ProviderManager(repository, FakeProviderFactory({}));
+
+    final feedConfigsResult = await manager.loadFeedConfigs();
+    expect(feedConfigsResult, isA<Success<List<ContentProviderConfig>>>());
+    final feedConfigs = (feedConfigsResult as Success<List<ContentProviderConfig>>).data;
+    final feedIds = feedConfigs.map((c) => c.id).toList();
+    expect(feedIds, contains('gelbooru'));
+    expect(feedIds, contains('rule34'));
+    expect(feedIds, isNot(contains('mangadex')));
+    expect(feedIds, isNot(contains('nhentai')));
+
+    final mangaConfigsResult = await manager.loadMangaConfigs();
+    expect(mangaConfigsResult, isA<Success<List<ContentProviderConfig>>>());
+    final mangaConfigs = (mangaConfigsResult as Success<List<ContentProviderConfig>>).data;
+    final mangaIds = mangaConfigs.map((c) => c.id).toList();
+    expect(mangaIds, contains('mangadex'));
+    expect(mangaIds, contains('nhentai'));
+    expect(mangaIds, isNot(contains('gelbooru')));
+    expect(mangaIds, isNot(contains('rule34')));
   });
 }

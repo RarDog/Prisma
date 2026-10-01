@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:isar/isar.dart';
 
 import 'package:gel_rule_app/core/database/app_database.dart';
@@ -186,15 +188,17 @@ class ProviderRepository {
         if (exists == null) {
           await isar.providerConfigEntitys
               .put(ProviderConfigEntity.fromModel(seed));
-        } else if (seed.id == 'realbooru' &&
-            (exists.apiType != seed.apiType ||
-                exists.baseUrl != seed.baseUrl ||
-                exists.name != seed.name)) {
+        } else if (exists.apiType != seed.apiType ||
+            exists.baseUrl != seed.baseUrl ||
+            (seed.customHeaders.isNotEmpty &&
+                (exists.customHeadersJson.isEmpty || exists.customHeadersJson == '{}'))) {
           exists.name = seed.name;
           exists.baseUrl = seed.baseUrl;
           exists.apiType = seed.apiType;
-          exists.enabled = seed.enabled;
-          exists.priority = seed.priority;
+          if (seed.customHeaders.isNotEmpty &&
+              (exists.customHeadersJson.isEmpty || exists.customHeadersJson == '{}')) {
+            exists.customHeadersJson = jsonEncode(seed.customHeaders);
+          }
           exists.timeoutSeconds = seed.timeoutSeconds;
           exists.updatedAt = DateTime.now();
           await isar.providerConfigEntitys.put(exists);

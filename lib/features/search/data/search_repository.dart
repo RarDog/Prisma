@@ -14,12 +14,10 @@ class SearchRepository {
     return _databaseService.safeWrite((isar) async {
       final norm = history.query.trim().toLowerCase();
       // Remove any existing duplicate records with same query
-      final all = await isar.searchHistoryEntitys.where().findAll();
-      for (final item in all) {
-        if (item.query.trim().toLowerCase() == norm) {
-          await isar.searchHistoryEntitys.delete(item.isarId);
-        }
-      }
+      await isar.searchHistoryEntitys
+          .filter()
+          .queryEqualTo(norm, caseSensitive: false)
+          .deleteAll();
 
       await isar.searchHistoryEntitys.put(
         SearchHistoryEntity()
@@ -31,12 +29,13 @@ class SearchRepository {
       );
       final count = await isar.searchHistoryEntitys.count();
       if (count > maxItems) {
-        final items = await isar.searchHistoryEntitys.where().findAll();
-        items.sort((a, b) => b.searchedAt.compareTo(a.searchedAt));
-        final toRemove = items.skip(maxItems);
-        for (final item in toRemove) {
-          await isar.searchHistoryEntitys.delete(item.isarId);
-        }
+        final toRemove = await isar.searchHistoryEntitys
+            .where()
+            .sortBySearchedAt()
+            .limit(count - maxItems)
+            .isarIdProperty()
+            .findAll();
+        await isar.searchHistoryEntitys.deleteAll(toRemove);
       }
     });
   }
@@ -49,8 +48,10 @@ class SearchRepository {
 
   Future<Result<List<SearchHistory>>> recent({int? limit}) {
     return _databaseService.safeRead((isar) async {
-      final items = await isar.searchHistoryEntitys.where().findAll();
-      items.sort((a, b) => b.searchedAt.compareTo(a.searchedAt));
+      final query = isar.searchHistoryEntitys.where().sortBySearchedAtDesc();
+      final items = limit != null
+          ? await query.limit(limit * 2).findAll()
+          : await query.findAll();
 
       final seen = <String>{};
       final deduplicated = <SearchHistoryEntity>[];
@@ -59,6 +60,7 @@ class SearchRepository {
         if (key.isEmpty) continue;
         if (seen.add(key)) {
           deduplicated.add(item);
+          if (limit != null && deduplicated.length >= limit) break;
         }
       }
 

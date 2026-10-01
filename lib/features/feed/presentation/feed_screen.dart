@@ -133,8 +133,6 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
     final feed = ref.watch(feedControllerProvider);
     final settings =
         ref.watch(appSettingsProvider).value ?? AppSettings.defaults;
-    final favoriteKeys = ref.watch(favoriteKeysProvider).value ?? <String>{};
-    final viewedKeys = ref.watch(viewedKeysProvider).value ?? <String>{};
 
     final initialQuery = widget.initialQuery?.trim();
     final currentTags = feed.value?.selectedTags.join(' ');
@@ -359,38 +357,50 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                           onRefresh: () => ref
                               .read(feedControllerProvider.notifier)
                               .refresh(),
-                          child: PostMasonryGrid(
-                            key: const PageStorageKey('feed_masonry_grid'),
-                            controller: _scrollController,
-                            posts: state.posts,
-                            columns: Responsive.columnsFor(
-                              context,
-                              mobileColumns: settings.mobileColumns,
-                              desktopColumns: settings.desktopColumns,
-                            ),
-                            blurExplicit: settings.blurExplicitContent,
-                            showBadges: settings.showPostBadges,
-                            nsfwEnabled: settings.nsfwEnabled,
-                            mediaQualityMode: MediaQualityMode.fromName(
-                                settings.mediaQualityMode),
-                            loading: state.isLoadingMore,
-                            favoriteKeys: favoriteKeys,
-                            viewedKeys: viewedKeys,
-                            selectionMode: _selectionMode,
-                            selectedKeys: _selectedKeys,
-                            gridMode: settings.gridMode,
-                            onOpen: (post) => AppNavigator.openPost(
-                              context,
-                              post: post,
-                              postsList: state.posts,
-                            ),
-                            onPreview: (post) => _showPreview(context, post),
-                            onToggleSelected: (post) => _toggleSelected(post),
-                            onFavorite: (post) =>
-                                _toggleFavorite(ref, post, favoriteKeys),
-                            onAddToCollection: (post) =>
-                                _addToCollection(context, ref, post),
-                            onHide: (post) => _hidePost(context, ref, post),
+                          child: Consumer(
+                            builder: (context, ref, _) {
+                              final favoriteKeys =
+                                  ref.watch(favoriteKeysProvider).value ??
+                                      <String>{};
+                              final viewedKeys =
+                                  ref.watch(viewedKeysProvider).value ??
+                                      <String>{};
+                              return PostMasonryGrid(
+                                key: const PageStorageKey('feed_masonry_grid'),
+                                controller: _scrollController,
+                                posts: state.posts,
+                                columns: Responsive.columnsFor(
+                                  context,
+                                  mobileColumns: settings.mobileColumns,
+                                  desktopColumns: settings.desktopColumns,
+                                ),
+                                blurExplicit: settings.blurExplicitContent,
+                                showBadges: settings.showPostBadges,
+                                nsfwEnabled: settings.nsfwEnabled,
+                                mediaQualityMode: MediaQualityMode.fromName(
+                                    settings.mediaQualityMode),
+                                loading: state.isLoadingMore,
+                                favoriteKeys: favoriteKeys,
+                                viewedKeys: viewedKeys,
+                                selectionMode: _selectionMode,
+                                selectedKeys: _selectedKeys,
+                                gridMode: settings.gridMode,
+                                onOpen: (post) => AppNavigator.openPost(
+                                  context,
+                                  post: post,
+                                  postsList: state.posts,
+                                ),
+                                onPreview: (post) =>
+                                    _showPreview(context, post),
+                                onToggleSelected: (post) =>
+                                    _toggleSelected(post),
+                                onFavorite: (post) =>
+                                    _toggleFavorite(ref, post, favoriteKeys),
+                                onAddToCollection: (post) =>
+                                    _addToCollection(context, ref, post),
+                                onHide: (post) => _hidePost(context, ref, post),
+                              );
+                            },
                           ),
                         ),
                 ),
@@ -400,7 +410,6 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                     onFavorite: () => _favoriteSelected(
                       ref,
                       state.posts,
-                      favoriteKeys,
                     ),
                     onCollection: () => _addSelectedToCollection(
                       context,
@@ -486,11 +495,14 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
 
   Future<void> _favoriteSelected(
     WidgetRef ref,
-    List<Post> posts,
-    Set<String> favoriteKeys,
-  ) async {
+    List<Post> posts, [
+    Set<String>? favoriteKeys,
+  ]) async {
+    final keys = favoriteKeys ??
+        ref.read(favoriteKeysProvider).value ??
+        <String>{};
     for (final post in _selectedPosts(posts)) {
-      if (!favoriteKeys.contains(post.cacheKey)) {
+      if (!keys.contains(post.cacheKey)) {
         await ref.read(favoriteServiceProvider).addFavorite(post);
         await _maybeAutoDownloadFavorite(ref, post);
       }

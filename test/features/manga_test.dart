@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gel_rule_app/core/models/post.dart';
 import 'package:gel_rule_app/features/manga/presentation/widgets/page_flip_3d.dart';
 import 'package:gel_rule_app/features/manga/presentation/manga_reader_screen.dart';
+import 'package:gel_rule_app/features/manga/presentation/manga_details_screen.dart';
 import 'package:gel_rule_app/shared/widgets/app_shell.dart';
 import 'package:gel_rule_app/sources/booru/mangadex_provider.dart';
+import 'package:gel_rule_app/features/settings/domain/settings_service.dart';
 
 void main() {
   group('Manga & 3D Reader Tests', () {
@@ -129,21 +131,21 @@ void main() {
         },
       );
 
-      final ch1Ru = MangaDexChapter(
+      const ch1Ru = MangaDexChapter(
         id: 'ch1',
         chapterNumber: '1',
         title: 'Начало',
         language: 'ru',
         pageCount: 15,
       );
-      final ch2Ru = MangaDexChapter(
+      const ch2Ru = MangaDexChapter(
         id: 'ch2',
         chapterNumber: '2',
         title: 'Второе подземелье',
         language: 'ru',
         pageCount: 18,
       );
-      final ch1En = MangaDexChapter(
+      const ch1En = MangaDexChapter(
         id: 'ch1_en',
         chapterNumber: '1',
         title: 'The Beginning',
@@ -199,6 +201,60 @@ void main() {
       // Pop details -> now shown!
       notifier.popHide();
       expect(container.read(shellHideBottomBarProvider), isFalse);
+    });
+
+    testWidgets('MangaDetailsScreen renders without crashing', (tester) async {
+      final post = Post(
+        id: 'rokudenashi_1',
+        providerId: 'mangadex',
+        providerName: 'MangaDex',
+        previewUrl: 'https://uploads.mangadex.org/covers/rokudenashi_1/cover.jpg',
+        sampleUrl: 'https://uploads.mangadex.org/covers/rokudenashi_1/cover.jpg',
+        fileUrl: 'https://uploads.mangadex.org/covers/rokudenashi_1/cover.jpg',
+        tags: const ['Manga', 'Comedy'],
+        rating: 's',
+        width: 800,
+        height: 1200,
+        createdAt: DateTime.now(),
+        fileType: 'jpg',
+        score: 100,
+        tagGroups: const {
+          'title': ['Rokudenashi Blues'],
+          'copyright': ['Rokudenashi Blues'],
+        },
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: MangaDetailsScreen(post: post),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      expect(find.text('Rokudenashi Blues'), findsWidgets);
+    });
+
+    test('AppSettings preserves manga volume navigation configuration', () {
+      const initial = AppSettings.defaults;
+      expect(initial.mangaVolumeNavigation, isTrue);
+      expect(initial.mangaInvertVolumeKeys, isFalse);
+
+      final modified = initial.copyWith(
+        mangaVolumeNavigation: false,
+        mangaInvertVolumeKeys: true,
+      );
+      expect(modified.mangaVolumeNavigation, isFalse);
+      expect(modified.mangaInvertVolumeKeys, isTrue);
+
+      final json = modified.toJson();
+      expect(json['mangaVolumeNavigation'], isFalse);
+      expect(json['mangaInvertVolumeKeys'], isTrue);
+
+      final restored = AppSettings.fromJson(json);
+      expect(restored.mangaVolumeNavigation, isFalse);
+      expect(restored.mangaInvertVolumeKeys, isTrue);
     });
   });
 }

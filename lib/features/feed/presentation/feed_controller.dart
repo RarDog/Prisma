@@ -335,7 +335,7 @@ class FeedController extends AsyncNotifier<FeedState> {
         if (seen.add(post.cacheKey)) posts.add(post);
       }
     }
-    posts.sort((a, b) => _mixKey(a).compareTo(_mixKey(b)));
+    _sortMixed(posts);
     return posts;
   }
 
@@ -354,11 +354,11 @@ class FeedController extends AsyncNotifier<FeedState> {
         .where((post) => seen.add(post.cacheKey))
         .toList(growable: false);
     if (newPosts.isEmpty) return;
+    final combined = [...current.posts, ...newPosts];
+    _sortMixed(combined);
     state = AsyncData(
       current.copyWith(
-        posts: [...current.posts, ...newPosts]..sort(
-            (a, b) => _mixKey(a).compareTo(_mixKey(b)),
-          ),
+        posts: combined,
         providerStatusMessage: 'Retry added ${newPosts.length} posts',
       ),
     );
@@ -387,6 +387,15 @@ class FeedController extends AsyncNotifier<FeedState> {
         .toSet();
     if (failed.isEmpty) return null;
     return 'Retrying ${failed.length} provider${failed.length == 1 ? '' : 's'}';
+  }
+
+  void _sortMixed(List<Post> posts) {
+    if (posts.length <= 1) return;
+    final keys = <String, int>{};
+    for (final post in posts) {
+      keys[post.cacheKey] = _mixKey(post);
+    }
+    posts.sort((a, b) => keys[a.cacheKey]!.compareTo(keys[b.cacheKey]!));
   }
 
   int _mixKey(Post post) {

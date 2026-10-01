@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gel_rule_app/shared/widgets/animated_branch_container.dart';
 
 class _StatefulCounter extends StatefulWidget {
-  const _StatefulCounter({super.key, required this.title});
+  const _StatefulCounter({required this.title});
   final String title;
 
   @override
