@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -207,12 +208,27 @@ class _MangaReaderScreenState extends ConsumerState<MangaReaderScreen>
     final List<String> urls = [];
 
     try {
-      if (post.providerId == 'mangadex') {
+      final offlineService = ref.read(mangaOfflineServiceProvider);
+      if (_chapters.isNotEmpty) {
+        if (_currentChapterIndex >= _chapters.length) {
+          _currentChapterIndex = 0;
+        }
+        final chapter = _chapters[_currentChapterIndex];
+        final offlinePages = await offlineService.getDownloadedPages(post.id, chapter.id);
+        if (offlinePages.isNotEmpty) {
+          urls.addAll(offlinePages);
+        }
+      }
+
+      if (urls.isEmpty) {
         final providerManager = ref.read(providerManagerProvider);
-        final provider = await providerManager.getProviderInstance('mangadex');
-        if (provider is MangaDexProvider) {
+        final p = await providerManager.getProviderInstance(post.providerId);
+        final MangaChapterProvider? mangaChapterProv =
+            p is MangaChapterProvider ? (p as MangaChapterProvider) : null;
+        if (mangaChapterProv != null) {
           if (_allChapters.isEmpty) {
-            _allChapters = await provider.fetchChapters(post.id);
+            final fetched = await mangaChapterProv.fetchChapters(post.id);
+            if (fetched is List<MangaDexChapter>) _allChapters = fetched;
             _updateAvailableLanguages();
           }
 
@@ -230,18 +246,11 @@ class _MangaReaderScreenState extends ConsumerState<MangaReaderScreen>
               _currentChapterIndex = 0;
             }
             final chapter = _chapters[_currentChapterIndex];
-            final chapterPages = await provider.fetchChapterPages(chapter.id);
+            final chapterPages = await mangaChapterProv.fetchChapterPages(chapter.id);
             if (chapterPages.isNotEmpty) {
               urls.addAll(chapterPages);
+              _chapters[_currentChapterIndex] = chapter.copyWith(pageCount: chapterPages.length);
             }
-          }
-        }
-      } else if (post.providerId == 'nhentai') {
-        if (post.childrenIds.isNotEmpty) {
-          final mediaId = post.tagGroups['media_id']?.firstOrNull ?? post.id;
-          final pageCount = post.childrenIds.length;
-          for (int i = 1; i <= pageCount; i++) {
-            urls.add('https://i.nhentai.net/galleries/$mediaId/$i.jpg');
           }
         }
       } else if (post.childrenIds.isNotEmpty) {
@@ -310,7 +319,7 @@ class _MangaReaderScreenState extends ConsumerState<MangaReaderScreen>
       final nextIdx = index + offset;
       if (nextIdx < _pageUrls.length) {
         final url = _pageUrls[nextIdx];
-        if (url.isNotEmpty) {
+        if (url.isNotEmpty && url.startsWith('http')) {
           precacheImage(
             CachedNetworkImageProvider(url, headers: headers, maxWidth: memWidth),
             context,
@@ -323,7 +332,7 @@ class _MangaReaderScreenState extends ConsumerState<MangaReaderScreen>
     final prevIdx = index - 1;
     if (prevIdx >= 0 && prevIdx < _pageUrls.length) {
       final url = _pageUrls[prevIdx];
-      if (url.isNotEmpty) {
+      if (url.isNotEmpty && url.startsWith('http')) {
         precacheImage(
           CachedNetworkImageProvider(url, headers: headers, maxWidth: memWidth),
           context,
@@ -348,9 +357,11 @@ class _MangaReaderScreenState extends ConsumerState<MangaReaderScreen>
 
     try {
       final providerManager = ref.read(providerManagerProvider);
-      final provider = await providerManager.getProviderInstance('mangadex');
-      if (provider is MangaDexProvider) {
-        final pages = await provider.fetchChapterPages(nextChapter.id);
+      final provider = await providerManager.getProviderInstance(widget.post.providerId);
+      final MangaChapterProvider? mangaChapterProv =
+          provider is MangaChapterProvider ? (provider as MangaChapterProvider) : null;
+      if (mangaChapterProv != null) {
+        final pages = await mangaChapterProv.fetchChapterPages(nextChapter.id);
         if (pages.isNotEmpty && mounted) {
           final headers = getPostMediaHeaders(widget.post);
           final memWidth = _targetMemCacheWidth;
@@ -977,7 +988,7 @@ class _MangaReaderScreenState extends ConsumerState<MangaReaderScreen>
                                 style: const TextStyle(color: Colors.white70, fontSize: 10),
                               ),
                             ),
-                          if (ch.pageCount > 0)
+                          if (ch.pageCount > 1)
                             Text(
                               '${ch.pageCount} ${isRu ? 'стр.' : 'pages'}',
                               style: const TextStyle(color: Colors.white38, fontSize: 12),
@@ -1268,33 +1279,7 @@ class _MangaReaderScreenState extends ConsumerState<MangaReaderScreen>
                       }
 
                       final url = _pageUrls[index];
-                      return CachedNetworkImage(
-                        imageUrl: url,
-                        httpHeaders: headers,
-                        fit: BoxFit.fitWidth,
-                        width: double.infinity,
-                        alignment: Alignment.topCenter,
-                        memCacheWidth: _targetMemCacheWidth,
-                        placeholder: (_, __) => AspectRatio(
-                          aspectRatio: 0.7,
-                          child: Container(
-                            color: _readerTheme.backgroundColor,
-                            child: const Center(
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Color(0xFFFF6740),
-                              ),
-                            ),
-                          ),
-                        ),
-                        errorWidget: (_, __, ___) => Container(
-                          height: 300,
-                          color: Colors.black26,
-                          child: const Center(
-                            child: Icon(Icons.broken_image_rounded, color: Colors.white38, size: 48),
-                          ),
-                        ),
-                      );
+                      return _buildPageImage(url, headers, BoxFit.fitWidth, memWidth: _targetMemCacheWidth);
                     },
                   ),
                 ),
@@ -1324,21 +1309,7 @@ class _MangaReaderScreenState extends ConsumerState<MangaReaderScreen>
                           minScale: 1.0,
                           maxScale: 4.0,
                           child: Center(
-                            child: CachedNetworkImage(
-                              imageUrl: url,
-                              httpHeaders: headers,
-                              fit: BoxFit.contain,
-                              memCacheWidth: _targetMemCacheWidth,
-                              placeholder: (_, __) => const Center(
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Color(0xFFFF6740),
-                                ),
-                              ),
-                              errorWidget: (_, __, ___) => const Center(
-                                child: Icon(Icons.broken_image_rounded, color: Colors.white38, size: 48),
-                              ),
-                            ),
+                            child: _buildPageImage(url, headers, BoxFit.contain, memWidth: _targetMemCacheWidth),
                           ),
                         ),
                       );
@@ -1404,6 +1375,48 @@ class _MangaReaderScreenState extends ConsumerState<MangaReaderScreen>
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPageImage(String url, Map<String, String>? headers, BoxFit fit, {int? memWidth}) {
+    if (url.startsWith('/') || url.startsWith('file:')) {
+      final cleanPath = url.replaceFirst('file://', '');
+      return Image.file(
+        File(cleanPath),
+        fit: fit,
+        width: fit == BoxFit.fitWidth ? double.infinity : null,
+        alignment: Alignment.topCenter,
+        errorBuilder: (_, __, ___) => const Center(
+          child: Icon(Icons.broken_image_rounded, color: Colors.white38, size: 48),
+        ),
+      );
+    }
+    return CachedNetworkImage(
+      imageUrl: url,
+      httpHeaders: headers,
+      fit: fit,
+      width: fit == BoxFit.fitWidth ? double.infinity : null,
+      alignment: Alignment.topCenter,
+      memCacheWidth: memWidth,
+      placeholder: (_, __) => AspectRatio(
+        aspectRatio: 0.7,
+        child: Container(
+          color: _readerTheme.backgroundColor,
+          child: const Center(
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Color(0xFFFF6740),
+            ),
+          ),
+        ),
+      ),
+      errorWidget: (_, __, ___) => Container(
+        height: 300,
+        color: Colors.black26,
+        child: const Center(
+          child: Icon(Icons.broken_image_rounded, color: Colors.white38, size: 48),
         ),
       ),
     );

@@ -811,11 +811,14 @@ class ProviderManager {
     final id = config.id.toLowerCase();
     final base = config.baseUrl.toLowerCase();
     return type == 'mangadex' ||
-        type == 'nhentai' ||
+        type == 'mangalib' ||
+        type == 'ranobelib' ||
         id == 'mangadex' ||
-        id == 'nhentai' ||
+        id == 'mangalib' ||
+        id == 'ranobelib' ||
         base.contains('mangadex') ||
-        base.contains('nhentai');
+        base.contains('mangalib') ||
+        base.contains('ranobelib');
   }
 
   static bool _isFeedConfig(ContentProviderConfig config) {

@@ -10,7 +10,6 @@ import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/features/post/presentation/widgets/post_media_viewer.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
 import 'package:gel_rule_app/sources/booru/mangadex_provider.dart';
-import 'package:gel_rule_app/sources/booru/nhentai_provider.dart';
 import '../domain/manga_library_service.dart';
 import '../domain/manga_library_providers.dart';
 import 'manga_details_screen.dart';
@@ -54,6 +53,57 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
   Timer? _saveScrollDebounce;
   double _savedScrollOffset = 0.0;
   List<TagSuggestion> _suggestions = [];
+  bool _checkingUpdates = false;
+
+  Future<void> _checkLibraryUpdates() async {
+    if (_checkingUpdates) return;
+    setState(() => _checkingUpdates = true);
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
+
+    try {
+      final libService = ref.read(mangaLibraryServiceProvider);
+      final providerManager = ref.read(providerManagerProvider);
+
+      final newCount = await libService.checkForUpdates((providerId, mangaId) async {
+        final prov = await providerManager.getProviderInstance(providerId);
+        final MangaChapterProvider? mangaProv =
+            prov is MangaChapterProvider ? (prov as MangaChapterProvider) : null;
+        final NovelChapterProvider? novelProv =
+            prov is NovelChapterProvider ? (prov as NovelChapterProvider) : null;
+        if (mangaProv != null) {
+          final chs = await mangaProv.fetchChapters(mangaId);
+          return chs is List ? chs.length : 0;
+        } else if (novelProv != null) {
+          final chs = await novelProv.fetchChapters(mangaId);
+          return chs is List ? chs.length : 0;
+        }
+        return 0;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              newCount > 0
+                  ? (isRu ? 'Найдено новых глав: $newCount' : 'Found $newCount new chapters')
+                  : (isRu ? 'Все главы актуальны' : 'All chapters are up to date'),
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка проверки: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _checkingUpdates = false);
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -113,11 +163,9 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
 
       mangaProviders = activeProviders.where((p) {
         return p.id == 'mangadex' ||
-            p.id == 'nhentai' ||
-            p is MangaDexProvider ||
-            p is NHentaiProvider ||
-            p.baseUrl.contains('mangadex') ||
-            p.baseUrl.contains('nhentai');
+            p.id == 'mangalib' ||
+            p.id == 'ranobelib' ||
+            p is MangaDexProvider;
       }).toList();
     }
 
@@ -372,6 +420,9 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
 
   Future<void> _openLibraryEntry(MangaLibraryEntry entry) async {
     HapticFeedback.lightImpact();
+    if (entry.newChaptersCount > 0) {
+      ref.read(mangaLibraryServiceProvider).resetNewChapters(entry.mangaId);
+    }
     Post? post;
     try {
       final providerManager = ref.read(providerManagerProvider);
@@ -381,10 +432,17 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
       }
     } catch (_) {}
 
+    final providerDisplayName = switch (entry.providerId) {
+      'mangadex' => 'MangaDex',
+      'mangalib' => 'MangaLib',
+      'ranobelib' => 'RanobeLib',
+      _ => entry.providerId,
+    };
+
     post ??= Post(
       id: entry.mangaId,
       providerId: entry.providerId,
-      providerName: entry.providerId == 'mangadex' ? 'MangaDex' : 'NHentai',
+      providerName: providerDisplayName,
       previewUrl: entry.coverUrl,
       sampleUrl: entry.coverUrl,
       fileUrl: entry.coverUrl,
@@ -394,14 +452,16 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
       height: 1000,
       source: entry.providerId == 'mangadex'
           ? 'https://mangadex.org/title/${entry.mangaId}'
-          : 'https://nhentai.net/g/${entry.mangaId}/',
+          : (entry.providerId == 'mangalib'
+              ? 'https://mangalib.me/ru/${entry.mangaId}'
+              : 'https://ranobelib.me/ru/${entry.mangaId}'),
       createdAt: entry.addedAt,
       fileType: 'jpg',
       score: 0,
       tagGroups: {
         'copyright': [entry.title],
         'is_comic': ['true'],
-        'media_type': ['manga'],
+        'media_type': [entry.providerId == 'ranobelib' ? 'novel' : 'manga'],
       },
     );
 
@@ -412,6 +472,123 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
         ),
       );
     }
+  }
+
+  void _showLibraryEntryOptions(MangaLibraryEntry entry) {
+    HapticFeedback.mediumImpact();
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
+    final theme = Theme.of(context);
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: theme.colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: Text(
+                    entry.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                ),
+                const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.auto_stories_rounded, color: Color(0xFFFF6740)),
+                  title: Text(isRu ? 'Читаю' : 'Reading'),
+                  selected: entry.status == 'reading',
+                  onTap: () async {
+                    Navigator.of(ctx).pop();
+                    await ref.read(mangaLibraryServiceProvider).setLibraryStatus(
+                          mangaId: entry.mangaId,
+                          providerId: entry.providerId,
+                          title: entry.title,
+                          coverUrl: entry.coverUrl,
+                          status: 'reading',
+                        );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.bookmark_added_rounded, color: Color(0xFF3B82F6)),
+                  title: Text(isRu ? 'В планах' : 'Plan to read'),
+                  selected: entry.status == 'plan_to_read',
+                  onTap: () async {
+                    Navigator.of(ctx).pop();
+                    await ref.read(mangaLibraryServiceProvider).setLibraryStatus(
+                          mangaId: entry.mangaId,
+                          providerId: entry.providerId,
+                          title: entry.title,
+                          coverUrl: entry.coverUrl,
+                          status: 'plan_to_read',
+                        );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.check_circle_outline_rounded, color: Color(0xFF10B981)),
+                  title: Text(isRu ? 'Прочитано' : 'Completed'),
+                  selected: entry.status == 'completed',
+                  onTap: () async {
+                    Navigator.of(ctx).pop();
+                    await ref.read(mangaLibraryServiceProvider).setLibraryStatus(
+                          mangaId: entry.mangaId,
+                          providerId: entry.providerId,
+                          title: entry.title,
+                          coverUrl: entry.coverUrl,
+                          status: 'completed',
+                        );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.cancel_outlined, color: Color(0xFFEF4444)),
+                  title: Text(isRu ? 'Брошено' : 'Dropped'),
+                  selected: entry.status == 'dropped',
+                  onTap: () async {
+                    Navigator.of(ctx).pop();
+                    await ref.read(mangaLibraryServiceProvider).setLibraryStatus(
+                          mangaId: entry.mangaId,
+                          providerId: entry.providerId,
+                          title: entry.title,
+                          coverUrl: entry.coverUrl,
+                          status: 'dropped',
+                        );
+                  },
+                ),
+                const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444)),
+                  title: Text(
+                    isRu ? 'Удалить из библиотеки' : 'Remove from library',
+                    style: const TextStyle(color: Color(0xFFEF4444)),
+                  ),
+                  onTap: () async {
+                    Navigator.of(ctx).pop();
+                    await ref.read(mangaLibraryServiceProvider).removeLibraryEntry(entry.mangaId);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(isRu ? 'Удалено из библиотеки' : 'Removed from library'),
+                          duration: const Duration(seconds: 2),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -692,16 +869,19 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
                       itemBuilder: (context, index) {
                         final provider = _mangaProviders[index];
                         final isSelected = provider.id == _selectedProviderId;
-                        final isMangadex = provider.id == 'mangadex';
-                        final isNhentai = provider.id == 'nhentai';
+                        final Color brandColor = switch (provider.id) {
+                          'mangadex' => const Color(0xFFFF6740),
+                          'mangalib' => const Color(0xFF2563EB),
+                          'ranobelib' => const Color(0xFF10B981),
+                          _ => theme.colorScheme.primary,
+                        };
 
-                        final Color brandColor = isMangadex
-                            ? const Color(0xFFFF6740)
-                            : (isNhentai ? const Color(0xFFED2553) : theme.colorScheme.primary);
-
-                        final IconData icon = isMangadex
-                            ? Icons.auto_stories_rounded
-                            : (isNhentai ? Icons.menu_book_rounded : Icons.hub_rounded);
+                        final IconData icon = switch (provider.id) {
+                          'mangadex' => Icons.auto_stories_rounded,
+                          'mangalib' => Icons.menu_book_rounded,
+                          'ranobelib' => Icons.article_rounded,
+                          _ => Icons.hub_rounded,
+                        };
 
                         return InkWell(
                           onTap: () => _onProviderSelected(provider.id),
@@ -881,39 +1061,57 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Filter pills: All, Reading, Plan to read, Completed, History
-                SizedBox(
-                  height: 38,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: [
-                      _libraryFilterChip(
-                        keyName: 'all',
-                        label: isRu ? 'Все сохранённые' : 'All Saved',
-                        icon: Icons.bookmarks_rounded,
+                // Filter pills & sync button
+                Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 38,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          children: [
+                            _libraryFilterChip(
+                              keyName: 'all',
+                              label: isRu ? 'Все сохранённые' : 'All Saved',
+                              icon: Icons.bookmarks_rounded,
+                            ),
+                            _libraryFilterChip(
+                              keyName: 'reading',
+                              label: isRu ? 'Читаю' : 'Reading',
+                              icon: Icons.auto_stories_rounded,
+                            ),
+                            _libraryFilterChip(
+                              keyName: 'plan_to_read',
+                              label: isRu ? 'В планах' : 'Plan to read',
+                              icon: Icons.bookmark_added_rounded,
+                            ),
+                            _libraryFilterChip(
+                              keyName: 'completed',
+                              label: isRu ? 'Прочитано' : 'Completed',
+                              icon: Icons.check_circle_outline_rounded,
+                            ),
+                            _libraryFilterChip(
+                              keyName: 'history',
+                              label: isRu ? '⏱ История чтения' : '⏱ History',
+                              icon: Icons.history_rounded,
+                            ),
+                          ],
+                        ),
                       ),
-                      _libraryFilterChip(
-                        keyName: 'reading',
-                        label: isRu ? 'Читаю' : 'Reading',
-                        icon: Icons.auto_stories_rounded,
-                      ),
-                      _libraryFilterChip(
-                        keyName: 'plan_to_read',
-                        label: isRu ? 'В планах' : 'Plan to read',
-                        icon: Icons.bookmark_added_rounded,
-                      ),
-                      _libraryFilterChip(
-                        keyName: 'completed',
-                        label: isRu ? 'Прочитано' : 'Completed',
-                        icon: Icons.check_circle_outline_rounded,
-                      ),
-                      _libraryFilterChip(
-                        keyName: 'history',
-                        label: isRu ? '⏱ История чтения' : '⏱ History',
-                        icon: Icons.history_rounded,
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton.filledTonal(
+                      onPressed: _checkingUpdates ? null : _checkLibraryUpdates,
+                      tooltip: isRu ? 'Проверить обновления глав' : 'Check for new chapters',
+                      icon: _checkingUpdates
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.sync_rounded, size: 20),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -985,6 +1183,7 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
                     return _MangaLibraryCard(
                       entry: entry,
                       onTap: () => _openLibraryEntry(entry),
+                      onLongPress: () => _showLibraryEntryOptions(entry),
                     );
                   },
                   childCount: entries.length,
@@ -1032,10 +1231,12 @@ class _MangaLibraryCard extends StatelessWidget {
   const _MangaLibraryCard({
     required this.entry,
     required this.onTap,
+    this.onLongPress,
   });
 
   final MangaLibraryEntry entry;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   Color _statusColor(String status) {
     return switch (status) {
@@ -1065,6 +1266,7 @@ class _MangaLibraryCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
@@ -1122,6 +1324,41 @@ class _MangaLibraryCard extends StatelessWidget {
                     ),
                   ),
 
+                  // New chapters badge at top left
+                  if (entry.newChaptersCount > 0)
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981),
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.35),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.new_releases_rounded, size: 12, color: Colors.white),
+                            const SizedBox(width: 4),
+                            Text(
+                              '+${entry.newChaptersCount} ${isRu ? 'новых' : 'new'}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
                   // Reading progress bar at bottom of cover
                   if (prog != null && prog.totalPages > 1)
                     Positioned(
@@ -1163,7 +1400,12 @@ class _MangaLibraryCard extends StatelessWidget {
                     )
                   else
                     Text(
-                      entry.providerId == 'mangadex' ? 'MangaDex' : 'NHentai',
+                      switch (entry.providerId) {
+                        'mangadex' => 'MangaDex',
+                        'mangalib' => 'MangaLib',
+                        'ranobelib' => 'RanobeLib',
+                        _ => entry.providerId,
+                      },
                       style: TextStyle(
                         fontSize: 10,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,

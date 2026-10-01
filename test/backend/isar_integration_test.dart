@@ -88,8 +88,9 @@ void main() {
       'e926',
       'pawchive',
       'pixiv',
-      'nhentai',
       'mangadex',
+      'mangalib',
+      'ranobelib',
     ]);
     final pixiv =
         providers.singleWhere((provider) => provider.id == 'pixiv');

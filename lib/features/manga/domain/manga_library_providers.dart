@@ -2,6 +2,28 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:gel_rule_app/backend/di/backend_providers.dart';
 import 'manga_library_service.dart';
+import 'manga_offline_service.dart';
+
+final mangaOfflineServiceProvider = Provider<MangaOfflineService>((ref) {
+  return MangaOfflineService();
+});
+
+final mangaDownloadedChaptersProvider =
+    FutureProvider.family<List<String>, String>((ref, mangaId) async {
+  final service = ref.watch(mangaOfflineServiceProvider);
+  ref.watch(_mangaOfflineChangeProvider);
+  return service.getDownloadedChapterIds(mangaId);
+});
+
+final _mangaOfflineChangeProvider = StateProvider<int>((ref) {
+  final service = ref.watch(mangaOfflineServiceProvider);
+  void listener() {
+    ref.controller.state = service.changeNotifier.value;
+  }
+  service.changeNotifier.addListener(listener);
+  ref.onDispose(() => service.changeNotifier.removeListener(listener));
+  return service.changeNotifier.value;
+});
 
 final mangaLibraryServiceProvider = Provider<MangaLibraryService>((ref) {
   final dbService = ref.watch(databaseServiceProvider);

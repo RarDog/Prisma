@@ -13,6 +13,7 @@ import 'package:gel_rule_app/sources/booru/mangadex_provider.dart';
 import '../domain/manga_library_service.dart';
 import '../domain/manga_library_providers.dart';
 import 'manga_reader_screen.dart';
+import 'novel_reader_screen.dart';
 import 'widgets/page_flip_3d.dart';
 
 class MangaDetailsScreen extends ConsumerStatefulWidget {
@@ -50,6 +51,9 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
   List<Post> _relatedManga = [];
   List<Post> _recommendations = [];
 
+  Set<String> _downloadedChapterIds = {};
+  final Set<String> _downloadingChapterIds = {};
+
   @override
   void initState() {
     super.initState();
@@ -63,9 +67,77 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
         _isRtl = settings.mangaReaderRtl;
       }
     } catch (_) {}
+    _checkDownloadedChapters();
     _loadMangaData();
     _loadProgressAndLibrary();
     _loadRelatedAndRecommendations();
+  }
+
+  Future<void> _checkDownloadedChapters() async {
+    try {
+      final offlineService = ref.read(mangaOfflineServiceProvider);
+      final ids = await offlineService.getDownloadedChapterIds(widget.post.id);
+      if (mounted) {
+        setState(() => _downloadedChapterIds = ids.toSet());
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _downloadChapter(MangaDexChapter chapter) async {
+    if (_downloadingChapterIds.contains(chapter.id)) return;
+    setState(() => _downloadingChapterIds.add(chapter.id));
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
+
+    try {
+      final offlineService = ref.read(mangaOfflineServiceProvider);
+      final providerManager = ref.read(providerManagerProvider);
+      final p = await providerManager.getProviderInstance(widget.post.providerId);
+      final NovelChapterProvider? novelProv = p is NovelChapterProvider ? (p as NovelChapterProvider) : null;
+      final MangaChapterProvider? mangaProv = p is MangaChapterProvider ? (p as MangaChapterProvider) : null;
+
+      if (chapter.isNovel || widget.post.providerId == 'ranobelib' || novelProv != null) {
+        String content = '';
+        if (novelProv != null) {
+          content = await novelProv.fetchChapterContent(chapter.id);
+        } else if (chapter.textContent != null) {
+          content = chapter.textContent!;
+        }
+        await offlineService.downloadNovelChapter(
+          mangaId: widget.post.id,
+          chapter: chapter,
+          content: content,
+          providerId: widget.post.providerId,
+        );
+      } else if (mangaProv != null) {
+        final pages = await mangaProv.fetchChapterPages(chapter.id);
+        await offlineService.downloadMangaChapter(
+          mangaId: widget.post.id,
+          chapter: chapter,
+          pageUrls: pages,
+          providerId: widget.post.providerId,
+        );
+      }
+
+      await _checkDownloadedChapters();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(isRu ? 'Глава ${chapter.chapterNumber} скачана для офлайн чтения' : 'Chapter ${chapter.chapterNumber} downloaded offline'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка скачивания: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _downloadingChapterIds.remove(chapter.id));
+      }
+    }
   }
 
   void _releaseHide() {
@@ -86,6 +158,7 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
   Future<void> _loadProgressAndLibrary() async {
     try {
       final libService = ref.read(mangaLibraryServiceProvider);
+      await libService.resetNewChapters(widget.post.id);
       final prog = await libService.getProgress(widget.post.id);
       final entry = await libService.getLibraryEntry(widget.post.id);
       if (mounted) {
@@ -123,71 +196,83 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
     final List<String> urls = [];
 
     try {
-      if (post.providerId == 'mangadex') {
-        final providerManager = ref.read(providerManagerProvider);
-        final provider = await providerManager.getProviderInstance('mangadex');
-        if (provider is MangaDexProvider) {
-          if (_allChapters.isEmpty) {
-            final fetched = await provider.fetchChapters(post.id);
-            final langs = <String>{};
-            for (final ch in fetched) {
-              if (ch.language.isNotEmpty) langs.add(ch.language);
-            }
-            final availableLanguages = langs.toList();
-            availableLanguages.sort((a, b) {
-              if (a == 'ru') return -1;
-              if (b == 'ru') return 1;
-              if (a == 'en') return -1;
-              if (b == 'en') return 1;
-              final countA = fetched.where((c) => c.language == a).length;
-              final countB = fetched.where((c) => c.language == b).length;
-              return countB.compareTo(countA);
-            });
+      final providerManager = ref.read(providerManagerProvider);
+      final p = await providerManager.getProviderInstance(post.providerId);
+      final MangaChapterProvider? mangaProv = p is MangaChapterProvider ? (p as MangaChapterProvider) : null;
+      final NovelChapterProvider? novelProv = p is NovelChapterProvider ? (p as NovelChapterProvider) : null;
 
-            String? defaultLang;
-            if (availableLanguages.contains('ru')) {
-              defaultLang = 'ru';
-            } else if (availableLanguages.contains('en')) {
-              defaultLang = 'en';
-            } else {
-              defaultLang = availableLanguages.firstOrNull;
-            }
-
-            if (mounted) {
-              setState(() {
-                _allChapters = fetched;
-                _availableLanguages = availableLanguages;
-                _selectedLanguage = defaultLang;
-              });
-            }
+      if (mangaProv != null || novelProv != null) {
+        if (_allChapters.isEmpty) {
+          List<MangaDexChapter> fetched = [];
+          if (mangaProv != null) {
+            final res = await mangaProv.fetchChapters(post.id);
+            if (res is List<MangaDexChapter>) fetched = res;
+          } else if (novelProv != null) {
+            final res = await novelProv.fetchChapters(post.id);
+            if (res is List<MangaDexChapter>) fetched = res;
           }
 
-          final filtered = _selectedLanguage != null
-              ? _allChapters.where((c) => c.language == _selectedLanguage).toList()
-              : _allChapters;
-          final chapters = filtered.isNotEmpty ? filtered : _allChapters;
+          final langs = <String>{};
+          for (final ch in fetched) {
+            if (ch.language.isNotEmpty) langs.add(ch.language);
+          }
+          final availableLanguages = langs.toList();
+          availableLanguages.sort((a, b) {
+            if (a == 'ru') return -1;
+            if (b == 'ru') return 1;
+            if (a == 'en') return -1;
+            if (b == 'en') return 1;
+            final countA = fetched.where((c) => c.language == a).length;
+            final countB = fetched.where((c) => c.language == b).length;
+            return countB.compareTo(countA);
+          });
+
+          String? defaultLang;
+          if (availableLanguages.contains('ru')) {
+            defaultLang = 'ru';
+          } else if (availableLanguages.contains('en')) {
+            defaultLang = 'en';
+          } else {
+            defaultLang = availableLanguages.firstOrNull;
+          }
 
           if (mounted) {
             setState(() {
-              _chapters = chapters;
-              if (_selectedChapterIndex >= _chapters.length) {
-                _selectedChapterIndex = 0;
-              }
+              _allChapters = fetched;
+              _availableLanguages = availableLanguages;
+              _selectedLanguage = defaultLang;
             });
           }
-
-          if (chapters.isNotEmpty) {
-            final targetChapter = chapters[_selectedChapterIndex];
-            final pages = await provider.fetchChapterPages(targetChapter.id);
-            urls.addAll(pages);
-          }
         }
-      } else if (post.providerId == 'nhentai') {
-        if (post.childrenIds.isNotEmpty) {
-          final mediaId = post.tagGroups['media_id']?.firstOrNull ?? post.id;
-          final pageCount = post.childrenIds.length;
-          for (int i = 1; i <= pageCount; i++) {
-            urls.add('https://i.nhentai.net/galleries/$mediaId/$i.jpg');
+
+        final filtered = _selectedLanguage != null
+            ? _allChapters.where((c) => c.language == _selectedLanguage).toList()
+            : _allChapters;
+        final chapters = filtered.isNotEmpty ? filtered : _allChapters;
+
+        if (mounted) {
+          setState(() {
+            _chapters = chapters;
+            if (_selectedChapterIndex >= _chapters.length) {
+              _selectedChapterIndex = 0;
+            }
+          });
+        }
+
+        if (chapters.isNotEmpty) {
+          final targetChapter = chapters[_selectedChapterIndex];
+          // Check offline first
+          final offlineService = ref.read(mangaOfflineServiceProvider);
+          final offlinePages = await offlineService.getDownloadedPages(post.id, targetChapter.id);
+          if (offlinePages.isNotEmpty) {
+            urls.addAll(offlinePages);
+            _chapters[_selectedChapterIndex] = targetChapter.copyWith(pageCount: offlinePages.length);
+          } else if (mangaProv != null) {
+            final pages = await mangaProv.fetchChapterPages(targetChapter.id);
+            urls.addAll(pages);
+            if (pages.isNotEmpty) {
+              _chapters[_selectedChapterIndex] = targetChapter.copyWith(pageCount: pages.length);
+            }
           }
         }
       }
@@ -399,6 +484,29 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
         ? _allChapters.where((c) => c.language == lang).toList()
         : _chapters;
 
+    final targetChapter = _chapters.isNotEmpty
+        ? _chapters[(initialChapterIndex ?? _selectedChapterIndex).clamp(0, _chapters.length - 1)]
+        : null;
+
+    if (targetChapter != null &&
+        (targetChapter.isNovel || widget.post.providerId == 'ranobelib')) {
+      final title = widget.post.title ?? widget.post.tagGroups['title']?.firstOrNull ?? widget.post.tags.take(3).join(', ');
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (context) => NovelReaderScreen(
+            mangaId: widget.post.id,
+            chapter: targetChapter,
+            allChapters: currentLangChapters.isNotEmpty ? currentLangChapters : _chapters,
+            title: title,
+            providerId: widget.post.providerId,
+          ),
+        ),
+      ).then((_) {
+        _loadProgressAndLibrary();
+      });
+      return;
+    }
+
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (context) => MangaReaderScreen(
@@ -549,7 +657,13 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                       ),
                     )
                   : const Icon(Icons.bookmark_border_rounded, size: 22),
-              onSelected: (val) => _setLibraryStatus(val),
+              onSelected: (val) {
+                if (val == 'remove') {
+                  _setLibraryStatus(null);
+                } else {
+                  _setLibraryStatus(val);
+                }
+              },
               itemBuilder: (context) => [
                 PopupMenuItem(
                   value: 'reading',
@@ -594,12 +708,15 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                 if (_libraryEntry != null) ...[
                   const PopupMenuDivider(),
                   PopupMenuItem(
-                    value: null,
+                    value: 'remove',
                     child: Row(
                       children: [
-                        const Icon(Icons.delete_outline_rounded, color: Colors.grey, size: 18),
+                        const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444), size: 18),
                         const SizedBox(width: 10),
-                        Text(isRu ? 'Удалить из библиотеки' : 'Remove from library'),
+                        Text(
+                          isRu ? 'Удалить из библиотеки' : 'Remove from library',
+                          style: const TextStyle(color: Color(0xFFEF4444)),
+                        ),
                       ],
                     ),
                   ),
@@ -1077,7 +1194,13 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                                   ? const Color(0xFFFF6740).withValues(alpha: 0.14)
                                   : Colors.transparent,
                               child: InkWell(
-                                onTap: () => _switchChapter(index),
+                                onTap: () {
+                                  if (widget.post.providerId == 'ranobelib' || ch.isNovel) {
+                                    _openFullscreenReader(initialChapterIndex: index);
+                                  } else {
+                                    _switchChapter(index);
+                                  }
+                                },
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                                   child: Row(
@@ -1130,7 +1253,7 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                                                       style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
                                                     ),
                                                   ),
-                                                if (ch.pageCount > 0)
+                                                if (ch.pageCount > 1)
                                                   Text(
                                                     '${ch.pageCount} ${isRu ? 'стр.' : 'p.'}',
                                                     style: TextStyle(
@@ -1143,6 +1266,42 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                                           ],
                                         ),
                                       ),
+                                      // Offline download button
+                                      if (_downloadingChapterIds.contains(ch.id))
+                                        const Padding(
+                                          padding: EdgeInsets.symmetric(horizontal: 6),
+                                          child: SizedBox(
+                                            width: 18,
+                                            height: 18,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Color(0xFFFF6740),
+                                            ),
+                                          ),
+                                        )
+                                      else
+                                        IconButton(
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
+                                          icon: Icon(
+                                            _downloadedChapterIds.contains(ch.id)
+                                                ? Icons.download_done_rounded
+                                                : Icons.download_for_offline_outlined,
+                                            color: _downloadedChapterIds.contains(ch.id)
+                                                ? const Color(0xFF10B981)
+                                                : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                                            size: 20,
+                                          ),
+                                          tooltip: isRu
+                                              ? (_downloadedChapterIds.contains(ch.id)
+                                                  ? 'Скачано (доступно офлайн)'
+                                                  : 'Скачать главу офлайн')
+                                              : (_downloadedChapterIds.contains(ch.id)
+                                                  ? 'Downloaded offline'
+                                                  : 'Download offline'),
+                                          onPressed: () => _downloadChapter(ch),
+                                        ),
+                                      const SizedBox(width: 8),
                                       Icon(
                                         isSelected ? Icons.play_circle_filled_rounded : Icons.play_arrow_rounded,
                                         color: isSelected

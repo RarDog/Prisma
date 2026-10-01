@@ -95,6 +95,8 @@ class MangaLibraryEntry {
     required this.status, // 'reading', 'plan_to_read', 'completed', 'dropped'
     required this.addedAt,
     this.progress,
+    this.totalChaptersCount = 0,
+    this.newChaptersCount = 0,
   });
 
   final String mangaId;
@@ -104,6 +106,8 @@ class MangaLibraryEntry {
   final String status;
   final DateTime addedAt;
   final MangaReadingProgress? progress;
+  final int totalChaptersCount;
+  final int newChaptersCount;
 
   Map<String, dynamic> toJson() => {
         'mangaId': mangaId,
@@ -112,6 +116,8 @@ class MangaLibraryEntry {
         'coverUrl': coverUrl,
         'status': status,
         'addedAt': addedAt.toIso8601String(),
+        'totalChaptersCount': totalChaptersCount,
+        'newChaptersCount': newChaptersCount,
         if (progress != null) 'progress': progress!.toJson(),
       };
 
@@ -124,6 +130,8 @@ class MangaLibraryEntry {
       status: json['status']?.toString() ?? 'reading',
       addedAt: DateTime.tryParse(json['addedAt']?.toString() ?? '') ??
           DateTime.now(),
+      totalChaptersCount: (json['totalChaptersCount'] as num?)?.toInt() ?? 0,
+      newChaptersCount: (json['newChaptersCount'] as num?)?.toInt() ?? 0,
       progress: json['progress'] is Map
           ? MangaReadingProgress.fromJson(
               Map<String, dynamic>.from(json['progress'] as Map))
@@ -134,6 +142,8 @@ class MangaLibraryEntry {
   MangaLibraryEntry copyWith({
     String? status,
     MangaReadingProgress? progress,
+    int? totalChaptersCount,
+    int? newChaptersCount,
   }) {
     return MangaLibraryEntry(
       mangaId: mangaId,
@@ -143,6 +153,8 @@ class MangaLibraryEntry {
       status: status ?? this.status,
       addedAt: addedAt,
       progress: progress ?? this.progress,
+      totalChaptersCount: totalChaptersCount ?? this.totalChaptersCount,
+      newChaptersCount: newChaptersCount ?? this.newChaptersCount,
     );
   }
 }
@@ -422,6 +434,43 @@ class MangaLibraryService {
     final entries = await _loadEntries();
     if (entries.containsKey(mangaId)) {
       entries.remove(mangaId);
+      await _saveEntries(entries);
+    }
+  }
+
+  Future<int> checkForUpdates(
+    Future<int> Function(String providerId, String mangaId) fetchChapterCount,
+  ) async {
+    final entries = await _loadEntries();
+    int totalNew = 0;
+    for (final entry in entries.values) {
+      try {
+        final count = await fetchChapterCount(entry.providerId, entry.mangaId);
+        if (count > entry.totalChaptersCount && entry.totalChaptersCount > 0) {
+          final diff = count - entry.totalChaptersCount;
+          entries[entry.mangaId] = entry.copyWith(
+            newChaptersCount: entry.newChaptersCount + diff,
+            totalChaptersCount: count,
+          );
+          totalNew += diff;
+        } else if (entry.totalChaptersCount == 0 && count > 0) {
+          entries[entry.mangaId] = entry.copyWith(
+            totalChaptersCount: count,
+          );
+        }
+      } catch (_) {}
+    }
+    if (entries.isNotEmpty) {
+      await _saveEntries(entries);
+    }
+    return totalNew;
+  }
+
+  Future<void> resetNewChapters(String mangaId) async {
+    final entries = await _loadEntries();
+    final entry = entries[mangaId];
+    if (entry != null && entry.newChaptersCount > 0) {
+      entries[mangaId] = entry.copyWith(newChaptersCount: 0);
       await _saveEntries(entries);
     }
   }

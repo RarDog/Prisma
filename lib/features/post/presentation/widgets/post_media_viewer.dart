@@ -54,6 +54,21 @@ Map<String, String> getPostMediaHeaders(Post post, [Map<String, String>? extraHe
       post.sampleUrl.contains('mangadex.org') ||
       post.fileUrl.contains('mangadex.network')) {
     defaultReferer = 'https://mangadex.org/';
+  } else if (pid.contains('mangalib')) {
+    defaultReferer = 'https://mangalib.me/';
+  } else if (pid.contains('ranobelib')) {
+    defaultReferer = 'https://ranobelib.me/';
+  } else if (pid.contains('hitomi') ||
+      post.fileUrl.contains('hitomi.la') ||
+      post.previewUrl.contains('gold-usergeneratedcontent.net') ||
+      post.sampleUrl.contains('gold-usergeneratedcontent.net')) {
+    defaultReferer = 'https://hitomi.la/';
+  } else if (pid.contains('ehentai') ||
+      post.fileUrl.contains('e-hentai.org') ||
+      post.previewUrl.contains('ehgt.org')) {
+    defaultReferer = 'https://e-hentai.org/';
+  } else if (pid.contains('mangaupdates')) {
+    defaultReferer = 'https://www.mangaupdates.com/';
   } else {
     final uri = Uri.tryParse(post.fileUrl);
     if (uri != null && uri.hasScheme && uri.host.isNotEmpty) {
@@ -62,8 +77,9 @@ Map<String, String> getPostMediaHeaders(Post post, [Map<String, String>? extraHe
   }
 
   return {
-    'User-Agent': 'Prisma/2.0.1 Flutter local booru browser',
-    'Accept': '*/*',
+    'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
+    'Accept': 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
     if (defaultReferer != null) 'Referer': defaultReferer,
     if (extraHeaders != null) ...extraHeaders,
   };

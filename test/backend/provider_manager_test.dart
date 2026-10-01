@@ -427,12 +427,12 @@ void main() {
     expect(provider.suggestionCalls, 1);
   });
 
-  test('loadFeedConfigs excludes mangadex and nhentai while loadMangaConfigs includes them', () async {
+  test('loadFeedConfigs excludes mangadex and mangalib while loadMangaConfigs includes them', () async {
     final repository = FakeProviderRepository()
       ..configs['gelbooru'] = config('gelbooru', 0).copyWith(apiType: 'gelbooru')
       ..configs['rule34'] = config('rule34', 1).copyWith(apiType: 'rule34')
       ..configs['mangadex'] = config('mangadex', 2).copyWith(apiType: 'mangadex')
-      ..configs['nhentai'] = config('nhentai', 3).copyWith(apiType: 'nhentai');
+      ..configs['mangalib'] = config('mangalib', 3).copyWith(apiType: 'mangalib');
 
     final manager = ProviderManager(repository, FakeProviderFactory({}));
 
@@ -443,14 +443,14 @@ void main() {
     expect(feedIds, contains('gelbooru'));
     expect(feedIds, contains('rule34'));
     expect(feedIds, isNot(contains('mangadex')));
-    expect(feedIds, isNot(contains('nhentai')));
+    expect(feedIds, isNot(contains('mangalib')));
 
     final mangaConfigsResult = await manager.loadMangaConfigs();
     expect(mangaConfigsResult, isA<Success<List<ContentProviderConfig>>>());
     final mangaConfigs = (mangaConfigsResult as Success<List<ContentProviderConfig>>).data;
     final mangaIds = mangaConfigs.map((c) => c.id).toList();
     expect(mangaIds, contains('mangadex'));
-    expect(mangaIds, contains('nhentai'));
+    expect(mangaIds, contains('mangalib'));
     expect(mangaIds, isNot(contains('gelbooru')));
     expect(mangaIds, isNot(contains('rule34')));
   });

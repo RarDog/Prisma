@@ -92,3 +92,14 @@ abstract class ArtistProvider {
           String service, String artistId) async =>
       const [];
 }
+
+abstract class MangaChapterProvider {
+  Future<dynamic> fetchChapters(String mangaId);
+  Future<List<String>> fetchChapterPages(String chapterId);
+}
+
+abstract class NovelChapterProvider {
+  Future<dynamic> fetchChapters(String novelId);
+  Future<String> fetchChapterContent(String chapterId);
+}
+

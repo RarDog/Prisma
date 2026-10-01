@@ -152,5 +152,23 @@ void main() {
       expect(history.first.mangaId, equals('manga-b'));
       expect(history.last.mangaId, equals('manga-a'));
     });
+
+    test('removeLibraryEntry removes entry cleanly', () async {
+      await libraryService.setLibraryStatus(
+        mangaId: 'manga-99',
+        providerId: 'mangalib',
+        title: 'Solo Leveling',
+        coverUrl: 'https://example.com/solo.jpg',
+        status: 'reading',
+      );
+
+      expect(await libraryService.getLibraryEntry('manga-99'), isNotNull);
+
+      await libraryService.removeLibraryEntry('manga-99');
+
+      expect(await libraryService.getLibraryEntry('manga-99'), isNull);
+      final entries = await libraryService.getLibraryEntries();
+      expect(entries.where((e) => e.mangaId == 'manga-99').isEmpty, isTrue);
+    });
   });
 }

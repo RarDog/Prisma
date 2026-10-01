@@ -17,6 +17,8 @@ class MangaDexChapter {
     required this.language,
     required this.pageCount,
     this.externalUrl,
+    this.volumeNumber,
+    this.textContent,
   });
 
   final String id;
@@ -25,8 +27,33 @@ class MangaDexChapter {
   final String language;
   final int pageCount;
   final String? externalUrl;
+  final String? volumeNumber;
+  final String? textContent;
 
   bool get isExternal => externalUrl != null && externalUrl!.isNotEmpty;
+  bool get isNovel => textContent != null && textContent!.isNotEmpty;
+
+  MangaDexChapter copyWith({
+    String? id,
+    String? chapterNumber,
+    String? title,
+    String? language,
+    int? pageCount,
+    String? externalUrl,
+    String? volumeNumber,
+    String? textContent,
+  }) {
+    return MangaDexChapter(
+      id: id ?? this.id,
+      chapterNumber: chapterNumber ?? this.chapterNumber,
+      title: title ?? this.title,
+      language: language ?? this.language,
+      pageCount: pageCount ?? this.pageCount,
+      externalUrl: externalUrl ?? this.externalUrl,
+      volumeNumber: volumeNumber ?? this.volumeNumber,
+      textContent: textContent ?? this.textContent,
+    );
+  }
 }
 
 class MangaLanguageHelper {
