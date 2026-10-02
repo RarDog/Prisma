@@ -68,19 +68,19 @@ Prisma — оптимизированное мультимедийное при�
 ## Поддерживаемые источники
 
 ### Booru-имиджборды и арт-платформы
-| Источник | Протокол / API | Особенности |
-| :--- | :--- | :--- |
-| **Danbooru** | REST JSON API | Полноценный автокомплит тегов, пулы |
-| **Gelbooru** | XML / JSON API | Высокое разрешение, комментарии |
-| **Rule34** | Gelbooru-based API | Видеоконтент и анимации |
-| **Safebooru** | Gelbooru-based API | Каталог безопасного контента |
-| **e621 / e926** | Native REST API | Авторизация по API-ключу, заметки, пулы |
-| **Realbooru** | HTML / Scraper | Зеркала медиа и полноразмерные оригиналы |
-| **Paheal Rule34** | Shimmie API | Поиск и загрузка медиа |
-| **Moebooru** | Moebooru JSON | Совместимость с Yande.re и Konachan |
-| **Pixiv** | Session Auth | Закладки, дневные и недельные рейтинги |
-| **Pawchive** | Creator Sync | Двусторонняя синхронизация для платформ авторов |
-| **Пользовательский Booru** | Configurable API | Подключение любого совместимого источника |
+| Источник | Протокол / API |
+| :--- | :--- |
+| **Danbooru** | REST JSON API |
+| **Gelbooru** | XML / JSON API |
+| **Rule34** | Gelbooru-based API |
+| **Safebooru** | Gelbooru-based API |
+| **e621 / e926** | Native REST API |
+| **Realbooru** | HTML / Scraper |
+| **Paheal Rule34** | Shimmie API |
+| **Moebooru** | Moebooru JSON |
+| **Pixiv** | Session Auth |
+| **Pawchive** | Creator Sync |
+| **Пользовательский Booru** | Configurable API |
 
 ### Манга и Ранобэ
 | Источник | Тип контента | Особенности |

@@ -68,19 +68,19 @@ Prisma is a unified, resource-optimized multimedia viewer and catalog reader bui
 ## Supported Sources
 
 ### Booru & Art Imageboards
-| Provider | Protocol / API | Notes |
-| :--- | :--- | :--- |
-| **Danbooru** | REST JSON API | Full tag autocomplete, pool support |
-| **Gelbooru** | XML / JSON API | High-resolution samples, comments |
-| **Rule34** | Gelbooru-based API | Video playback and animated media |
-| **Safebooru** | Gelbooru-based API | Filtered content catalog |
-| **e621 / e926** | Native REST API | API key authorization, notes, pools |
-| **Realbooru** | HTML / Scraper | Media mirrors and full-resolution assets |
-| **Paheal Rule34** | Shimmie API | Media parsing and search |
-| **Moebooru** | Moebooru JSON | Yande.re, Konachan compatibility |
-| **Pixiv** | Session Auth | Bookmarks, daily/weekly rankings |
-| **Pawchive** | Creator Sync | Archive synchronization for creator platforms |
-| **Custom Booru** | Configurable API | Add any compatible Booru endpoint |
+| Provider | Protocol / API |
+| :--- | :--- |
+| **Danbooru** | REST JSON API |
+| **Gelbooru** | XML / JSON API |
+| **Rule34** | Gelbooru-based API |
+| **Safebooru** | Gelbooru-based API |
+| **e621 / e926** | Native REST API |
+| **Realbooru** | HTML / Scraper |
+| **Paheal Rule34** | Shimmie API |
+| **Moebooru** | Moebooru JSON |
+| **Pixiv** | Session Auth |
+| **Pawchive** | Creator Sync |
+| **Custom Booru** | Configurable API |
 
 ### Manga & Light Novels
 | Provider | Type | Content |
