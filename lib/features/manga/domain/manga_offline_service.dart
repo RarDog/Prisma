@@ -1,18 +1,29 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'package:gel_rule_app/sources/booru/mangadex_provider.dart';
 
 class MangaOfflineService {
-  MangaOfflineService({Dio? dio}) : _dio = dio ?? Dio();
+  MangaOfflineService({Dio? dio, String? baseDir})
+      : _dio = dio ?? Dio(),
+        _baseDir = baseDir;
 
   final Dio _dio;
+  final String? _baseDir;
   final ValueNotifier<int> changeNotifier = ValueNotifier<int>(0);
 
   Future<Directory> _getOfflineDir() async {
+    if (_baseDir != null) {
+      final dir = Directory('$_baseDir/manga_offline');
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
+      }
+      return dir;
+    }
     final appDir = await getApplicationDocumentsDirectory();
     final dir = Directory('${appDir.path}/manga_offline');
     if (!await dir.exists()) {
@@ -50,13 +61,14 @@ class MangaOfflineService {
       if (!await mangaDir.exists()) return [];
 
       final list = <String>[];
-      final entities = mangaDir.listSync();
+      final entities = await mangaDir.list().toList();
       for (final entity in entities) {
         if (entity is Directory) {
           final infoFile = File('${entity.path}/info.json');
-          if (infoFile.existsSync()) {
+          if (await infoFile.exists()) {
             try {
-              final json = jsonDecode(infoFile.readAsStringSync());
+              final content = await infoFile.readAsString();
+              final json = jsonDecode(content);
               final origId = json['chapterId']?.toString() ?? entity.path.split('/').last;
               list.add(origId);
             } catch (_) {
@@ -77,7 +89,8 @@ class MangaOfflineService {
       final infoFile = File('${dir.path}/info.json');
       if (!await infoFile.exists()) return [];
 
-      final files = dir.listSync()
+      final entities = await dir.list().toList();
+      final files = entities
           .whereType<File>()
           .where((f) => !f.path.endsWith('info.json') && !f.path.endsWith('.txt'))
           .map((f) => f.path)
@@ -115,30 +128,59 @@ class MangaOfflineService {
     required String providerId,
     Function(int current, int total)? onProgress,
   }) async {
+    final total = pageUrls.length;
+    if (total == 0) {
+      throw StateError('Cannot download empty chapter');
+    }
+
     final dir = await _getChapterDir(mangaId, chapter.id);
+    int completedCount = 0;
+    final failedIndices = <int>[];
 
-    int count = 0;
-    for (int i = 0; i < pageUrls.length; i++) {
-      final url = pageUrls[i];
-      final ext = url.contains('.') ? url.split('.').last.split('?').first : 'jpg';
-      final savePath = '${dir.path}/$i.$ext';
+    // Download concurrently in chunks of 3 for speed and reliability
+    const concurrency = 3;
+    for (int i = 0; i < total; i += concurrency) {
+      final end = (i + concurrency < total) ? i + concurrency : total;
+      final chunkIndices = [for (int idx = i; idx < end; idx++) idx];
 
-      try {
-        await _dio.download(
-          url,
-          savePath,
-          options: Options(
-            headers: {
-              'User-Agent':
-                  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            },
-          ),
-        );
-        count++;
-        onProgress?.call(count, pageUrls.length);
-      } catch (e) {
-        debugPrint('Error downloading page $i ($url): $e');
-      }
+      await Future.wait(
+        chunkIndices.map((idx) async {
+          final url = pageUrls[idx];
+          final ext = url.contains('.') ? url.split('.').last.split('?').first : 'jpg';
+          final savePath = '${dir.path}/$idx.$ext';
+          final file = File(savePath);
+
+          // Skip if page was already fully downloaded on previous attempt
+          if (await file.exists() && (await file.length()) > 0) {
+            completedCount++;
+            onProgress?.call(completedCount, total);
+            return;
+          }
+
+          try {
+            await _dio.download(
+              url,
+              savePath,
+              options: Options(
+                headers: {
+                  'User-Agent': AppHeaders.desktopChromeUserAgent,
+                },
+              ),
+            );
+            completedCount++;
+            onProgress?.call(completedCount, total);
+          } catch (e) {
+            debugPrint('Error downloading page $idx ($url): $e');
+            failedIndices.add(idx);
+          }
+        }),
+      );
+    }
+
+    if (failedIndices.isNotEmpty) {
+      throw StateError(
+        'Failed to download ${failedIndices.length} of $total pages for chapter ${chapter.chapterNumber}',
+      );
     }
 
     final infoFile = File('${dir.path}/info.json');
@@ -150,7 +192,7 @@ class MangaOfflineService {
         'title': chapter.title,
         'providerId': providerId,
         'isNovel': false,
-        'pageCount': count,
+        'pageCount': completedCount,
         'downloadedAt': DateTime.now().toIso8601String(),
       }),
     );

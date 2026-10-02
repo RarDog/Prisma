@@ -1,11 +1,14 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/sources/booru/mangadex_provider.dart';
 import '../domain/manga_library_providers.dart';
+import '../domain/reader_navigation_helper.dart';
+import 'mixins/reader_fullscreen_mixin.dart';
 
 enum NovelReaderTheme {
   light,
@@ -34,7 +37,8 @@ class NovelReaderScreen extends ConsumerStatefulWidget {
   ConsumerState<NovelReaderScreen> createState() => _NovelReaderScreenState();
 }
 
-class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> {
+class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen>
+    with ReaderFullscreenMixin<NovelReaderScreen> {
   final ScrollController _scrollController = ScrollController();
 
   late MangaDexChapter _currentChapter;
@@ -43,7 +47,7 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> {
   String _content = '';
   bool _loading = true;
   String? _error;
-  bool _showControls = true;
+  bool get _showControls => !isReaderFullscreen;
 
   // Typography settings
   double _fontSize = 17.0;
@@ -54,6 +58,7 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> {
   @override
   void initState() {
     super.initState();
+    initReaderFullscreen();
     _currentChapter = widget.chapter;
     _currentChapterIndex = widget.allChapters.indexWhere((c) => c.id == widget.chapter.id);
     if (_currentChapterIndex == -1) _currentChapterIndex = 0;
@@ -64,6 +69,7 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> {
 
   @override
   void dispose() {
+    disposeReaderFullscreen();
     _scrollController.dispose();
     super.dispose();
   }
@@ -101,7 +107,19 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> {
     });
 
     try {
-      // 1. Check offline storage
+      // 1. If chapter already has content attached
+      if (_currentChapter.textContent != null && _currentChapter.textContent!.isNotEmpty) {
+        if (mounted) {
+          setState(() {
+            _content = _currentChapter.textContent!;
+            _loading = false;
+          });
+          _markRead();
+        }
+        return;
+      }
+
+      // 2. Check offline storage
       final offlineService = ref.read(mangaOfflineServiceProvider);
       final offlineText = await offlineService.getDownloadedNovelContent(widget.mangaId, _currentChapter.id);
       if (offlineText != null && offlineText.isNotEmpty) {
@@ -115,7 +133,7 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> {
         return;
       }
 
-      // 2. Fetch from provider
+      // 3. Fetch from provider
       final providerManager = ref.read(providerManagerProvider);
       final p = await providerManager.getProviderInstance(widget.providerId);
       final NovelChapterProvider? novelProv =
@@ -132,18 +150,6 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> {
           }
           return;
         }
-      }
-
-      // If chapter already had content attached
-      if (_currentChapter.textContent != null && _currentChapter.textContent!.isNotEmpty) {
-        if (mounted) {
-          setState(() {
-            _content = _currentChapter.textContent!;
-            _loading = false;
-          });
-          _markRead();
-        }
-        return;
       }
 
       if (mounted) {
@@ -244,11 +250,9 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> {
                 borderRadius: BorderRadius.circular(12),
                 child: CachedNetworkImage(
                   imageUrl: imageUrl,
-                  httpHeaders: const {
-                    'Referer': 'https://ranobelib.me/',
-                    'User-Agent':
-                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
-                  },
+                  httpHeaders: AppHeaders.browserHeaders(
+                    referer: 'https://ranobelib.me/',
+                  ),
                   fit: BoxFit.contain,
                   placeholder: (_, __) => Container(
                     height: 250,
@@ -288,8 +292,14 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final hasPrev = _currentChapterIndex > 0;
-    final hasNext = _currentChapterIndex < widget.allChapters.length - 1;
+    final hasPrev = ReaderNavigationHelper.hasPrevious(
+      currentIndex: _currentChapterIndex,
+      totalCount: widget.allChapters.length,
+    );
+    final hasNext = ReaderNavigationHelper.hasNext(
+      currentIndex: _currentChapterIndex,
+      totalCount: widget.allChapters.length,
+    );
 
     return Scaffold(
       backgroundColor: _backgroundColor,
@@ -297,9 +307,7 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> {
         children: [
           // Content
           GestureDetector(
-            onTap: () {
-              setState(() => _showControls = !_showControls);
-            },
+            onTap: toggleReaderFullscreen,
             child: SafeArea(
               child: _loading
                   ? Center(child: CircularProgressIndicator(color: _textColor))
@@ -435,7 +443,10 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen> {
                           onPressed: hasPrev ? () => _switchChapter(_currentChapterIndex - 1) : null,
                         ),
                         Text(
-                          '${_currentChapterIndex + 1} / ${widget.allChapters.length}',
+                          ReaderNavigationHelper.formatChapterProgress(
+                            currentIndex: _currentChapterIndex,
+                            totalCount: widget.allChapters.length,
+                          ),
                           style: TextStyle(color: _textColor.withValues(alpha: 0.7), fontSize: 13),
                         ),
                         IconButton(

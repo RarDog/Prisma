@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
 import 'package:gel_rule_app/core/models/tag_suggestion.dart';
+import 'package:gel_rule_app/core/utils/logger.dart';
 
 class TagCacheService {
   TagCacheService({String? customPath}) : _customPath = customPath;
@@ -27,9 +28,9 @@ class TagCacheService {
     final dir = await getApplicationDocumentsDirectory();
     final newFile = File('${dir.path}/prisma_tag_cache.json');
     final oldFile = File('${dir.path}/lunaris_tag_cache.json');
-    if (!newFile.existsSync() && oldFile.existsSync()) {
+    if (!await newFile.exists() && await oldFile.exists()) {
       try {
-        oldFile.copySync(newFile.path);
+        await oldFile.copy(newFile.path);
       } catch (_) {}
     }
     _resolvedPath = newFile.path;
@@ -60,8 +61,8 @@ class TagCacheService {
           }
         }
       }
-    } catch (_) {
-      // Non-critical: corrupted cache file can be rebuilt seamlessly
+    } catch (e, st) {
+      AppLogger.log('TagCacheService.init error', e, st);
     } finally {
       _isInitialized = true;
     }
@@ -183,8 +184,8 @@ class TagCacheService {
       final list = _tags.values.map((t) => t.toJson()).toList(growable: false);
       final jsonString = jsonEncode(list);
       await file.writeAsString(jsonString, flush: true);
-    } catch (_) {
-      // Silent error on persistence failure
+    } catch (e, st) {
+      AppLogger.log('TagCacheService.flush error', e, st);
     }
   }
 
@@ -195,7 +196,9 @@ class TagCacheService {
       if (await file.exists()) {
         return await file.length();
       }
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.log('TagCacheService.getFileSizeBytes error', e, st);
+    }
     return 0;
   }
 
@@ -208,6 +211,8 @@ class TagCacheService {
       if (await file.exists()) {
         await file.delete();
       }
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.log('TagCacheService.clear error', e, st);
+    }
   }
 }

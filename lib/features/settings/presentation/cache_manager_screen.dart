@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -63,7 +64,7 @@ final cacheStatsProvider = FutureProvider.autoDispose<CacheStats>((ref) async {
   var tempBytes = 0;
   try {
     final tempDir = await getTemporaryDirectory();
-    if (tempDir.existsSync()) {
+    if (await tempDir.exists()) {
       await for (final file
           in tempDir.list(recursive: true, followLinks: false)) {
         if (file is File) {
@@ -122,23 +123,30 @@ class _CacheManagerScreenState extends ConsumerState<CacheManagerScreen> {
     setState(() => _isClearing = true);
     PaintingBinding.instance.imageCache.clear();
     PaintingBinding.instance.imageCache.clearLiveImages();
+    try {
+      await DefaultCacheManager().emptyCache();
+    } catch (_) {}
     ref.invalidate(cacheStatsProvider);
     if (mounted) setState(() => _isClearing = false);
   }
 
-  Future<void> _clearTempFiles() async {
-    setState(() => _isClearing = true);
+  Future<void> _deleteTempEntities() async {
     try {
       final tempDir = await getTemporaryDirectory();
-      if (tempDir.existsSync()) {
-        final entities = tempDir.listSync(recursive: false);
+      if (await tempDir.exists()) {
+        final entities = await tempDir.list(recursive: false).toList();
         for (final entity in entities) {
           try {
-            entity.deleteSync(recursive: true);
+            await entity.delete(recursive: true);
           } catch (_) {}
         }
       }
     } catch (_) {}
+  }
+
+  Future<void> _clearTempFiles() async {
+    setState(() => _isClearing = true);
+    await _deleteTempEntities();
     ref.invalidate(cacheStatsProvider);
     if (mounted) setState(() => _isClearing = false);
   }
@@ -157,16 +165,9 @@ class _CacheManagerScreenState extends ConsumerState<CacheManagerScreen> {
     PaintingBinding.instance.imageCache.clear();
     PaintingBinding.instance.imageCache.clearLiveImages();
     try {
-      final tempDir = await getTemporaryDirectory();
-      if (tempDir.existsSync()) {
-        final entities = tempDir.listSync(recursive: false);
-        for (final entity in entities) {
-          try {
-            entity.deleteSync(recursive: true);
-          } catch (_) {}
-        }
-      }
+      await DefaultCacheManager().emptyCache();
     } catch (_) {}
+    await _deleteTempEntities();
     ref.invalidate(cacheStatsProvider);
     if (mounted) setState(() => _isClearing = false);
   }

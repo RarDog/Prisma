@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -11,6 +12,7 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'package:gel_rule_app/app/motion.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:gel_rule_app/features/post/presentation/widgets/post_media_viewer.dart';
 import 'blur_content.dart';
 import 'loading_skeleton.dart';
 import 'rating_badge.dart';
@@ -60,6 +62,9 @@ class _PostCardState extends ConsumerState<PostCard>
   static final Map<String, Post> _resolvedRealbooruPosts = {};
 
   bool _hovered = false;
+  bool _pressed = false;
+  bool _videoHoverActive = false;
+  Timer? _videoHoverTimer;
   Post? _resolvedPost;
   bool _showHeart = false;
   AnimationController? _heartController;
@@ -109,11 +114,13 @@ class _PostCardState extends ConsumerState<PostCard>
 
   @override
   void dispose() {
+    _videoHoverTimer?.cancel();
     _heartController?.dispose();
     super.dispose();
   }
 
   void _triggerDoubleTapFavorite() {
+    HapticFeedback.lightImpact();
     widget.onFavorite();
     _ensureHeartAnimation();
     setState(() => _showHeart = true);
@@ -141,9 +148,28 @@ class _PostCardState extends ConsumerState<PostCard>
     final urls = _feedUrls(post, mobile: mobile);
     final imageUrl = urls.isEmpty ? post.previewUrl : urls.first;
     return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
+      onEnter: (_) {
+        setState(() => _hovered = true);
+        _videoHoverTimer?.cancel();
+        if (MediaUrlSelector.isVideo(widget.post)) {
+          _videoHoverTimer = Timer(const Duration(milliseconds: 300), () {
+            if (mounted && _hovered) {
+              setState(() => _videoHoverActive = true);
+            }
+          });
+        }
+      },
+      onExit: (_) {
+        _videoHoverTimer?.cancel();
+        setState(() {
+          _hovered = false;
+          _videoHoverActive = false;
+        });
+      },
       child: GestureDetector(
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapUp: (_) => setState(() => _pressed = false),
+        onTapCancel: () => setState(() => _pressed = false),
         onTap: () {
           if (widget.selectionMode) {
             widget.onToggleSelected?.call();
@@ -194,24 +220,28 @@ class _PostCardState extends ConsumerState<PostCard>
             ],
           );
         },
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.09),
-              width: 0.8,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.18),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+        child: AnimatedScale(
+          scale: _pressed ? 0.978 : (_hovered && !mobile ? 1.015 : 1.0),
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOutCubic,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.10),
+                width: 0.8,
               ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(13.2),
-            child: Stack(
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.20),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(15.2),
+              child: Stack(
               children: [
                 AspectRatio(
                   aspectRatio: aspect.clamp(0.28, 2.2),
@@ -243,7 +273,7 @@ class _PostCardState extends ConsumerState<PostCard>
                         final headers = _headersFor(post);
                         final videoUrls = MediaUrlSelector.video(post);
                         if (!mobile &&
-                            _hovered &&
+                            _videoHoverActive &&
                             post.providerId != 'realbooru' &&
                             _resolvedPost != null &&
                             MediaUrlSelector.isVideo(post) &&
@@ -441,7 +471,10 @@ class _PostCardState extends ConsumerState<PostCard>
                                 tooltip: widget.isFavorite
                                     ? 'Remove favorite'
                                     : 'Favorite',
-                                onPressed: widget.onFavorite,
+                                onPressed: () {
+                                  HapticFeedback.lightImpact();
+                                  widget.onFavorite();
+                                },
                                 icon: Icon(
                                   widget.isFavorite
                                       ? Icons.favorite_rounded
@@ -476,7 +509,8 @@ class _PostCardState extends ConsumerState<PostCard>
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 
   bool _isSensitive(String rating) {
@@ -523,36 +557,7 @@ class _PostCardState extends ConsumerState<PostCard>
   }
 
   Map<String, String> _headersFor(Post post) {
-    final lower = '${post.providerId} ${post.providerName} '
-            '${post.previewUrl} ${post.sampleUrl} ${post.fileUrl}'
-        .toLowerCase();
-    return {
-      'User-Agent': 'Prisma/2.0.1 Flutter local booru browser',
-      'Accept': '*/*',
-      if (lower.contains('pixiv') || lower.contains('pximg'))
-        'Referer': 'https://www.pixiv.net/',
-      if (lower.contains('nhentai')) 'Referer': 'https://nhentai.net/',
-      if (lower.contains('gelbooru')) 'Referer': 'https://gelbooru.com/',
-      if (lower.contains('realbooru'))
-        'User-Agent':
-            'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/125 Mobile Safari/537.36',
-      if (lower.contains('realbooru'))
-        'Accept':
-            'video/webm,video/mp4,image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
-      if (lower.contains('realbooru'))
-        'Referer':
-            'https://realbooru.com/index.php?page=post&s=view&id=${post.id}',
-      if (lower.contains('paheal'))
-        'User-Agent':
-            'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/125 Mobile Safari/537.36',
-      if (lower.contains('paheal'))
-        'Accept':
-            'video/webm,video/mp4,image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
-      if (lower.contains('paheal'))
-        'Referer': 'https://rule34.paheal.net/post/view/${post.id}',
-      if (lower.contains('rule34') && !lower.contains('paheal'))
-        'Referer': 'https://rule34.xxx/',
-    };
+    return getPostMediaHeaders(post);
   }
 
   void _maybeResolveRealbooruPost() {
@@ -598,8 +603,9 @@ class _FeedVideoPreview extends StatefulWidget {
 }
 
 class _FeedVideoPreviewState extends State<_FeedVideoPreview> {
-  late final Player _player;
-  late final VideoController _controller;
+  Player? _player;
+  VideoController? _controller;
+  StreamSubscription<String>? _errorSubscription;
   bool _failed = false;
   bool _ready = false;
   int _requestId = 0;
@@ -607,20 +613,6 @@ class _FeedVideoPreviewState extends State<_FeedVideoPreview> {
   @override
   void initState() {
     super.initState();
-    MediaKit.ensureInitialized();
-    _player = Player();
-    final isDesktop =
-        Platform.isLinux || Platform.isWindows || Platform.isMacOS;
-    _controller = VideoController(
-      _player,
-      configuration: VideoControllerConfiguration(
-        enableHardwareAcceleration: !isDesktop,
-        hwdec: isDesktop ? 'no' : 'auto-safe',
-      ),
-    );
-    _player.stream.error.listen((_) {
-      if (mounted) setState(() => _failed = true);
-    });
     _open();
   }
 
@@ -634,7 +626,8 @@ class _FeedVideoPreviewState extends State<_FeedVideoPreview> {
 
   @override
   void dispose() {
-    _player.dispose();
+    _errorSubscription?.cancel();
+    _player?.dispose();
     super.dispose();
   }
 
@@ -652,7 +645,8 @@ class _FeedVideoPreviewState extends State<_FeedVideoPreview> {
         child: const Center(child: Icon(Icons.videocam_off_rounded)),
       ),
     );
-    if (_failed) return fallback;
+    final controller = _controller;
+    if (_failed || controller == null) return fallback;
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -663,7 +657,7 @@ class _FeedVideoPreviewState extends State<_FeedVideoPreview> {
           child: ColoredBox(
             color: Colors.black,
             child: Video(
-              controller: _controller,
+              controller: controller,
               fit: BoxFit.cover,
               controls: null,
               pauseUponEnteringBackgroundMode: false,
@@ -686,10 +680,28 @@ class _FeedVideoPreviewState extends State<_FeedVideoPreview> {
     try {
       await _VideoPreviewOpenQueue.run(() async {
         if (!mounted || requestId != _requestId) return;
-        await _player.stop();
-        await _player.setVolume(0);
-        await _player.setPlaylistMode(PlaylistMode.loop);
-        await _player
+        MediaKit.ensureInitialized();
+        var player = _player;
+        if (player == null) {
+          player = Player();
+          _player = player;
+          final isDesktop =
+              Platform.isLinux || Platform.isWindows || Platform.isMacOS;
+          _controller = VideoController(
+            player,
+            configuration: VideoControllerConfiguration(
+              enableHardwareAcceleration: !isDesktop,
+              hwdec: isDesktop ? 'no' : 'auto-safe',
+            ),
+          );
+          _errorSubscription = player.stream.error.listen((_) {
+            if (mounted) setState(() => _failed = true);
+          });
+        }
+        await player.stop();
+        await player.setVolume(0);
+        await player.setPlaylistMode(PlaylistMode.loop);
+        await player
             .open(
               Media(widget.videoUrl, httpHeaders: widget.headers),
               play: true,

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:gel_rule_app/app/app.dart';
@@ -134,8 +135,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           enabled: true,
           priority: 3,
           timeoutSeconds: 20,
-          customHeaders: const {
-            'User-Agent': 'Prisma/3.8.4 Flutter local booru browser',
+          customHeaders: {
+            'User-Agent': AppHeaders.defaultUserAgent,
           },
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),

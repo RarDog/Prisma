@@ -26,22 +26,71 @@ class AppShell extends ConsumerStatefulWidget {
   final StatefulNavigationShell? navigationShell;
 
   static const destinations = [
-    _Destination('feed', 'Feed', Icons.dashboard_rounded, '/'),
-    _Destination('search', 'Search', Icons.search_rounded, '/search'),
     _Destination(
-        'favorites', 'Favorites', Icons.favorite_rounded, '/favorites'),
-    _Destination('viewed', 'Viewed', Icons.history_rounded, '/viewed'),
+      'feed',
+      'Feed',
+      Icons.dashboard_outlined,
+      '/',
+      selectedIcon: Icons.dashboard_rounded,
+    ),
+    _Destination(
+      'search',
+      'Search',
+      Icons.search_rounded,
+      '/search',
+      selectedIcon: Icons.search_rounded,
+    ),
+    _Destination(
+      'favorites',
+      'Favorites',
+      Icons.favorite_border_rounded,
+      '/favorites',
+      selectedIcon: Icons.favorite_rounded,
+    ),
+    _Destination(
+      'viewed',
+      'Viewed',
+      Icons.history_toggle_off_rounded,
+      '/viewed',
+      selectedIcon: Icons.history_rounded,
+    ),
     _Destination(
       'collections',
       'Collections',
-      Icons.collections_bookmark_rounded,
+      Icons.collections_bookmark_outlined,
       '/collections',
+      selectedIcon: Icons.collections_bookmark_rounded,
       mobileLabel: 'Boards',
     ),
-    _Destination('artists', 'Artists', Icons.person_search_rounded, '/artists'),
-    _Destination('manga', 'Manga', Icons.menu_book_rounded, '/manga', mobileLabel: 'Manga'),
-    _Destination('providers', 'Providers', Icons.hub_rounded, '/providers'),
-    _Destination('settings', 'Settings', Icons.settings_rounded, '/settings'),
+    _Destination(
+      'artists',
+      'Artists',
+      Icons.person_search_outlined,
+      '/artists',
+      selectedIcon: Icons.person_search_rounded,
+    ),
+    _Destination(
+      'manga',
+      'Manga',
+      Icons.menu_book_outlined,
+      '/manga',
+      selectedIcon: Icons.menu_book_rounded,
+      mobileLabel: 'Manga',
+    ),
+    _Destination(
+      'providers',
+      'Providers',
+      Icons.hub_outlined,
+      '/providers',
+      selectedIcon: Icons.hub_rounded,
+    ),
+    _Destination(
+      'settings',
+      'Settings',
+      Icons.settings_outlined,
+      '/settings',
+      selectedIcon: Icons.settings_rounded,
+    ),
   ];
 
   static int branchIndexForLocation(String location) {
@@ -890,7 +939,9 @@ class _RailButton extends StatelessWidget {
                       width: 54.5,
                       child: Center(
                         child: Icon(
-                          destination.icon,
+                          selected
+                              ? destination.effectiveSelectedIcon
+                              : destination.icon,
                           size: 22,
                           color: selected
                               ? scheme.primary
@@ -1164,8 +1215,50 @@ class _LiquidGlassBottomBar extends StatefulWidget {
   State<_LiquidGlassBottomBar> createState() => _LiquidGlassBottomBarState();
 }
 
-class _LiquidGlassBottomBarState extends State<_LiquidGlassBottomBar> {
+class _LiquidGlassBottomBarState extends State<_LiquidGlassBottomBar>
+    with SingleTickerProviderStateMixin {
   int? _pressedIndex;
+  late final AnimationController _pillController;
+  late Animation<double> _leadAnimation;
+  late Animation<double> _trailAnimation;
+
+  int _fromIndex = 0;
+  int _toIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fromIndex = widget.selectedIndex;
+    _toIndex = widget.selectedIndex;
+    _pillController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 320),
+    );
+    _leadAnimation = CurvedAnimation(
+      parent: _pillController,
+      curve: Curves.easeOutCubic,
+    );
+    _trailAnimation = CurvedAnimation(
+      parent: _pillController,
+      curve: const Interval(0.14, 1.0, curve: Curves.easeOutBack),
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _LiquidGlassBottomBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selectedIndex != oldWidget.selectedIndex) {
+      _fromIndex = _toIndex;
+      _toIndex = widget.selectedIndex;
+      _pillController.forward(from: 0.0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _pillController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1186,8 +1279,6 @@ class _LiquidGlassBottomBarState extends State<_LiquidGlassBottomBar> {
             final barWidth = constraints.maxWidth;
             final itemWidth = barWidth / count;
             final pillWidth = (itemWidth - 6).clamp(36.0, 64.0);
-            final pillLeft =
-                widget.selectedIndex * itemWidth + (itemWidth - pillWidth) / 2;
 
             return Container(
               height: 64,
@@ -1239,37 +1330,132 @@ class _LiquidGlassBottomBarState extends State<_LiquidGlassBottomBar> {
                     child: Stack(
                       alignment: Alignment.centerLeft,
                       children: [
-                        // Animated sliding liquid pill indicator
-                        AnimatedPositioned(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeOutBack,
-                          left: pillLeft,
-                          top: 7,
-                          child: Container(
-                            width: pillWidth,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: scheme.primaryContainer.withValues(
-                                alpha: isDark ? 0.75 : 0.88,
-                              ),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: scheme.primary.withValues(
-                                  alpha: isDark ? 0.35 : 0.22,
-                                ),
-                                width: 1,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: scheme.primary.withValues(
-                                    alpha: isDark ? 0.22 : 0.12,
+                        // Animated liquid-stretching pill indicator
+                        AnimatedBuilder(
+                          animation: _pillController,
+                          builder: (context, _) {
+                            final safeFrom = _fromIndex.clamp(0, count - 1);
+                            final safeTo = _toIndex.clamp(0, count - 1);
+                            final xFrom = safeFrom * itemWidth +
+                                (itemWidth - pillWidth) / 2;
+                            final xTo = safeTo * itemWidth +
+                                (itemWidth - pillWidth) / 2;
+
+                            double left;
+                            double width;
+
+                            if (safeFrom == safeTo ||
+                                !_pillController.isAnimating) {
+                              left = xTo;
+                              width = pillWidth;
+                            } else if (xTo >= xFrom) {
+                              // Moving right: right edge leads, left edge trails
+                              final right = lerpDouble(
+                                xFrom + pillWidth,
+                                xTo + pillWidth,
+                                _leadAnimation.value,
+                              )!;
+                              left = lerpDouble(
+                                xFrom,
+                                xTo,
+                                _trailAnimation.value,
+                              )!;
+                              width = (right - left).clamp(pillWidth, barWidth);
+                            } else {
+                              // Moving left: left edge leads, right edge trails
+                              left = lerpDouble(
+                                xFrom,
+                                xTo,
+                                _leadAnimation.value,
+                              )!;
+                              final right = lerpDouble(
+                                xFrom + pillWidth,
+                                xTo + pillWidth,
+                                _trailAnimation.value,
+                              )!;
+                              width = (right - left).clamp(pillWidth, barWidth);
+                            }
+
+                            return Positioned(
+                              left: left,
+                              top: 6.5,
+                              child: Container(
+                                width: width,
+                                height: 33,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16.5),
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: isDark
+                                        ? [
+                                            scheme.primary
+                                                .withValues(alpha: 0.36),
+                                            scheme.primaryContainer
+                                                .withValues(alpha: 0.72),
+                                          ]
+                                        : [
+                                            scheme.primaryContainer
+                                                .withValues(alpha: 0.96),
+                                            scheme.primaryContainer
+                                                .withValues(alpha: 0.74),
+                                          ],
                                   ),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 2),
+                                  border: Border.all(
+                                    color: isDark
+                                        ? Colors.white.withValues(alpha: 0.30)
+                                        : scheme.primary
+                                            .withValues(alpha: 0.26),
+                                    width: 1.1,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: scheme.primary.withValues(
+                                        alpha: isDark ? 0.30 : 0.16,
+                                      ),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 3),
+                                      spreadRadius: -1,
+                                    ),
+                                    if (isDark)
+                                      BoxShadow(
+                                        color: scheme.primary
+                                            .withValues(alpha: 0.14),
+                                        blurRadius: 18,
+                                        spreadRadius: 1,
+                                      ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(16.5),
+                                  child: Stack(
+                                    children: [
+                                      Positioned(
+                                        top: 0,
+                                        left: 0,
+                                        right: 0,
+                                        height: 12,
+                                        child: DecoratedBox(
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              begin: Alignment.topCenter,
+                                              end: Alignment.bottomCenter,
+                                              colors: [
+                                                Colors.white.withValues(
+                                                    alpha: isDark ? 0.20 : 0.38),
+                                                Colors.white
+                                                    .withValues(alpha: 0.0),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
                         ),
 
                         // Navigation item buttons
@@ -1337,7 +1523,7 @@ class _LiquidNavItem extends StatelessWidget {
     final scheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
-    final targetScale = isPressed ? 0.86 : (isSelected ? 1.05 : 1.0);
+    final targetScale = isPressed ? 0.88 : (isSelected ? 1.04 : 1.0);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -1349,46 +1535,60 @@ class _LiquidNavItem extends StatelessWidget {
         child: AnimatedScale(
           scale: targetScale,
           duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutCubic,
+          curve: Curves.easeOutBack,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SizedBox(
-                height: 30,
+                height: 31,
                 child: Center(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    transitionBuilder: (child, anim) => ScaleTransition(
-                      scale: anim,
-                      child: child,
-                    ),
-                    child: Icon(
-                      destination.icon,
-                      key: ValueKey('${destination.id}_$isSelected'),
-                      size: isSelected ? 21 : 19,
-                      color: isSelected
-                          ? scheme.onPrimaryContainer
-                          : (isDark
-                              ? scheme.onSurfaceVariant
-                                  .withValues(alpha: 0.78)
-                              : scheme.onSurfaceVariant
-                                  .withValues(alpha: 0.85)),
+                  child: AnimatedSlide(
+                    offset: isSelected ? const Offset(0, -0.04) : Offset.zero,
+                    duration: const Duration(milliseconds: 240),
+                    curve: Curves.easeOutCubic,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 220),
+                      switchInCurve: Curves.easeOutBack,
+                      switchOutCurve: Curves.easeInCubic,
+                      transitionBuilder: (child, anim) => FadeTransition(
+                        opacity: anim,
+                        child: ScaleTransition(
+                          scale:
+                              Tween<double>(begin: 0.82, end: 1.0).animate(anim),
+                          child: child,
+                        ),
+                      ),
+                      child: Icon(
+                        isSelected
+                            ? destination.effectiveSelectedIcon
+                            : destination.icon,
+                        key: ValueKey('${destination.id}_$isSelected'),
+                        size: isSelected ? 21.5 : 19.5,
+                        color: isSelected
+                            ? scheme.onPrimaryContainer
+                            : (isDark
+                                ? scheme.onSurfaceVariant
+                                    .withValues(alpha: 0.74)
+                                : scheme.onSurfaceVariant
+                                    .withValues(alpha: 0.82)),
+                      ),
                     ),
                   ),
                 ),
               ),
               const SizedBox(height: 1),
               AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
                 style: TextStyle(
                   fontSize: 9.5,
                   fontWeight:
                       isSelected ? FontWeight.w700 : FontWeight.w500,
                   color: isSelected
                       ? (isDark ? scheme.primary : scheme.onSurface)
-                      : scheme.onSurfaceVariant.withValues(alpha: 0.75),
-                  letterSpacing: -0.3,
+                      : scheme.onSurfaceVariant.withValues(alpha: 0.72),
+                  letterSpacing: isSelected ? -0.1 : -0.3,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -1513,6 +1713,7 @@ class _Destination {
     this.label,
     this.icon,
     this.location, {
+    this.selectedIcon,
     String? mobileLabel,
   }) : mobileLabel = mobileLabel ?? label;
 
@@ -1520,7 +1721,10 @@ class _Destination {
   final String label;
   final String mobileLabel;
   final IconData icon;
+  final IconData? selectedIcon;
   final String location;
+
+  IconData get effectiveSelectedIcon => selectedIcon ?? icon;
 
   String labelFor(bool ru) {
     if (!ru) return label;

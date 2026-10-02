@@ -15,6 +15,8 @@ import '../domain/manga_library_providers.dart';
 import 'manga_reader_screen.dart';
 import 'novel_reader_screen.dart';
 import 'widgets/page_flip_3d.dart';
+import 'widgets/manga_horizontal_list.dart';
+import 'widgets/tag_category_section.dart';
 
 class MangaDetailsScreen extends ConsumerStatefulWidget {
   const MangaDetailsScreen({
@@ -1322,7 +1324,7 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
 
                     // 3. TAGS SECTIONS
                     if (genreTags.isNotEmpty) ...[
-                      _TagCategorySection(
+                      TagCategorySection(
                         title: isRu ? 'Жанры' : 'Genres',
                         color: const Color(0xFF6366F1),
                         tags: genreTags,
@@ -1332,7 +1334,7 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                     ],
 
                     if (themeTags.isNotEmpty) ...[
-                      _TagCategorySection(
+                      TagCategorySection(
                         title: isRu ? 'Темы' : 'Themes',
                         color: const Color(0xFF10B981),
                         tags: themeTags,
@@ -1342,7 +1344,7 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                     ],
 
                     if (formatTags.isNotEmpty) ...[
-                      _TagCategorySection(
+                      TagCategorySection(
                         title: isRu ? 'Формат' : 'Format',
                         color: const Color(0xFFF59E0B),
                         tags: formatTags,
@@ -1355,7 +1357,7 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                         genreTags.isEmpty &&
                         themeTags.isEmpty &&
                         formatTags.isEmpty) ...[
-                      _TagCategorySection(
+                      TagCategorySection(
                         title: isRu ? 'Теги' : 'Tags',
                         color: const Color(0xFFEC4899),
                         tags: generalTags,
@@ -1366,7 +1368,7 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
 
                     // 4. RELATED MANGA SECTION
                     if (_relatedManga.isNotEmpty) ...[
-                      _MangaHorizontalList(
+                      MangaHorizontalList(
                         title: isRu ? 'Связанные тайтлы' : 'Related Manga',
                         icon: Icons.alt_route_rounded,
                         items: _relatedManga,
@@ -1383,7 +1385,7 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
 
                     // 5. RECOMMENDATIONS SECTION
                     if (_recommendations.isNotEmpty) ...[
-                      _MangaHorizontalList(
+                      MangaHorizontalList(
                         title: isRu ? 'Похожая манга и рекомендации' : 'Recommendations & Similar',
                         icon: Icons.recommend_rounded,
                         items: _recommendations,
@@ -1450,194 +1452,3 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
   }
 }
 
-class _MangaHorizontalList extends StatelessWidget {
-  const _MangaHorizontalList({
-    required this.title,
-    required this.icon,
-    required this.items,
-    required this.onSelect,
-  });
-
-  final String title;
-  final IconData icon;
-  final List<Post> items;
-  final ValueChanged<Post> onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 18, color: const Color(0xFFFF6740)),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              '${items.length}',
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          height: 190,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: items.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
-            itemBuilder: (context, index) {
-              final item = items[index];
-              final itemTitle = item.title ?? item.tags.take(2).join(', ');
-              final coverUrl = item.previewUrl.isNotEmpty ? item.previewUrl : item.sampleUrl;
-
-              return InkWell(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  onSelect(item);
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: SizedBox(
-                  width: 110,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: AspectRatio(
-                          aspectRatio: 0.72,
-                          child: coverUrl.isNotEmpty
-                              ? CachedNetworkImage(
-                                  imageUrl: coverUrl,
-                                  httpHeaders: getPostMediaHeaders(item),
-                                  fit: BoxFit.cover,
-                                  placeholder: (_, __) => Container(
-                                    color: Colors.white10,
-                                    child: const Center(
-                                      child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFF6740)),
-                                    ),
-                                  ),
-                                  errorWidget: (_, __, ___) => Container(
-                                    color: Colors.white10,
-                                    child: const Icon(Icons.broken_image_rounded, color: Colors.white38),
-                                  ),
-                                )
-                              : Container(
-                                  color: Colors.white10,
-                                  child: const Icon(Icons.auto_stories_rounded, color: Colors.white38),
-                                ),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        itemTitle,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, height: 1.2),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _TagCategorySection extends StatelessWidget {
-  const _TagCategorySection({
-    required this.title,
-    required this.color,
-    required this.tags,
-    this.onTagTap,
-  });
-
-  final String title;
-  final Color color;
-  final List<String> tags;
-  final ValueChanged<String>? onTagTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              margin: const EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(color: color.withValues(alpha: 0.6), blurRadius: 4, spreadRadius: 1),
-                ],
-              ),
-            ),
-            Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              '${tags.length}',
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          children: [
-            for (final tag in tags)
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: onTagTap != null
-                      ? () {
-                          HapticFeedback.lightImpact();
-                          onTagTap!(tag);
-                        }
-                      : null,
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: color.withValues(alpha: 0.3)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.tag_rounded, size: 13, color: color),
-                        const SizedBox(width: 4),
-                        Text(
-                          tag,
-                          style: TextStyle(
-                            color: color,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-}

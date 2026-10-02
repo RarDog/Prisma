@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:gel_rule_app/core/errors/app_exception.dart';
+import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'package:gel_rule_app/core/errors/failure.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
@@ -641,10 +642,7 @@ class ProviderManager {
         (matches.first as MediaHeadersProvider).mediaHeaders(post),
       );
     }
-    return const Success({
-      'User-Agent': 'Prisma/2.0.1 Flutter local booru browser',
-      'Accept': '*/*',
-    });
+    return Success(AppHeaders.mediaHeaders());
   }
 
   Future<Result<Post>> enrichPostTags(Post post) async {

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:gel_rule_app/core/http/app_headers.dart';
 
 import 'package:gel_rule_app/core/errors/app_exception.dart';
 import 'package:gel_rule_app/core/http/dio_client.dart';
@@ -58,12 +59,10 @@ class PixivProvider
 
   @override
   Map<String, String> mediaHeaders(Post post) {
-    return const {
-      'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
-      'Referer': 'https://www.pixiv.net/',
-      'Accept': '*/*',
-    };
+    return AppHeaders.mediaHeaders(
+      referer: 'https://www.pixiv.net/',
+      userAgent: AppHeaders.desktopChromeUserAgent,
+    );
   }
 
   @override

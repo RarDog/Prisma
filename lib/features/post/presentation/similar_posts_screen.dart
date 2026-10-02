@@ -15,7 +15,7 @@ import 'package:gel_rule_app/features/viewed/presentation/viewed_controller.dart
 import 'post_details_controller.dart';
 
 final similarPostsProvider =
-    FutureProvider.family<List<Post>, PostDetailsArgs>((ref, args) async {
+    FutureProvider.autoDispose.family<List<Post>, PostDetailsArgs>((ref, args) async {
   final source = args.initialPost ??
       await ref.watch(postDetailsControllerProvider(args).future);
   if (source == null) return const [];

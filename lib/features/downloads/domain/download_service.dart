@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -73,11 +74,12 @@ class DownloadService {
     final fileName = _fileName(post, url);
     final tempDir = await getTemporaryDirectory();
     final shareDir = Directory(p.join(tempDir.path, 'shares'));
-    if (!shareDir.existsSync()) {
-      shareDir.createSync(recursive: true);
+    if (!await shareDir.exists()) {
+      await shareDir.create(recursive: true);
     }
     final filePath = p.join(shareDir.path, fileName);
-    if (File(filePath).existsSync() && File(filePath).lengthSync() > 0) {
+    final file = File(filePath);
+    if (await file.exists() && (await file.length()) > 0) {
       return filePath;
     }
     await _dio.download(
@@ -92,6 +94,7 @@ class DownloadService {
   Future<String?> downloadPost(
     Post post, {
     String? folderTemplate,
+    CancelToken? cancelToken,
     void Function(int received, int total)? onProgress,
   }) async {
     final url = _downloadUrl(post);
@@ -106,19 +109,30 @@ class DownloadService {
     if (Platform.isAndroid) {
       final tempDir = await getTemporaryDirectory();
       final tempPath = p.join(tempDir.path, fileName);
-      await _dio.download(
-        url,
-        tempPath,
-        onReceiveProgress: onProgress,
-        options: Options(headers: _headersFor(post)),
-      );
-      final saved = await _channel.invokeMethod<String>('saveToDownloads', {
-        'path': tempPath,
-        'fileName': fileName,
-        'mimeType': _mimeType(fileName, post.fileType),
-        if (subDir != null && subDir.isNotEmpty) 'subDir': subDir,
-      });
-      return saved ?? fileName;
+      try {
+        await _dio.download(
+          url,
+          tempPath,
+          cancelToken: cancelToken,
+          onReceiveProgress: onProgress,
+          options: Options(headers: _headersFor(post)),
+        );
+        final saved = await _channel.invokeMethod<String>('saveToDownloads', {
+          'path': tempPath,
+          'fileName': fileName,
+          'mimeType': _mimeType(fileName, post.fileType),
+          if (subDir != null && subDir.isNotEmpty) 'subDir': subDir,
+        });
+        return saved ?? fileName;
+      } finally {
+        // Clean up temporary download file to avoid duplicate storage bloat on Android
+        try {
+          final tempFile = File(tempPath);
+          if (await tempFile.exists()) {
+            await tempFile.delete();
+          }
+        } catch (_) {}
+      }
     }
 
     final downloads =
@@ -126,17 +140,28 @@ class DownloadService {
     final targetDir = subDir != null && subDir.isNotEmpty
         ? Directory(p.join(downloads.path, subDir))
         : downloads;
-    if (!targetDir.existsSync()) {
-      targetDir.createSync(recursive: true);
+    if (!await targetDir.exists()) {
+      await targetDir.create(recursive: true);
     }
     final savePath = p.join(targetDir.path, fileName);
-    await _dio.download(
-      url,
-      savePath,
-      onReceiveProgress: onProgress,
-      options: Options(headers: _headersFor(post)),
-    );
-    return savePath;
+    try {
+      await _dio.download(
+        url,
+        savePath,
+        cancelToken: cancelToken,
+        onReceiveProgress: onProgress,
+        options: Options(headers: _headersFor(post)),
+      );
+      return savePath;
+    } catch (_) {
+      try {
+        final incompleteFile = File(savePath);
+        if (await incompleteFile.exists()) {
+          await incompleteFile.delete();
+        }
+      } catch (_) {}
+      rethrow;
+    }
   }
 
   Future<String?> downloadUrl(
@@ -144,30 +169,62 @@ class DownloadService {
     required String fileName,
     String mimeType = 'application/octet-stream',
     bool openAfterDownload = false,
+    CancelToken? cancelToken,
     void Function(int received, int total)? onProgress,
   }) async {
     if (Platform.isAndroid) {
       final tempDir = await getTemporaryDirectory();
       final tempPath = p.join(tempDir.path, fileName);
-      await _dio.download(url, tempPath, onReceiveProgress: onProgress);
-      if (openAfterDownload) {
-        await openFile(tempPath, mimeType: mimeType);
-        return tempPath;
+      try {
+        await _dio.download(
+          url,
+          tempPath,
+          cancelToken: cancelToken,
+          onReceiveProgress: onProgress,
+        );
+        if (openAfterDownload) {
+          await openFile(tempPath, mimeType: mimeType);
+          return tempPath;
+        }
+        final saved = await _channel.invokeMethod<String>('saveToDownloads', {
+          'path': tempPath,
+          'fileName': fileName,
+          'mimeType': mimeType,
+        });
+        return saved ?? fileName;
+      } finally {
+        if (!openAfterDownload) {
+          try {
+            final tempFile = File(tempPath);
+            if (await tempFile.exists()) {
+              await tempFile.delete();
+            }
+          } catch (_) {}
+        }
       }
-      final saved = await _channel.invokeMethod<String>('saveToDownloads', {
-        'path': tempPath,
-        'fileName': fileName,
-        'mimeType': mimeType,
-      });
-      return saved ?? fileName;
     }
 
     final downloads =
         await getDownloadsDirectory() ?? await getTemporaryDirectory();
     final path = p.join(downloads.path, fileName);
-    await _dio.download(url, path, onReceiveProgress: onProgress);
-    if (openAfterDownload) await openFile(path, mimeType: mimeType);
-    return path;
+    try {
+      await _dio.download(
+        url,
+        path,
+        cancelToken: cancelToken,
+        onReceiveProgress: onProgress,
+      );
+      if (openAfterDownload) await openFile(path, mimeType: mimeType);
+      return path;
+    } catch (_) {
+      try {
+        final incompleteFile = File(path);
+        if (await incompleteFile.exists()) {
+          await incompleteFile.delete();
+        }
+      } catch (_) {}
+      rethrow;
+    }
   }
 
   Future<void> openFile(String path, {String? mimeType}) async {
@@ -223,8 +280,8 @@ class DownloadService {
         .toLowerCase();
     return {
       'User-Agent': lower.contains('realbooru') || lower.contains('paheal')
-          ? 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/125 Mobile Safari/537.36'
-          : 'Prisma/2.0.1 Flutter local booru browser',
+          ? AppHeaders.mobileChromeUserAgent
+          : AppHeaders.defaultUserAgent,
       'Accept': lower.contains('realbooru') || lower.contains('paheal')
           ? 'video/webm,video/mp4,image/avif,image/webp,image/apng,image/*,*/*;q=0.8'
           : '*/*',

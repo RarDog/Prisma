@@ -1,5 +1,26 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.1.2',
+    title: 'Модульный центр настроек, оптимизация производительности и улучшение интерфейса',
+    titleEn: 'Modular Settings Hub, Performance Optimizations & Interface Improvements',
+    bullets: [
+      'Иерархический центр настроек: монолитный экран настроек разделен на 7 независимых модульных экранов (Основное, Внешний вид, Лента и сетка, Фильтры и контент, Память и бэкап, Аккаунты, О приложении).',
+      'Оптимизация рендеринга и памяти: устранена постоянная фоновая перерисовка тяжелых списков виджетов при изменении отдельных параметров.',
+      'Информативные карточки категорий: на главном экране настроек выводятся актуальные параметры конфигурации в реальном времени.',
+      'Быстрый переключатель темы: компактный селектор «Авто / Светлая / Темная» встроен непосредственно в карточку приложения с гарантированным однострочным отображением.',
+      'Корректировка подписей и параметров: технические коды частоты обновления заменены на стандартные обозначения (165 Гц, 120 Гц и т.д.), оптимизированы текстовые статусы кэша и цветовых акцентов.',
+      'Увеличенный нижний отступ: списки всех разделов настроек прокручиваются с достаточным запасом, исключая перекрытие содержимого плавающей панелью навигации.',
+    ],
+    bulletsEn: [
+      'Hierarchical Settings Hub: modularized monolithic settings into 7 dedicated sub-screens (General, Appearance, Feed & Grid, Filters & Content, Storage & Backup, Accounts, About).',
+      'Rendering & Memory Optimization: eliminated redundant rebuild cycles of settings widgets during state updates.',
+      'Informative Category Cards: main settings screen features real-time summary indicators for active preferences.',
+      'Quick Theme Switcher: compact Auto / Light / Dark selector integrated into the top brand card with guaranteed single-line fit across screen sizes.',
+      'Label & Status Polish: replaced raw technical strings with human-readable formatting (e.g. 165 Hz, 120 Hz) and refined storage/accent summaries.',
+      'Expanded Bottom Inset: increased bottom scroll padding across all settings views to prevent obstruction by floating navigation bar.',
+    ],
+  ),
+  PrismaChange(
     version: '4.0.7',
     title: 'Возвращение источников в панель фильтров ленты',
     titleEn: 'Restored Provider Chips in Feed Filter Bar',

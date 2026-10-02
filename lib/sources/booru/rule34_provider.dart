@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:gel_rule_app/core/http/app_headers.dart';
 
 import 'package:gel_rule_app/sources/mappers/rule34_mapper.dart';
 import 'package:gel_rule_app/core/models/post.dart';
@@ -20,11 +21,9 @@ class Rule34Provider extends GelbooruProvider {
       'https://rule34.xxx/index.php?page=post&s=view&id=${post.id}';
 
   @override
-  Map<String, String> mediaHeaders(Post post) => const {
-        'User-Agent': 'Prisma/2.0.1 Flutter local booru browser',
-        'Accept': '*/*',
-        'Referer': 'https://rule34.xxx/',
-      };
+  Map<String, String> mediaHeaders(Post post) => AppHeaders.mediaHeaders(
+        referer: 'https://rule34.xxx/',
+      );
 
   @override
   Future<List<Post>> searchPosts({

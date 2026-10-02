@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:gel_rule_app/core/http/dio_client.dart';
@@ -93,8 +94,8 @@ class PawchiveSyncService {
           contentType: Headers.formUrlEncodedContentType,
           followRedirects: false,
           validateStatus: (status) => status != null && status < 500,
-          headers: const {
-            'User-Agent': 'Prisma/2.0.1 Flutter local booru browser',
+          headers: {
+            'User-Agent': AppHeaders.defaultUserAgent,
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
           },
         ),
@@ -232,7 +233,7 @@ class PawchiveSyncService {
         headers: {
           'Cookie': 'session=$cleanCookie',
           'Accept': 'application/json',
-          'User-Agent': 'Prisma/3.8.4 Flutter local booru browser',
+          'User-Agent': AppHeaders.defaultUserAgent,
         },
         validateStatus: (status) => status != null && status < 500,
       ),
@@ -510,7 +511,7 @@ class PawchiveSyncService {
     final options = Options(
       headers: {
         'Cookie': 'session=$cleanCookie',
-        'User-Agent': 'Prisma/2.0.1 Flutter local booru browser',
+        'User-Agent': AppHeaders.defaultUserAgent,
       },
       validateStatus: (status) =>
           status != null && (status == 200 || status == 201 || status == 204),

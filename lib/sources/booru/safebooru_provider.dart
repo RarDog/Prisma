@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:gel_rule_app/core/http/app_headers.dart';
 
 import 'package:gel_rule_app/sources/mappers/gelbooru_mapper.dart';
 import 'package:gel_rule_app/core/models/post.dart';
@@ -20,11 +21,9 @@ class SafebooruProvider extends GelbooruProvider {
       '$baseUrl/index.php?page=post&s=view&id=${post.id}';
 
   @override
-  Map<String, String> mediaHeaders(Post post) => {
-        'User-Agent': 'Prisma/4.0.0 Flutter local booru browser',
-        'Accept': '*/*',
-        'Referer': '$baseUrl/',
-      };
+  Map<String, String> mediaHeaders(Post post) => AppHeaders.mediaHeaders(
+        referer: '$baseUrl/',
+      );
 
   @override
   Future<List<Post>> searchPosts({

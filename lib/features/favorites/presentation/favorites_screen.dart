@@ -517,11 +517,16 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
 
     final sorted = List<Post>.from(offlinePosts);
     if (_offlineSort == OfflineSortOption.sizeDesc) {
+      final fileSizes = <String, int>{};
+      for (final post in offlinePosts) {
+        final m = downloaded[post.cacheKey];
+        if (m != null) {
+          fileSizes[post.cacheKey] = DownloadedMediaService.getFileSizeSync(m);
+        }
+      }
       sorted.sort((a, b) {
-        final mA = downloaded[a.cacheKey];
-        final mB = downloaded[b.cacheKey];
-        final sA = mA != null ? DownloadedMediaService.getFileSizeSync(mA) : 0;
-        final sB = mB != null ? DownloadedMediaService.getFileSizeSync(mB) : 0;
+        final sA = fileSizes[a.cacheKey] ?? 0;
+        final sB = fileSizes[b.cacheKey] ?? 0;
         return sB.compareTo(sA);
       });
     } else if (_offlineSort == OfflineSortOption.artist) {

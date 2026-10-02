@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:gel_rule_app/core/http/app_headers.dart';
 
 import 'package:gel_rule_app/core/http/dio_client.dart';
 import 'package:gel_rule_app/core/models/post.dart';
@@ -123,8 +124,7 @@ class RealbooruHtmlProvider
 
   @override
   Map<String, String> mediaHeaders(Post post) => {
-        'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'User-Agent': AppHeaders.desktopChromeUserAgent,
         'Accept':
             'video/webm,video/mp4,image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
         'Referer': '$baseUrl/',

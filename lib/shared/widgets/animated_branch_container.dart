@@ -29,6 +29,7 @@ class _AnimatedBranchContainerState extends State<AnimatedBranchContainer>
 
   int _currentIndex = 0;
   int? _previousIndex;
+  double _slideDirection = 0.0;
 
   @override
   void initState() {
@@ -50,11 +51,11 @@ class _AnimatedBranchContainerState extends State<AnimatedBranchContainer>
     _entryFade = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.2, 1.0, curve: Curves.easeOutCubic),
+        curve: const Interval(0.15, 1.0, curve: Curves.easeOutCubic),
       ),
     );
 
-    _entryScale = Tween<double>(begin: 0.98, end: 1.0).animate(
+    _entryScale = Tween<double>(begin: 0.985, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
         curve: const Interval(0.0, 1.0, curve: Curves.easeOutCubic),
@@ -64,16 +65,41 @@ class _AnimatedBranchContainerState extends State<AnimatedBranchContainer>
     _exitFade = Tween<double>(begin: 1.0, end: 0.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.45, curve: Curves.easeInCubic),
+        curve: const Interval(0.0, 0.40, curve: Curves.easeInCubic),
       ),
     );
   }
+
+  Animation<Offset> get _effectiveEntrySlide => _controller.drive(
+        Tween<Offset>(
+          begin: Offset(0.035 * _slideDirection, 0.0),
+          end: Offset.zero,
+        ).chain(
+          CurveTween(
+            curve: const Interval(0.10, 1.0, curve: Curves.easeOutCubic),
+          ),
+        ),
+      );
+
+  Animation<Offset> get _effectiveExitSlide => _controller.drive(
+        Tween<Offset>(
+          begin: Offset.zero,
+          end: Offset(-0.025 * _slideDirection, 0.0),
+        ).chain(
+          CurveTween(
+            curve: const Interval(0.0, 0.38, curve: Curves.easeInCubic),
+          ),
+        ),
+      );
 
   @override
   void didUpdateWidget(covariant AnimatedBranchContainer oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.currentIndex != oldWidget.currentIndex) {
+      final direction =
+          widget.currentIndex > oldWidget.currentIndex ? 1.0 : -1.0;
       setState(() {
+        _slideDirection = direction;
         _previousIndex = oldWidget.currentIndex;
         _currentIndex = widget.currentIndex;
       });
@@ -104,6 +130,7 @@ class _AnimatedBranchContainerState extends State<AnimatedBranchContainer>
         final bool ignoring;
         final Animation<double> opacity;
         final Animation<double> scale;
+        final Animation<Offset> slide;
 
         if (isCurrent && !hasActiveTransition) {
           // Resting active state
@@ -112,6 +139,7 @@ class _AnimatedBranchContainerState extends State<AnimatedBranchContainer>
           ignoring = false;
           opacity = kAlwaysCompleteAnimation;
           scale = kAlwaysCompleteAnimation;
+          slide = const AlwaysStoppedAnimation(Offset.zero);
         } else if (isCurrent) {
           // Entering active state during transition
           offstage = false;
@@ -119,6 +147,7 @@ class _AnimatedBranchContainerState extends State<AnimatedBranchContainer>
           ignoring = false;
           opacity = _entryFade;
           scale = _entryScale;
+          slide = _effectiveEntrySlide;
         } else if (isPrevious && hasActiveTransition) {
           // Exiting previous state during transition
           offstage = false;
@@ -126,6 +155,7 @@ class _AnimatedBranchContainerState extends State<AnimatedBranchContainer>
           ignoring = true;
           opacity = _exitFade;
           scale = kAlwaysCompleteAnimation;
+          slide = _effectiveExitSlide;
         } else {
           // Inactive state
           offstage = true;
@@ -133,6 +163,7 @@ class _AnimatedBranchContainerState extends State<AnimatedBranchContainer>
           ignoring = true;
           opacity = kAlwaysDismissedAnimation;
           scale = kAlwaysCompleteAnimation;
+          slide = const AlwaysStoppedAnimation(Offset.zero);
         }
 
         return Offstage(
@@ -141,11 +172,14 @@ class _AnimatedBranchContainerState extends State<AnimatedBranchContainer>
             enabled: tickerEnabled,
             child: IgnorePointer(
               ignoring: ignoring,
-              child: FadeTransition(
-                opacity: opacity,
-                child: ScaleTransition(
-                  scale: scale,
-                  child: child,
+              child: SlideTransition(
+                position: slide,
+                child: FadeTransition(
+                  opacity: opacity,
+                  child: ScaleTransition(
+                    scale: scale,
+                    child: child,
+                  ),
                 ),
               ),
             ),

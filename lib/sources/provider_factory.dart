@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:gel_rule_app/core/http/dio_client.dart';
+import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
 import 'package:gel_rule_app/sources/interfaces/content_provider.dart';
 import 'package:gel_rule_app/sources/booru/custom_provider.dart';
@@ -40,20 +41,19 @@ class ProviderFactory {
       if (login != null && apiKey != null && login.isNotEmpty && apiKey.isNotEmpty) {
         final basicAuth = base64Encode(utf8.encode('$login:$apiKey'));
         headers['Authorization'] = 'Basic $basicAuth';
-        headers['User-Agent'] = 'Prisma/3.6.6 (by $login on e621)';
+        headers['User-Agent'] = AppHeaders.e621UserAgent(login);
       }
     } else if (config.apiType.toLowerCase() == 'pixiv') {
       headers.putIfAbsent('Referer', () => 'https://www.pixiv.net/');
       headers.putIfAbsent(
         'User-Agent',
-        () =>
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+        () => AppHeaders.desktopChromeUserAgent,
       );
     } else if (config.apiType.toLowerCase() == 'mangadex') {
       headers.putIfAbsent('Referer', () => 'https://mangadex.org/');
       headers.putIfAbsent(
         'User-Agent',
-        () => 'Prisma/3.6.6 Flutter MangaDex Client',
+        () => AppHeaders.mangaDexUserAgent,
       );
     }
 

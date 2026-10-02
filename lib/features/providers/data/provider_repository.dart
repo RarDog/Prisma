@@ -4,6 +4,7 @@ import 'package:isar/isar.dart';
 
 import 'package:gel_rule_app/core/database/app_database.dart';
 import 'package:gel_rule_app/core/database/database_service.dart';
+import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
 import 'package:gel_rule_app/core/models/provider_diagnostics.dart';
@@ -50,8 +51,8 @@ class ProviderRepository {
         enabled: true,
         priority: 2,
         timeoutSeconds: 20,
-        customHeaders: const {
-          'User-Agent': 'Prisma/4.0.0 Flutter local booru browser',
+        customHeaders: {
+          'User-Agent': AppHeaders.defaultUserAgent,
         },
         createdAt: now,
         updatedAt: now,
@@ -76,8 +77,8 @@ class ProviderRepository {
         enabled: true,
         priority: 4,
         timeoutSeconds: 20,
-        customHeaders: const {
-          'User-Agent': 'Prisma/2.0.2 Flutter local booru browser',
+        customHeaders: {
+          'User-Agent': AppHeaders.defaultUserAgent,
         },
         createdAt: now,
         updatedAt: now,
@@ -90,8 +91,8 @@ class ProviderRepository {
         enabled: true,
         priority: 5,
         timeoutSeconds: 20,
-        customHeaders: const {
-          'User-Agent': 'Prisma/2.0.2 Flutter local booru browser',
+        customHeaders: {
+          'User-Agent': AppHeaders.defaultUserAgent,
         },
         createdAt: now,
         updatedAt: now,
@@ -116,10 +117,9 @@ class ProviderRepository {
         enabled: true,
         priority: 7,
         timeoutSeconds: 25,
-        customHeaders: const {
+        customHeaders: {
           'Referer': 'https://www.pixiv.net/',
-          'User-Agent':
-              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+          'User-Agent': AppHeaders.desktopChromeUserAgent,
         },
         createdAt: now,
         updatedAt: now,
@@ -132,9 +132,9 @@ class ProviderRepository {
         enabled: true,
         priority: 8,
         timeoutSeconds: 25,
-        customHeaders: const {
+        customHeaders: {
           'Referer': 'https://mangadex.org/',
-          'User-Agent': 'Prisma/3.6.6 Flutter MangaDex Client',
+          'User-Agent': AppHeaders.mangaDexUserAgent,
         },
         createdAt: now,
         updatedAt: now,
@@ -147,13 +147,11 @@ class ProviderRepository {
         enabled: true,
         priority: 9,
         timeoutSeconds: 25,
-        customHeaders: const {
-          'Site-Id': '1',
-          'Referer': 'https://mangalib.me/',
-          'Origin': 'https://mangalib.me',
-          'User-Agent':
-              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
-        },
+        customHeaders: AppHeaders.browserHeaders(
+          siteId: '1',
+          referer: 'https://mangalib.me/',
+          origin: 'https://mangalib.me',
+        ),
         createdAt: now,
         updatedAt: now,
       ),
@@ -165,13 +163,11 @@ class ProviderRepository {
         enabled: true,
         priority: 10,
         timeoutSeconds: 25,
-        customHeaders: const {
-          'Site-Id': '3',
-          'Referer': 'https://ranobelib.me/',
-          'Origin': 'https://ranobelib.me',
-          'User-Agent':
-              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
-        },
+        customHeaders: AppHeaders.browserHeaders(
+          siteId: '3',
+          referer: 'https://ranobelib.me/',
+          origin: 'https://ranobelib.me',
+        ),
         createdAt: now,
         updatedAt: now,
       ),

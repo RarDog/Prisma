@@ -35,6 +35,8 @@ class AppDatabase {
         ViewedPostEntitySchema,
         ProviderDiagnosticsEntitySchema,
         DownloadedMediaEntitySchema,
+        MangaLibraryEntryEntitySchema,
+        MangaReadingProgressEntitySchema,
       ],
       directory: dir,
       name: 'gel_rule_app',
@@ -370,4 +372,38 @@ class DownloadedMediaEntity {
       ..downloadedAt = model.downloadedAt
       ..status = model.status;
   }
+}
+
+@collection
+class MangaLibraryEntryEntity {
+  Id isarId = Isar.autoIncrement;
+
+  @Index(unique: true, replace: true)
+  late String mangaId;
+  @Index()
+  late String providerId;
+  late String title;
+  late String coverUrl;
+  @Index()
+  late String status; // 'reading', 'plan_to_read', 'completed', 'dropped'
+  late DateTime addedAt;
+  late int totalChaptersCount;
+  late int newChaptersCount;
+}
+
+@collection
+class MangaReadingProgressEntity {
+  Id isarId = Isar.autoIncrement;
+
+  @Index(unique: true, replace: true)
+  late String mangaId;
+  late String providerId;
+  late String title;
+  late String coverUrl;
+  late String chapterId;
+  late String chapterNumber;
+  late int pageIndex;
+  late int totalPages;
+  late List<String> readChapterIds;
+  late DateTime updatedAt;
 }

@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:gel_rule_app/core/errors/app_exception.dart';
+import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 
 class DioClient {
@@ -40,7 +41,7 @@ class DioClient {
       receiveTimeout: timeout,
       sendTimeout: timeout,
       headers: {
-        'User-Agent': 'Prisma/2.0.1 Flutter local booru browser',
+        'User-Agent': AppHeaders.defaultUserAgent,
         'Accept': 'application/json, text/xml;q=0.9, */*;q=0.8',
         ...?headers,
       },

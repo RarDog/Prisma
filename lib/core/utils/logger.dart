@@ -9,15 +9,23 @@ class AppLogger {
 
   static void clear() => _lines.clear();
 
-  void debug(String message, [Object? error, StackTrace? stackTrace]) {
+  static void log(String message, [Object? error, StackTrace? stackTrace]) {
     final line = '[${DateTime.now().toIso8601String()}] $message'
         '${error == null ? '' : ' error=$error'}';
     _lines.add(line);
-    if (_lines.length > 200) _lines.removeRange(0, _lines.length - 200);
+    if (_lines.length > 500) _lines.removeRange(0, _lines.length - 500);
     if (kDebugMode) {
-      debugPrint('[GelRule] $message');
+      debugPrint('[Prizma] $message');
       if (error != null) debugPrint('  error: $error');
       if (stackTrace != null) debugPrint('  stack: $stackTrace');
     }
+  }
+
+  static void error(String message, [Object? error, StackTrace? stackTrace]) {
+    log('ERROR: $message', error, stackTrace);
+  }
+
+  void debug(String message, [Object? error, StackTrace? stackTrace]) {
+    log(message, error, stackTrace);
   }
 }

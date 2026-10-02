@@ -17,6 +17,7 @@ import 'package:gel_rule_app/features/providers/models/content_provider_config.d
 import 'package:gel_rule_app/core/models/post.dart';
 import 'package:gel_rule_app/features/providers/data/provider_repository.dart';
 import 'package:gel_rule_app/features/settings/domain/settings_service.dart';
+import 'package:gel_rule_app/core/utils/logger.dart';
 
 class BackupService {
   BackupService(
@@ -58,6 +59,8 @@ class BackupService {
     final collectionsData = <Map<String, dynamic>>[];
     final collectionPostsData = <Map<String, dynamic>>[];
     final searchHistoryData = <Map<String, dynamic>>[];
+    final mangaLibraryData = <Map<String, dynamic>>[];
+    final mangaProgressData = <Map<String, dynamic>>[];
 
     final db = _databaseService;
     if (db != null) {
@@ -115,6 +118,40 @@ class BackupService {
         for (final s in searchEntities) {
           searchHistoryData.add(s.toModel().toJson());
         }
+
+        // 6. Manga library
+        final mangaEntities =
+            await isar.mangaLibraryEntryEntitys.where().findAll();
+        for (final m in mangaEntities) {
+          mangaLibraryData.add({
+            'mangaId': m.mangaId,
+            'providerId': m.providerId,
+            'title': m.title,
+            'coverUrl': m.coverUrl,
+            'status': m.status,
+            'addedAt': m.addedAt.toIso8601String(),
+            'totalChaptersCount': m.totalChaptersCount,
+            'newChaptersCount': m.newChaptersCount,
+          });
+        }
+
+        // 7. Manga reading progress
+        final progressEntities =
+            await isar.mangaReadingProgressEntitys.where().findAll();
+        for (final p in progressEntities) {
+          mangaProgressData.add({
+            'mangaId': p.mangaId,
+            'providerId': p.providerId,
+            'title': p.title,
+            'coverUrl': p.coverUrl,
+            'chapterId': p.chapterId,
+            'chapterNumber': p.chapterNumber,
+            'pageIndex': p.pageIndex,
+            'totalPages': p.totalPages,
+            'readChapterIds': p.readChapterIds,
+            'updatedAt': p.updatedAt.toIso8601String(),
+          });
+        }
       });
     }
 
@@ -126,6 +163,8 @@ class BackupService {
       'collections': collectionsData,
       'collectionPosts': collectionPostsData,
       'searchHistory': searchHistoryData,
+      'mangaLibrary': mangaLibraryData,
+      'mangaProgress': mangaProgressData,
     };
   }
 
@@ -284,6 +323,48 @@ class BackupService {
               }
             }
           }
+
+          // Manga Library
+          final mangaList = decoded['mangaLibrary'];
+          if (mangaList is List) {
+            for (final item in mangaList) {
+              if (item is Map) {
+                final m = Map<String, dynamic>.from(item);
+                final entity = MangaLibraryEntryEntity()
+                  ..mangaId = (m['mangaId'] ?? '').toString()
+                  ..providerId = (m['providerId'] ?? '').toString()
+                  ..title = (m['title'] ?? '').toString()
+                  ..coverUrl = (m['coverUrl'] ?? '').toString()
+                  ..status = (m['status'] ?? 'reading').toString()
+                  ..addedAt = DateTime.tryParse(m['addedAt']?.toString() ?? '') ?? DateTime.now()
+                  ..totalChaptersCount = (m['totalChaptersCount'] as num?)?.toInt() ?? 0
+                  ..newChaptersCount = (m['newChaptersCount'] as num?)?.toInt() ?? 0;
+                await isar.mangaLibraryEntryEntitys.putByMangaId(entity);
+              }
+            }
+          }
+
+          // Manga Reading Progress
+          final progressList = decoded['mangaProgress'];
+          if (progressList is List) {
+            for (final item in progressList) {
+              if (item is Map) {
+                final p = Map<String, dynamic>.from(item);
+                final entity = MangaReadingProgressEntity()
+                  ..mangaId = (p['mangaId'] ?? '').toString()
+                  ..providerId = (p['providerId'] ?? '').toString()
+                  ..title = (p['title'] ?? '').toString()
+                  ..coverUrl = (p['coverUrl'] ?? '').toString()
+                  ..chapterId = (p['chapterId'] ?? '').toString()
+                  ..chapterNumber = (p['chapterNumber'] ?? '').toString()
+                  ..pageIndex = (p['pageIndex'] as num?)?.toInt() ?? 0
+                  ..totalPages = (p['totalPages'] as num?)?.toInt() ?? 0
+                  ..readChapterIds = List<String>.from((p['readChapterIds'] as List?) ?? const [])
+                  ..updatedAt = DateTime.tryParse(p['updatedAt']?.toString() ?? '') ?? DateTime.now();
+                await isar.mangaReadingProgressEntitys.putByMangaId(entity);
+              }
+            }
+          }
         });
       }
 
@@ -370,14 +451,16 @@ class BackupService {
       for (final dirPath in candidateDirs) {
         try {
           final dir = Directory(dirPath);
-          if (!dir.existsSync()) {
-            dir.createSync(recursive: true);
+          if (!await dir.exists()) {
+            await dir.create(recursive: true);
           }
           final file = File('$dirPath/$backupFileName');
           await file.writeAsString(json);
           anySaved = true;
           lastPersistentBackupPath = file.path;
-        } catch (_) {}
+        } catch (e, st) {
+          AppLogger.log('BackupService: failed to write backup to $dirPath', e, st);
+        }
       }
 
       if (Platform.isAndroid) {
@@ -388,7 +471,9 @@ class BackupService {
           });
           anySaved = true;
           lastPersistentBackupPath = 'Downloads/Prisma/$backupFileName';
-        } catch (_) {}
+        } catch (e, st) {
+          AppLogger.log('BackupService: Android persistent backup failed', e, st);
+        }
       }
 
       if (anySaved) {
@@ -396,8 +481,8 @@ class BackupService {
         lastPersistentBackupAt = DateTime.now();
       }
       return anySaved;
-    } catch (e) {
-      debugPrint('saveAutoBackupToPersistentStorage error: $e');
+    } catch (e, st) {
+      AppLogger.log('BackupService.saveAutoBackupToPersistentStorage error', e, st);
       return false;
     }
   }
@@ -415,8 +500,8 @@ class BackupService {
             lastPersistentBackupPath = 'Downloads/Prisma/$backupFileName';
             return content;
           }
-        } catch (e) {
-          debugPrint('native readPersistentBackup error: $e');
+        } catch (e, st) {
+          AppLogger.log('BackupService: native readPersistentBackup error', e, st);
         }
       }
 
@@ -424,15 +509,21 @@ class BackupService {
       for (final dirPath in candidateDirs) {
         try {
           final dir = Directory(dirPath);
-          if (!dir.existsSync()) continue;
+          if (!await dir.exists()) continue;
 
-          final files = dir.listSync().whereType<File>().where((f) {
+          final entities = await dir.list().toList();
+          final files = entities.whereType<File>().where((f) {
             final name = f.uri.pathSegments.last;
             return name.startsWith('prisma_backup') && name.endsWith('.json');
           }).toList();
 
           if (files.isNotEmpty) {
-            files.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+            final fileModTimes = <String, DateTime>{};
+            for (final f in files) {
+              fileModTimes[f.path] = await f.lastModified();
+            }
+            files.sort((a, b) => (fileModTimes[b.path] ?? DateTime.fromMillisecondsSinceEpoch(0))
+                .compareTo(fileModTimes[a.path] ?? DateTime.fromMillisecondsSinceEpoch(0)));
             for (final f in files) {
               try {
                 final text = await f.readAsString();
@@ -440,13 +531,17 @@ class BackupService {
                   lastPersistentBackupPath = f.path;
                   return text;
                 }
-              } catch (_) {}
+              } catch (e, st) {
+                AppLogger.log('BackupService: failed reading candidate file ${f.path}', e, st);
+              }
             }
           }
-        } catch (_) {}
+        } catch (e, st) {
+          AppLogger.log('BackupService: candidateDir scan error for $dirPath', e, st);
+        }
       }
-    } catch (e) {
-      debugPrint('readPersistentBackup error: $e');
+    } catch (e, st) {
+      AppLogger.log('BackupService.readPersistentBackup error', e, st);
     }
     return null;
   }

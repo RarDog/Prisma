@@ -9,7 +9,7 @@ final mangaOfflineServiceProvider = Provider<MangaOfflineService>((ref) {
 });
 
 final mangaDownloadedChaptersProvider =
-    FutureProvider.family<List<String>, String>((ref, mangaId) async {
+    FutureProvider.autoDispose.family<List<String>, String>((ref, mangaId) async {
   final service = ref.watch(mangaOfflineServiceProvider);
   ref.watch(_mangaOfflineChangeProvider);
   return service.getDownloadedChapterIds(mangaId);
@@ -31,7 +31,7 @@ final mangaLibraryServiceProvider = Provider<MangaLibraryService>((ref) {
 });
 
 final mangaLibraryEntriesProvider =
-    FutureProvider.family<List<MangaLibraryEntry>, String?>((ref, statusFilter) async {
+    FutureProvider.autoDispose.family<List<MangaLibraryEntry>, String?>((ref, statusFilter) async {
   final service = ref.watch(mangaLibraryServiceProvider);
   // Re-run whenever changeNotifier changes
   ref.watch(_mangaLibraryChangeProvider);
@@ -39,21 +39,21 @@ final mangaLibraryEntriesProvider =
 });
 
 final mangaReadingHistoryProvider =
-    FutureProvider<List<MangaLibraryEntry>>((ref) async {
+    FutureProvider.autoDispose<List<MangaLibraryEntry>>((ref) async {
   final service = ref.watch(mangaLibraryServiceProvider);
   ref.watch(_mangaLibraryChangeProvider);
   return service.getReadingHistory();
 });
 
 final mangaProgressProvider =
-    FutureProvider.family<MangaReadingProgress?, String>((ref, mangaId) async {
+    FutureProvider.autoDispose.family<MangaReadingProgress?, String>((ref, mangaId) async {
   final service = ref.watch(mangaLibraryServiceProvider);
   ref.watch(_mangaLibraryChangeProvider);
   return service.getProgress(mangaId);
 });
 
 final mangaEntryProvider =
-    FutureProvider.family<MangaLibraryEntry?, String>((ref, mangaId) async {
+    FutureProvider.autoDispose.family<MangaLibraryEntry?, String>((ref, mangaId) async {
   final service = ref.watch(mangaLibraryServiceProvider);
   ref.watch(_mangaLibraryChangeProvider);
   return service.getLibraryEntry(mangaId);

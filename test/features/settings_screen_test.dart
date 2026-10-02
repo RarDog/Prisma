@@ -35,25 +35,35 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    // Verify pinned Category Quick Nav renders
+    // Verify Settings Hub category cards render
     expect(find.text('Основное'), findsWidgets);
     expect(find.text('Внешний вид'), findsWidgets);
+    expect(find.text('Лента и сетка'), findsWidgets);
 
-    // Verify Theme mode segment buttons
+    // Verify Quick Theme mode segment buttons on Hub
     expect(find.text('Темная'), findsOneWidget);
     expect(find.text('Светлая'), findsOneWidget);
+    expect(find.text('Авто'), findsOneWidget);
 
-    // Tap a quick nav chip to test scrolling
-    await tester.tap(find.text('Внешний вид').first);
+    // Tap 'Основное' to navigate into GeneralSettingsScreen
+    await tester.tap(find.text('Основное').first);
     await tester.pumpAndSettle();
 
-    // Verify language segment is visible and tappable
+    // Verify language segment is visible in GeneralSettingsScreen
     expect(find.text('🇷🇺 Русский'), findsOneWidget);
     expect(find.text('🇬🇧 English'), findsOneWidget);
 
     // Tap English to test selection
     await tester.tap(find.text('🇬🇧 English'));
     await tester.pumpAndSettle();
+
+    // Test back button popping back to Settings Hub
+    final backButton = find.byType(BackButton);
+    if (backButton.evaluate().isNotEmpty) {
+      await tester.tap(backButton);
+      await tester.pumpAndSettle();
+      expect(find.text('General'), findsWidgets);
+    }
   });
 }
 

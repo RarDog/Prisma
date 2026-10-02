@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gel_rule_app/core/database/app_database.dart';
 import 'package:gel_rule_app/core/database/database_service.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/features/manga/domain/manga_library_service.dart';
 import 'package:isar/isar.dart';
 
@@ -169,6 +170,69 @@ void main() {
       expect(await libraryService.getLibraryEntry('manga-99'), isNull);
       final entries = await libraryService.getLibraryEntries();
       expect(entries.where((e) => e.mangaId == 'manga-99').isEmpty, isTrue);
+    });
+
+    test('seamlessly migrates legacy AppSettingEntity JSON entries to Isar collections', () async {
+      // Manually insert legacy JSON into AppSettingEntity
+      await databaseService.safeWrite((isar) async {
+        final legacyLib = AppSettingEntity()
+          ..key = 'manga_library_entries_v1'
+          ..jsonValue = '''
+          [
+            {
+              "mangaId": "legacy-manga-1",
+              "providerId": "mangadex",
+              "title": "Legacy One Piece",
+              "coverUrl": "https://example.com/op.jpg",
+              "status": "reading",
+              "addedAt": "2026-09-01T12:00:00.000Z",
+              "totalChaptersCount": 1100,
+              "newChaptersCount": 5
+            }
+          ]
+          '''
+          ..updatedAt = DateTime.now();
+        await isar.appSettingEntitys.put(legacyLib);
+
+        final legacyProg = AppSettingEntity()
+          ..key = 'manga_reading_progress_v1'
+          ..jsonValue = '''
+          {
+            "legacy-manga-1": {
+              "mangaId": "legacy-manga-1",
+              "providerId": "mangadex",
+              "title": "Legacy One Piece",
+              "coverUrl": "https://example.com/op.jpg",
+              "chapterId": "ch-1050",
+              "chapterNumber": "1050",
+              "pageIndex": 12,
+              "totalPages": 18,
+              "readChapterIds": ["ch-1049", "ch-1050"],
+              "updatedAt": "2026-09-01T14:00:00.000Z"
+            }
+          }
+          '''
+          ..updatedAt = DateTime.now();
+        await isar.appSettingEntitys.put(legacyProg);
+      });
+
+      // Create fresh service instance to trigger migration on first call
+      final freshService = MangaLibraryService(databaseService);
+      final entries = await freshService.getLibraryEntries();
+      expect(entries.length, equals(1));
+      expect(entries.first.mangaId, equals('legacy-manga-1'));
+      expect(entries.first.title, equals('Legacy One Piece'));
+      expect(entries.first.progress, isNotNull);
+      expect(entries.first.progress!.chapterNumber, equals('1050'));
+      expect(entries.first.progress!.readChapterIds.contains('ch-1049'), isTrue);
+
+      // Verify legacy keys were removed from AppSettingEntity
+      final check = await databaseService.safeRead<bool>((isar) async {
+        final l1 = await isar.appSettingEntitys.filter().keyEqualTo('manga_library_entries_v1').findFirst();
+        final l2 = await isar.appSettingEntitys.filter().keyEqualTo('manga_reading_progress_v1').findFirst();
+        return l1 == null && l2 == null;
+      });
+      expect(check.isSuccess && (check as Success<bool>).data, isTrue);
     });
   });
 }

@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,9 +10,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/features/post/presentation/widgets/post_media_viewer.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
-import 'package:gel_rule_app/shared/widgets/app_shell.dart';
 import 'package:gel_rule_app/sources/booru/mangadex_provider.dart';
 import '../domain/manga_library_providers.dart';
+import '../domain/reader_navigation_helper.dart';
+import 'mixins/reader_fullscreen_mixin.dart';
 import 'widgets/page_flip_3d.dart';
 
 enum MangaReaderMode {
@@ -56,13 +59,13 @@ class MangaReaderScreen extends ConsumerStatefulWidget {
 }
 
 class _MangaReaderScreenState extends ConsumerState<MangaReaderScreen>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, ReaderFullscreenMixin<MangaReaderScreen> {
   static const MethodChannel _volumeChannel =
       MethodChannel('rulegel/volume_keys');
   final GlobalKey<PageFlip3DState> _flipKey = GlobalKey<PageFlip3DState>();
   final ScrollController _webtoonScrollController = ScrollController();
 
-  bool _isFullscreen = false;
+  bool get _isFullscreen => isReaderFullscreen;
   MangaReaderMode _readerMode = MangaReaderMode.pagedRtl;
   MangaReaderTheme _readerTheme = MangaReaderTheme.black;
 
@@ -79,8 +82,6 @@ class _MangaReaderScreenState extends ConsumerState<MangaReaderScreen>
   List<String> _availableLanguages = [];
   String? _selectedLanguage;
   int _currentChapterIndex = 0;
-  ShellBottomBarVisibilityNotifier? _bottomBarNotifier;
-  bool _hasReleasedHide = false;
   String? _prefetchedChapterId;
 
   Timer? _progressDebounce;
@@ -89,10 +90,7 @@ class _MangaReaderScreenState extends ConsumerState<MangaReaderScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    try {
-      _bottomBarNotifier = ref.read(shellHideBottomBarProvider.notifier);
-      _bottomBarNotifier?.pushHide();
-    } catch (_) {}
+    initReaderFullscreen();
 
     try {
       final settings =
@@ -342,15 +340,18 @@ class _MangaReaderScreenState extends ConsumerState<MangaReaderScreen>
 
     // Smart prefetch next chapter if approaching end (last 2 pages)
     if (index >= _pageUrls.length - 2 &&
-        _currentChapterIndex + 1 < _chapters.length &&
+        ReaderNavigationHelper.hasNext(currentIndex: _currentChapterIndex, totalCount: _chapters.length) &&
         widget.post.providerId == 'mangadex') {
       _prefetchNextChapterPages();
     }
   }
 
   Future<void> _prefetchNextChapterPages() async {
-    final nextIdx = _currentChapterIndex + 1;
-    if (nextIdx >= _chapters.length) return;
+    final nextIdx = ReaderNavigationHelper.nextIndex(
+      currentIndex: _currentChapterIndex,
+      totalCount: _chapters.length,
+    );
+    if (nextIdx == null) return;
     final nextChapter = _chapters[nextIdx];
     if (_prefetchedChapterId == nextChapter.id) return;
     _prefetchedChapterId = nextChapter.id;
@@ -413,7 +414,7 @@ class _MangaReaderScreenState extends ConsumerState<MangaReaderScreen>
 
   void _onNextChapter() {
     final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
-    if (_currentChapterIndex + 1 < _chapters.length) {
+    if (ReaderNavigationHelper.hasNext(currentIndex: _currentChapterIndex, totalCount: _chapters.length)) {
       final nextChapter = _chapters[_currentChapterIndex + 1];
       HapticFeedback.mediumImpact();
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -445,7 +446,7 @@ class _MangaReaderScreenState extends ConsumerState<MangaReaderScreen>
   }
 
   void _onPreviousChapter() {
-    if (_currentChapterIndex > 0) {
+    if (ReaderNavigationHelper.hasPrevious(currentIndex: _currentChapterIndex, totalCount: _chapters.length)) {
       final prevChapter = _chapters[_currentChapterIndex - 1];
       final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
       HapticFeedback.selectionClick();
@@ -466,23 +467,11 @@ class _MangaReaderScreenState extends ConsumerState<MangaReaderScreen>
   }
 
   void _toggleFullscreen() {
-    setState(() {
-      _isFullscreen = !_isFullscreen;
-    });
-    if (_isFullscreen) {
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    } else {
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    }
+    toggleReaderFullscreen();
   }
 
   void _releaseHide() {
-    if (!_hasReleasedHide) {
-      _hasReleasedHide = true;
-      try {
-        _bottomBarNotifier?.popHide();
-      } catch (_) {}
-    }
+    disposeReaderFullscreen();
   }
 
   @override
@@ -579,10 +568,7 @@ class _MangaReaderScreenState extends ConsumerState<MangaReaderScreen>
     _progressDebounce?.cancel();
     _saveCurrentProgress();
     _webtoonScrollController.dispose();
-    _releaseHide();
-    if (_isFullscreen) {
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    }
+    disposeReaderFullscreen();
     super.dispose();
   }
 
@@ -1083,7 +1069,15 @@ class _MangaReaderScreenState extends ConsumerState<MangaReaderScreen>
         appBar: _isFullscreen
             ? null
             : AppBar(
-                backgroundColor: Colors.black.withValues(alpha: 0.72),
+                backgroundColor: Colors.transparent,
+                flexibleSpace: ClipRect(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                    child: Container(
+                      color: Colors.black.withValues(alpha: 0.65),
+                    ),
+                  ),
+                ),
                 surfaceTintColor: Colors.transparent,
                 elevation: 0,
                 leading: IconButton(
@@ -1228,6 +1222,9 @@ class _MangaReaderScreenState extends ConsumerState<MangaReaderScreen>
                     controller: _webtoonScrollController,
                     physics: const BouncingScrollPhysics(),
                     padding: EdgeInsets.zero,
+                    scrollCacheExtent: const ScrollCacheExtent.pixels(600),
+                    addAutomaticKeepAlives: false,
+                    addRepaintBoundaries: true,
                     itemCount: _pageUrls.length + 1, // +1 for chapter transition footer
                     itemBuilder: (context, index) {
                       if (index == _pageUrls.length) {
@@ -1251,7 +1248,7 @@ class _MangaReaderScreenState extends ConsumerState<MangaReaderScreen>
                                 ),
                               ),
                               const SizedBox(height: 16),
-                              if (_currentChapterIndex + 1 < _chapters.length)
+                              if (ReaderNavigationHelper.hasNext(currentIndex: _currentChapterIndex, totalCount: _chapters.length))
                                 FilledButton.icon(
                                   style: FilledButton.styleFrom(
                                     backgroundColor: const Color(0xFFFF6740),
@@ -1324,13 +1321,24 @@ class _MangaReaderScreenState extends ConsumerState<MangaReaderScreen>
                 left: 16,
                 right: 16,
                 bottom: MediaQuery.paddingOf(context).bottom + 12,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.80),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-                  ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.65),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.16), width: 0.8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.35),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
                   child: Row(
                     children: [
                       Text(
@@ -1374,6 +1382,8 @@ class _MangaReaderScreenState extends ConsumerState<MangaReaderScreen>
                   ),
                 ),
               ),
+            ),
+          ),
           ],
         ),
       ),

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/features/downloads/models/download_task.dart';
 import 'package:gel_rule_app/core/models/post.dart';
@@ -21,6 +22,7 @@ class DownloadManagerService {
   final SettingsService? _settingsService;
   final _controller = StreamController<List<DownloadTask>>.broadcast();
   final Map<String, DownloadTask> _tasks = {};
+  final Map<String, CancelToken> _cancelTokens = {};
   final Set<String> _runningTaskIds = {};
   bool _queuePaused = false;
 
@@ -85,6 +87,8 @@ class DownloadManagerService {
   }
 
   void cancel(String taskId) {
+    _cancelTokens[taskId]?.cancel('User canceled download');
+    _cancelTokens.remove(taskId);
     final existing = _tasks[taskId];
     if (existing == null) return;
     _set(existing.copyWith(status: DownloadTaskStatus.canceled));
@@ -103,6 +107,8 @@ class DownloadManagerService {
   Future<void> _run(DownloadTask task) async {
     if (_tasks[task.id]?.status == DownloadTaskStatus.canceled) return;
     if (!_runningTaskIds.add(task.id)) return;
+    final cancelToken = CancelToken();
+    _cancelTokens[task.id] = cancelToken;
     _set(task.copyWith(status: DownloadTaskStatus.running));
     try {
       String? folderTemplate;
@@ -116,6 +122,7 @@ class DownloadManagerService {
           ? await _downloadService.downloadPost(
               task.post!,
               folderTemplate: folderTemplate,
+              cancelToken: cancelToken,
               onProgress: (received, total) {
                 _updateProgress(task.id, received, total);
               },
@@ -125,6 +132,7 @@ class DownloadManagerService {
               fileName: task.fileName,
               mimeType: _mimeType(task.fileName),
               openAfterDownload: task.openAfterDownload,
+              cancelToken: cancelToken,
               onProgress: (received, total) {
                 _updateProgress(task.id, received, total);
               },
@@ -160,6 +168,7 @@ class DownloadManagerService {
         ),
       );
     } finally {
+      _cancelTokens.remove(task.id);
       _runningTaskIds.remove(task.id);
       _pumpQueue();
     }

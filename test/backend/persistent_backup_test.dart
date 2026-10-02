@@ -119,6 +119,8 @@ void main() {
       expect(map.containsKey('providers'), isTrue);
       expect(map.containsKey('favorites'), isTrue);
       expect(map.containsKey('collections'), isTrue);
+      expect(map.containsKey('mangaLibrary'), isTrue);
+      expect(map.containsKey('mangaProgress'), isTrue);
     });
   });
 }

@@ -19,7 +19,7 @@ import 'package:gel_rule_app/features/favorites/presentation/favorites_controlle
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
 
 final artistPostsProvider =
-    FutureProvider.family<List<Post>, ArtistWorkQuery>((ref, query) async {
+    FutureProvider.autoDispose.family<List<Post>, ArtistWorkQuery>((ref, query) async {
   final providers =
       await ref.watch(providerManagerProvider).activeArtistProviders();
   if (providers is! Success<List<ArtistProvider>>) return const [];

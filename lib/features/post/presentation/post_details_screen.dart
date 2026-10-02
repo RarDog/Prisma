@@ -36,7 +36,7 @@ import 'widgets/post_tags_panel.dart';
 import 'package:gel_rule_app/sources/booru/e621_provider.dart';
 
 final postCommentsProvider =
-    FutureProvider.family<List<PostComment>, PostDetailsArgs>(
+    FutureProvider.autoDispose.family<List<PostComment>, PostDetailsArgs>(
         (ref, args) async {
   final result = await ref
       .watch(providerManagerProvider)
@@ -45,7 +45,7 @@ final postCommentsProvider =
 });
 
 final postNotesProvider =
-    FutureProvider.family<List<PostNote>, PostDetailsArgs>(
+    FutureProvider.autoDispose.family<List<PostNote>, PostDetailsArgs>(
         (ref, args) async {
   final result = await ref
       .watch(providerManagerProvider)
@@ -57,7 +57,7 @@ final showPostNotesProvider =
     StateProvider.autoDispose.family<bool, String>((ref, postCacheKey) => false);
 
 final postProviderInstanceProvider =
-    FutureProvider.family<ContentProvider?, String>((ref, providerId) async {
+    FutureProvider.autoDispose.family<ContentProvider?, String>((ref, providerId) async {
   return ref.watch(providerManagerProvider).getProviderInstance(providerId);
 });
 
@@ -87,7 +87,7 @@ class ArtistPostsArgs {
 
 /// Fetches up to 6 recent posts from the same artist.
 final artistPostsProvider =
-    FutureProvider.family<List<Post>, ArtistPostsArgs>((ref, args) async {
+    FutureProvider.autoDispose.family<List<Post>, ArtistPostsArgs>((ref, args) async {
   if (args.queryTag.isEmpty && args.artistName.isEmpty) return const [];
   final result = await ref.watch(feedServiceProvider).refresh(
         tags: [args.queryTag],

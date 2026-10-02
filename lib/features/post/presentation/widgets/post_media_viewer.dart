@@ -13,10 +13,12 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:gel_rule_app/app/motion.dart';
+import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'package:gel_rule_app/app/responsive.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/features/feed/presentation/feed_controller.dart';
 import 'package:gel_rule_app/shared/widgets/formatted_content_text.dart';
+import 'post_notes_overlay.dart';
 
 final Map<String, VideoPlaybackSnapshot> _playbackMemory =
     <String, VideoPlaybackSnapshot>{};
@@ -77,8 +79,7 @@ Map<String, String> getPostMediaHeaders(Post post, [Map<String, String>? extraHe
   }
 
   return {
-    'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
+    'User-Agent': AppHeaders.desktopChromeUserAgent,
     'Accept': 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
     if (defaultReferer != null) 'Referer': defaultReferer,
     if (extraHeaders != null) ...extraHeaders,
@@ -498,7 +499,7 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer>
             children: [
               image,
               if (widget.showNotes && widget.notes.isNotEmpty)
-                _PostNotesOverlay(
+                PostNotesOverlay(
                   post: widget.post,
                   notes: widget.notes,
                 ),
@@ -1700,6 +1701,15 @@ class _FullscreenVideoItemState extends State<_FullscreenVideoItem> {
   bool _isLandscape = false;
   bool _isSoftwareDecoding = false;
   String? _errorMessage;
+  StreamSubscription<String>? _errorSub;
+  StreamSubscription<Duration>? _posSub;
+
+  void _cancelSubscriptions() {
+    _errorSub?.cancel();
+    _errorSub = null;
+    _posSub?.cancel();
+    _posSub = null;
+  }
 
   @override
   void initState() {
@@ -1722,6 +1732,7 @@ class _FullscreenVideoItemState extends State<_FullscreenVideoItem> {
   }
 
   void _initPlayer() {
+    _cancelSubscriptions();
     MediaKit.ensureInitialized();
     final p = Player();
     final enableHw = !_isSoftwareDecoding;
@@ -1737,11 +1748,11 @@ class _FullscreenVideoItemState extends State<_FullscreenVideoItem> {
     _applyVolume();
     p.setPlaylistMode(_loopVideo ? PlaylistMode.single : PlaylistMode.none);
 
-    p.stream.error.listen((message) {
+    _errorSub = p.stream.error.listen((message) {
       if (mounted) setState(() => _errorMessage = message);
     });
 
-    p.stream.position.listen((pos) {
+    _posSub = p.stream.position.listen((pos) {
       if (!mounted) return;
       _playbackMemory[widget.post.cacheKey] = VideoPlaybackSnapshot(
         position: pos,
@@ -1825,6 +1836,7 @@ class _FullscreenVideoItemState extends State<_FullscreenVideoItem> {
   @override
   void dispose() {
     _hideTimer?.cancel();
+    _cancelSubscriptions();
     if (_player != null) {
       final pos = _player!.state.position;
       final isPlaying = _player!.state.playing;
@@ -2114,7 +2126,7 @@ class _InteractiveFullscreenImageItemState
       children: [
         imageWidget,
         if (widget.showNotes && widget.notes.isNotEmpty)
-          _PostNotesOverlay(
+          PostNotesOverlay(
             post: widget.post,
             notes: widget.notes,
           ),
@@ -4557,181 +4569,4 @@ class _TextArticleHero extends StatelessWidget {
   }
 }
 
-String _cleanNoteBody(String raw) {
-  var text = raw;
-  text = text
-      .replaceAll('&quot;', '"')
-      .replaceAll('&#39;', "'")
-      .replaceAll('&apos;', "'")
-      .replaceAll('&amp;', '&')
-      .replaceAll('&lt;', '<')
-      .replaceAll('&gt;', '>');
-  text = text.replaceAll(RegExp(r'\[/?[a-zA-Z0-9_=#]+\]'), '');
-  text = text.replaceAll(RegExp(r'</?[a-zA-Z0-9_]+>'), '');
-  return text.trim();
-}
-
-void _showNoteDialog(BuildContext context, PostNote note) {
-  final cleaned = _cleanNoteBody(note.body);
-  final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
-  showDialog<void>(
-    context: context,
-    builder: (dialogContext) {
-      final theme = Theme.of(dialogContext);
-      return AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.translate_rounded, size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                note.authorName != null && note.authorName!.isNotEmpty
-                    ? '${isRu ? "Перевод" : "Translation"} (${note.authorName})'
-                    : (isRu ? 'Перевод' : 'Translation'),
-                style: const TextStyle(fontSize: 16),
-              ),
-            ),
-          ],
-        ),
-        content: SelectableText(
-          cleaned,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontSize: 15,
-            height: 1.4,
-          ),
-        ),
-        actions: [
-          TextButton.icon(
-            icon: const Icon(Icons.copy_rounded, size: 16),
-            label: Text(isRu ? 'Копировать' : 'Copy'),
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: cleaned));
-              Navigator.of(dialogContext).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    isRu
-                        ? 'Текст перевода скопирован'
-                        : 'Translation text copied',
-                  ),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            },
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(isRu ? 'Закрыть' : 'Close'),
-          ),
-        ],
-      );
-    },
-  );
-}
-
-class _PostNotesOverlay extends StatelessWidget {
-  const _PostNotesOverlay({
-    required this.post,
-    required this.notes,
-  });
-
-  final Post post;
-  final List<PostNote> notes;
-
-  @override
-  Widget build(BuildContext context) {
-    if (notes.isEmpty || post.width <= 0 || post.height <= 0) {
-      return const SizedBox.shrink();
-    }
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (!constraints.hasBoundedWidth || !constraints.hasBoundedHeight) {
-          return const SizedBox.shrink();
-        }
-        final containerSize = Size(constraints.maxWidth, constraints.maxHeight);
-        final imageSize = Size(post.width.toDouble(), post.height.toDouble());
-        final fitted = applyBoxFit(BoxFit.contain, imageSize, containerSize);
-        final renderedW = fitted.destination.width;
-        final renderedH = fitted.destination.height;
-        final dx = (containerSize.width - renderedW) / 2.0;
-        final dy = (containerSize.height - renderedH) / 2.0;
-        final scaleX = renderedW / post.width;
-        final scaleY = renderedH / post.height;
-
-        return Stack(
-          children: [
-            for (final note in notes)
-              if (note.isActive)
-                Positioned(
-                  left: dx + (note.x * scaleX),
-                  top: dy + (note.y * scaleY),
-                  width: (note.width * scaleX).clamp(16.0, renderedW),
-                  height: (note.height * scaleY).clamp(16.0, renderedH),
-                  child: _NoteBox(note: note),
-                ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _NoteBox extends StatelessWidget {
-  const _NoteBox({required this.note});
-
-  final PostNote note;
-
-  @override
-  Widget build(BuildContext context) {
-    final cleaned = _cleanNoteBody(note.body);
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => _showNoteDialog(context, note),
-      child: Tooltip(
-        message: cleaned,
-        child: Container(
-          padding: const EdgeInsets.all(2),
-          decoration: BoxDecoration(
-            color: (isDark ? Colors.grey.shade900 : Colors.grey.shade200)
-                .withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(3),
-            border: Border.all(
-              color: isDark ? Colors.white54 : Colors.black45,
-              width: 0.75,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.18),
-                blurRadius: 2,
-                offset: const Offset(0, 1),
-              ),
-            ],
-          ),
-          child: Center(
-            child: SingleChildScrollView(
-              physics: const NeverScrollableScrollPhysics(),
-              child: Text(
-                cleaned,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: isDark ? Colors.white : Colors.black87,
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w600,
-                  height: 1.15,
-                ),
-                softWrap: true,
-                overflow: TextOverflow.ellipsis,
-                maxLines: 8,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 

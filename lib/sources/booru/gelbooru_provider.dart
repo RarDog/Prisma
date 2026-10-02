@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:gel_rule_app/core/http/app_headers.dart';
 
 import 'package:gel_rule_app/core/errors/app_exception.dart';
 import 'package:gel_rule_app/core/http/dio_client.dart';
@@ -45,11 +46,9 @@ class GelbooruProvider
   @override
   Map<String, String> mediaHeaders(Post post) {
     final host = Uri.tryParse(baseUrl)?.host;
-    return {
-      'User-Agent': 'Prisma/2.0.1 Flutter local booru browser',
-      'Accept': '*/*',
-      if (host != null && host.isNotEmpty) 'Referer': '$baseUrl/',
-    };
+    return AppHeaders.mediaHeaders(
+      referer: (host != null && host.isNotEmpty) ? '$baseUrl/' : null,
+    );
   }
 
   @override

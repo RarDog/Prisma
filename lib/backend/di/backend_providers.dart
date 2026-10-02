@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gel_rule_app/core/cache/cache_service.dart';
 import 'package:gel_rule_app/core/cache/image_cache_service.dart';
 import 'package:gel_rule_app/core/database/app_database.dart';
+import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'package:gel_rule_app/core/database/database_service.dart';
 import 'package:gel_rule_app/core/http/network_info.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
@@ -269,8 +270,8 @@ final updateServiceProvider = Provider<UpdateService>((ref) {
       BaseOptions(
         connectTimeout: const Duration(seconds: 12),
         receiveTimeout: const Duration(seconds: 12),
-        headers: const {
-          'User-Agent': 'Prisma/2.0.1 Flutter local booru browser',
+        headers: {
+          'User-Agent': AppHeaders.defaultUserAgent,
           'Accept': 'application/json',
         },
       ),

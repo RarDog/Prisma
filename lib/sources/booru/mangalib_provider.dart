@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:gel_rule_app/core/http/app_headers.dart';
 
 import 'package:gel_rule_app/core/errors/app_exception.dart';
 import 'package:gel_rule_app/core/http/dio_client.dart';
@@ -6,6 +7,7 @@ import 'package:gel_rule_app/core/models/post.dart';
 import 'package:gel_rule_app/core/models/provider_health.dart';
 import 'package:gel_rule_app/core/models/tag_suggestion.dart';
 import 'package:gel_rule_app/core/models/top_period_filter.dart';
+import 'package:gel_rule_app/core/utils/logger.dart';
 import 'package:gel_rule_app/sources/booru/mangadex_provider.dart';
 import 'package:gel_rule_app/sources/interfaces/content_provider.dart';
 
@@ -43,14 +45,11 @@ class MangaLibProvider
     return 'https://api.cdnlibs.org/api';
   }
 
-  Map<String, String> get _headers => {
-        'Site-Id': '1',
-        'Referer': 'https://mangalib.me/',
-        'Origin': 'https://mangalib.me',
-        'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
-        'Accept': 'application/json, text/plain, */*',
-      };
+  Map<String, String> get _headers => AppHeaders.browserHeaders(
+        siteId: '1',
+        referer: 'https://mangalib.me/',
+        origin: 'https://mangalib.me',
+      );
 
   @override
   String postPageUrl(Post post) {
@@ -59,12 +58,11 @@ class MangaLibProvider
 
   @override
   Map<String, String> mediaHeaders(Post post) {
-    return const {
-      'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
-      'Referer': 'https://mangalib.me/',
-      'Accept': 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
-    };
+    return AppHeaders.mediaHeaders(
+      referer: 'https://mangalib.me/',
+      userAgent: AppHeaders.desktopChromeUserAgent,
+      accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+    );
   }
 
   @override
@@ -237,7 +235,8 @@ class MangaLibProvider
           if (summary.isNotEmpty) 'description': [summary],
         },
       );
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.log('MangaLibProvider._parseMangaItem error', e, st);
       return null;
     }
   }
@@ -279,7 +278,8 @@ class MangaLibProvider
       }
 
       return chapters;
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.log('MangaLibProvider.fetchChapters error for $mangaId', e, st);
       return [];
     }
   }
@@ -316,13 +316,14 @@ class MangaLibProvider
             urls.add(raw);
           } else {
             // Raw format is usually //manga/slug/chapters/... or /manga/...
-            final clean = raw.replaceFirst(RegExp(r'^/+/'), '');
+            final clean = raw.replaceFirst(RegExp(r'^/+'), '');
             urls.add('https://img3.cdnlibs.org/$clean');
           }
         }
       }
       return urls;
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.log('MangaLibProvider.fetchChapterPages error for $chapterId', e, st);
       return [];
     }
   }
@@ -353,11 +354,9 @@ class MangaLibProvider
       final res = await _dio.get<dynamic>(
         '$baseUrl/api/manga?page=1&limit=1',
         options: Options(
-          headers: {
-            'User-Agent':
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
-            'Referer': 'https://mangalib.me/',
-          },
+          headers: AppHeaders.browserHeaders(
+            referer: 'https://mangalib.me/',
+          ),
         ),
       );
       final ok = res.statusCode == 200;

@@ -167,159 +167,251 @@ class MangaLibraryService {
   static const _kProgressKey = 'manga_reading_progress_v1';
 
   final ValueNotifier<int> changeNotifier = ValueNotifier<int>(0);
+  bool _migrated = false;
 
-  Future<Map<String, MangaLibraryEntry>> _loadEntries() async {
-    final result = await _databaseService.safeRead<Map<String, MangaLibraryEntry>>((isar) async {
-      final entity = await isar.appSettingEntitys
+  Future<void> _checkMigration() async {
+    if (_migrated) return;
+    _migrated = true;
+
+    await _databaseService.safeWrite((isar) async {
+      final legacyLib = await isar.appSettingEntitys
           .filter()
           .keyEqualTo(_kLibraryKey)
           .findFirst();
-      if (entity == null || entity.jsonValue.isEmpty) {
-        return <String, MangaLibraryEntry>{};
-      }
-      try {
-        final decoded = jsonDecode(entity.jsonValue);
-        if (decoded is List) {
-          final map = <String, MangaLibraryEntry>{};
-          for (final item in decoded) {
-            if (item is Map) {
-              final entry = MangaLibraryEntry.fromJson(
-                  Map<String, dynamic>.from(item));
-              if (entry.mangaId.isNotEmpty) {
-                map[entry.mangaId] = entry;
+      if (legacyLib != null && legacyLib.jsonValue.isNotEmpty) {
+        try {
+          final decoded = jsonDecode(legacyLib.jsonValue);
+          if (decoded is List) {
+            final entities = <MangaLibraryEntryEntity>[];
+            for (final item in decoded) {
+              if (item is Map) {
+                final m = MangaLibraryEntry.fromJson(
+                    Map<String, dynamic>.from(item));
+                if (m.mangaId.isNotEmpty) {
+                  entities.add(MangaLibraryEntryEntity()
+                    ..mangaId = m.mangaId
+                    ..providerId = m.providerId
+                    ..title = m.title
+                    ..coverUrl = m.coverUrl
+                    ..status = m.status
+                    ..addedAt = m.addedAt
+                    ..totalChaptersCount = m.totalChaptersCount
+                    ..newChaptersCount = m.newChaptersCount);
+                }
               }
             }
-          }
-          return map;
-        }
-      } catch (_) {}
-      return <String, MangaLibraryEntry>{};
-    });
-    return result is Success<Map<String, MangaLibraryEntry>> ? result.data : <String, MangaLibraryEntry>{};
-  }
-
-  Future<Map<String, MangaReadingProgress>> _loadProgressMap() async {
-    final result = await _databaseService.safeRead<Map<String, MangaReadingProgress>>((isar) async {
-      final entity = await isar.appSettingEntitys
-          .filter()
-          .keyEqualTo(_kProgressKey)
-          .findFirst();
-      if (entity == null || entity.jsonValue.isEmpty) {
-        return <String, MangaReadingProgress>{};
-      }
-      try {
-        final decoded = jsonDecode(entity.jsonValue);
-        if (decoded is Map) {
-          final map = <String, MangaReadingProgress>{};
-          decoded.forEach((key, value) {
-            if (value is Map) {
-              map[key.toString()] = MangaReadingProgress.fromJson(
-                  Map<String, dynamic>.from(value));
+            if (entities.isNotEmpty) {
+              await isar.mangaLibraryEntryEntitys.putAll(entities);
             }
-          });
-          return map;
-        }
-      } catch (_) {}
-      return <String, MangaReadingProgress>{};
-    });
-    return result is Success<Map<String, MangaReadingProgress>> ? result.data : <String, MangaReadingProgress>{};
-  }
+          }
+        } catch (_) {}
+        await isar.appSettingEntitys.delete(legacyLib.isarId);
+      }
 
-  Future<void> _saveEntries(Map<String, MangaLibraryEntry> entries) async {
-    final list = entries.values.map((e) => e.toJson()).toList();
-    final jsonStr = jsonEncode(list);
-    await _databaseService.safeWrite((isar) async {
-      final existing = await isar.appSettingEntitys
-          .filter()
-          .keyEqualTo(_kLibraryKey)
-          .findFirst();
-      final entity = (existing ?? AppSettingEntity())
-        ..key = _kLibraryKey
-        ..jsonValue = jsonStr
-        ..updatedAt = DateTime.now();
-      await isar.appSettingEntitys.put(entity);
-    });
-    changeNotifier.value++;
-  }
-
-  Future<void> _saveProgressMap(Map<String, MangaReadingProgress> progressMap) async {
-    final map = progressMap.map((key, val) => MapEntry(key, val.toJson()));
-    final jsonStr = jsonEncode(map);
-    await _databaseService.safeWrite((isar) async {
-      final existing = await isar.appSettingEntitys
+      final legacyProg = await isar.appSettingEntitys
           .filter()
           .keyEqualTo(_kProgressKey)
           .findFirst();
-      final entity = (existing ?? AppSettingEntity())
-        ..key = _kProgressKey
-        ..jsonValue = jsonStr
-        ..updatedAt = DateTime.now();
-      await isar.appSettingEntitys.put(entity);
+      if (legacyProg != null && legacyProg.jsonValue.isNotEmpty) {
+        try {
+          final decoded = jsonDecode(legacyProg.jsonValue);
+          if (decoded is Map) {
+            final entities = <MangaReadingProgressEntity>[];
+            decoded.forEach((key, val) {
+              if (val is Map) {
+                final p = MangaReadingProgress.fromJson(
+                    Map<String, dynamic>.from(val));
+                if (p.mangaId.isNotEmpty) {
+                  entities.add(MangaReadingProgressEntity()
+                    ..mangaId = p.mangaId
+                    ..providerId = p.providerId
+                    ..title = p.title
+                    ..coverUrl = p.coverUrl
+                    ..chapterId = p.chapterId
+                    ..chapterNumber = p.chapterNumber
+                    ..pageIndex = p.pageIndex
+                    ..totalPages = p.totalPages
+                    ..readChapterIds = p.readChapterIds.toList()
+                    ..updatedAt = p.updatedAt);
+                }
+              }
+            });
+            if (entities.isNotEmpty) {
+              await isar.mangaReadingProgressEntitys.putAll(entities);
+            }
+          }
+        } catch (_) {}
+        await isar.appSettingEntitys.delete(legacyProg.isarId);
+      }
     });
-    changeNotifier.value++;
   }
 
   Future<List<MangaLibraryEntry>> getLibraryEntries({String? statusFilter}) async {
-    final entries = await _loadEntries();
-    final progressMap = await _loadProgressMap();
+    await _checkMigration();
+    final result = await _databaseService.safeRead<List<MangaLibraryEntry>>((isar) async {
+      List<MangaLibraryEntryEntity> entities;
+      if (statusFilter != null && statusFilter.isNotEmpty) {
+        entities = await isar.mangaLibraryEntryEntitys
+            .filter()
+            .statusEqualTo(statusFilter)
+            .findAll();
+      } else {
+        entities = await isar.mangaLibraryEntryEntitys.where().findAll();
+      }
 
-    final result = entries.values.map((e) {
-      final prog = progressMap[e.mangaId];
-      return e.copyWith(progress: prog);
-    }).toList();
+      final progresses = await isar.mangaReadingProgressEntitys.where().findAll();
+      final progressMap = <String, MangaReadingProgress>{};
+      for (final p in progresses) {
+        progressMap[p.mangaId] = MangaReadingProgress(
+          mangaId: p.mangaId,
+          providerId: p.providerId,
+          title: p.title,
+          coverUrl: p.coverUrl,
+          chapterId: p.chapterId,
+          chapterNumber: p.chapterNumber,
+          pageIndex: p.pageIndex,
+          totalPages: p.totalPages,
+          readChapterIds: p.readChapterIds.toSet(),
+          updatedAt: p.updatedAt,
+        );
+      }
 
-    if (statusFilter != null && statusFilter.isNotEmpty) {
-      result.retainWhere((e) => e.status == statusFilter);
-    }
+      final list = entities.map((e) {
+        return MangaLibraryEntry(
+          mangaId: e.mangaId,
+          providerId: e.providerId,
+          title: e.title,
+          coverUrl: e.coverUrl,
+          status: e.status,
+          addedAt: e.addedAt,
+          totalChaptersCount: e.totalChaptersCount,
+          newChaptersCount: e.newChaptersCount,
+          progress: progressMap[e.mangaId],
+        );
+      }).toList();
 
-    result.sort((a, b) {
-      final timeA = a.progress?.updatedAt ?? a.addedAt;
-      final timeB = b.progress?.updatedAt ?? b.addedAt;
-      return timeB.compareTo(timeA);
+      list.sort((a, b) {
+        final timeA = a.progress?.updatedAt ?? a.addedAt;
+        final timeB = b.progress?.updatedAt ?? b.addedAt;
+        return timeB.compareTo(timeA);
+      });
+
+      return list;
     });
 
-    return result;
+    return result is Success<List<MangaLibraryEntry>> ? result.data : <MangaLibraryEntry>[];
   }
 
   Future<List<MangaLibraryEntry>> getReadingHistory({int limit = 50}) async {
-    final entries = await _loadEntries();
-    final progressMap = await _loadProgressMap();
+    await _checkMigration();
+    final result = await _databaseService.safeRead<List<MangaLibraryEntry>>((isar) async {
+      final progresses = await isar.mangaReadingProgressEntitys
+          .where()
+          .sortByUpdatedAtDesc()
+          .limit(limit)
+          .findAll();
 
-    final list = progressMap.values.map((p) {
-      final entry = entries[p.mangaId];
-      return MangaLibraryEntry(
+      final entries = await isar.mangaLibraryEntryEntitys.where().findAll();
+      final entryMap = {for (final e in entries) e.mangaId: e};
+
+      return progresses.map((p) {
+        final entry = entryMap[p.mangaId];
+        final prog = MangaReadingProgress(
+          mangaId: p.mangaId,
+          providerId: p.providerId,
+          title: p.title,
+          coverUrl: p.coverUrl,
+          chapterId: p.chapterId,
+          chapterNumber: p.chapterNumber,
+          pageIndex: p.pageIndex,
+          totalPages: p.totalPages,
+          readChapterIds: p.readChapterIds.toSet(),
+          updatedAt: p.updatedAt,
+        );
+
+        return MangaLibraryEntry(
+          mangaId: p.mangaId,
+          providerId: p.providerId,
+          title: p.title,
+          coverUrl: p.coverUrl,
+          status: entry?.status ?? 'reading',
+          addedAt: entry?.addedAt ?? p.updatedAt,
+          progress: prog,
+        );
+      }).toList();
+    });
+
+    return result is Success<List<MangaLibraryEntry>> ? result.data : <MangaLibraryEntry>[];
+  }
+
+  Future<MangaReadingProgress?> getProgress(String mangaId) async {
+    await _checkMigration();
+    final result = await _databaseService.safeRead<MangaReadingProgress?>((isar) async {
+      final p = await isar.mangaReadingProgressEntitys
+          .filter()
+          .mangaIdEqualTo(mangaId)
+          .findFirst();
+      if (p == null) return null;
+      return MangaReadingProgress(
         mangaId: p.mangaId,
         providerId: p.providerId,
         title: p.title,
         coverUrl: p.coverUrl,
-        status: entry?.status ?? 'reading',
-        addedAt: entry?.addedAt ?? p.updatedAt,
-        progress: p,
+        chapterId: p.chapterId,
+        chapterNumber: p.chapterNumber,
+        pageIndex: p.pageIndex,
+        totalPages: p.totalPages,
+        readChapterIds: p.readChapterIds.toSet(),
+        updatedAt: p.updatedAt,
       );
-    }).toList();
-
-    list.sort((a, b) {
-      final timeA = a.progress?.updatedAt ?? DateTime(1970);
-      final timeB = b.progress?.updatedAt ?? DateTime(1970);
-      return timeB.compareTo(timeA);
     });
 
-    return list.take(limit).toList();
-  }
-
-  Future<MangaReadingProgress?> getProgress(String mangaId) async {
-    final map = await _loadProgressMap();
-    return map[mangaId];
+    return result is Success<MangaReadingProgress?> ? result.data : null;
   }
 
   Future<MangaLibraryEntry?> getLibraryEntry(String mangaId) async {
-    final map = await _loadEntries();
-    final entry = map[mangaId];
-    if (entry != null) {
-      final prog = await getProgress(mangaId);
-      return entry.copyWith(progress: prog);
-    }
-    return null;
+    await _checkMigration();
+    final result = await _databaseService.safeRead<MangaLibraryEntry?>((isar) async {
+      final e = await isar.mangaLibraryEntryEntitys
+          .filter()
+          .mangaIdEqualTo(mangaId)
+          .findFirst();
+      if (e == null) return null;
+
+      final p = await isar.mangaReadingProgressEntitys
+          .filter()
+          .mangaIdEqualTo(mangaId)
+          .findFirst();
+
+      final prog = p != null
+          ? MangaReadingProgress(
+              mangaId: p.mangaId,
+              providerId: p.providerId,
+              title: p.title,
+              coverUrl: p.coverUrl,
+              chapterId: p.chapterId,
+              chapterNumber: p.chapterNumber,
+              pageIndex: p.pageIndex,
+              totalPages: p.totalPages,
+              readChapterIds: p.readChapterIds.toSet(),
+              updatedAt: p.updatedAt,
+            )
+          : null;
+
+      return MangaLibraryEntry(
+        mangaId: e.mangaId,
+        providerId: e.providerId,
+        title: e.title,
+        coverUrl: e.coverUrl,
+        status: e.status,
+        addedAt: e.addedAt,
+        totalChaptersCount: e.totalChaptersCount,
+        newChaptersCount: e.newChaptersCount,
+        progress: prog,
+      );
+    });
+
+    return result is Success<MangaLibraryEntry?> ? result.data : null;
   }
 
   Future<void> saveProgress({
@@ -333,29 +425,36 @@ class MangaLibraryService {
     required int totalPages,
     bool markChapterComplete = false,
   }) async {
-    final map = await _loadProgressMap();
-    final current = map[mangaId];
-    final readSet = current != null
-        ? Set<String>.from(current.readChapterIds)
-        : <String>{};
-    if (markChapterComplete && chapterId.isNotEmpty) {
-      readSet.add(chapterId);
-    }
+    await _checkMigration();
+    await _databaseService.safeWrite((isar) async {
+      final existing = await isar.mangaReadingProgressEntitys
+          .filter()
+          .mangaIdEqualTo(mangaId)
+          .findFirst();
 
-    map[mangaId] = MangaReadingProgress(
-      mangaId: mangaId,
-      providerId: providerId,
-      title: title.isNotEmpty ? title : (current?.title ?? 'Manga'),
-      coverUrl: coverUrl.isNotEmpty ? coverUrl : (current?.coverUrl ?? ''),
-      chapterId: chapterId,
-      chapterNumber: chapterNumber,
-      pageIndex: pageIndex,
-      totalPages: totalPages,
-      readChapterIds: readSet,
-      updatedAt: DateTime.now(),
-    );
+      final readSet = existing != null
+          ? Set<String>.from(existing.readChapterIds)
+          : <String>{};
+      if (markChapterComplete && chapterId.isNotEmpty) {
+        readSet.add(chapterId);
+      }
 
-    await _saveProgressMap(map);
+      final entity = (existing ?? MangaReadingProgressEntity())
+        ..mangaId = mangaId
+        ..providerId = providerId
+        ..title = title.isNotEmpty ? title : (existing?.title ?? 'Manga')
+        ..coverUrl = coverUrl.isNotEmpty ? coverUrl : (existing?.coverUrl ?? '')
+        ..chapterId = chapterId
+        ..chapterNumber = chapterNumber
+        ..pageIndex = pageIndex
+        ..totalPages = totalPages
+        ..readChapterIds = readSet.toList()
+        ..updatedAt = DateTime.now();
+
+      await isar.mangaReadingProgressEntitys.put(entity);
+    });
+
+    changeNotifier.value++;
   }
 
   Future<void> toggleChapterRead({
@@ -366,39 +465,39 @@ class MangaLibraryService {
     String? coverUrl,
     String? providerId,
   }) async {
-    final map = await _loadProgressMap();
-    final current = map[mangaId];
-    final readSet = current != null
-        ? Set<String>.from(current.readChapterIds)
-        : <String>{};
+    await _checkMigration();
+    await _databaseService.safeWrite((isar) async {
+      final existing = await isar.mangaReadingProgressEntitys
+          .filter()
+          .mangaIdEqualTo(mangaId)
+          .findFirst();
 
-    if (isRead) {
-      readSet.add(chapterId);
-    } else {
-      readSet.remove(chapterId);
-    }
+      final readSet = existing != null
+          ? Set<String>.from(existing.readChapterIds)
+          : <String>{};
 
-    if (current != null) {
-      map[mangaId] = current.copyWith(
-        readChapterIds: readSet,
-        updatedAt: DateTime.now(),
-      );
-    } else {
-      map[mangaId] = MangaReadingProgress(
-        mangaId: mangaId,
-        providerId: providerId ?? 'mangadex',
-        title: title ?? 'Manga',
-        coverUrl: coverUrl ?? '',
-        chapterId: chapterId,
-        chapterNumber: '',
-        pageIndex: 0,
-        totalPages: 1,
-        readChapterIds: readSet,
-        updatedAt: DateTime.now(),
-      );
-    }
+      if (isRead) {
+        readSet.add(chapterId);
+      } else {
+        readSet.remove(chapterId);
+      }
 
-    await _saveProgressMap(map);
+      final entity = (existing ?? MangaReadingProgressEntity())
+        ..mangaId = mangaId
+        ..providerId = providerId ?? existing?.providerId ?? 'mangadex'
+        ..title = title ?? existing?.title ?? 'Manga'
+        ..coverUrl = coverUrl ?? existing?.coverUrl ?? ''
+        ..chapterId = existing?.chapterId ?? chapterId
+        ..chapterNumber = existing?.chapterNumber ?? ''
+        ..pageIndex = existing?.pageIndex ?? 0
+        ..totalPages = existing?.totalPages ?? 1
+        ..readChapterIds = readSet.toList()
+        ..updatedAt = DateTime.now();
+
+      await isar.mangaReadingProgressEntitys.put(entity);
+    });
+
+    changeNotifier.value++;
   }
 
   Future<bool> isChapterRead(String mangaId, String chapterId) async {
@@ -411,67 +510,103 @@ class MangaLibraryService {
     required String providerId,
     required String title,
     required String coverUrl,
-    required String? status, // null to remove from library
+    required String? status,
   }) async {
-    final entries = await _loadEntries();
-    if (status == null || status.isEmpty) {
-      entries.remove(mangaId);
-    } else {
-      final existing = entries[mangaId];
-      entries[mangaId] = MangaLibraryEntry(
-        mangaId: mangaId,
-        providerId: providerId,
-        title: title.isNotEmpty ? title : (existing?.title ?? 'Manga'),
-        coverUrl: coverUrl.isNotEmpty ? coverUrl : (existing?.coverUrl ?? ''),
-        status: status,
-        addedAt: existing?.addedAt ?? DateTime.now(),
-      );
-    }
-    await _saveEntries(entries);
+    await _checkMigration();
+    await _databaseService.safeWrite((isar) async {
+      final existing = await isar.mangaLibraryEntryEntitys
+          .filter()
+          .mangaIdEqualTo(mangaId)
+          .findFirst();
+
+      if (status == null || status.isEmpty) {
+        if (existing != null) {
+          await isar.mangaLibraryEntryEntitys.delete(existing.isarId);
+        }
+      } else {
+        final entity = (existing ?? MangaLibraryEntryEntity())
+          ..mangaId = mangaId
+          ..providerId = providerId
+          ..title = title.isNotEmpty ? title : (existing?.title ?? 'Manga')
+          ..coverUrl = coverUrl.isNotEmpty ? coverUrl : (existing?.coverUrl ?? '')
+          ..status = status
+          ..addedAt = existing?.addedAt ?? DateTime.now()
+          ..totalChaptersCount = existing?.totalChaptersCount ?? 0
+          ..newChaptersCount = existing?.newChaptersCount ?? 0;
+
+        await isar.mangaLibraryEntryEntitys.put(entity);
+      }
+    });
+
+    changeNotifier.value++;
   }
 
   Future<void> removeLibraryEntry(String mangaId) async {
-    final entries = await _loadEntries();
-    if (entries.containsKey(mangaId)) {
-      entries.remove(mangaId);
-      await _saveEntries(entries);
-    }
+    await _checkMigration();
+    await _databaseService.safeWrite((isar) async {
+      final existing = await isar.mangaLibraryEntryEntitys
+          .filter()
+          .mangaIdEqualTo(mangaId)
+          .findFirst();
+      if (existing != null) {
+        await isar.mangaLibraryEntryEntitys.delete(existing.isarId);
+      }
+    });
+
+    changeNotifier.value++;
   }
 
   Future<int> checkForUpdates(
     Future<int> Function(String providerId, String mangaId) fetchChapterCount,
   ) async {
-    final entries = await _loadEntries();
+    final entries = await getLibraryEntries();
     int totalNew = 0;
-    for (final entry in entries.values) {
+    for (final entry in entries) {
       try {
         final count = await fetchChapterCount(entry.providerId, entry.mangaId);
         if (count > entry.totalChaptersCount && entry.totalChaptersCount > 0) {
           final diff = count - entry.totalChaptersCount;
-          entries[entry.mangaId] = entry.copyWith(
-            newChaptersCount: entry.newChaptersCount + diff,
-            totalChaptersCount: count,
-          );
           totalNew += diff;
-        } else if (entry.totalChaptersCount == 0 && count > 0) {
-          entries[entry.mangaId] = entry.copyWith(
-            totalChaptersCount: count,
-          );
+          await _databaseService.safeWrite((isar) async {
+            final e = await isar.mangaLibraryEntryEntitys
+                .filter()
+                .mangaIdEqualTo(entry.mangaId)
+                .findFirst();
+            if (e != null) {
+              e.totalChaptersCount = count;
+              e.newChaptersCount = diff;
+              await isar.mangaLibraryEntryEntitys.put(e);
+            }
+          });
+        } else if (count > 0 && entry.totalChaptersCount == 0) {
+          await _databaseService.safeWrite((isar) async {
+            final e = await isar.mangaLibraryEntryEntitys
+                .filter()
+                .mangaIdEqualTo(entry.mangaId)
+                .findFirst();
+            if (e != null) {
+              e.totalChaptersCount = count;
+              await isar.mangaLibraryEntryEntitys.put(e);
+            }
+          });
         }
       } catch (_) {}
     }
-    if (entries.isNotEmpty) {
-      await _saveEntries(entries);
-    }
+    if (totalNew > 0) changeNotifier.value++;
     return totalNew;
   }
 
   Future<void> resetNewChapters(String mangaId) async {
-    final entries = await _loadEntries();
-    final entry = entries[mangaId];
-    if (entry != null && entry.newChaptersCount > 0) {
-      entries[mangaId] = entry.copyWith(newChaptersCount: 0);
-      await _saveEntries(entries);
-    }
+    await _databaseService.safeWrite((isar) async {
+      final e = await isar.mangaLibraryEntryEntitys
+          .filter()
+          .mangaIdEqualTo(mangaId)
+          .findFirst();
+      if (e != null && e.newChaptersCount > 0) {
+        e.newChaptersCount = 0;
+        await isar.mangaLibraryEntryEntitys.put(e);
+      }
+    });
+    changeNotifier.value++;
   }
 }
