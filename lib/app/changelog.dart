@@ -1,5 +1,24 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.1.4',
+    title: 'Хотфикс: исправление загрузки глав и читалки MangaDex',
+    titleEn: 'Hotfix: MangaDex Chapters & Reader Fix',
+    bullets: [
+      'Восстановление загрузки глав MangaDex: реализован недостающий интерфейс MangaChapterProvider в MangaDexProvider, благодаря чему восстановилась загрузка списка глав и страниц в читалке.',
+      'Устранение проблемы одного титульника: исправлен сбой, из-за которого читалка и 3D-книжка отображали только одну резервную обложку (титульник).',
+      'Пагинация ленты глав MangaDex: добавлена поддержка загрузки более 500 глав (до 2000) для длинных тайтлов (One Piece, Берсерк и др.).',
+      'Поддержка томов: извлечение номеров томов (volume) из метаданных MangaDex.',
+      'Внешние главы: добавлена индикация (Внешняя / External) для официальных глав MangaPlus/Viz с прямым открытием в браузере.',
+    ],
+    bulletsEn: [
+      'Restored MangaDex Chapter Loading: implemented missing MangaChapterProvider interface in MangaDexProvider, restoring full chapter list and reader page retrieval.',
+      'Single Cover Fallback Resolution: fixed the bug where the reader and 3D flipbook fell back to displaying only the cover image.',
+      'MangaDex Feed Pagination: added auto-pagination support for up to 2,000 chapters for long-running series (One Piece, Berserk, etc.).',
+      'Volume Extraction: added volume number parsing from MangaDex attributes.',
+      'External Chapters: added visual indicator (External / Внешняя) for official MangaPlus/Viz chapters with safe browser launching.',
+    ],
+  ),
+  PrismaChange(
     version: '4.1.3',
     title: 'Мониторинг ресурсов, умный сборщик памяти и оптимизация карусели постов',
     titleEn: 'Resource Monitoring, Smart Memory GC & Post Carousel Optimizations',
