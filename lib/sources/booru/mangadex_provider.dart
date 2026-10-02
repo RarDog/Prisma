@@ -270,7 +270,8 @@ class MangaDexProvider
         ContentProvider,
         PostPageProvider,
         MediaHeadersProvider,
-        TagSuggestionProvider {
+        TagSuggestionProvider,
+        MangaChapterProvider {
   MangaDexProvider({
     required this.id,
     required this.name,
@@ -501,24 +502,43 @@ class MangaDexProvider
   }
 
   /// Fetches chapters for a manga. If [language] is provided, filters by that language.
+  @override
   Future<List<MangaDexChapter>> fetchChapters(String mangaId, {String? language}) async {
     try {
-      final queryParams = <String, dynamic>{
-        'limit': 500,
-        'order[chapter]': 'asc',
-        'contentRating[]': const ['safe', 'suggestive', 'erotica', 'pornographic'],
-        ..._queryParameters,
-      };
-      if (language != null && language.isNotEmpty) {
-        queryParams['translatedLanguage[]'] = [language];
-      }
+      final List<MangaDexChapter> allChapters = [];
+      int offset = 0;
+      const limit = 500;
+      int total = 0;
 
-      final response = await _dio.get<dynamic>(
-        '/manga/$mangaId/feed',
-        queryParameters: queryParams,
-      );
-      _checkResponse(response);
-      return _parseChapters(response.data);
+      do {
+        final queryParams = <String, dynamic>{
+          'limit': limit,
+          'offset': offset,
+          'order[chapter]': 'asc',
+          'contentRating[]': const ['safe', 'suggestive', 'erotica', 'pornographic'],
+          ..._queryParameters,
+        };
+        if (language != null && language.isNotEmpty) {
+          queryParams['translatedLanguage[]'] = [language];
+        }
+
+        final response = await _dio.get<dynamic>(
+          '/manga/$mangaId/feed',
+          queryParameters: queryParams,
+        );
+        _checkResponse(response);
+        final chapters = _parseChapters(response.data);
+        allChapters.addAll(chapters);
+
+        if (response.data is Map && response.data['total'] != null) {
+          total = int.tryParse(response.data['total'].toString()) ?? 0;
+        } else {
+          total = allChapters.length;
+        }
+        offset += limit;
+      } while (offset < total && offset < 2000);
+
+      return allChapters;
     } catch (_) {
       return [];
     }
@@ -538,6 +558,7 @@ class MangaDexProvider
         final lang = attrs['translatedLanguage']?.toString() ?? '';
         final pages = int.tryParse(attrs['pages']?.toString() ?? '0') ?? 0;
         final externalUrl = attrs['externalUrl']?.toString();
+        final volume = attrs['volume']?.toString();
 
         if (id.isNotEmpty) {
           result.add(MangaDexChapter(
@@ -547,6 +568,7 @@ class MangaDexProvider
             language: lang,
             pageCount: pages,
             externalUrl: externalUrl,
+            volumeNumber: volume,
           ));
         }
       }
@@ -564,6 +586,7 @@ class MangaDexProvider
   }
 
   /// Fetches image URLs for a chapter using @home endpoint
+  @override
   Future<List<String>> fetchChapterPages(String chapterId) async {
     try {
       final response = await _dio.get<dynamic>('/at-home/server/$chapterId');

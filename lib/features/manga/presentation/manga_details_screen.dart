@@ -1197,6 +1197,10 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                                   : Colors.transparent,
                               child: InkWell(
                                 onTap: () {
+                                  if (ch.isExternal && ch.externalUrl != null && ch.externalUrl!.isNotEmpty) {
+                                    launchUrl(Uri.parse(ch.externalUrl!), mode: LaunchMode.externalApplication);
+                                    return;
+                                  }
                                   if (widget.post.providerId == 'ranobelib' || ch.isNovel) {
                                     _openFullscreenReader(initialChapterIndex: index);
                                   } else {
@@ -1255,7 +1259,27 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                                                       style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
                                                     ),
                                                   ),
-                                                if (ch.pageCount > 1)
+                                                if (ch.isExternal)
+                                                  Container(
+                                                    margin: const EdgeInsets.only(right: 6),
+                                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                                    decoration: BoxDecoration(
+                                                      color: const Color(0xFF3B82F6).withValues(alpha: 0.18),
+                                                      borderRadius: BorderRadius.circular(4),
+                                                    ),
+                                                    child: Row(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        const Icon(Icons.open_in_new_rounded, size: 10, color: Color(0xFF3B82F6)),
+                                                        const SizedBox(width: 3),
+                                                        Text(
+                                                          isRu ? 'Внешняя' : 'External',
+                                                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3B82F6)),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                if (ch.pageCount > 0)
                                                   Text(
                                                     '${ch.pageCount} ${isRu ? 'стр.' : 'p.'}',
                                                     style: TextStyle(
