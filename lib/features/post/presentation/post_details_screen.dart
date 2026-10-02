@@ -14,6 +14,7 @@ import 'package:gel_rule_app/app/app_strings.dart';
 import 'package:gel_rule_app/app/motion.dart';
 import 'package:gel_rule_app/app/responsive.dart';
 import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/core/performance/performance_monitor.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/shared/widgets/adaptive_scaffold.dart';
 import 'package:gel_rule_app/shared/widgets/empty_view.dart';
@@ -1512,22 +1513,29 @@ class _MobileMediaCarouselState extends State<_MobileMediaCarousel>
   }
 
   void _prefetchAround(int index) {
-    for (final offset in [-2, -1, 0, 1, 2]) {
+    for (final offset in [-1, 1]) {
       final target = index + offset;
       if (target < 0 || target >= widget.posts.length) continue;
       final post = widget.posts[target];
-      final urls = [
-        post.previewUrl,
-        post.sampleUrl,
-        if (post.fileType.toLowerCase().contains('gif')) post.fileUrl,
-      ].where((url) => url.trim().isNotEmpty).toSet();
-      for (final url in urls) {
+      final url = post.sampleUrl.isNotEmpty ? post.sampleUrl : post.previewUrl;
+      if (url.trim().isNotEmpty) {
         precacheImage(
           CachedNetworkImageProvider(url, headers: getPostMediaHeaders(post)),
           context,
         );
       }
     }
+  }
+
+  void _evictDistantPosts(int currentIndex) {
+    for (int i = 0; i < widget.posts.length; i++) {
+      if ((i - currentIndex).abs() >= 3) {
+        final p = widget.posts[i];
+        SmartMemoryManager.evictImageUrl(p.fileUrl);
+        SmartMemoryManager.evictImageUrl(p.sampleUrl);
+      }
+    }
+    PaintingBinding.instance.imageCache.clearLiveImages();
   }
 
   @override
@@ -1581,12 +1589,32 @@ class _MobileMediaCarouselState extends State<_MobileMediaCarousel>
               _currentPage = index;
               widget.onPageChanged(index);
               _prefetchAround(index);
+              _evictDistantPosts(index);
               if (widget.onLoadMore != null && index >= widget.posts.length - 2) {
                 widget.onLoadMore!();
               }
             },
             itemBuilder: (context, index) {
               final postItem = widget.posts[index];
+              final distance = (index - _currentPage).abs();
+
+              // If post is 3 or more pages away from current view, render a tiny lightweight placeholder
+              // to prevent loading and decoding 30-40 MB full images in the background.
+              if (distance >= 3) {
+                return Center(
+                  child: postItem.previewUrl.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: postItem.previewUrl,
+                          httpHeaders: getPostMediaHeaders(postItem),
+                          memCacheWidth: 240,
+                          fit: BoxFit.contain,
+                          placeholder: (_, __) => const SizedBox.shrink(),
+                          errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                        )
+                      : const SizedBox.shrink(),
+                );
+              }
+
               final isActivePage = index == _currentPage;
               final targetPost = (isActivePage && postItem.id == widget.activePost.id)
                   ? widget.activePost
@@ -1594,6 +1622,7 @@ class _MobileMediaCarouselState extends State<_MobileMediaCarousel>
 
               return _KeepAlivePostPage(
                 key: ValueKey(postItem.cacheKey),
+                keepAlive: distance <= 1,
                 child: Consumer(
                 builder: (context, ref, _) {
                   final notesAsync = ref.watch(postNotesProvider(PostDetailsArgs(
@@ -1682,9 +1711,14 @@ class _MobileMediaCarouselState extends State<_MobileMediaCarousel>
 }
 
 class _KeepAlivePostPage extends StatefulWidget {
-  const _KeepAlivePostPage({required this.child, super.key});
+  const _KeepAlivePostPage({
+    required this.child,
+    this.keepAlive = true,
+    super.key,
+  });
 
   final Widget child;
+  final bool keepAlive;
 
   @override
   State<_KeepAlivePostPage> createState() => _KeepAlivePostPageState();
@@ -1693,7 +1727,15 @@ class _KeepAlivePostPage extends StatefulWidget {
 class _KeepAlivePostPageState extends State<_KeepAlivePostPage>
     with AutomaticKeepAliveClientMixin {
   @override
-  bool get wantKeepAlive => true;
+  bool get wantKeepAlive => widget.keepAlive;
+
+  @override
+  void didUpdateWidget(covariant _KeepAlivePostPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.keepAlive != widget.keepAlive) {
+      updateKeepAlive();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -1,5 +1,30 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.1.3',
+    title: 'Мониторинг ресурсов, умный сборщик памяти и оптимизация карусели постов',
+    titleEn: 'Resource Monitoring, Smart Memory GC & Post Carousel Optimizations',
+    bullets: [
+      'Мониторинг ресурсов и диагностика: в разделе «О приложении» добавлен блок метрик в реальном времени (физическое потребление RAM RSS, пик памяти, размер кэша декодированных изображений, загрузка ЦП процессом, сетевой трафик и скорость, частота кадров FPS).',
+      'Плавающее настраиваемое окно (HUD): полупрозрачный перетаскиваемый оверлей поверх всех экранов с возможностью отключения отдельных метрик и регулятором прозрачности.',
+      'Умный сборщик мусора (Smart Memory GC) и Watchdog: автоматический сброс кэша live-изображений при системных сигналах нехватки памяти (OS low memory pressure) или превышении безопасных лимитов ОЗУ.',
+      'Скользящее окно карусели постов: для страниц карусели реализован динамический keep-alive (активная страница ± 1), что исключает накопление десятков открытых постов в памяти.',
+      'Принудительная выгрузка дальних картинок: при удалении от текущей позиции на 3 и более шагов полноразмерные изображения немедленно выгружаются из RAM (evict).',
+      'Легковесные превью при быстром скролле: посты на расстоянии 3+ страниц отображаются компактными миниатюрами вместо тяжелых полноразмерных декодеров.',
+      'Адаптивный размер буфера декодирования: ширина декодирования изображений ограничена физическим разрешением экрана без завышенного оверхеда.',
+      'Совместимость Linux AppImage: добавлен динамический шим для библиотек libmpv.so.1 и libmpv.so.2 для бесперебойного запуска на различных дистрибутивах Linux.',
+    ],
+    bulletsEn: [
+      'Live Resource Diagnostics: added real-time performance indicators to the About section (RAM RSS, Peak RAM, decoded image cache, process CPU %, network bandwidth and throughput, engine FPS).',
+      'Floating On-Screen HUD: draggable semi-transparent overlay available across all screens with metric visibility filters and opacity slider.',
+      'Smart Memory Garbage Collector & Watchdog: proactive eviction of decoded image cache upon receiving OS low memory pressure callbacks or crossing RAM safety boundaries.',
+      'Sliding Window Post Carousel: dynamic keep-alive window (active page ± 1), preventing hundreds of megabytes from leaking across browsed items.',
+      'Aggressive Eviction for Distant Posts: images beyond 3 steps from the active page are explicitly evicted from memory.',
+      'Lightweight Placeholders for Fast Swiping: items beyond 3 positions render low-resolution thumbnails instead of heavy full-size viewers.',
+      'Targeted Image Decode Bounding: capped image decode dimensions strictly to physical screen width, eliminating redundant uncompressed memory consumption.',
+      'Linux AppImage Compatibility: added dynamic library compatibility shim for libmpv.so.1 and libmpv.so.2 across varied Linux distributions.',
+    ],
+  ),
+  PrismaChange(
     version: '4.1.2',
     title: 'Модульный центр настроек, оптимизация производительности и улучшение интерфейса',
     titleEn: 'Modular Settings Hub, Performance Optimizations & Interface Improvements',

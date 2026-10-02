@@ -16,6 +16,7 @@ import 'package:gel_rule_app/app/motion.dart';
 import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'package:gel_rule_app/app/responsive.dart';
 import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/core/performance/performance_monitor.dart';
 import 'package:gel_rule_app/features/feed/presentation/feed_controller.dart';
 import 'package:gel_rule_app/shared/widgets/formatted_content_text.dart';
 import 'post_notes_overlay.dart';
@@ -193,8 +194,7 @@ class PostMediaViewer extends ConsumerStatefulWidget {
   ConsumerState<PostMediaViewer> createState() => _PostMediaViewerState();
 }
 
-class _PostMediaViewerState extends ConsumerState<PostMediaViewer>
-    with AutomaticKeepAliveClientMixin {
+class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
   Player? _player;
   VideoController? _controller;
   late List<String> _imageUrls;
@@ -289,11 +289,7 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer>
   }
 
   @override
-  bool get wantKeepAlive => true;
-
-  @override
   Widget build(BuildContext context) {
-    super.build(context);
     ref.listen<bool>(isFullscreenViewerActiveProvider, (previous, next) {
       if (next && !widget.fullscreen) {
         _player?.pause();
@@ -464,9 +460,9 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer>
     } else {
       final mq = MediaQuery.maybeOf(context);
       final dpr = mq?.devicePixelRatio ?? 1.5;
-      final screenWidth = mq?.size.width ?? 1280;
+      final screenWidth = mq?.size.width ?? 1080;
       final maxCacheWidth =
-          (screenWidth * dpr * 1.5).round().clamp(1080, 2560);
+          (screenWidth * dpr).round().clamp(720, 1600);
       final isGif = MediaUrlSelector.isGif(widget.post) ||
           url.toLowerCase().contains('.gif') ||
           widget.post.fileType.toLowerCase() == 'gif';
@@ -1271,6 +1267,15 @@ class _FullscreenImageViewerPageState
     widget.onPostChanged?.call(idx);
     _showControls();
     _prefetchAround(idx, posts);
+    // Evict distant posts (>= 3 posts away) from RAM
+    for (int i = 0; i < posts.length; i++) {
+      if ((i - idx).abs() >= 3) {
+        final p = posts[i];
+        SmartMemoryManager.evictImageUrl(p.fileUrl);
+        SmartMemoryManager.evictImageUrl(p.sampleUrl);
+      }
+    }
+    PaintingBinding.instance.imageCache.clearLiveImages();
     if (idx >= posts.length - 3) {
       widget.onLoadMore?.call();
     }

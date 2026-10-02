@@ -73,6 +73,14 @@ class AppSettings {
     this.mangaReadingMode = 'pagedRtl',
     this.mangaVolumeNavigation = true,
     this.mangaInvertVolumeKeys = false,
+    this.debugHudEnabled = false,
+    this.debugHudShowCpu = true,
+    this.debugHudShowRam = true,
+    this.debugHudShowNetwork = true,
+    this.debugHudShowFps = true,
+    this.debugHudOpacity = 0.85,
+    this.debugHudX = 16.0,
+    this.debugHudY = 90.0,
   });
 
   final bool hasCompletedOnboarding;
@@ -83,6 +91,14 @@ class AppSettings {
   final String mangaReadingMode;
   final bool mangaVolumeNavigation;
   final bool mangaInvertVolumeKeys;
+  final bool debugHudEnabled;
+  final bool debugHudShowCpu;
+  final bool debugHudShowRam;
+  final bool debugHudShowNetwork;
+  final bool debugHudShowFps;
+  final double debugHudOpacity;
+  final double debugHudX;
+  final double debugHudY;
   final String lastActiveLocation;
   final List<String> favoriteArtists;
   final List<String> pawchiveAccounts;
@@ -257,6 +273,14 @@ class AppSettings {
     String? mangaReadingMode,
     bool? mangaVolumeNavigation,
     bool? mangaInvertVolumeKeys,
+    bool? debugHudEnabled,
+    bool? debugHudShowCpu,
+    bool? debugHudShowRam,
+    bool? debugHudShowNetwork,
+    bool? debugHudShowFps,
+    double? debugHudOpacity,
+    double? debugHudX,
+    double? debugHudY,
   }) {
     return AppSettings(
       lastActiveLocation: lastActiveLocation ?? this.lastActiveLocation,
@@ -333,6 +357,14 @@ class AppSettings {
           mangaVolumeNavigation ?? this.mangaVolumeNavigation,
       mangaInvertVolumeKeys:
           mangaInvertVolumeKeys ?? this.mangaInvertVolumeKeys,
+      debugHudEnabled: debugHudEnabled ?? this.debugHudEnabled,
+      debugHudShowCpu: debugHudShowCpu ?? this.debugHudShowCpu,
+      debugHudShowRam: debugHudShowRam ?? this.debugHudShowRam,
+      debugHudShowNetwork: debugHudShowNetwork ?? this.debugHudShowNetwork,
+      debugHudShowFps: debugHudShowFps ?? this.debugHudShowFps,
+      debugHudOpacity: debugHudOpacity ?? this.debugHudOpacity,
+      debugHudX: debugHudX ?? this.debugHudX,
+      debugHudY: debugHudY ?? this.debugHudY,
     );
   }
 
@@ -397,6 +429,14 @@ class AppSettings {
         'mangaReadingMode': mangaReadingMode,
         'mangaVolumeNavigation': mangaVolumeNavigation,
         'mangaInvertVolumeKeys': mangaInvertVolumeKeys,
+        'debugHudEnabled': debugHudEnabled,
+        'debugHudShowCpu': debugHudShowCpu,
+        'debugHudShowRam': debugHudShowRam,
+        'debugHudShowNetwork': debugHudShowNetwork,
+        'debugHudShowFps': debugHudShowFps,
+        'debugHudOpacity': debugHudOpacity,
+        'debugHudX': debugHudX,
+        'debugHudY': debugHudY,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) => AppSettings(
@@ -536,6 +576,22 @@ class AppSettings {
             defaults.mangaVolumeNavigation,
         mangaInvertVolumeKeys: (json['mangaInvertVolumeKeys'] as bool?) ??
             defaults.mangaInvertVolumeKeys,
+        debugHudEnabled: (json['debugHudEnabled'] as bool?) ??
+            defaults.debugHudEnabled,
+        debugHudShowCpu: (json['debugHudShowCpu'] as bool?) ??
+            defaults.debugHudShowCpu,
+        debugHudShowRam: (json['debugHudShowRam'] as bool?) ??
+            defaults.debugHudShowRam,
+        debugHudShowNetwork: (json['debugHudShowNetwork'] as bool?) ??
+            defaults.debugHudShowNetwork,
+        debugHudShowFps: (json['debugHudShowFps'] as bool?) ??
+            defaults.debugHudShowFps,
+        debugHudOpacity: (json['debugHudOpacity'] as num?)?.toDouble() ??
+            defaults.debugHudOpacity,
+        debugHudX: (json['debugHudX'] as num?)?.toDouble() ??
+            defaults.debugHudX,
+        debugHudY: (json['debugHudY'] as num?)?.toDouble() ??
+            defaults.debugHudY,
       );
 
   List<PawchiveAccount> get parsedPawchiveAccounts {

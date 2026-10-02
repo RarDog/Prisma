@@ -56,8 +56,27 @@ cp -r "${BUNDLE_DIR}"/* "${APP_DIR}/"
 cat << 'EOF' > "${APP_DIR}/AppRun"
 #!/bin/sh
 HERE="$(dirname "$(readlink -f "${0}")")"
+
+# Dynamic compatibility shim for libmpv across different Linux distributions (libmpv.so.1 vs libmpv.so.2)
+MPV_SHADOW_DIR="${XDG_RUNTIME_DIR:-/tmp}/prisma_mpv_compat"
+mkdir -p "$MPV_SHADOW_DIR" 2>/dev/null || true
+
+if [ ! -f "${HERE}/lib/libmpv.so.1" ] && ! ldconfig -p 2>/dev/null | grep -q 'libmpv\.so\.1'; then
+  SYSTEM_MPV=$(ldconfig -p 2>/dev/null | grep -E 'libmpv\.so(\.2)?' | head -n 1 | awk '{print $NF}')
+  if [ -n "$SYSTEM_MPV" ] && [ -f "$SYSTEM_MPV" ]; then
+    ln -sf "$SYSTEM_MPV" "$MPV_SHADOW_DIR/libmpv.so.1" 2>/dev/null || true
+  fi
+fi
+
+if [ ! -f "${HERE}/lib/libmpv.so.2" ] && ! ldconfig -p 2>/dev/null | grep -q 'libmpv\.so\.2'; then
+  SYSTEM_MPV=$(ldconfig -p 2>/dev/null | grep -E 'libmpv\.so(\.1)?' | head -n 1 | awk '{print $NF}')
+  if [ -n "$SYSTEM_MPV" ] && [ -f "$SYSTEM_MPV" ]; then
+    ln -sf "$SYSTEM_MPV" "$MPV_SHADOW_DIR/libmpv.so.2" 2>/dev/null || true
+  fi
+fi
+
 export PATH="${HERE}/usr/bin:${PATH}"
-export LD_LIBRARY_PATH="${HERE}/lib:${HERE}/usr/lib:${LD_LIBRARY_PATH}"
+export LD_LIBRARY_PATH="${MPV_SHADOW_DIR}:${HERE}/lib:${HERE}/usr/lib:${LD_LIBRARY_PATH}"
 export XDG_DATA_DIRS="${HERE}/usr/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
 exec "${HERE}/gel_rule_app" "$@"
 EOF

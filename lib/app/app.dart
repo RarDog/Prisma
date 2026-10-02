@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/features/settings/presentation/widgets/app_update_dialog.dart';
+import 'package:gel_rule_app/features/settings/presentation/widgets/performance_hud_overlay.dart';
 import 'app_strings.dart';
 import 'motion.dart';
 import 'router.dart';
@@ -124,8 +125,12 @@ class _AppOverlayState extends ConsumerState<_AppOverlay> with WidgetsBindingObs
   }
 
   Future<void> _showUpdateDialog(AppUpdateInfo info) async {
+    final navContext =
+        ref.read(appRouterProvider).routerDelegate.navigatorKey.currentContext ??
+            context;
+    if (Navigator.maybeOf(navContext) == null) return;
     await showAppUpdateDialog(
-      context: context,
+      context: navContext,
       ref: ref,
       info: info,
     );
@@ -184,6 +189,7 @@ class _DownloadOverlay extends ConsumerWidget {
               child: _DownloadPanel(tasks: visible.take(3).toList()),
             ),
           ),
+        const PerformanceHudOverlay(),
       ],
     );
   }

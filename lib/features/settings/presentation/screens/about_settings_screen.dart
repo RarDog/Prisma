@@ -13,6 +13,7 @@ import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
 import 'package:gel_rule_app/features/settings/presentation/widgets/app_update_dialog.dart';
+import 'package:gel_rule_app/core/performance/performance_monitor.dart';
 import 'package:gel_rule_app/features/settings/presentation/widgets/settings_shared_widgets.dart';
 
 class AboutSettingsScreen extends ConsumerWidget {
@@ -624,11 +625,335 @@ class AboutSettingsScreen extends ConsumerWidget {
                 ],
               ),
 
+              const SizedBox(height: 20),
+
+              // Performance & Debug Monitor
+              _PerformanceDebugSection(isRu: isRu),
+
               const SizedBox(height: 32),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _PerformanceDebugSection extends ConsumerWidget {
+  const _PerformanceDebugSection({required this.isRu});
+  final bool isRu;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final settingsAsync = ref.watch(settingsControllerProvider);
+    final settings = settingsAsync.value ?? AppSettings.defaults;
+    final metricsAsync = ref.watch(performanceMetricsStreamProvider);
+    final metrics = metricsAsync.value ?? const PerformanceMetrics();
+
+    return SettingsCardGroup(
+      title: isRu ? 'Мониторинг ресурсов и Debug' : 'Resource Monitor & Debug',
+      icon: Icons.speed_rounded,
+      accentColor: const Color(0xFF10B981),
+      children: [
+        // Live statistics block
+        Padding(
+          padding: const EdgeInsets.all(14),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.25),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      isRu ? 'Текущее состояние процесса' : 'Live Process Stats',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.2,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF10B981),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'LIVE',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: const Color(0xFF10B981),
+                              fontWeight: FontWeight.w900,
+                              fontSize: 9,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _StatItem(
+                  icon: Icons.memory_rounded,
+                  label: isRu ? 'Память (RAM RSS)' : 'Memory (RAM RSS)',
+                  value: PerformanceMetrics.formatBytes(metrics.rssBytes),
+                  subValue: isRu
+                      ? 'пик: ${PerformanceMetrics.formatBytes(metrics.maxRssBytes)}'
+                      : 'peak: ${PerformanceMetrics.formatBytes(metrics.maxRssBytes)}',
+                  color: const Color(0xFF8B5CF6),
+                ),
+                const SizedBox(height: 8),
+                _StatItem(
+                  icon: Icons.image_rounded,
+                  label: isRu ? 'Кэш картинок в ОЗУ' : 'Image RAM Cache',
+                  value: PerformanceMetrics.formatBytes(metrics.imageCacheBytes),
+                  subValue: isRu
+                      ? '${metrics.imageCacheCount} объектов'
+                      : '${metrics.imageCacheCount} items',
+                  color: const Color(0xFFEC4899),
+                ),
+                const SizedBox(height: 8),
+                _StatItem(
+                  icon: Icons.speed_rounded,
+                  label: isRu ? 'Загрузка ЦП процессом' : 'Process CPU',
+                  value: '${metrics.cpuPercent.toStringAsFixed(1)} %',
+                  subValue: isRu ? 'все ядра' : 'all cores',
+                  color: const Color(0xFF3B82F6),
+                ),
+                const SizedBox(height: 8),
+                _StatItem(
+                  icon: Icons.wifi_rounded,
+                  label: isRu ? 'Сеть (скачивание)' : 'Network (Download)',
+                  value: PerformanceMetrics.formatSpeed(metrics.downloadSpeedBytesPerSec),
+                  subValue: isRu
+                      ? 'всего: ${PerformanceMetrics.formatBytes(metrics.totalDownloadedBytes)}'
+                      : 'total: ${PerformanceMetrics.formatBytes(metrics.totalDownloadedBytes)}',
+                  color: const Color(0xFF10B981),
+                ),
+                const SizedBox(height: 8),
+                _StatItem(
+                  icon: Icons.monitor_heart_rounded,
+                  label: isRu ? 'Частота кадров' : 'Frame Rate',
+                  value: '${metrics.fps} FPS',
+                  subValue: metrics.fps >= 58
+                      ? (isRu ? 'плавно' : 'smooth')
+                      : (isRu ? 'нагрузка' : 'heavy'),
+                  color: const Color(0xFFF59E0B),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    PaintingBinding.instance.imageCache.clear();
+                    PaintingBinding.instance.imageCache.clearLiveImages();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          isRu
+                              ? 'Кэш изображений в оперативной памяти очищен'
+                              : 'Image cache cleared from RAM',
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.cleaning_services_rounded, size: 16),
+                  label: Text(isRu ? 'Очистить кэш картинок в ОЗУ' : 'Clear RAM image cache'),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        const SettingsDivider(),
+
+        // Toggle HUD
+        SettingsSwitchTile(
+          title: isRu ? 'Плавающее окно поверх экрана (HUD)' : 'Floating On-Screen HUD',
+          subtitle: isRu
+              ? 'Отображает полупрозрачное окно с метриками поверх всех экранов'
+              : 'Shows a semi-transparent floating widget with live metrics across all screens',
+          icon: Icons.picture_in_picture_alt_rounded,
+          iconColor: const Color(0xFF10B981),
+          value: settings.debugHudEnabled,
+          onChanged: (val) {
+            ref.read(settingsControllerProvider.notifier).updateDebugHudSettings(enabled: val);
+          },
+        ),
+
+        if (settings.debugHudEnabled) ...[
+          const SettingsDivider(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  isRu ? 'Отображаемые показатели в окне:' : 'Display metrics in HUD:',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    FilterChip(
+                      label: const Text('RAM (ОЗУ)'),
+                      selected: settings.debugHudShowRam,
+                      onSelected: (val) => ref
+                          .read(settingsControllerProvider.notifier)
+                          .updateDebugHudSettings(showRam: val),
+                    ),
+                    FilterChip(
+                      label: const Text('CPU (ЦП)'),
+                      selected: settings.debugHudShowCpu,
+                      onSelected: (val) => ref
+                          .read(settingsControllerProvider.notifier)
+                          .updateDebugHudSettings(showCpu: val),
+                    ),
+                    FilterChip(
+                      label: const Text('Network (Сеть)'),
+                      selected: settings.debugHudShowNetwork,
+                      onSelected: (val) => ref
+                          .read(settingsControllerProvider.notifier)
+                          .updateDebugHudSettings(showNetwork: val),
+                    ),
+                    FilterChip(
+                      label: const Text('FPS (Кадры)'),
+                      selected: settings.debugHudShowFps,
+                      onSelected: (val) => ref
+                          .read(settingsControllerProvider.notifier)
+                          .updateDebugHudSettings(showFps: val),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      isRu ? 'Непрозрачность окна:' : 'HUD Opacity:',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    Text(
+                      '${(settings.debugHudOpacity * 100).toInt()}%',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+                Slider(
+                  value: settings.debugHudOpacity.clamp(0.2, 1.0),
+                  min: 0.2,
+                  max: 1.0,
+                  divisions: 8,
+                  onChanged: (val) => ref
+                      .read(settingsControllerProvider.notifier)
+                      .updateDebugHudSettings(opacity: val),
+                ),
+                TextButton.icon(
+                  onPressed: () {
+                    ref.read(settingsControllerProvider.notifier).updateDebugHudSettings(
+                          x: 16.0,
+                          y: 90.0,
+                        );
+                  },
+                  icon: const Icon(Icons.refresh_rounded, size: 16),
+                  label: Text(
+                    isRu ? 'Сбросить позицию окна' : 'Reset window position',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _StatItem extends StatelessWidget {
+  const _StatItem({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.subValue,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final String subValue;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(5),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 14, color: color),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontSize: 11,
+                ),
+              ),
+              Text(
+                value,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
+          ),
+        ),
+        Text(
+          subValue,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+            fontSize: 11,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+      ],
     );
   }
 }

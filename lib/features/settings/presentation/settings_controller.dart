@@ -135,4 +135,28 @@ class SettingsController extends AsyncNotifier<AppSettings> {
     ref.invalidate(appSettingsProvider);
     ref.invalidateSelf();
   }
+
+  Future<void> updateDebugHudSettings({
+    bool? enabled,
+    bool? showCpu,
+    bool? showRam,
+    bool? showNetwork,
+    bool? showFps,
+    double? opacity,
+    double? x,
+    double? y,
+  }) async {
+    final current = state.valueOrNull ?? AppSettings.defaults;
+    final updated = current.copyWith(
+      debugHudEnabled: enabled ?? current.debugHudEnabled,
+      debugHudShowCpu: showCpu ?? current.debugHudShowCpu,
+      debugHudShowRam: showRam ?? current.debugHudShowRam,
+      debugHudShowNetwork: showNetwork ?? current.debugHudShowNetwork,
+      debugHudShowFps: showFps ?? current.debugHudShowFps,
+      debugHudOpacity: opacity ?? current.debugHudOpacity,
+      debugHudX: x ?? current.debugHudX,
+      debugHudY: y ?? current.debugHudY,
+    );
+    await saveSettings(updated);
+  }
 }

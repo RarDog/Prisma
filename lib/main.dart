@@ -4,11 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 
 import 'app/app.dart';
+import 'core/performance/performance_monitor.dart';
 import 'core/utils/logger.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   MediaKit.ensureInitialized();
+  PerformanceMonitorService.init();
 
   // Global Flutter error handling
   FlutterError.onError = (FlutterErrorDetails details) {
