@@ -93,9 +93,14 @@ app_dir = "${APP_DIR}"
 bundle_dir = "${BUNDLE_DIR}"
 src = Image.open(src_path)
 
+try:
+    resample_filter = Image.Resampling.LANCZOS
+except AttributeError:
+    resample_filter = getattr(Image, 'LANCZOS', getattr(Image, 'ANTIALIAS', 1))
+
 sizes = [16, 24, 32, 48, 64, 128, 256, 512]
 for size in sizes:
-    resized = src.resize((size, size), Image.Resampling.LANCZOS)
+    resized = src.resize((size, size), resample_filter)
     hicolor_dir = f"{app_dir}/usr/share/icons/hicolor/{size}x{size}/apps"
     os.makedirs(hicolor_dir, exist_ok=True)
     resized.save(f"{hicolor_dir}/prisma.png")
