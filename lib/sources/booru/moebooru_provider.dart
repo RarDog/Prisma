@@ -34,6 +34,12 @@ class MoebooruProvider
   final Map<String, String> _queryParameters;
 
   @override
+  Set<TopPeriodFilter> get supportedTopPeriods => const {
+        TopPeriodFilter.none,
+        TopPeriodFilter.allTime,
+      };
+
+  @override
   String postPageUrl(Post post) => '$baseUrl/post/show/${post.id}';
 
   @override
@@ -172,13 +178,8 @@ class MoebooruProvider
 
   List<String> _topTags(TopPeriodFilter period) {
     return switch (period) {
-      TopPeriodFilter.none => const [],
-      TopPeriodFilter.day ||
-      TopPeriodFilter.week ||
-      TopPeriodFilter.month ||
-      TopPeriodFilter.year =>
-        const [],
       TopPeriodFilter.allTime => const ['order:score'],
+      _ => const [],
     };
   }
 

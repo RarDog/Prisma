@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:gel_rule_app/core/cache/cache_service.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/core/models/post.dart';
@@ -84,10 +86,10 @@ class FeedService {
         .where((post) =>
             !settings.hideViewedPosts || !viewedKeys.contains(post.cacheKey))
         .toList(growable: false);
-    await _cacheService.cachePosts(
+    unawaited(_cacheService.cachePosts(
       filteredPosts,
       maxItems: settings.cacheMaxItems,
-    );
+    ));
     return Success(filteredPosts);
   }
 

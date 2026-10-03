@@ -36,6 +36,16 @@ class E621Provider
   final Dio _dio;
   final Map<String, String> _queryParameters;
 
+  @override
+  Set<TopPeriodFilter> get supportedTopPeriods => const {
+        TopPeriodFilter.none,
+        TopPeriodFilter.day,
+        TopPeriodFilter.week,
+        TopPeriodFilter.month,
+        TopPeriodFilter.year,
+        TopPeriodFilter.allTime,
+      };
+
   static DateTime _lastRequestTime = DateTime.fromMillisecondsSinceEpoch(0);
 
   static Future<void> _throttle() async {

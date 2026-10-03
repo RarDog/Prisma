@@ -61,6 +61,7 @@ class BackupService {
     final searchHistoryData = <Map<String, dynamic>>[];
     final mangaLibraryData = <Map<String, dynamic>>[];
     final mangaProgressData = <Map<String, dynamic>>[];
+    final viewedHistoryData = <Map<String, dynamic>>[];
 
     final db = _databaseService;
     if (db != null) {
@@ -102,8 +103,29 @@ class BackupService {
           });
         }
 
-        // 4. Cached posts needed by favorites & collections
-        final neededKeys = {...favoriteKeys, ...collectionPostKeys};
+        // 4. Viewed history (up to 500 recent items)
+        final viewedEntities = await isar.viewedPostEntitys
+            .where()
+            .sortByViewedAtDesc()
+            .limit(500)
+            .findAll();
+        final viewedKeys = <String>{};
+        for (final v in viewedEntities) {
+          viewedKeys.add(v.viewedKey);
+          viewedHistoryData.add({
+            'viewedKey': v.viewedKey,
+            'providerId': v.providerId,
+            'postId': v.postId,
+            'viewedAt': v.viewedAt.toIso8601String(),
+          });
+        }
+
+        // 5. Cached posts needed by favorites, collections & viewed history
+        final neededKeys = {
+          ...favoriteKeys,
+          ...collectionPostKeys,
+          ...viewedKeys,
+        };
         final cachedPostEntities =
             await isar.cachedPostEntitys.where().findAll();
         for (final cp in cachedPostEntities) {
@@ -112,14 +134,14 @@ class BackupService {
           }
         }
 
-        // 5. Search history
+        // 6. Search history
         final searchEntities =
             await isar.searchHistoryEntitys.where().findAll();
         for (final s in searchEntities) {
           searchHistoryData.add(s.toModel().toJson());
         }
 
-        // 6. Manga library
+        // 7. Manga library
         final mangaEntities =
             await isar.mangaLibraryEntryEntitys.where().findAll();
         for (final m in mangaEntities) {
@@ -135,7 +157,7 @@ class BackupService {
           });
         }
 
-        // 7. Manga reading progress
+        // 8. Manga reading progress
         final progressEntities =
             await isar.mangaReadingProgressEntitys.where().findAll();
         for (final p in progressEntities) {
@@ -165,6 +187,7 @@ class BackupService {
       'searchHistory': searchHistoryData,
       'mangaLibrary': mangaLibraryData,
       'mangaProgress': mangaProgressData,
+      'viewedHistory': viewedHistoryData,
     };
   }
 
@@ -365,6 +388,27 @@ class BackupService {
               }
             }
           }
+
+          // Viewed History
+          final viewedList = decoded['viewedHistory'];
+          if (viewedList is List) {
+            for (final item in viewedList) {
+              if (item is Map) {
+                final v = Map<String, dynamic>.from(item);
+                final key = (v['viewedKey'] ??
+                        '${v['providerId']}:${v['postId']}')
+                    .toString();
+                final entity = ViewedPostEntity()
+                  ..viewedKey = key
+                  ..providerId = (v['providerId'] ?? '').toString()
+                  ..postId = (v['postId'] ?? '').toString()
+                  ..viewedAt = DateTime.tryParse(
+                          v['viewedAt']?.toString() ?? '') ??
+                      DateTime.now();
+                await isar.viewedPostEntitys.putByViewedKey(entity);
+              }
+            }
+          }
         });
       }
 
@@ -555,7 +599,9 @@ class BackupService {
       final hasData = await db.safeRead((isar) async {
         final favCount = await isar.favoriteEntitys.count();
         final colCount = await isar.collectionEntitys.count();
-        return favCount > 0 || colCount > 0;
+        final mangaCount = await isar.mangaLibraryEntryEntitys.count();
+        final viewedCount = await isar.viewedPostEntitys.count();
+        return favCount > 0 || colCount > 0 || mangaCount > 0 || viewedCount > 0;
       });
 
       if (hasData is Success<bool> && hasData.data) {

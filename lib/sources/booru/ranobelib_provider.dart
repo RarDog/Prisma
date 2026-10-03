@@ -36,6 +36,12 @@ class RanobeLibProvider
   final Dio _dio;
   final Map<String, String> _queryParameters;
 
+  @override
+  Set<TopPeriodFilter> get supportedTopPeriods => const {
+        TopPeriodFilter.none,
+        TopPeriodFilter.allTime,
+      };
+
   Dio get dio => _dio;
   Map<String, String> get queryParameters => _queryParameters;
   String get _apiBase {

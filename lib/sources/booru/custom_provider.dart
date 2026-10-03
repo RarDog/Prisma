@@ -18,6 +18,9 @@ class CustomProvider implements ContentProvider, CommentProvider {
   String get baseUrl => _delegate.baseUrl;
 
   @override
+  Set<TopPeriodFilter> get supportedTopPeriods => _delegate.supportedTopPeriods;
+
+  @override
   Future<List<Post>> searchPosts({
     required List<String> tags,
     required int page,
@@ -64,6 +67,11 @@ class UnsupportedCustomProvider implements ContentProvider {
   @override
   final String baseUrl;
   final String apiType;
+
+  @override
+  Set<TopPeriodFilter> get supportedTopPeriods => const {
+        TopPeriodFilter.none,
+      };
 
   @override
   Future<List<Post>> searchPosts({

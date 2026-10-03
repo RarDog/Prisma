@@ -15,6 +15,11 @@ abstract class ContentProvider {
   String get name;
   String get baseUrl;
 
+  Set<TopPeriodFilter> get supportedTopPeriods => const {
+        TopPeriodFilter.none,
+        TopPeriodFilter.allTime,
+      };
+
   Future<List<Post>> searchPosts({
     required List<String> tags,
     required int page,

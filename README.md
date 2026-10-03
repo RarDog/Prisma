@@ -96,17 +96,17 @@ Prisma is a unified, resource-optimized multimedia viewer and catalog reader bui
 Pre-compiled production releases for each platform are available on the **[Releases](https://github.com/RarDog/Prisma/releases)** page:
 
 ### Android
-- **[Prisma-4.1.4-arm64-v8a.apk](https://github.com/RarDog/Prisma/releases/download/v4.1.4/Prisma-4.1.4-arm64-v8a.apk)** — Recommended for modern smartphones and tablets (64-bit ARM).
-- **[Prisma-4.1.4-armeabi-v7a.apk](https://github.com/RarDog/Prisma/releases/download/v4.1.4/Prisma-4.1.4-armeabi-v7a.apk)** — Legacy 32-bit Android devices.
-- **[Prisma-4.1.4-x86_64.apk](https://github.com/RarDog/Prisma/releases/download/v4.1.4/Prisma-4.1.4-x86_64.apk)** — Android emulators, ChromeOS, and x86 devices.
+- **[Prisma-4.1.5-arm64-v8a.apk](https://github.com/RarDog/Prisma/releases/download/v4.1.5/Prisma-4.1.5-arm64-v8a.apk)** — Recommended for modern smartphones and tablets (64-bit ARM).
+- **[Prisma-4.1.5-armeabi-v7a.apk](https://github.com/RarDog/Prisma/releases/download/v4.1.5/Prisma-4.1.5-armeabi-v7a.apk)** — Legacy 32-bit Android devices.
+- **[Prisma-4.1.5-x86_64.apk](https://github.com/RarDog/Prisma/releases/download/v4.1.5/Prisma-4.1.5-x86_64.apk)** — Android emulators, ChromeOS, and x86 devices.
 
 ### Linux
-- **[Prisma-v4.1.4-linux-x86_64.AppImage](https://github.com/RarDog/Prisma/releases/download/v4.1.4/Prisma-v4.1.4-linux-x86_64.AppImage)** — Self-contained portable executable (requires `fuse` and `libmpv`).
-- **[Prisma-v4.1.4-linux-x64.tar.gz](https://github.com/RarDog/Prisma/releases/download/v4.1.4/Prisma-v4.1.4-linux-x64.tar.gz)** — Standalone portable tarball bundle.
+- **[Prisma-v4.1.5-linux-x86_64.AppImage](https://github.com/RarDog/Prisma/releases/download/v4.1.5/Prisma-v4.1.5-linux-x86_64.AppImage)** — Self-contained portable executable (requires `fuse` and `libmpv`).
+- **[Prisma-v4.1.5-linux-x64.tar.gz](https://github.com/RarDog/Prisma/releases/download/v4.1.5/Prisma-v4.1.5-linux-x64.tar.gz)** — Standalone portable tarball bundle.
 
 ### Windows & macOS
-- **[Prisma-v4.1.4-windows-x64.zip](https://github.com/RarDog/Prisma/releases/download/v4.1.4/Prisma-v4.1.4-windows-x64.zip)** — Portable 64-bit application archive.
-- **[Prisma-v4.1.4-macos.zip](https://github.com/RarDog/Prisma/releases/download/v4.1.4/Prisma-v4.1.4-macos.zip)** — Standalone macOS app bundle.
+- **[Prisma-v4.1.5-windows-x64.zip](https://github.com/RarDog/Prisma/releases/download/v4.1.5/Prisma-v4.1.5-windows-x64.zip)** — Portable 64-bit application archive.
+- **[Prisma-v4.1.5-macos.zip](https://github.com/RarDog/Prisma/releases/download/v4.1.5/Prisma-v4.1.5-macos.zip)** — Standalone macOS app bundle.
 
 ---
 

@@ -31,15 +31,30 @@ class FeedController extends AsyncNotifier<FeedState> {
     final providers = await _loadProviders();
     final settings = await _settings();
     final providerIds = providers.map((provider) => provider.id).toSet();
+    final selectedProviders =
+        settings.lastFeedProviderIds.where(providerIds.contains).toList();
+    final activeConfigs = selectedProviders.isEmpty
+        ? providers
+        : providers.where((p) => selectedProviders.contains(p.id)).toList();
+    final supported = resolveSupportedTopPeriods(activeConfigs);
+    final initialPeriod = TopPeriodFilter.values.firstWhere(
+      (value) => value.name == settings.lastFeedTopPeriod,
+      orElse: () => TopPeriodFilter.none,
+    );
+    final effectivePeriod = supported.contains(initialPeriod)
+        ? initialPeriod
+        : (supported.contains(TopPeriodFilter.allTime) &&
+                initialPeriod != TopPeriodFilter.none
+            ? TopPeriodFilter.allTime
+            : (supported.contains(TopPeriodFilter.none)
+                ? TopPeriodFilter.none
+                : supported.first));
+
     final initial = FeedState(
       providers: providers,
-      topPeriodFilter: TopPeriodFilter.values.firstWhere(
-        (value) => value.name == settings.lastFeedTopPeriod,
-        orElse: () => TopPeriodFilter.none,
-      ),
+      topPeriodFilter: effectivePeriod,
       selectedTags: settings.lastFeedTags,
-      selectedProviderIds:
-          settings.lastFeedProviderIds.where(providerIds.contains).toList(),
+      selectedProviderIds: selectedProviders,
       ratingFilter: settings.lastFeedRating ?? settings.defaultRatingFilter,
     );
     state = AsyncData(initial);
@@ -183,8 +198,22 @@ class FeedController extends AsyncNotifier<FeedState> {
     final current = state.value ?? const FeedState();
     final enabledIds = current.providers.map((provider) => provider.id).toSet();
     final selected = providerIds.where(enabledIds.contains).toList();
+    final activeConfigs = selected.isEmpty
+        ? current.providers
+        : current.providers.where((p) => selected.contains(p.id)).toList();
+    final supported = resolveSupportedTopPeriods(activeConfigs);
+    var targetPeriod = current.topPeriodFilter;
+    if (!supported.contains(targetPeriod)) {
+      targetPeriod = supported.contains(TopPeriodFilter.allTime) &&
+              current.topPeriodFilter != TopPeriodFilter.none
+          ? TopPeriodFilter.allTime
+          : (supported.contains(TopPeriodFilter.none)
+              ? TopPeriodFilter.none
+              : supported.first);
+    }
     state = AsyncData(current.copyWith(
       selectedProviderIds: selected,
+      topPeriodFilter: targetPeriod,
       posts: [],
       hasMore: true,
       emptyPageStreak: 0,
@@ -194,6 +223,7 @@ class FeedController extends AsyncNotifier<FeedState> {
           settings.copyWith(
             selectedFeedProviderIds: selected,
             lastFeedProviderIds: selected,
+            lastFeedTopPeriod: targetPeriod.name,
           ),
         );
     _providerDebounce?.cancel();

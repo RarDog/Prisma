@@ -345,39 +345,40 @@ class ProviderManager {
         .toList(growable: false);
 
     final seen = <String>{};
-    final providerResults = <List<Post>>[];
-    for (final provider in providers) {
+    final providerFutures = providers.map((provider) async {
       try {
-        final providerPosts = await provider.searchPosts(
-          tags: cleanTags,
-          page: page,
-          limit: limit,
-          rating: rating,
-          topPeriod: topPeriod,
-        );
-        providerResults.add(providerPosts);
-        await _repository.saveDiagnostics(
+        final providerPosts = await provider
+            .searchPosts(
+              tags: cleanTags,
+              page: page,
+              limit: limit,
+              rating: rating,
+              topPeriod: topPeriod,
+            )
+            .timeout(const Duration(seconds: 14));
+        unawaited(_repository.saveDiagnostics(
           ProviderDiagnostics(
             providerId: provider.id,
             lastSearchAt: DateTime.now(),
             lastResultCount: providerPosts.length,
           ),
-        );
+        ));
+        return providerPosts;
       } catch (error) {
         final errorMsg = error is AppException
             ? error.message
             : (error is DioException
                 ? (error.message ?? error.toString())
                 : error.toString());
-        await _repository.saveDiagnostics(
+        unawaited(_repository.saveDiagnostics(
           ProviderDiagnostics(
             providerId: provider.id,
             lastSearchAt: DateTime.now(),
             lastResultCount: 0,
             lastErrorMessage: errorMsg,
           ),
-        );
-        await _repository.saveHealth(
+        ));
+        unawaited(_repository.saveHealth(
           ProviderHealth(
             providerId: provider.id,
             status: ProviderStatus.offline,
@@ -385,7 +386,7 @@ class ProviderManager {
             lastCheckedAt: DateTime.now(),
             errorMessage: errorMsg,
           ),
-        );
+        ));
         _scheduleSoftSearchRetry(
           provider,
           tags: tags,
@@ -394,8 +395,13 @@ class ProviderManager {
           rating: rating,
           topPeriod: topPeriod,
         );
+        return const <Post>[];
       }
-    }
+    }).toList(growable: false);
+
+    final rawResults = await Future.wait(providerFutures);
+    final providerResults =
+        rawResults.where((list) => list.isNotEmpty).toList(growable: false);
     final posts = providerId == null
         ? _interleaveProviderResults(providerResults, seen)
         : _flattenProviderResults(providerResults, seen);

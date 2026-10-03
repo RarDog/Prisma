@@ -26,6 +26,9 @@ final Map<String, VideoPlaybackSnapshot> _playbackMemory =
 
 final isFullscreenViewerActiveProvider = StateProvider<bool>((ref) => false);
 
+final postMediaDimensionsProvider =
+    StateProvider.autoDispose.family<Size?, String>((ref, cacheKey) => null);
+
 Map<String, String> getPostMediaHeaders(Post post, [Map<String, String>? extraHeaders]) {
   String? defaultReferer;
   final pid = post.providerId.toLowerCase();
@@ -217,6 +220,7 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
   StreamSubscription<String>? _errorSubscription;
   StreamSubscription<Duration>? _positionSubscription;
   StreamSubscription<bool>? _playingSubscription;
+  StreamSubscription<VideoParams>? _videoParamsSubscription;
   DateTime? _lastSnapshotEmitAt;
 
   @override
@@ -231,6 +235,8 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
     _videoUrls = _buildVideoUrls(widget.post);
     if (_isPlayableMedia(widget.post) && _videoUrls.isNotEmpty) {
       _initializeVideo();
+    } else {
+      _resolveImageDimensions();
     }
   }
 
@@ -250,6 +256,8 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
       _videoUrls = _buildVideoUrls(widget.post);
       if (_isPlayableMedia(widget.post) && _videoUrls.isNotEmpty) {
         _initializeVideo();
+      } else {
+        _resolveImageDimensions();
       }
     } else if (oldWidget.mediaHeaders != widget.mediaHeaders) {
       if (_videoError != null && _player != null) {
@@ -364,7 +372,11 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
               controller: _controller!,
               aspectRatio: widget.post.width > 0 && widget.post.height > 0
                   ? widget.post.width / widget.post.height
-                  : 16 / 9,
+                  : (ref.watch(postMediaDimensionsProvider(widget.post.cacheKey)) != null &&
+                          ref.watch(postMediaDimensionsProvider(widget.post.cacheKey))!.height > 0
+                      ? ref.watch(postMediaDimensionsProvider(widget.post.cacheKey))!.width /
+                          ref.watch(postMediaDimensionsProvider(widget.post.cacheKey))!.height
+                      : 16 / 9),
               isSoftwareDecoding: _useSoftwareDecoding,
               onToggleDecoder: _toggleDecoderMode,
               controlsVisible: _controlsVisible,
@@ -640,6 +652,18 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
       _playbackMemory[widget.post.cacheKey] = snapshot;
       widget.onPlaybackSnapshot?.call(snapshot);
     });
+    _videoParamsSubscription = _player!.stream.videoParams.listen((params) {
+      if (params.w != null && params.h != null && params.w! > 0 && params.h! > 0) {
+        final newSize = Size(params.w!.toDouble(), params.h!.toDouble());
+        if (ref.read(postMediaDimensionsProvider(widget.post.cacheKey)) != newSize) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              ref.read(postMediaDimensionsProvider(widget.post.cacheKey).notifier).state = newSize;
+            }
+          });
+        }
+      }
+    });
     _openVideo(play: widget.autoplay);
     _scheduleControlsHide();
   }
@@ -750,6 +774,7 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
     _errorSubscription?.cancel();
     _positionSubscription?.cancel();
     _playingSubscription?.cancel();
+    _videoParamsSubscription?.cancel();
     final snapshot = _snapshot();
     _playbackMemory[widget.post.cacheKey] = snapshot;
     widget.onPlaybackSnapshot?.call(snapshot);
@@ -758,6 +783,34 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
     _player?.dispose();
     _player = null;
     _controller = null;
+  }
+
+  void _resolveImageDimensions() {
+    if (widget.post.width > 0 && widget.post.height > 0) return;
+    final url = _imageUrls.isNotEmpty
+        ? _imageUrls.first
+        : (widget.post.sampleUrl.isNotEmpty
+            ? widget.post.sampleUrl
+            : widget.post.previewUrl);
+    if (url.trim().isEmpty) return;
+    final headers = getPostMediaHeaders(widget.post);
+    final provider = CachedNetworkImageProvider(url, headers: headers);
+    final stream = provider.resolve(ImageConfiguration.empty);
+    late final ImageStreamListener listener;
+    listener = ImageStreamListener((ImageInfo info, bool _) {
+      final w = info.image.width.toDouble();
+      final h = info.image.height.toDouble();
+      if (w > 0 && h > 0) {
+        final newSize = Size(w, h);
+        if (mounted) {
+          ref.read(postMediaDimensionsProvider(widget.post.cacheKey).notifier).state = newSize;
+        }
+      }
+      stream.removeListener(listener);
+    }, onError: (_, __) {
+      stream.removeListener(listener);
+    });
+    stream.addListener(listener);
   }
 
   List<String> _buildImageUrls(Post post) {
@@ -3044,7 +3097,7 @@ class _VideoSurfaceState extends State<_VideoSurface> {
                 child: widget.fullscreen
                     ? SizedBox.expand(child: child)
                     : AspectRatio(
-                        aspectRatio: widget.aspectRatio.clamp(0.35, 2.4),
+                        aspectRatio: widget.aspectRatio.clamp(0.2, 5.0),
                         child: child,
                       ),
               ),

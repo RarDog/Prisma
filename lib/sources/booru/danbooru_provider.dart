@@ -34,6 +34,16 @@ class DanbooruProvider
   final Map<String, String> _queryParameters;
 
   @override
+  Set<TopPeriodFilter> get supportedTopPeriods => const {
+        TopPeriodFilter.none,
+        TopPeriodFilter.day,
+        TopPeriodFilter.week,
+        TopPeriodFilter.month,
+        TopPeriodFilter.year,
+        TopPeriodFilter.allTime,
+      };
+
+  @override
   String postPageUrl(Post post) => '$baseUrl/posts/${post.id}';
 
   @override

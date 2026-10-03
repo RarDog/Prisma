@@ -93,6 +93,11 @@ class FakeProvider implements ContentProvider, TagSuggestionProvider {
   final String name;
   @override
   String get baseUrl => 'https://example.test';
+  @override
+  Set<TopPeriodFilter> get supportedTopPeriods => const {
+        TopPeriodFilter.none,
+        TopPeriodFilter.allTime,
+      };
   final List<Post> posts;
   final bool failSearch;
   final List<TagSuggestion> suggestions;

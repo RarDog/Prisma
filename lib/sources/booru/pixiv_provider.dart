@@ -66,6 +66,14 @@ class PixivProvider
   }
 
   @override
+  Set<TopPeriodFilter> get supportedTopPeriods => const {
+        TopPeriodFilter.none,
+        TopPeriodFilter.day,
+        TopPeriodFilter.week,
+        TopPeriodFilter.month,
+      };
+
+  @override
   Future<List<Post>> searchPosts({
     required List<String> tags,
     required int page,

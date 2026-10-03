@@ -63,11 +63,35 @@ class _FeedToolbarState extends State<FeedToolbar> {
     _query = widget.selectedTags.join(' ');
   }
 
+  Set<TopPeriodFilter> get _supportedPeriods {
+    final activeConfigs = widget.selectedProviderIds.isEmpty
+        ? widget.providers
+        : widget.providers
+            .where((p) => widget.selectedProviderIds.contains(p.id))
+            .toList();
+    return resolveSupportedTopPeriods(activeConfigs);
+  }
+
   @override
   void didUpdateWidget(covariant FeedToolbar oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!listEquals(oldWidget.selectedTags, widget.selectedTags)) {
       _query = widget.selectedTags.join(' ');
+    }
+    if (!listEquals(oldWidget.selectedProviderIds, widget.selectedProviderIds) ||
+        !listEquals(oldWidget.providers, widget.providers)) {
+      final supported = _supportedPeriods;
+      if (!supported.contains(widget.topPeriodFilter)) {
+        final fallback = supported.contains(TopPeriodFilter.allTime) &&
+                widget.topPeriodFilter != TopPeriodFilter.none
+            ? TopPeriodFilter.allTime
+            : (supported.contains(TopPeriodFilter.none)
+                ? TopPeriodFilter.none
+                : supported.first);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) widget.onTopPeriodChanged(fallback);
+        });
+      }
     }
   }
 
@@ -133,6 +157,7 @@ class _FeedToolbarState extends State<FeedToolbar> {
                 _LiquidPeriodTabs(
                   selectedPeriod: widget.topPeriodFilter,
                   onChanged: widget.onTopPeriodChanged,
+                  supportedPeriods: _supportedPeriods,
                 ),
                 const SizedBox(width: 8),
                 const _ToolbarDivider(),
@@ -271,6 +296,7 @@ class _FeedToolbarState extends State<FeedToolbar> {
                 _LiquidPeriodTabs(
                   selectedPeriod: widget.topPeriodFilter,
                   onChanged: widget.onTopPeriodChanged,
+                  supportedPeriods: _supportedPeriods,
                 ),
                 if (widget.providers.isNotEmpty) ...[
                   const SizedBox(width: 6),
@@ -320,10 +346,15 @@ class _LiquidPeriodTabs extends StatelessWidget {
   const _LiquidPeriodTabs({
     required this.selectedPeriod,
     required this.onChanged,
+    this.supportedPeriods = const {
+      TopPeriodFilter.none,
+      TopPeriodFilter.allTime,
+    },
   });
 
   final TopPeriodFilter selectedPeriod;
   final ValueChanged<TopPeriodFilter> onChanged;
+  final Set<TopPeriodFilter> supportedPeriods;
 
   IconData _iconFor(TopPeriodFilter period) {
     return switch (period) {
@@ -342,6 +373,10 @@ class _LiquidPeriodTabs extends StatelessWidget {
     final scheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
+    final availablePeriods = TopPeriodFilter.values
+        .where(supportedPeriods.contains)
+        .toList(growable: false);
+
     return Container(
       padding: const EdgeInsets.all(2.5),
       decoration: BoxDecoration(
@@ -359,14 +394,14 @@ class _LiquidPeriodTabs extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          for (final period in TopPeriodFilter.values) ...[
+          for (var i = 0; i < availablePeriods.length; i++) ...[
             _LiquidPeriodTabItem(
-              period: period,
-              icon: _iconFor(period),
-              isSelected: selectedPeriod == period,
-              onTap: () => onChanged(period),
+              period: availablePeriods[i],
+              icon: _iconFor(availablePeriods[i]),
+              isSelected: selectedPeriod == availablePeriods[i],
+              onTap: () => onChanged(availablePeriods[i]),
             ),
-            if (period != TopPeriodFilter.values.last) const SizedBox(width: 3),
+            if (i < availablePeriods.length - 1) const SizedBox(width: 3),
           ],
         ],
       ),

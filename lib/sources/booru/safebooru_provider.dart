@@ -26,6 +26,12 @@ class SafebooruProvider extends GelbooruProvider {
       );
 
   @override
+  Set<TopPeriodFilter> get supportedTopPeriods => const {
+        TopPeriodFilter.none,
+        TopPeriodFilter.allTime,
+      };
+
+  @override
   Future<List<Post>> searchPosts({
     required List<String> tags,
     required int page,

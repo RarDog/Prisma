@@ -44,6 +44,7 @@ void main() {
       expect(decoded['providers'], isA<List>());
       expect(decoded['favorites'], isA<List>());
       expect(decoded['collections'], isA<List>());
+      expect(decoded['viewedHistory'], isA<List>());
 
       // Test restoring into modified state
       fakeSettings.current = AppSettings.defaults;
@@ -121,6 +122,7 @@ void main() {
       expect(map.containsKey('collections'), isTrue);
       expect(map.containsKey('mangaLibrary'), isTrue);
       expect(map.containsKey('mangaProgress'), isTrue);
+      expect(map.containsKey('viewedHistory'), isTrue);
     });
   });
 }

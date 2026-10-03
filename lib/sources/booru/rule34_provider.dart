@@ -26,6 +26,12 @@ class Rule34Provider extends GelbooruProvider {
       );
 
   @override
+  Set<TopPeriodFilter> get supportedTopPeriods => const {
+        TopPeriodFilter.none,
+        TopPeriodFilter.allTime,
+      };
+
+  @override
   Future<List<Post>> searchPosts({
     required List<String> tags,
     required int page,
@@ -33,26 +39,9 @@ class Rule34Provider extends GelbooruProvider {
     String? rating,
     TopPeriodFilter topPeriod = TopPeriodFilter.none,
   }) async {
-    final now = DateTime.now();
     final topTags = switch (topPeriod) {
-      TopPeriodFilter.none => const <String>[],
-      TopPeriodFilter.day => [
-          'sort:score:desc',
-          'date:>=${_date(now.subtract(const Duration(days: 1)))}',
-        ],
-      TopPeriodFilter.week => [
-          'sort:score:desc',
-          'date:>=${_date(now.subtract(const Duration(days: 7)))}',
-        ],
-      TopPeriodFilter.month => [
-          'sort:score:desc',
-          'date:>=${_date(now.subtract(const Duration(days: 31)))}',
-        ],
-      TopPeriodFilter.year => [
-          'sort:score:desc',
-          'date:>=${_date(DateTime(now.year - 1, now.month, now.day))}',
-        ],
       TopPeriodFilter.allTime => const ['sort:score:desc'],
+      _ => const <String>[],
     };
     try {
       final response = await dio.get<dynamic>(
@@ -192,10 +181,5 @@ class Rule34Provider extends GelbooruProvider {
     }
     throw error;
   }
-
-  String _date(DateTime value) {
-    return '${value.year.toString().padLeft(4, '0')}-'
-        '${value.month.toString().padLeft(2, '0')}-'
-        '${value.day.toString().padLeft(2, '0')}';
-  }
 }
+

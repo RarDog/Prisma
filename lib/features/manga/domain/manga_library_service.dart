@@ -160,14 +160,20 @@ class MangaLibraryEntry {
 }
 
 class MangaLibraryService {
-  MangaLibraryService(this._databaseService);
+  MangaLibraryService(this._databaseService, {this.onDataChanged});
 
   final DatabaseService _databaseService;
+  final void Function()? onDataChanged;
   static const _kLibraryKey = 'manga_library_entries_v1';
   static const _kProgressKey = 'manga_reading_progress_v1';
 
   final ValueNotifier<int> changeNotifier = ValueNotifier<int>(0);
   bool _migrated = false;
+
+  void _notifyChange() {
+    changeNotifier.value++;
+    onDataChanged?.call();
+  }
 
   Future<void> _checkMigration() async {
     if (_migrated) return;
@@ -454,7 +460,7 @@ class MangaLibraryService {
       await isar.mangaReadingProgressEntitys.put(entity);
     });
 
-    changeNotifier.value++;
+    _notifyChange();
   }
 
   Future<void> toggleChapterRead({
@@ -497,7 +503,7 @@ class MangaLibraryService {
       await isar.mangaReadingProgressEntitys.put(entity);
     });
 
-    changeNotifier.value++;
+    _notifyChange();
   }
 
   Future<bool> isChapterRead(String mangaId, String chapterId) async {
@@ -538,7 +544,7 @@ class MangaLibraryService {
       }
     });
 
-    changeNotifier.value++;
+    _notifyChange();
   }
 
   Future<void> removeLibraryEntry(String mangaId) async {
@@ -553,7 +559,7 @@ class MangaLibraryService {
       }
     });
 
-    changeNotifier.value++;
+    _notifyChange();
   }
 
   Future<int> checkForUpdates(
@@ -592,7 +598,7 @@ class MangaLibraryService {
         }
       } catch (_) {}
     }
-    if (totalNew > 0) changeNotifier.value++;
+    if (totalNew > 0) _notifyChange();
     return totalNew;
   }
 
@@ -607,6 +613,6 @@ class MangaLibraryService {
         await isar.mangaLibraryEntryEntitys.put(e);
       }
     });
-    changeNotifier.value++;
+    _notifyChange();
   }
 }

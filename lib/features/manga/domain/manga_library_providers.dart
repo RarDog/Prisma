@@ -27,7 +27,14 @@ final _mangaOfflineChangeProvider = StateProvider<int>((ref) {
 
 final mangaLibraryServiceProvider = Provider<MangaLibraryService>((ref) {
   final dbService = ref.watch(databaseServiceProvider);
-  return MangaLibraryService(dbService);
+  return MangaLibraryService(
+    dbService,
+    onDataChanged: () {
+      try {
+        ref.read(backupServiceProvider).scheduleAutoBackup();
+      } catch (_) {}
+    },
+  );
 });
 
 final mangaLibraryEntriesProvider =

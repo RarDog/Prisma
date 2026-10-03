@@ -1,5 +1,28 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.1.5',
+    title: 'Улучшение бэкапов, ускорение провайдеров и доработка просмотра постов',
+    titleEn: 'Backup System Improvements, Faster Providers & Post Viewer Fixes',
+    bullets: [
+      'Улучшение системы бэкапов: теперь резервная копия сохраняет и восстанавливает историю просмотров (до 500 постов) вместе с их миниатюрами и данными.',
+      'Автобэкап библиотеки манги: добавление манги в библиотеку, смена статуса и прогресс прочитанных глав автоматически планируют резервное копирование.',
+      'Мгновенное обновление интерфейса: после импорта бэкапа история просмотров и библиотека манги сразу обновляются без необходимости перезапускать приложение.',
+      'Ускорение загрузки провайдеров: параллельная отправка запросов к нескольким источникам, пул сетевых соединений HTTP keep-alive и асинхронное кэширование.',
+      'Адаптивные фильтры топа: отображаются только поддерживаемые конкретным источником периоды (убраны неработающие интервалы для Gelbooru, Rule34, Safebooru и Realbooru).',
+      'Бесконечное листание в деталях поста: снято ограничение в 50 постов, следующие посты автоматически подгружаются по мере листания.',
+      'Плавная подстройка панели поста: устранено дергание панели в начале пролистывания, убран лишний разделитель между описанием и тегами.',
+    ],
+    bulletsEn: [
+      'Backup System Enhancements: backups now include viewed post history (up to 500 posts) along with cached thumbnails and metadata.',
+      'Automatic Manga Backup: adding titles to library, changing reading status, and chapter progress now trigger auto-backup.',
+      'Instant UI Refresh: history and manga library views immediately refresh after importing a backup without restarting the app.',
+      'Provider Speed Optimizations: parallel queries across sources, HTTP connection pooling with keep-alive, and non-blocking caching.',
+      'Adaptive Top Filters: period selector now shows only time ranges supported by the selected source, removing broken options for Gelbooru, Rule34, Safebooru, and Realbooru.',
+      'Continuous Post Swiping: removed the 50-post swipe limit; next pages load automatically while swiping.',
+      'Smooth Post Details Panel: removed initial panel jitter during swipe and cleaned up empty spacer between author description and tags.',
+    ],
+  ),
+  PrismaChange(
     version: '4.1.4',
     title: 'Хотфикс: исправление загрузки глав и читалки MangaDex',
     titleEn: 'Hotfix: MangaDex Chapters & Reader Fix',

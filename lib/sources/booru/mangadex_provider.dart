@@ -344,6 +344,16 @@ class MangaDexProvider
   }
 
   @override
+  Set<TopPeriodFilter> get supportedTopPeriods => const {
+        TopPeriodFilter.none,
+        TopPeriodFilter.day,
+        TopPeriodFilter.week,
+        TopPeriodFilter.month,
+        TopPeriodFilter.year,
+        TopPeriodFilter.allTime,
+      };
+
+  @override
   Future<List<Post>> searchPosts({
     required List<String> tags,
     required int page,

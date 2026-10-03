@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:io' as io;
 import 'dart:math';
 
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:gel_rule_app/core/errors/app_exception.dart';
@@ -11,10 +13,20 @@ import 'package:gel_rule_app/core/utils/result.dart';
 class DioClient {
   DioClient({
     String? baseUrl,
-    Duration timeout = const Duration(seconds: 20),
+    Duration timeout = const Duration(seconds: 14),
     Map<String, String>? headers,
     Dio? dio,
   }) : dio = dio ?? Dio(_options(baseUrl, timeout, headers)) {
+    if (dio == null && !kIsWeb) {
+      this.dio.httpClientAdapter = IOHttpClientAdapter(
+        createHttpClient: () {
+          final client = io.HttpClient();
+          client.idleTimeout = const Duration(seconds: 60);
+          client.maxConnectionsPerHost = 10;
+          return client;
+        },
+      );
+    }
     this.dio.interceptors.add(_RetryInterceptor(this.dio));
     if (kDebugMode) {
       this.dio.interceptors.add(

@@ -7,8 +7,10 @@ import 'package:gel_rule_app/app/app.dart';
 import 'package:gel_rule_app/app/app_strings.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:gel_rule_app/features/manga/domain/manga_library_providers.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
 import 'package:gel_rule_app/features/settings/presentation/widgets/settings_shared_widgets.dart';
+import 'package:gel_rule_app/features/viewed/presentation/viewed_controller.dart';
 
 class StorageSettingsScreen extends ConsumerWidget {
   const StorageSettingsScreen({super.key});
@@ -30,12 +32,17 @@ class StorageSettingsScreen extends ConsumerWidget {
       ref.invalidate(providerManagerProvider);
       ref.invalidate(favoriteRepositoryProvider);
       ref.invalidate(collectionRepositoryProvider);
+      ref.invalidate(viewedKeysProvider);
+      ref.invalidate(viewedControllerProvider);
+      ref.invalidate(mangaLibraryEntriesProvider);
+      ref.invalidate(mangaReadingHistoryProvider);
+      ref.invalidate(mangaOfflineServiceProvider);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             isRu
-                ? 'Все данные (настройки, провайдеры, избранное, коллекции) успешно импортированы!'
-                : 'All data (settings, providers, favorites, collections) successfully imported!',
+                ? 'Все данные (настройки, провайдеры, избранное, коллекции, манга, история) успешно импортированы!'
+                : 'All data (settings, providers, favorites, collections, manga, history) successfully imported!',
           ),
         ),
       );
@@ -202,8 +209,8 @@ class StorageSettingsScreen extends ConsumerWidget {
                 title: Text(isRu ? 'Выбрать файл .json' : 'Choose .json file'),
                 subtitle: Text(
                   isRu
-                      ? 'Восстановить настройки, аккаунты, избранное и коллекции'
-                      : 'Restore settings, accounts, favorites and collections from file',
+                      ? 'Восстановить настройки, аккаунты, избранное, мангу и историю'
+                      : 'Restore settings, accounts, favorites, manga and history from file',
                 ),
                 onTap: () async {
                   Navigator.pop(bottomSheetContext);
@@ -609,8 +616,8 @@ class StorageSettingsScreen extends ConsumerWidget {
                               const SizedBox(height: 4),
                               Text(
                                 isRu
-                                    ? 'Настройки, аккаунты, избранное и коллекции сохраняются и автоматически восстанавливаются при переустановке.'
-                                    : 'Settings, accounts, favorites and collections are saved and restored upon re-installation.',
+                                    ? 'Настройки, аккаунты, избранное, манга и история сохраняются и автоматически восстанавливаются при переустановке.'
+                                    : 'Settings, accounts, favorites, manga and history are saved and restored upon re-installation.',
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: theme.colorScheme.onSurfaceVariant,
                                   height: 1.3,

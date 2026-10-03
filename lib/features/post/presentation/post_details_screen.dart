@@ -171,9 +171,21 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
     final settings =
         ref.watch(appSettingsProvider).value ?? AppSettings.defaults;
     final strings = ref.watch(appStringsProvider);
-    final feedPosts = widget.postsList ??
-        ref.watch(feedControllerProvider).value?.posts ??
-        const <Post>[];
+    final liveFeedPosts = ref.watch(feedControllerProvider).value?.posts;
+    final List<Post> feedPosts;
+    if (liveFeedPosts != null && liveFeedPosts.isNotEmpty) {
+      final initialList = widget.postsList;
+      final hasCurrent = liveFeedPosts.any((p) => p.providerId == _activeProviderId && p.id == _activePostId);
+      final hasInitial = initialList != null && initialList.isNotEmpty &&
+          liveFeedPosts.any((p) => p.cacheKey == initialList.first.cacheKey);
+      if (initialList == null || hasCurrent || hasInitial || liveFeedPosts.length >= initialList.length) {
+        feedPosts = liveFeedPosts;
+      } else {
+        feedPosts = initialList;
+      }
+    } else {
+      feedPosts = widget.postsList ?? const <Post>[];
+    }
     final favoriteKeys = ref.watch(favoriteKeysProvider).value ?? <String>{};
     final isFullscreen = ref.watch(isFullscreenViewerActiveProvider);
     return AdaptiveScaffold(
@@ -427,10 +439,20 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                                       ),
                                     ),
                                   )
-                                : SizedBox(
-                                    width: double.infinity,
-                                    height: 760,
-                                    child: PostMediaViewer(
+                                : ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      maxHeight: 760,
+                                    ),
+                                    child: AspectRatio(
+                                      aspectRatio: (post.width > 0 && post.height > 0)
+                                          ? (post.width / post.height).clamp(0.2, 5.0)
+                                          : (ref.watch(postMediaDimensionsProvider(post.cacheKey)) != null &&
+                                                  ref.watch(postMediaDimensionsProvider(post.cacheKey))!.height > 0
+                                              ? (ref.watch(postMediaDimensionsProvider(post.cacheKey))!.width /
+                                                      ref.watch(postMediaDimensionsProvider(post.cacheKey))!.height)
+                                                  .clamp(0.2, 5.0)
+                                              : (16 / 9)),
+                                      child: PostMediaViewer(
                                       key: ValueKey(post.cacheKey),
                                       post: post,
                                       postsList: feedPosts,
@@ -480,6 +502,7 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                                           _saveVideoPreferences(ref, snapshot),
                                     ),
                                   ),
+                                ),
                           ),
                         ),
                         IconButton.filledTonal(
@@ -704,6 +727,24 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
           )
         : 0;
 
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final availableWidth =
+        (screenWidth - 16).clamp(100.0, double.infinity);
+    final singleDynamicDim =
+        ref.watch(postMediaDimensionsProvider(post.cacheKey));
+    final singleMediaHeight = _calculateMediaHeight(
+      post: post,
+      availableWidth: availableWidth,
+      screenHeight: screenHeight,
+      dynamicDimensions: singleDynamicDim,
+    );
+    final singleMediaAspect = post.width > 0 && post.height > 0
+        ? post.width / post.height
+        : (singleDynamicDim != null && singleDynamicDim.height > 0
+            ? singleDynamicDim.width / singleDynamicDim.height
+            : 16 / 9);
+
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       onVerticalDragEnd: (details) {
@@ -750,16 +791,12 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                   ? Center(
                       child: ConstrainedBox(
                         constraints: BoxConstraints(
-                          maxHeight: isAudio
-                              ? 340
-                              : MediaQuery.sizeOf(context).height * 0.70,
+                          maxHeight: isAudio ? 340 : singleMediaHeight,
                         ),
                         child: AspectRatio(
                           aspectRatio: isAudio
                               ? 1.3
-                              : ((post.width > 0 && post.height > 0)
-                                  ? (post.width / post.height).clamp(0.45, 2.4)
-                                  : (16 / 9)),
+                              : singleMediaAspect.clamp(0.2, 5.0),
                           child: PostMediaViewer(
                             key: ValueKey(post.cacheKey),
                             post: post,
@@ -802,7 +839,7 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                     )
                   : SizedBox(
                       width: double.infinity,
-                      height: MediaQuery.sizeOf(context).height * 0.62,
+                      height: singleMediaHeight,
                       child: PostMediaViewer(
                         key: ValueKey(post.cacheKey),
                         post: post,
@@ -932,22 +969,6 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                       onDownloadStream: settings.allowDownloads
                           ? (streamUrl) => _downloadUrl(context, ref, post, streamUrl)
                           : null,
-                    ),
-                  ],
-                  if (posts != null && posts.length > 1) ...[
-                    const SizedBox(height: 12),
-                    _NeighborStrip(
-                      posts: posts,
-                      currentIndex: currentIndex >= 0 ? currentIndex : 0,
-                      onOpen: (p) {
-                        final idx = posts.indexWhere(
-                          (item) =>
-                              item.providerId == p.providerId && item.id == p.id,
-                        );
-                        if (idx != -1) {
-                          onPostIndexChanged?.call(idx);
-                        }
-                      },
                     ),
                   ],
                   const SizedBox(height: 12),
@@ -1422,7 +1443,40 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
   }
 }
 
-class _MobileMediaCarousel extends StatefulWidget {
+double _calculateMediaHeight({
+  required Post post,
+  required double availableWidth,
+  required double screenHeight,
+  Size? dynamicDimensions,
+}) {
+  if (MediaUrlSelector.isAudio(post)) return 340.0;
+
+  final isVideo = MediaUrlSelector.isVideo(post);
+  const minHeight = 160.0;
+  final maxHeight = screenHeight * 0.72;
+
+  double? width = post.width > 0 ? post.width.toDouble() : null;
+  double? height = post.height > 0 ? post.height.toDouble() : null;
+
+  if (width == null || height == null) {
+    if (dynamicDimensions != null &&
+        dynamicDimensions.width > 0 &&
+        dynamicDimensions.height > 0) {
+      width = dynamicDimensions.width;
+      height = dynamicDimensions.height;
+    }
+  }
+
+  if (width != null && height != null && height > 0) {
+    final aspect = width / height;
+    final calculated = availableWidth / aspect;
+    return calculated.clamp(minHeight, maxHeight);
+  }
+
+  return isVideo ? screenHeight * 0.70 : screenHeight * 0.62;
+}
+
+class _MobileMediaCarousel extends ConsumerStatefulWidget {
   const _MobileMediaCarousel({
     required this.posts,
     required this.initialIndex,
@@ -1455,10 +1509,10 @@ class _MobileMediaCarousel extends StatefulWidget {
   final void Function(WidgetRef ref, VideoPlaybackSnapshot snapshot)? onSaveVideoPreferences;
 
   @override
-  State<_MobileMediaCarousel> createState() => _MobileMediaCarouselState();
+  ConsumerState<_MobileMediaCarousel> createState() => _MobileMediaCarouselState();
 }
 
-class _MobileMediaCarouselState extends State<_MobileMediaCarousel>
+class _MobileMediaCarouselState extends ConsumerState<_MobileMediaCarousel>
     with AutomaticKeepAliveClientMixin {
   late final PageController _controller;
   late int _currentPage;
@@ -1471,13 +1525,25 @@ class _MobileMediaCarouselState extends State<_MobileMediaCarousel>
   @override
   void initState() {
     super.initState();
-    _currentPage = widget.initialIndex.clamp(0, widget.posts.length - 1);
+    _currentPage = widget.posts.isEmpty
+        ? 0
+        : widget.initialIndex.clamp(0, widget.posts.length - 1);
     _controller = PageController(initialPage: _currentPage);
+    _controller.addListener(_handleScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _prefetchAround(_currentPage);
+        if (widget.onLoadMore != null &&
+            _currentPage >= widget.posts.length - 8) {
+          widget.onLoadMore!();
+        }
       }
     });
+  }
+
+  void _handleScroll() {
+    if (!mounted) return;
+    setState(() {});
   }
 
   @override
@@ -1498,10 +1564,17 @@ class _MobileMediaCarouselState extends State<_MobileMediaCarousel>
         }
       });
     }
+    if (widget.posts.length != oldWidget.posts.length) {
+      if (widget.onLoadMore != null &&
+          _currentPage >= widget.posts.length - 8) {
+        widget.onLoadMore!();
+      }
+    }
   }
 
   @override
   void dispose() {
+    _controller.removeListener(_handleScroll);
     _controller.dispose();
     super.dispose();
   }
@@ -1538,26 +1611,59 @@ class _MobileMediaCarouselState extends State<_MobileMediaCarousel>
     PaintingBinding.instance.imageCache.clearLiveImages();
   }
 
+  double _getHeightForIndex(
+    int index,
+    double availableWidth,
+    double screenHeight,
+  ) {
+    if (index < 0 || index >= widget.posts.length) {
+      return screenHeight * 0.62;
+    }
+    final post = (index == _currentPage &&
+            widget.posts[index].id == widget.activePost.id)
+        ? widget.activePost
+        : widget.posts[index];
+    final dynamicDim = ref.watch(postMediaDimensionsProvider(post.cacheKey));
+    return _calculateMediaHeight(
+      post: post,
+      availableWidth: availableWidth,
+      screenHeight: screenHeight,
+      dynamicDimensions: dynamicDim,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final currentPost = (_currentPage >= 0 && _currentPage < widget.posts.length)
-        ? (widget.posts[_currentPage].id == widget.activePost.id
-            ? widget.activePost
-            : widget.posts[_currentPage])
-        : widget.activePost;
-
-    final isVideo = MediaUrlSelector.isVideo(currentPost);
-    final isAudio = MediaUrlSelector.isAudio(currentPost);
+    final screenWidth = MediaQuery.sizeOf(context).width;
     final screenHeight = MediaQuery.sizeOf(context).height;
-    final carouselHeight = isAudio
-        ? 340.0
-        : (isVideo
-            ? screenHeight * 0.70
-            : screenHeight * 0.62);
+    final availableWidth =
+        (screenWidth - 16).clamp(100.0, double.infinity);
+
+    final double page = (_controller.hasClients && _controller.position.haveDimensions)
+        ? (_controller.page ?? _currentPage.toDouble())
+        : _currentPage.toDouble();
+
+    final clampedPage = widget.posts.isEmpty
+        ? 0.0
+        : page.clamp(0.0, (widget.posts.length - 1).toDouble());
+    final floorIndex = clampedPage.floor();
+    final ceilIndex = clampedPage.ceil();
+    final t = clampedPage - floorIndex;
+
+    final hFloor = _getHeightForIndex(floorIndex, availableWidth, screenHeight);
+    final hCeil = floorIndex == ceilIndex
+        ? hFloor
+        : _getHeightForIndex(ceilIndex, availableWidth, screenHeight);
+
+    final carouselHeight = floorIndex == ceilIndex
+        ? hFloor
+        : (hFloor + (hCeil - hFloor) * t);
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
+      duration: _isUserScrolling
+          ? Duration.zero
+          : const Duration(milliseconds: 220),
       curve: Curves.easeOutCubic,
       height: carouselHeight,
       width: double.infinity,
@@ -1572,10 +1678,13 @@ class _MobileMediaCarouselState extends State<_MobileMediaCarousel>
         ),
         child: NotificationListener<ScrollNotification>(
           onNotification: (notification) {
-            if (notification is ScrollStartNotification) {
-              _isUserScrolling = true;
-            } else if (notification is ScrollEndNotification) {
-              _isUserScrolling = false;
+            if (notification.metrics.axis == Axis.horizontal) {
+              if (notification is ScrollStartNotification) {
+                _isUserScrolling = true;
+              } else if (notification is ScrollEndNotification) {
+                _isUserScrolling = false;
+                if (mounted) setState(() {});
+              }
             }
             return false;
           },
@@ -1586,11 +1695,14 @@ class _MobileMediaCarouselState extends State<_MobileMediaCarousel>
                 : const PageScrollPhysics(),
             itemCount: widget.posts.length,
             onPageChanged: (index) {
-              _currentPage = index;
+              setState(() {
+                _currentPage = index;
+              });
               widget.onPageChanged(index);
               _prefetchAround(index);
               _evictDistantPosts(index);
-              if (widget.onLoadMore != null && index >= widget.posts.length - 2) {
+              if (widget.onLoadMore != null &&
+                  index >= widget.posts.length - 8) {
                 widget.onLoadMore!();
               }
             },
@@ -1669,6 +1781,14 @@ class _MobileMediaCarouselState extends State<_MobileMediaCarousel>
                         _setMediaGestureLocked(locked),
                   );
 
+                  final itemDim =
+                      ref.watch(postMediaDimensionsProvider(targetPost.cacheKey));
+                  final itemAspect = targetPost.width > 0 && targetPost.height > 0
+                      ? targetPost.width / targetPost.height
+                      : (itemDim != null && itemDim.height > 0
+                          ? itemDim.width / itemDim.height
+                          : (16 / 9));
+
                   return GestureDetector(
                     behavior: HitTestBehavior.deferToChild,
                     onDoubleTap: itemIsVideo
@@ -1679,20 +1799,11 @@ class _MobileMediaCarouselState extends State<_MobileMediaCarousel>
                         : () => widget.onShowQuickActions?.call(context, ref, targetPost),
                     child: (itemIsVideo || itemIsAudio)
                         ? Center(
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                maxHeight: itemIsAudio
-                                    ? 340
-                                    : screenHeight * 0.70,
-                              ),
-                              child: AspectRatio(
-                                aspectRatio: itemIsAudio
-                                    ? 1.3
-                                    : ((targetPost.width > 0 && targetPost.height > 0)
-                                        ? (targetPost.width / targetPost.height).clamp(0.45, 2.4)
-                                        : (16 / 9)),
-                                child: mediaViewer,
-                              ),
+                            child: AspectRatio(
+                              aspectRatio: itemIsAudio
+                                  ? 1.3
+                                  : itemAspect.clamp(0.2, 5.0),
+                              child: mediaViewer,
                             ),
                           )
                         : SizedBox.expand(

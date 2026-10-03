@@ -23,6 +23,11 @@ class Rule34PahealProvider implements ContentProvider, PostPageProvider {
   final Dio _dio;
 
   @override
+  Set<TopPeriodFilter> get supportedTopPeriods => const {
+        TopPeriodFilter.none,
+      };
+
+  @override
   Future<List<Post>> searchPosts({
     required List<String> tags,
     required int page,
