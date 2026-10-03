@@ -70,17 +70,13 @@ Prisma — оптимизированное мультимедийное при�
 ### Booru-имиджборды и арт-платформы
 | Источник | Протокол / API |
 | :--- | :--- |
-| **Danbooru** | REST JSON API |
 | **Gelbooru** | XML / JSON API |
 | **Rule34** | Gelbooru-based API |
 | **Safebooru** | Gelbooru-based API |
-| **e621 / e926** | Native REST API |
 | **Realbooru** | HTML / Scraper |
-| **Paheal Rule34** | Shimmie API |
-| **Moebooru** | Moebooru JSON |
+| **e621 / e926** | Native REST API |
 | **Pixiv** | Session Auth |
 | **Pawchive** | Creator Sync |
-| **Пользовательский Booru** | Configurable API |
 
 ### Манга и Ранобэ
 | Источник | Тип контента | Особенности |

@@ -70,17 +70,13 @@ Prisma is a unified, resource-optimized multimedia viewer and catalog reader bui
 ### Booru & Art Imageboards
 | Provider | Protocol / API |
 | :--- | :--- |
-| **Danbooru** | REST JSON API |
 | **Gelbooru** | XML / JSON API |
 | **Rule34** | Gelbooru-based API |
 | **Safebooru** | Gelbooru-based API |
-| **e621 / e926** | Native REST API |
 | **Realbooru** | HTML / Scraper |
-| **Paheal Rule34** | Shimmie API |
-| **Moebooru** | Moebooru JSON |
+| **e621 / e926** | Native REST API |
 | **Pixiv** | Session Auth |
 | **Pawchive** | Creator Sync |
-| **Custom Booru** | Configurable API |
 
 ### Manga & Light Novels
 | Provider | Type | Content |
