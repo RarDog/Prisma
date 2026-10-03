@@ -1,5 +1,20 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.1.6',
+    title: 'Хотфикс: исправление листания постов в профиле артиста и других разделах',
+    titleEn: 'Hotfix: Post Viewer Swiping in Artists & Non-Feed Sections',
+    bullets: [
+      'Исправлено листание постов артиста: при переходе к просмотру работ артиста теперь листаются только арты выбранного артиста, а не посты из основной ленты.',
+      'Изоляция пагинации ленты: подгрузка страниц общей ленты больше не срабатывает при пролистывании постов в разделах артистов, избранного, коллекций и истории.',
+      'Устранено переопределение списков: детальный просмотр корректно сохраняет исходный контекстный список постов независимо от объема кэша ленты.',
+    ],
+    bulletsEn: [
+      'Fixed Artist Post Swiping: swiping artworks from an artist profile now correctly navigates through the artist\'s works instead of falling back to main feed posts.',
+      'Feed Pagination Isolation: background feed pagination is no longer triggered when browsing posts from artists, favorites, collections, or history views.',
+      'Contextual List Preservation: post details view strictly preserves the caller\'s post list without being overridden by preloaded main feed cache.',
+    ],
+  ),
+  PrismaChange(
     version: '4.1.5',
     title: 'Улучшение бэкапов, ускорение провайдеров и доработка просмотра постов',
     titleEn: 'Backup System Improvements, Faster Providers & Post Viewer Fixes',

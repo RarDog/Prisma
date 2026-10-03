@@ -11,6 +11,7 @@ class AppNavigator {
     BuildContext context, {
     required Post post,
     List<Post>? postsList,
+    bool fromFeed = false,
   }) async {
     FocusManager.instance.primaryFocus?.unfocus();
     await Navigator.of(context).push(
@@ -20,6 +21,7 @@ class AppNavigator {
           postId: post.id,
           initialPost: post,
           postsList: postsList,
+          fromFeed: fromFeed,
         ),
       ),
     );

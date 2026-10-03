@@ -389,6 +389,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                                   context,
                                   post: post,
                                   postsList: state.posts,
+                                  fromFeed: true,
                                 ),
                                 onPreview: (post) =>
                                     _showPreview(context, post),
@@ -447,7 +448,12 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
   void _openRandom(List<Post> posts) {
     if (posts.isEmpty) return;
     final post = posts[Random().nextInt(posts.length)];
-    AppNavigator.openPost(context, post: post, postsList: posts);
+    AppNavigator.openPost(
+      context,
+      post: post,
+      postsList: posts,
+      fromFeed: true,
+    );
   }
 
   Future<void> _applySearchQuery(String query) async {

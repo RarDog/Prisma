@@ -118,6 +118,7 @@ class PostDetailsScreen extends ConsumerStatefulWidget {
     required this.postId,
     this.initialPost,
     this.postsList,
+    this.fromFeed = false,
     super.key,
   });
 
@@ -125,6 +126,7 @@ class PostDetailsScreen extends ConsumerStatefulWidget {
   final String postId;
   final Post? initialPost;
   final List<Post>? postsList;
+  final bool fromFeed;
 
   @override
   ConsumerState<PostDetailsScreen> createState() => _PostDetailsScreenState();
@@ -171,20 +173,20 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
     final settings =
         ref.watch(appSettingsProvider).value ?? AppSettings.defaults;
     final strings = ref.watch(appStringsProvider);
-    final liveFeedPosts = ref.watch(feedControllerProvider).value?.posts;
     final List<Post> feedPosts;
-    if (liveFeedPosts != null && liveFeedPosts.isNotEmpty) {
-      final initialList = widget.postsList;
-      final hasCurrent = liveFeedPosts.any((p) => p.providerId == _activeProviderId && p.id == _activePostId);
-      final hasInitial = initialList != null && initialList.isNotEmpty &&
-          liveFeedPosts.any((p) => p.cacheKey == initialList.first.cacheKey);
-      if (initialList == null || hasCurrent || hasInitial || liveFeedPosts.length >= initialList.length) {
-        feedPosts = liveFeedPosts;
-      } else {
-        feedPosts = initialList;
-      }
+    if (widget.fromFeed) {
+      final liveFeedPosts = ref.watch(feedControllerProvider).value?.posts;
+      feedPosts = (liveFeedPosts != null && liveFeedPosts.isNotEmpty)
+          ? liveFeedPosts
+          : (widget.postsList ??
+              (widget.initialPost != null
+                  ? [widget.initialPost!]
+                  : const <Post>[]));
     } else {
-      feedPosts = widget.postsList ?? const <Post>[];
+      feedPosts = widget.postsList ??
+          (widget.initialPost != null
+              ? [widget.initialPost!]
+              : const <Post>[]);
     }
     final favoriteKeys = ref.watch(favoriteKeysProvider).value ?? <String>{};
     final isFullscreen = ref.watch(isFullscreenViewerActiveProvider);
@@ -392,15 +394,15 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                                         key: ValueKey(post.cacheKey),
                                         post: post,
                                         postsList: feedPosts,
-                                        onLoadMore: () => ref
-                                            .read(feedControllerProvider.notifier)
-                                            .loadNextPage(),
+                                        onLoadMore: widget.fromFeed
+                                            ? () => ref
+                                                .read(feedControllerProvider.notifier)
+                                                .loadNextPage()
+                                            : null,
                                         onPostIndexChanged: (index) {
-                                          final currentPosts = ref
-                                                  .read(feedControllerProvider)
-                                                  .value
-                                                  ?.posts ??
-                                              feedPosts;
+                                          final currentPosts = widget.fromFeed
+                                              ? (ref.read(feedControllerProvider).value?.posts ?? feedPosts)
+                                              : feedPosts;
                                           if (index >= 0 &&
                                               index < currentPosts.length) {
                                             final target = currentPosts[index];
@@ -456,15 +458,19 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                                       key: ValueKey(post.cacheKey),
                                       post: post,
                                       postsList: feedPosts,
-                                      onLoadMore: () => ref
-                                          .read(feedControllerProvider.notifier)
-                                          .loadNextPage(),
+                                      onLoadMore: widget.fromFeed
+                                          ? () => ref
+                                              .read(feedControllerProvider.notifier)
+                                              .loadNextPage()
+                                          : null,
                                       onPostIndexChanged: (index) {
-                                        final currentPosts = ref
-                                                .read(feedControllerProvider)
-                                                .value
-                                                ?.posts ??
-                                            feedPosts;
+                                        final currentPosts = widget.fromFeed
+                                            ? (ref
+                                                    .read(feedControllerProvider)
+                                                    .value
+                                                    ?.posts ??
+                                                feedPosts)
+                                            : feedPosts;
                                         if (index >= 0 &&
                                             index < currentPosts.length) {
                                           final target = currentPosts[index];
@@ -769,8 +775,10 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
               favoriteKeys: favoriteKeys,
               qualityMode: qualityMode,
               onPageChanged: (newIndex) => onPostIndexChanged?.call(newIndex),
-              onLoadMore: () =>
-                  ref.read(feedControllerProvider.notifier).loadNextPage(),
+              onLoadMore: widget.fromFeed
+                  ? () =>
+                      ref.read(feedControllerProvider.notifier).loadNextPage()
+                  : null,
               onMediaGestureLockChanged: onMediaGestureLockChanged,
               onToggleFavorite: (r, p) => _toggleFavorite(r, p, favoriteKeys),
               onShowQuickActions: (ctx, r, p) =>
@@ -802,9 +810,11 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                             post: post,
                             isActive: isActive,
                             postsList: feedPosts,
-                            onLoadMore: () => ref
-                                .read(feedControllerProvider.notifier)
-                                .loadNextPage(),
+                            onLoadMore: widget.fromFeed
+                                ? () => ref
+                                    .read(feedControllerProvider.notifier)
+                                    .loadNextPage()
+                                : null,
                             onPostIndexChanged: onPostIndexChanged,
                             localFilePath: localMedia?.savedPath,
                             qualityMode: qualityMode,
@@ -845,9 +855,11 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                         post: post,
                         isActive: isActive,
                         postsList: feedPosts,
-                        onLoadMore: () => ref
-                            .read(feedControllerProvider.notifier)
-                            .loadNextPage(),
+                        onLoadMore: widget.fromFeed
+                            ? () => ref
+                                .read(feedControllerProvider.notifier)
+                                .loadNextPage()
+                            : null,
                         onPostIndexChanged: onPostIndexChanged,
                         localFilePath: localMedia?.savedPath,
                         qualityMode: qualityMode,
@@ -1375,8 +1387,10 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
           _openPost(context, newPost);
         }
       },
-      onLoadMore: () =>
-          ref.read(feedControllerProvider.notifier).loadNextPage(),
+      onLoadMore: widget.fromFeed
+          ? () =>
+              ref.read(feedControllerProvider.notifier).loadNextPage()
+          : null,
     );
   }
 
