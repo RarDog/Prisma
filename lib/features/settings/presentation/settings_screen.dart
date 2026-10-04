@@ -381,7 +381,8 @@ class _SettingsHubContent extends ConsumerWidget {
     final nsfw = settings.nsfwEnabled
         ? (isRu ? 'NSFW вкл.' : 'NSFW allowed')
         : (isRu ? 'Только Safe' : 'Safe only');
-    final blacklistCount = settings.blacklistedTags.length;
+    final blacklistCount =
+        {...settings.blacklistedTags, ...settings.smartBlacklistRules}.length;
     final bl = isRu
         ? 'Бан: $blacklistCount'
         : 'Blacklist: $blacklistCount';

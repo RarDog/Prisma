@@ -183,22 +183,50 @@ class FiltersSettingsScreen extends ConsumerWidget {
                 ],
               ),
 
-              // Smart Blacklist
+              // Blacklisted Tags
               SettingsCardGroup(
-                title: strings.smartBlacklist,
+                title: strings.blacklistedTags,
                 icon: Icons.block_rounded,
                 accentColor: const Color(0xFFEF4444),
                 children: [
                   Padding(
                     padding: const EdgeInsets.all(14),
                     child: TagListEditor(
-                      title: strings.smartBlacklist,
+                      title: strings.blacklistedTags,
                       icon: Icons.block_rounded,
                       accentColor: const Color(0xFFEF4444),
-                      tags: settings.smartBlacklistRules,
+                      tags: settings.blacklistedTags,
+                      hintText: isRu ? 'Добавить тег...' : 'Add tag...',
                       helper: isRu
-                          ? 'Примеры: tag, tag_a tag_b, provider:e621, rating:explicit, type:video, score:<10, artist:name'
-                          : 'Examples: tag, tag_a tag_b, provider:e621, rating:explicit, type:video, score:<10, artist:name',
+                          ? 'Теги, которые скрываются из ленты (можно добавлять долгим нажатием на тег в посте)'
+                          : 'Tags hidden from feed (can be added by long-pressing tags on posts)',
+                      onChanged: (tags) => _update(
+                        ref,
+                        settings.copyWith(blacklistedTags: tags),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              // Smart Blacklist
+              SettingsCardGroup(
+                title: strings.smartBlacklist,
+                icon: Icons.tune_rounded,
+                accentColor: const Color(0xFFF97316),
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: TagListEditor(
+                      title: strings.smartBlacklist,
+                      icon: Icons.tune_rounded,
+                      accentColor: const Color(0xFFF97316),
+                      tags: settings.smartBlacklistRules,
+                      allowSpaces: true,
+                      hintText: isRu ? 'Добавить правило...' : 'Add rule...',
+                      helper: isRu
+                          ? 'Сложные правила фильтрации. Примеры: tag_a tag_b, provider:e621, rating:explicit, type:video, score:<10, artist:name'
+                          : 'Advanced rules. Examples: tag_a tag_b, provider:e621, rating:explicit, type:video, score:<10, artist:name',
                       onChanged: (tags) => _update(
                         ref,
                         settings.copyWith(smartBlacklistRules: tags),
@@ -234,6 +262,7 @@ class FiltersSettingsScreen extends ConsumerWidget {
                       icon: Icons.verified_rounded,
                       accentColor: const Color(0xFF10B981),
                       tags: settings.whitelistedTags,
+                      hintText: isRu ? 'Добавить тег...' : 'Add tag...',
                       helper: isRu
                           ? 'Теги, которые никогда не будут скрываться черным списком'
                           : 'Tags that will bypass blacklist rules',

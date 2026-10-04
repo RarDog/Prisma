@@ -67,7 +67,11 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
         ref.read(feedControllerProvider).value?.selectedTags ?? const [];
     final settings =
         ref.read(appSettingsProvider).value ?? AppSettings.defaults;
-    final isBlacklisted = settings.blacklistedTags.contains(tag);
+    final cleanTag = tag.trim().toLowerCase();
+    final isBlacklisted = settings.blacklistedTags.contains(tag) ||
+        settings.blacklistedTags.contains(cleanTag) ||
+        settings.smartBlacklistRules.contains(tag) ||
+        settings.smartBlacklistRules.contains(cleanTag);
     final isArtist = group == 'artist';
 
     showModalBottomSheet<void>(
@@ -173,11 +177,20 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
                       Navigator.pop(modalContext);
                       final updatedList = isBlacklisted
                           ? settings.blacklistedTags
-                              .where((t) => t != tag)
+                              .where((t) => t != tag && t != cleanTag)
                               .toList()
-                          : [...settings.blacklistedTags, tag];
-                      final nextSettings =
-                          settings.copyWith(blacklistedTags: updatedList);
+                          : (settings.blacklistedTags.contains(cleanTag)
+                              ? settings.blacklistedTags
+                              : [...settings.blacklistedTags, cleanTag]);
+                      final updatedRules = isBlacklisted
+                          ? settings.smartBlacklistRules
+                              .where((t) => t != tag && t != cleanTag)
+                              .toList()
+                          : settings.smartBlacklistRules;
+                      final nextSettings = settings.copyWith(
+                        blacklistedTags: updatedList,
+                        smartBlacklistRules: updatedRules,
+                      );
                       await ref
                           .read(settingsControllerProvider.notifier)
                           .saveSettings(nextSettings);

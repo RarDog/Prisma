@@ -1141,6 +1141,8 @@ class TagListEditor extends StatefulWidget {
     required this.tags,
     required this.onChanged,
     this.helper,
+    this.allowSpaces = false,
+    this.hintText,
     super.key,
   });
 
@@ -1150,6 +1152,8 @@ class TagListEditor extends StatefulWidget {
   final List<String> tags;
   final ValueChanged<List<String>> onChanged;
   final String? helper;
+  final bool allowSpaces;
+  final String? hintText;
 
   @override
   State<TagListEditor> createState() => _TagListEditorState();
@@ -1225,12 +1229,12 @@ class _TagListEditorState extends State<TagListEditor> {
               width: 240,
               child: TextField(
                 controller: _controller,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   isDense: true,
-                  hintText: 'Add tag...',
-                  prefixIcon: Icon(Icons.add_rounded, size: 18),
+                  hintText: widget.hintText ?? 'Add tag...',
+                  prefixIcon: const Icon(Icons.add_rounded, size: 18),
                   contentPadding:
-                      EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 ),
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _submit(),
@@ -1249,10 +1253,22 @@ class _TagListEditorState extends State<TagListEditor> {
   }
 
   void _submit() {
-    final incoming = _controller.text
-        .split(RegExp(r'\s+'))
-        .map((tag) => tag.trim().toLowerCase())
-        .where((tag) => tag.isNotEmpty);
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+
+    final Iterable<String> incoming;
+    if (widget.allowSpaces) {
+      incoming = text
+          .split(',')
+          .map((tag) => tag.trim().toLowerCase())
+          .where((tag) => tag.isNotEmpty);
+    } else {
+      incoming = text
+          .split(RegExp(r'[\s,]+'))
+          .map((tag) => tag.trim().toLowerCase())
+          .where((tag) => tag.isNotEmpty);
+    }
+
     final merged = <String>{...widget.tags, ...incoming}.toList()..sort();
     _controller.clear();
     widget.onChanged(merged);

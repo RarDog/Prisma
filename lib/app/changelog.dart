@@ -1,5 +1,22 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.1.7',
+    title: 'Хотфикс: отображение и редактирование черного списка тегов в настройках',
+    titleEn: 'Hotfix: Blacklisted Tags Visibility & Editing in Filters Settings',
+    bullets: [
+      'Отображение черного списка тегов: в настройках фильтрации добавлена карточка «Чёрный список тегов» со списком заблокированных тегов, возможностью удалять их и добавлять новые вручную.',
+      'Синхронизация с меню тегов: теги, добавленные в бан через долгое нажатие в деталях поста, теперь сразу видны в настройках фильтрации.',
+      'Точный счётчик фильтрации: индикатор блокировки на главной странице настроек теперь считает суммарное количество уникальных правил из обычного и умного черных списков.',
+      'Поддержка составных правил: умный blacklist теперь сохраняет правила с пробелами без их случайного разбиения на отдельные слова.',
+    ],
+    bulletsEn: [
+      'Blacklisted Tags Card: added a dedicated "Blacklisted Tags" section in Filters settings displaying blocked tags with chip removal and manual tag addition.',
+      'Tag Sheet Sync: tags blacklisted via long-press on post tags now immediately show up in the Filters settings screen.',
+      'Accurate Filters Counter: blacklist summary counter on the main settings screen now accounts for unique entries across both standard and smart blacklists.',
+      'Compound Rule Support: smart blacklist input now preserves multi-token rules with spaces instead of splitting them by whitespace.',
+    ],
+  ),
+  PrismaChange(
     version: '4.1.6',
     title: 'Хотфикс: исправление листания постов в профиле артиста и других разделах',
     titleEn: 'Hotfix: Post Viewer Swiping in Artists & Non-Feed Sections',

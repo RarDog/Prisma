@@ -74,6 +74,7 @@ class AppStrings {
   String get desktopColumns => ru ? 'Колонки на ПК' : 'Desktop columns';
   String get mobileColumns => ru ? 'Колонки на телефоне' : 'Mobile columns';
   String get hideViewed => ru ? 'Скрывать просмотренное' : 'Hide viewed posts';
+  String get blacklistedTags => ru ? 'Чёрный список тегов' : 'Blacklisted tags';
   String get smartBlacklist => ru ? 'Умный blacklist' : 'Smart blacklist';
   String get whitelistedTags => ru ? 'Whitelist тегов' : 'Whitelisted tags';
   String get cacheMaxItems => ru ? 'Лимит кеша' : 'Cache max items';
