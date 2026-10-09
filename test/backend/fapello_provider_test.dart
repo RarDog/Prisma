@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gel_rule_app/core/errors/app_exception.dart';
 import 'package:gel_rule_app/core/http/dio_client.dart';
 import 'package:gel_rule_app/core/models/post.dart';
 import 'package:gel_rule_app/core/models/provider_health.dart';
@@ -25,6 +26,16 @@ class _FakeAdapter implements HttpClientAdapter {
   @override
   void close({bool force = false}) {}
 }
+
+/// Cloudflare's JS interstitial: same 403 as a real rejection, different body.
+String _challenge(String marker) => '<!DOCTYPE html><html lang="en-US"><head>'
+    '<title>Just a moment...</title>'
+    '<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">'
+    '</head><body><div id="challenge-running">$marker</div>'
+    '<script src="https://challenges.cloudflare.com/turnstile/v0/api.js">'
+    '</script></body></html>';
+
+ResponseBody _blocked(String body) => ResponseBody.fromString(body, 403);
 
 const _baseUrl = 'https://fapello.com';
 
@@ -613,6 +624,60 @@ void main() {
       expect(await provider.getPost('thiessita:999'), isNull);
     });
 
+    test('surfaces a Cloudflare challenge instead of a raw DioException',
+        () async {
+      dio.httpClientAdapter = _FakeAdapter((options) async {
+        expect(options.path, '/top-likes/');
+        return _blocked(_challenge('cf-mitigated'));
+      });
+      final provider = _providerWith(dio);
+
+      await expectLater(
+        provider.listArtists(),
+        throwsA(isA<ProviderUnavailableException>().having(
+          (error) => error.message,
+          'message',
+          contains('Cloudflare challenge'),
+        )),
+      );
+    });
+
+    test('challenge-free 403 bodies are reported as a plain HTTP error',
+        () async {
+      dio.httpClientAdapter = _FakeAdapter(
+        (options) async => ResponseBody.fromString('forbidden', 403),
+      );
+      final provider = _providerWith(dio);
+
+      await expectLater(
+        provider.listArtists(),
+        throwsA(isA<BadResponseException>().having(
+          (error) => error.message,
+          'message',
+          'HTTP 403',
+        )),
+      );
+    });
+
+    test('media requests that redirect are not treated as errors', () async {
+      // cdn.fapello.com answers media with a 302 to a signed URL; the client
+      // follows it, so a redirect must never reach the challenge branch.
+      dio.httpClientAdapter = _FakeAdapter((options) async {
+        expect(options.path, '/ajax/model/mikatanaka869/page-1/');
+        return _html(_modelPage1);
+      });
+      final provider = _providerWith(dio);
+      final posts = await provider.getArtistPosts(
+        query: const ArtistWorkQuery(
+          providerId: 'fapello',
+          service: 'fapello',
+          artistId: 'mikatanaka869',
+          artistName: 'Thiessita',
+        ),
+      );
+      expect(posts, isNotEmpty);
+    });
+
     test('ignores malformed post ids', () async {
       dio.httpClientAdapter = _FakeAdapter((options) async => fail('no request'));
       final provider = _providerWith(dio);
@@ -689,6 +754,19 @@ void main() {
       expect(health.providerId, 'fapello');
       expect(health.apiVersion, 'fapello-html');
       expect(health.errorMessage, isNull);
+    });
+
+    test('checkHealth reports offline with the challenge message', () async {
+      dio.httpClientAdapter = _FakeAdapter((options) async {
+        expect(options.path, '/top-likes/');
+        return _blocked(_challenge('Just a moment...'));
+      });
+      final provider = _providerWith(dio);
+
+      final health = await provider.checkHealth();
+
+      expect(health.status, ProviderStatus.offline);
+      expect(health.errorMessage, contains('Cloudflare'));
     });
 
     test('checkHealth reports offline when the markup is unusable', () async {

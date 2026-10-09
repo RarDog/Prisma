@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 
+import 'package:gel_rule_app/core/errors/app_exception.dart';
 import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'package:gel_rule_app/core/http/dio_client.dart';
 import 'package:gel_rule_app/features/artists/models/artist_announcement.dart';
@@ -63,8 +64,12 @@ class FapelloProvider
         TopPeriodFilter.none,
       };
 
+  /// `validateStatus` is widened so that a Cloudflare challenge can be told
+  /// apart from a genuine 404: the challenge shares the 403 status but is the
+  /// only response whose body is the interstitial page.
   static final _htmlOptions = Options(
     responseType: ResponseType.plain,
+    validateStatus: (_) => true,
     headers: {
       'Accept': 'text/html,application/xhtml+xml,*/*;q=0.8',
       'User-Agent': AppHeaders.desktopChromeUserAgent,
@@ -135,10 +140,43 @@ class FapelloProvider
   static final _thumbnailSuffixPattern =
       RegExp(r'_300px\.[a-z0-9]+$', caseSensitive: false);
 
+  static final _challengeMarkers = <Pattern>[
+    'Just a moment...',
+    'cf-mitigated',
+    'challenges.cloudflare.com',
+    'Enable JavaScript and cookies to continue',
+  ];
+
+  /// Whether the body is Cloudflare's JS interstitial rather than content.
+  ///
+  /// The site puts the HTML pages behind a managed challenge. Media on the
+  /// apex host is served without it, so only document requests are affected —
+  /// which is why a request can 403 here while the very same client fetches
+  /// images from the same domain.
+  static bool _isChallenge(String body) {
+    if (body.isEmpty) return false;
+    final head = body.substring(0, body.length.clamp(0, 4000));
+    return _challengeMarkers.any(head.contains);
+  }
+
+  static const _challengeMessage =
+      'Fapello is behind a Cloudflare challenge that blocks automated '
+      'requests. Only media downloads go through; the pages cannot be read '
+      'from the app.';
+
   Future<String> _getHtml(String path) async {
     final response = await _dio.get<String>(path, options: _htmlOptions);
-    final body = response.data;
-    return body is String ? body : '';
+    final status = response.statusCode ?? 0;
+    final body = response.data is String ? response.data as String : '';
+    if (status == 403 || status == 503) {
+      if (_isChallenge(body)) {
+        throw const ProviderUnavailableException(_challengeMessage);
+      }
+    }
+    if (status < 200 || status >= 300) {
+      throw BadResponseException('HTTP $status');
+    }
+    return body;
   }
 
   @override
@@ -180,6 +218,15 @@ class FapelloProvider
         lastCheckedAt: DateTime.now(),
         apiVersion: 'fapello-html',
         errorMessage: healthy ? null : 'No model cards found in HTML response',
+      );
+    } on AppException catch (error) {
+      return ProviderHealth(
+        providerId: id,
+        status: ProviderStatus.offline,
+        pingMs: DateTime.now().difference(startedAt).inMilliseconds,
+        lastCheckedAt: DateTime.now(),
+        errorMessage: error.message,
+        apiVersion: 'fapello-html',
       );
     } catch (error) {
       return ProviderHealth(

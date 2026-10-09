@@ -10,6 +10,11 @@ sealed class AppException implements Exception {
 
   Failure toFailure() =>
       Failure(code: code, message: message, details: details);
+
+  /// Surfaces the message instead of the default `Instance of 'X'`, which is
+  /// what any `error.toString()` in the UI would otherwise print.
+  @override
+  String toString() => message;
 }
 
 class NetworkException extends AppException {

@@ -19,6 +19,10 @@ import 'package:gel_rule_app/features/settings/presentation/settings_controller.
 import 'artist_posts_screen.dart';
 import 'widgets/pawchive_accounts_sheet.dart';
 
+/// Marker from `FapelloProvider`'s `ProviderUnavailableException`, used to
+/// replace the raw error with an explanation of the block.
+const _cloudflareChallengeHint = 'Cloudflare challenge';
+
 final artistProviderConfigsProvider =
     FutureProvider<List<ContentProviderConfig>>((ref) async {
   final result = await ref
@@ -313,13 +317,17 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
 
   String _friendlyArtistError(Object? error) {
     final message = error.toString();
+    if (message.contains(_cloudflareChallengeHint)) {
+      return 'Fapello blocks automated requests with a Cloudflare challenge, '
+          'so its pages cannot be read from the app. Enable another artist '
+          'provider in Providers.';
+    }
     if (message.contains('HandshakeException') ||
         message.contains('artist works are unavailable')) {
       return 'Artist API is unavailable right now. Try refresh or another provider.';
     }
     return message;
   }
-
   Future<void> _refresh(List<ContentProviderConfig> configs) async {
     if (configs.isEmpty) return;
     setState(() {

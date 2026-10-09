@@ -190,7 +190,11 @@ class ProviderRepository {
         name: 'Fapello',
         baseUrl: 'https://fapello.com',
         apiType: 'fapello',
-        enabled: true,
+        // Off by default: the site serves its HTML behind a Cloudflare
+        // managed challenge, which the app's HTTP client cannot pass. The
+        // parser is complete and its tests cover it, so it only needs the
+        // protection lifted (or a browser-grade TLS stack) to work.
+        enabled: false,
         priority: 12,
         timeoutSeconds: 25,
         customHeaders: const {},
