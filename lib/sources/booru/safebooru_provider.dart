@@ -26,12 +26,6 @@ class SafebooruProvider extends GelbooruProvider {
       );
 
   @override
-  Set<TopPeriodFilter> get supportedTopPeriods => const {
-        TopPeriodFilter.none,
-        TopPeriodFilter.allTime,
-      };
-
-  @override
   Future<List<Post>> searchPosts({
     required List<String> tags,
     required int page,
@@ -39,27 +33,17 @@ class SafebooruProvider extends GelbooruProvider {
     String? rating,
     TopPeriodFilter topPeriod = TopPeriodFilter.none,
   }) async {
-    final topTags = switch (topPeriod) {
-      TopPeriodFilter.allTime => const ['sort:score:desc'],
-      _ => const <String>[],
-    };
-
     try {
       final response = await dio.get<dynamic>(
         '/index.php',
-        queryParameters: {
-          'page': 'dapi',
-          's': 'post',
-          'q': 'index',
-          'json': '1',
+        queryParameters: dapiQuery('post', params: {
           'pid': page,
           'limit': limit,
           'tags': [
             ...tags,
-            ...topTags,
+            ...topTagsFor(topPeriod),
           ].join(' '),
-          ...queryParameters,
-        },
+        }),
       );
 
       final data = response.data;
@@ -83,14 +67,7 @@ class SafebooruProvider extends GelbooruProvider {
     try {
       final response = await dio.get<dynamic>(
         '/index.php',
-        queryParameters: {
-          'page': 'dapi',
-          's': 'post',
-          'q': 'index',
-          'json': '1',
-          'id': id,
-          ...queryParameters,
-        },
+        queryParameters: dapiQuery('post', params: {'id': id}),
       );
 
       final data = response.data;
@@ -124,32 +101,11 @@ class SafebooruProvider extends GelbooruProvider {
         queryParameters: {'q': trimmed},
       );
 
-      final data = response.data;
-      if (data is List) {
-        final countRegExp = RegExp(r'\((\d+)\)');
-        final suggestions = <TagSuggestion>[];
-        for (final item in data) {
-          if (item is Map) {
-            final value = (item['value'] ?? '').toString();
-            final label = (item['label'] ?? '').toString();
-            if (value.isNotEmpty) {
-              int count = 0;
-              final match = countRegExp.firstMatch(label);
-              if (match != null) {
-                count = int.tryParse(match.group(1) ?? '') ?? 0;
-              }
-              suggestions.add(TagSuggestion(
-                name: value,
-                postCount: count,
-                category: TagCategory.general,
-                providerId: id,
-              ));
-            }
-          }
-          if (suggestions.length >= limit) break;
-        }
-        if (suggestions.isNotEmpty) return suggestions;
-      }
+      final suggestions = suggestionsFromAutocomplete(
+        response.data,
+        limit: limit,
+      );
+      if (suggestions.isNotEmpty) return suggestions;
     } catch (_) {
       // Fallback to dapi tag search
     }

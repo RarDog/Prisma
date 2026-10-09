@@ -12,7 +12,7 @@ import 'package:gel_rule_app/core/models/post.dart';
 import 'package:gel_rule_app/core/models/post_comment.dart';
 import 'package:gel_rule_app/core/models/provider_health.dart';
 import 'package:gel_rule_app/core/models/top_period_filter.dart';
-import 'package:gel_rule_app/features/downloads/domain/cloud_link_extractor.dart';
+import 'package:gel_rule_app/core/utils/cloud_link_extractor.dart';
 import 'package:gel_rule_app/sources/interfaces/content_provider.dart';
 
 class PawchiveProvider

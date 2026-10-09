@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'package:flutter/foundation.dart';
+import 'package:gel_rule_app/core/utils/logger.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'package:gel_rule_app/sources/booru/mangadex_provider.dart';
@@ -170,7 +171,7 @@ class MangaOfflineService {
             completedCount++;
             onProgress?.call(completedCount, total);
           } catch (e) {
-            debugPrint('Error downloading page $idx ($url): $e');
+            AppLogger.error('Error downloading page $idx ($url)', e);
             failedIndices.add(idx);
           }
         }),

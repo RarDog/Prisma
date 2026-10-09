@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -114,7 +116,7 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen>
             _content = _currentChapter.textContent!;
             _loading = false;
           });
-          _markRead();
+          unawaited(_markRead());
         }
         return;
       }
@@ -128,7 +130,7 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen>
             _content = offlineText;
             _loading = false;
           });
-          _markRead();
+          unawaited(_markRead());
         }
         return;
       }
@@ -146,7 +148,7 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen>
               _content = text;
               _loading = false;
             });
-            _markRead();
+            unawaited(_markRead());
           }
           return;
         }

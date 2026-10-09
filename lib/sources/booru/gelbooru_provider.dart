@@ -43,6 +43,66 @@ class GelbooruProvider
   String postPageUrl(Post post) =>
       '$baseUrl/index.php?page=post&s=view&id=${post.id}';
 
+  /// Builds a Gelbooru-DAPI query against `/index.php`.
+  ///
+  /// Provider-specific `queryParameters` are merged last so they can
+  /// override the DAPI defaults.
+  Map<String, Object?> dapiQuery(
+    String s, {
+    Map<String, Object?> params = const {},
+  }) {
+    return {
+      'page': 'dapi',
+      's': s,
+      'q': 'index',
+      'json': '1',
+      ...params,
+      ..._queryParameters,
+    };
+  }
+
+  /// Extra tags appended to search queries for the given top-period filter.
+  List<String> topTagsFor(TopPeriodFilter period) {
+    return switch (period) {
+      TopPeriodFilter.allTime => const ['sort:score:desc'],
+      _ => const [],
+    };
+  }
+
+  /// Parses `autocomplete.php` responses shared by Gelbooru-family endpoints.
+  ///
+  /// Items look like `{"label": "tag (1234)", "value": "tag"}`: the label
+  /// carries the display name with an optional post count, the value the raw
+  /// tag. The raw tag is preferred; the label is used when it is missing.
+  List<TagSuggestion> suggestionsFromAutocomplete(
+    dynamic data, {
+    required int limit,
+  }) {
+    if (data is! List) return const [];
+    final labelRegExp = RegExp(r'^(.*?)\s*\((\d+)\)$');
+    final suggestions = <TagSuggestion>[];
+    for (final item in data) {
+      if (item is! Map) continue;
+      final json = Map<String, dynamic>.from(item);
+      final label = (json['label'] ?? '').toString();
+      final value = (json['value'] ?? '').toString();
+      final match = labelRegExp.firstMatch(label);
+      final name =
+          (value.isNotEmpty ? value : (match?.group(1) ?? '')).trim();
+      if (name.isEmpty) continue;
+      suggestions.add(
+        TagSuggestion(
+          name: name,
+          postCount: int.tryParse(match?.group(2) ?? '') ?? 0,
+          category: TagCategory.general,
+          providerId: id,
+        ),
+      );
+      if (suggestions.length >= limit) break;
+    }
+    return suggestions;
+  }
+
   @override
   Map<String, String> mediaHeaders(Post post) {
     final host = Uri.tryParse(baseUrl)?.host;
@@ -62,21 +122,16 @@ class GelbooruProvider
     final queryTags = [
       ...tags,
       if (rating != null && rating.isNotEmpty) 'rating:$rating',
-      ..._topTags(topPeriod),
+      ...topTagsFor(topPeriod),
     ];
     try {
       final response = await _dio.get<dynamic>(
         '/index.php',
-        queryParameters: {
-          'page': 'dapi',
-          's': 'post',
-          'q': 'index',
-          'json': '1',
+        queryParameters: dapiQuery('post', params: {
           'pid': page,
           'limit': limit,
           'tags': queryTags.join(' '),
-          ..._queryParameters,
-        },
+        }),
       );
       _checkResponse(response);
       return GelbooruMapper.postsFromResponse(
@@ -94,14 +149,7 @@ class GelbooruProvider
     try {
       final response = await _dio.get<dynamic>(
         '/index.php',
-        queryParameters: {
-          'page': 'dapi',
-          's': 'post',
-          'q': 'index',
-          'json': '1',
-          'id': id,
-          ..._queryParameters,
-        },
+        queryParameters: dapiQuery('post', params: {'id': id}),
       );
       _checkResponse(response);
       final posts = GelbooruMapper.postsFromResponse(
@@ -121,14 +169,7 @@ class GelbooruProvider
     try {
       await _dio.get<dynamic>(
         '/index.php',
-        queryParameters: {
-          'page': 'dapi',
-          's': 'post',
-          'q': 'index',
-          'json': '1',
-          'limit': 1,
-          ..._queryParameters,
-        },
+        queryParameters: dapiQuery('post', params: {'limit': 1}),
       );
       return ProviderHealth(
         providerId: id,
@@ -154,14 +195,7 @@ class GelbooruProvider
     try {
       final response = await _dio.get<dynamic>(
         '/index.php',
-        queryParameters: {
-          'page': 'dapi',
-          's': 'comment',
-          'q': 'index',
-          'json': '1',
-          'post_id': postId,
-          ..._queryParameters,
-        },
+        queryParameters: dapiQuery('comment', params: {'post_id': postId}),
       );
       return _commentsFromResponse(response.data, postId);
     } catch (_) {
@@ -177,17 +211,12 @@ class GelbooruProvider
     try {
       final response = await _dio.get<dynamic>(
         '/index.php',
-        queryParameters: {
-          'page': 'dapi',
-          's': 'tag',
-          'q': 'index',
-          'json': '1',
+        queryParameters: dapiQuery('tag', params: {
           'name_pattern': '$trimmed%',
           'orderby': 'count',
           'order': 'DESC',
           'limit': limit.clamp(1, 100),
-          ..._queryParameters,
-        },
+        }),
       );
       return _tagItems(response.data)
           .whereType<Map>()
@@ -231,15 +260,10 @@ class GelbooruProvider
         );
         final response = await _dio.get<dynamic>(
           '/index.php',
-          queryParameters: {
-            'page': 'dapi',
-            's': 'tag',
-            'q': 'index',
-            'json': '1',
+          queryParameters: dapiQuery('tag', params: {
             'names': chunk.join(' '),
             'limit': chunk.length.clamp(1, 100),
-            ..._queryParameters,
-          },
+          }),
         );
         for (final item in _tagItems(response.data).whereType<Map>()) {
           final json = Map<String, dynamic>.from(item);
@@ -303,13 +327,6 @@ class GelbooruProvider
         TopPeriodFilter.none,
         TopPeriodFilter.allTime,
       };
-
-  List<String> _topTags(TopPeriodFilter period) {
-    return switch (period) {
-      TopPeriodFilter.allTime => const ['sort:score:desc'],
-      _ => const [],
-    };
-  }
 
   List<PostComment> _commentsFromResponse(dynamic data, String postId) {
     final raw = _commentItems(data);

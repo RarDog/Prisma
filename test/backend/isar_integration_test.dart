@@ -83,6 +83,7 @@ void main() {
       'gelbooru',
       'rule34',
       'safebooru',
+      'danbooru',
       'realbooru',
       'e621',
       'e926',
@@ -91,6 +92,7 @@ void main() {
       'mangadex',
       'mangalib',
       'ranobelib',
+      'fapello',
     ]);
     final pixiv =
         providers.singleWhere((provider) => provider.id == 'pixiv');

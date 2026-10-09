@@ -4,7 +4,6 @@ sealed class Result<T> {
   const Result();
 
   bool get isSuccess => this is Success<T>;
-  bool get isError => this is Error<T>;
 
   R fold<R>({
     required R Function(T data) onSuccess,

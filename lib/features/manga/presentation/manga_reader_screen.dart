@@ -367,10 +367,10 @@ class _MangaReaderScreenState extends ConsumerState<MangaReaderScreen>
           final headers = getPostMediaHeaders(widget.post);
           final memWidth = _targetMemCacheWidth;
           for (final pageUrl in pages.take(3)) {
-            precacheImage(
+            unawaited(precacheImage(
               CachedNetworkImageProvider(pageUrl, headers: headers, maxWidth: memWidth),
               context,
-            );
+            ));
           }
         }
       }

@@ -1,5 +1,4 @@
-import 'package:flutter/foundation.dart';
-
+import 'package:gel_rule_app/core/utils/logger.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
 import 'package:gel_rule_app/features/providers/data/provider_repository.dart';
@@ -52,7 +51,7 @@ class OnboardingService {
       // Check if persistent backup file exists on device
       final hasBackup = await backupService.hasPersistentBackup();
       if (hasBackup) {
-        debugPrint('Onboarding: skipped because persistent backup exists.');
+        AppLogger.log('Onboarding: skipped because persistent backup exists.');
         await markCompleted();
         return false;
       }
@@ -61,7 +60,7 @@ class OnboardingService {
       final providersResult = await providerRepository.getProviders();
       if (providersResult is Success<List<ContentProviderConfig>>) {
         if (hasAnyProviderApiKey(providersResult.data)) {
-          debugPrint('Onboarding: skipped because API key already configured.');
+          AppLogger.log('Onboarding: skipped because API key already configured.');
           await markCompleted();
           return false;
         }
@@ -70,7 +69,7 @@ class OnboardingService {
       // Brand new user with no backup and no API keys
       return true;
     } catch (e) {
-      debugPrint('shouldShowOnboarding error: $e');
+      AppLogger.error('shouldShowOnboarding error', e);
       return false;
     }
   }
@@ -90,7 +89,7 @@ class OnboardingService {
         backupService.scheduleAutoBackup();
       }
     } catch (e) {
-      debugPrint('markCompleted error: $e');
+      AppLogger.error('markCompleted error', e);
     }
   }
 

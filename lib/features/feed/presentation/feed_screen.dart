@@ -623,7 +623,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                 .read(settingsServiceProvider)
                 .unhidePostKey(post.cacheKey);
             ref.invalidate(appSettingsProvider);
-            ref.read(feedControllerProvider.notifier).refresh();
+            unawaited(ref.read(feedControllerProvider.notifier).refresh());
           },
         ),
       ),

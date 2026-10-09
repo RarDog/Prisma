@@ -47,8 +47,3 @@ class UnknownException extends AppException {
   @override
   String get code => 'unknown';
 }
-
-Failure failureFromObject(Object error) {
-  if (error is AppException) return error.toFailure();
-  return UnknownException(error.toString(), details: error).toFailure();
-}

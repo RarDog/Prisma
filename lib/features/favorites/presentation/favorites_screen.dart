@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -702,7 +703,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
               if (pendingCount > 0)
                 FilledButton.tonalIcon(
                   onPressed: () async {
-                    HapticFeedback.mediumImpact();
+                    unawaited(HapticFeedback.mediumImpact());
                     final dm = ref.read(downloadManagerServiceProvider);
                     for (final p in pendingPosts) {
                       await dm.start(p);

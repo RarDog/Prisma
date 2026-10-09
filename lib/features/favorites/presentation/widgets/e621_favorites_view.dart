@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -170,7 +171,7 @@ class _E621FavoritesViewState extends ConsumerState<E621FavoritesView> {
       _isImporting = true;
       _importedCount = 0;
     });
-    HapticFeedback.mediumImpact();
+    unawaited(HapticFeedback.mediumImpact());
 
     try {
       final provider = await _getE621Provider();
@@ -264,7 +265,7 @@ class _E621FavoritesViewState extends ConsumerState<E621FavoritesView> {
   Future<void> _syncBlacklist() async {
     if (_isSyncingBlacklist) return;
     setState(() => _isSyncingBlacklist = true);
-    HapticFeedback.mediumImpact();
+    unawaited(HapticFeedback.mediumImpact());
 
     try {
       final provider = await _getE621Provider();

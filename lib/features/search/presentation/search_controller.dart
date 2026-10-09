@@ -16,7 +16,7 @@ class SearchController extends AsyncNotifier<SearchState> {
 
   @override
   Future<SearchState> build() async {
-    _historySubscription?.cancel();
+    await _historySubscription?.cancel();
     _historySubscription = ref
         .watch(searchServiceProvider)
         .historyChanges

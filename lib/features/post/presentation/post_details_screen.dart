@@ -1314,7 +1314,7 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
   ) async {
     await ref.read(settingsServiceProvider).hidePostKey(post.cacheKey);
     ref.invalidate(appSettingsProvider);
-    ref.read(feedControllerProvider.notifier).refresh();
+    unawaited(ref.read(feedControllerProvider.notifier).refresh());
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Post hidden locally')),

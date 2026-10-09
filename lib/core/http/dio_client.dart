@@ -6,9 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
 
-import 'package:gel_rule_app/core/errors/app_exception.dart';
 import 'package:gel_rule_app/core/http/app_headers.dart';
-import 'package:gel_rule_app/core/utils/result.dart';
 
 class DioClient {
   DioClient({
@@ -60,37 +58,7 @@ class DioClient {
     );
   }
 
-  Future<Result<T>> safeRequest<T>(Future<T> Function(Dio dio) request) async {
-    try {
-      return Success(await request(dio));
-    } on DioException catch (error) {
-      return Error(_mapDioException(error).toFailure());
-    } on AppException catch (error) {
-      return Error(error.toFailure());
-    } catch (error) {
-      return Error(
-          UnknownException(error.toString(), details: error).toFailure());
-    }
-  }
-
-  static AppException _mapDioException(DioException error) {
-    return switch (error.type) {
-      DioExceptionType.connectionTimeout ||
-      DioExceptionType.sendTimeout ||
-      DioExceptionType.receiveTimeout =>
-        RequestTimeoutException('Request timed out', details: error),
-      DioExceptionType.badResponse => BadResponseException(
-          'Provider returned HTTP ${error.response?.statusCode}',
-          details: error,
-        ),
-      DioExceptionType.connectionError => NetworkException(
-          'Network connection failed',
-          details: error,
-        ),
-      _ =>
-        UnknownException(error.message ?? 'Unknown HTTP error', details: error),
-    };
-  }
+  void close({bool force = false}) => dio.close(force: force);
 }
 
 class _RetryInterceptor extends Interceptor {
@@ -115,8 +83,13 @@ class _RetryInterceptor extends Interceptor {
       options.extra['retryAttempt'] = attempt + 1;
       final response = await _dio.fetch<dynamic>(options);
       handler.resolve(response);
-    } on DioException catch (error) {
-      handler.next(error);
+    } catch (error) {
+      handler.reject(
+        DioException(
+          requestOptions: err.requestOptions,
+          error: error,
+        ),
+      );
     }
   }
 

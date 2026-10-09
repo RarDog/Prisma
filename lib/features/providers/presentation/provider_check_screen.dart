@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -318,7 +319,7 @@ class _ProviderCheckScreenState extends ConsumerState<ProviderCheckScreen> {
 
   Future<void> _checkAll(WidgetRef ref) async {
     setState(() => _isCheckingAll = true);
-    HapticFeedback.mediumImpact();
+    unawaited(HapticFeedback.mediumImpact());
     try {
       final result =
           await ref.read(providerCheckServiceProvider).checkAll();

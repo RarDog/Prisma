@@ -259,7 +259,7 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
               ),
             );
           } catch (e, st) {
-            debugPrint('Error in TagInputSearchBar overlay: $e\n$st');
+            AppLogger.error('Error in TagInputSearchBar overlay', e, st);
             return const SizedBox.shrink();
           }
         },

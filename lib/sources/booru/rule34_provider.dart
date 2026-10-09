@@ -26,12 +26,6 @@ class Rule34Provider extends GelbooruProvider {
       );
 
   @override
-  Set<TopPeriodFilter> get supportedTopPeriods => const {
-        TopPeriodFilter.none,
-        TopPeriodFilter.allTime,
-      };
-
-  @override
   Future<List<Post>> searchPosts({
     required List<String> tags,
     required int page,
@@ -39,28 +33,19 @@ class Rule34Provider extends GelbooruProvider {
     String? rating,
     TopPeriodFilter topPeriod = TopPeriodFilter.none,
   }) async {
-    final topTags = switch (topPeriod) {
-      TopPeriodFilter.allTime => const ['sort:score:desc'],
-      _ => const <String>[],
-    };
     try {
       final response = await dio.get<dynamic>(
         '/index.php',
-        queryParameters: {
-          'page': 'dapi',
-          's': 'post',
-          'q': 'index',
-          'json': '1',
+        queryParameters: dapiQuery('post', params: {
           'pid': page,
           'limit': limit,
           'fields': 'tag_info',
           'tags': [
             ...tags,
             if (rating != null) 'rating:$rating',
-            ...topTags,
+            ...topTagsFor(topPeriod),
           ].join(' '),
-          ...queryParameters,
-        },
+        }),
       );
       _checkRule34Response(response);
       return Rule34Mapper.postsFromResponse(
@@ -78,15 +63,10 @@ class Rule34Provider extends GelbooruProvider {
     try {
       final response = await dio.get<dynamic>(
         '/index.php',
-        queryParameters: {
-          'page': 'dapi',
-          's': 'post',
-          'q': 'index',
-          'json': '1',
+        queryParameters: dapiQuery('post', params: {
           'id': id,
           'fields': 'tag_info',
-          ...queryParameters,
-        },
+        }),
       );
       _checkRule34Response(response);
       final posts = Rule34Mapper.postsFromResponse(
@@ -109,35 +89,13 @@ class Rule34Provider extends GelbooruProvider {
       // Official Rule34 autocomplete endpoint (fast, public, with exact post count)
       final response = await dio.get<dynamic>(
         '/autocomplete.php',
-        queryParameters: {
-          'q': trimmed,
-        },
+        queryParameters: {'q': trimmed},
       );
-      if (response.data is List) {
-        final list = response.data as List;
-        final suggestions = list
-            .whereType<Map>()
-            .map((item) {
-              final json = Map<String, dynamic>.from(item);
-              final rawLabel = (json['label'] ?? '').toString();
-              final rawValue = (json['value'] ?? '').toString();
-              // Parse label "braid (216984)" -> name: "braid", postCount: 216984
-              final match =
-                  RegExp(r'^(.*?)\s*\((\d+)\)$').firstMatch(rawLabel);
-              final name = (match?.group(1) ?? rawValue).trim();
-              final postCount = int.tryParse(match?.group(2) ?? '') ?? 0;
-              return TagSuggestion(
-                name: name.isNotEmpty ? name : rawValue,
-                category: TagCategory.general,
-                postCount: postCount,
-                providerId: id,
-              );
-            })
-            .where((tag) => tag.name.isNotEmpty)
-            .take(limit)
-            .toList(growable: false);
-        if (suggestions.isNotEmpty) return suggestions;
-      }
+      final suggestions = suggestionsFromAutocomplete(
+        response.data,
+        limit: limit,
+      );
+      if (suggestions.isNotEmpty) return suggestions;
     } catch (_) {
       // Gracefully fall back to standard DAPI tag search
     }

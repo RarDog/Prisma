@@ -1,16 +1,13 @@
 import 'dart:async';
 
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:gel_rule_app/core/cache/cache_service.dart';
-import 'package:gel_rule_app/core/cache/image_cache_service.dart';
 import 'package:gel_rule_app/core/database/app_database.dart';
 import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'package:gel_rule_app/core/database/database_service.dart';
-import 'package:gel_rule_app/core/http/network_info.dart';
+import 'package:gel_rule_app/core/utils/logger.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/sources/provider_factory.dart';
 import 'package:gel_rule_app/sources/provider_manager.dart';
@@ -41,6 +38,16 @@ import 'package:gel_rule_app/features/onboarding/domain/onboarding_service.dart'
 
 final shouldShowOnboardingProvider = StateProvider<bool>((ref) => false);
 
+/// Schedules a persistent auto-backup after a mutation, swallowing errors
+/// because persistence defects must not break mutation flows.
+void Function() _backupScheduler(Ref ref) {
+  return () {
+    try {
+      ref.read(backupServiceProvider).scheduleAutoBackup();
+    } catch (_) {}
+  };
+}
+
 final appDatabaseProvider = FutureProvider<AppDatabase>((ref) async {
   final database = await AppDatabase.open();
   ref.onDispose(database.close);
@@ -60,7 +67,7 @@ final appDatabaseProvider = FutureProvider<AppDatabase>((ref) async {
     final show = await onboardingService.shouldShowOnboarding();
     ref.read(shouldShowOnboardingProvider.notifier).state = show;
   } catch (e) {
-    debugPrint('Prisma startup & autoRestore error: $e');
+    AppLogger.error('Prisma startup & autoRestore error', e);
   }
   return database;
 });
@@ -70,29 +77,20 @@ final databaseServiceProvider = Provider<DatabaseService>((ref) {
   return DatabaseService(database);
 });
 
-final connectivityProvider = Provider<Connectivity>((ref) => Connectivity());
-
-final networkInfoProvider = Provider<NetworkInfo>((ref) {
-  return NetworkInfo(ref.watch(connectivityProvider));
-});
-
 final providerFactoryProvider = Provider<ProviderFactory>((ref) {
-  return ProviderFactory();
+  final factory = ProviderFactory();
+  ref.onDispose(factory.dispose);
+  return factory;
 });
 
 final postRepositoryProvider = Provider<PostRepository>((ref) {
   return PostRepository(ref.watch(databaseServiceProvider));
 });
 
-final Provider<ProviderRepository> providerRepositoryProvider =
-    Provider<ProviderRepository>((ref) {
+final providerRepositoryProvider = Provider<ProviderRepository>((ref) {
   return ProviderRepository(
     ref.watch(databaseServiceProvider),
-    onDataChanged: () {
-      try {
-        ref.read(backupServiceProvider).scheduleAutoBackup();
-      } catch (_) {}
-    },
+    onDataChanged: _backupScheduler(ref),
   );
 });
 
@@ -113,11 +111,7 @@ final favoriteRepositoryProvider = Provider<FavoriteRepository>((ref) {
   return FavoriteRepository(
     ref.watch(databaseServiceProvider),
     ref.watch(postRepositoryProvider),
-    onDataChanged: () {
-      try {
-        ref.read(backupServiceProvider).scheduleAutoBackup();
-      } catch (_) {}
-    },
+    onDataChanged: _backupScheduler(ref),
   );
 });
 
@@ -125,20 +119,12 @@ final collectionRepositoryProvider = Provider<CollectionRepository>((ref) {
   return CollectionRepository(
     ref.watch(databaseServiceProvider),
     ref.watch(postRepositoryProvider),
-    onDataChanged: () {
-      try {
-        ref.read(backupServiceProvider).scheduleAutoBackup();
-      } catch (_) {}
-    },
+    onDataChanged: _backupScheduler(ref),
   );
 });
 
 final cacheServiceProvider = Provider<CacheService>((ref) {
   return CacheService(ref.watch(databaseServiceProvider));
-});
-
-final imageCacheServiceProvider = Provider<ImageCacheService>((ref) {
-  return ImageCacheService();
 });
 
 final providerManagerProvider = Provider<ProviderManager>((ref) {
@@ -171,16 +157,22 @@ final viewedKeysProvider = FutureProvider<Set<String>>((ref) async {
 
 final tagCacheServiceProvider = Provider<TagCacheService>((ref) {
   final service = TagCacheService();
-  unawaited(service.init());
+  unawaited(
+    service.init().catchError((Object error) {
+      AppLogger.error('TagCacheService init failed', error);
+    }),
+  );
   return service;
 });
 
 final searchServiceProvider = Provider<SearchService>((ref) {
-  return SearchService(
+  final service = SearchService(
     ref.watch(searchRepositoryProvider),
     ref.watch(providerManagerProvider),
     ref.watch(tagCacheServiceProvider),
   );
+  ref.onDispose(service.dispose);
+  return service;
 });
 
 final providerCheckServiceProvider = Provider<ProviderCheckService>((ref) {
@@ -202,16 +194,11 @@ final collectionServiceProvider = Provider<CollectionService>((ref) {
   return CollectionService(ref.watch(collectionRepositoryProvider));
 });
 
-final Provider<SettingsService> settingsServiceProvider =
-    Provider<SettingsService>((ref) {
+final settingsServiceProvider = Provider<SettingsService>((ref) {
   return SettingsService(
     ref.watch(databaseServiceProvider),
     providerRepository: ref.watch(providerRepositoryProvider),
-    onDataChanged: () {
-      try {
-        ref.read(backupServiceProvider).scheduleAutoBackup();
-      } catch (_) {}
-    },
+    onDataChanged: _backupScheduler(ref),
   );
 });
 

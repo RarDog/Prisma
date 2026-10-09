@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,7 +21,7 @@ class FiltersSettingsScreen extends ConsumerWidget {
 
   Future<void> _syncE621Blacklist(BuildContext context, WidgetRef ref, AppSettings settings) async {
     final isRu = settings.languageCode == 'ru';
-    HapticFeedback.mediumImpact();
+    unawaited(HapticFeedback.mediumImpact());
 
     try {
       final providerInstance = await ref

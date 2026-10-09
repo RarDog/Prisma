@@ -234,13 +234,19 @@ void main() {
     expect(posts.single.rating, 'unknown');
   });
 
-  test('seed providers include Realbooru HTML Pawchive and exclude deprecated providers', () {
+  test('seed providers include Realbooru HTML Pawchive Fapello and exclude deprecated providers', () {
     final pawchive = ProviderRepository.seedProviders()
         .where((provider) => provider.id == 'pawchive')
         .single;
     expect(pawchive.enabled, isTrue);
     expect(pawchive.apiType, 'pawchive');
     expect(pawchive.baseUrl, 'https://pawchive.pw');
+    final fapello = ProviderRepository.seedProviders()
+        .where((provider) => provider.id == 'fapello')
+        .single;
+    expect(fapello.enabled, isTrue);
+    expect(fapello.apiType, 'fapello');
+    expect(fapello.baseUrl, 'https://fapello.com');
     final realbooru = ProviderRepository.seedProviders()
         .where((provider) => provider.id == 'realbooru')
         .single;

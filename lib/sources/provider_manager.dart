@@ -387,14 +387,16 @@ class ProviderManager {
             errorMessage: errorMsg,
           ),
         ));
-        _scheduleSoftSearchRetry(
-          provider,
-          tags: tags,
-          page: page,
-          limit: limit,
-          rating: rating,
-          topPeriod: topPeriod,
-        );
+        if (_isRetryableError(error)) {
+          _scheduleSoftSearchRetry(
+            provider,
+            tags: tags,
+            page: page,
+            limit: limit,
+            rating: rating,
+            topPeriod: topPeriod,
+          );
+        }
         return const <Post>[];
       }
     }).toList(growable: false);
@@ -456,6 +458,10 @@ class ProviderManager {
     return posts;
   }
 
+  // Deterministic rank used to interleave results from different providers:
+  // FNV-1a over cacheKey yields a stable, provider-agnostic shuffle that is
+  // consistent across paginated refreshes, so users don't see blocks from a
+  // single provider grouped together.
   int _mixKey(Post post) {
     var hash = 0x811c9dc5;
     for (final code in post.cacheKey.codeUnits) {
@@ -463,6 +469,25 @@ class ProviderManager {
       hash = (hash * 0x01000193) & 0x7fffffff;
     }
     return hash;
+  }
+
+  /// Returns true when re-sending the same request could plausibly succeed.
+  /// Timeouts, connection failures and 429/5xx are transient; other 4xx
+  /// responses (bad API key, deleted resource) are deterministic and must not
+  /// be retried — repeating them only delays the error surfacing to the UI.
+  static bool _isRetryableError(Object error) {
+    if (error is DioException) {
+      if (error.type == DioExceptionType.connectionError ||
+          error.type == DioExceptionType.connectionTimeout ||
+          error.type == DioExceptionType.sendTimeout ||
+          error.type == DioExceptionType.receiveTimeout) {
+        return true;
+      }
+      final status = error.response?.statusCode;
+      if (status == null) return true;
+      return status == 429 || status >= 500;
+    }
+    return true;
   }
 
   void _scheduleSoftSearchRetry(
@@ -805,24 +830,19 @@ class ProviderManager {
     return results;
   }
 
+  /// apiType values that expose the `ArtistProvider` capability and therefore
+  /// feed the Artists tab instead of the post feed.
+  static const _artistApiTypes = <String>{'pawchive', 'fapello'};
+
   static bool _isArtistConfig(ContentProviderConfig config) {
-    final type = config.apiType.toLowerCase();
-    return type == 'pawchive';
+    return _artistApiTypes.contains(config.apiType.toLowerCase());
   }
 
   static bool _isMangaConfig(ContentProviderConfig config) {
     final type = config.apiType.toLowerCase();
-    final id = config.id.toLowerCase();
-    final base = config.baseUrl.toLowerCase();
     return type == 'mangadex' ||
         type == 'mangalib' ||
-        type == 'ranobelib' ||
-        id == 'mangadex' ||
-        id == 'mangalib' ||
-        id == 'ranobelib' ||
-        base.contains('mangadex') ||
-        base.contains('mangalib') ||
-        base.contains('ranobelib');
+        type == 'ranobelib';
   }
 
   static bool _isFeedConfig(ContentProviderConfig config) {

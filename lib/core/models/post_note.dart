@@ -34,16 +34,4 @@ class PostNote {
       isActive: json['is_active'] as bool? ?? true,
     );
   }
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'post_id': postId,
-        'x': x,
-        'y': y,
-        'width': width,
-        'height': height,
-        'body': body,
-        if (authorName != null) 'creator_name': authorName,
-        'is_active': isActive,
-      };
 }

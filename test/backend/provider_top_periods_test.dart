@@ -77,11 +77,13 @@ void main() {
       });
     });
 
-    test('Paheal and Pawchive support only none', () {
+    test('Paheal, Pawchive and Fapello support only none', () {
       final paheal = makeConfig('paheal', 'rule34_paheal');
       final pawchive = makeConfig('pawchive', 'pawchive');
+      final fapello = makeConfig('fapello', 'fapello');
       expect(paheal.supportedTopPeriods, {TopPeriodFilter.none});
       expect(pawchive.supportedTopPeriods, {TopPeriodFilter.none});
+      expect(fapello.supportedTopPeriods, {TopPeriodFilter.none});
     });
 
     test('resolveSupportedTopPeriods intersects when mixed', () {

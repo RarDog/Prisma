@@ -353,6 +353,11 @@ class ProviderCard extends StatelessWidget {
           Icons.pets_rounded,
           'e621 / e926',
         ),
+      'fapello' => (
+          const Color(0xFFE8467C),
+          Icons.person_search_rounded,
+          'Fapello HTML',
+        ),
       _ => (
           const Color(0xFF6366F1),
           Icons.hub_rounded,

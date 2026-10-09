@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:ui';
 
@@ -268,6 +269,16 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
                           apiType: 'mangadex',
                         ),
                       ),
+                      const SizedBox(width: 8),
+                      _PresetChip(
+                        name: 'Fapello',
+                        color: const Color(0xFFE8467C),
+                        onTap: () => _applyPreset(
+                          name: 'Fapello',
+                          baseUrl: 'https://fapello.com',
+                          apiType: 'fapello',
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -350,6 +361,10 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
                         DropdownMenuItem(
                           value: 'realbooru_html',
                           child: Text('Realbooru HTML'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'fapello',
+                          child: Text('Fapello (HTML, artists only)'),
                         ),
                         DropdownMenuItem(
                           value: 'custom',
@@ -721,7 +736,7 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
     }
 
     setState(() => _isSaving = true);
-    HapticFeedback.lightImpact();
+    unawaited(HapticFeedback.lightImpact());
 
     try {
       final now = DateTime.now();

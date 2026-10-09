@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -527,7 +529,7 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
   }
 
   Future<void> _setLibraryStatus(String? status) async {
-    HapticFeedback.selectionClick();
+    unawaited(HapticFeedback.selectionClick());
     final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     await ref.read(mangaLibraryServiceProvider).setLibraryStatus(
           mangaId: widget.post.id,
@@ -555,7 +557,7 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
   }
 
   Future<void> _toggleChapterRead(MangaDexChapter chapter) async {
-    HapticFeedback.selectionClick();
+    unawaited(HapticFeedback.selectionClick());
     final isRead = _readingProgress?.readChapterIds.contains(chapter.id) ?? false;
     await ref.read(mangaLibraryServiceProvider).toggleChapterRead(
           mangaId: widget.post.id,

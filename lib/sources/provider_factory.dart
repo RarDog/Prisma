@@ -7,6 +7,7 @@ import 'package:gel_rule_app/sources/interfaces/content_provider.dart';
 import 'package:gel_rule_app/sources/booru/custom_provider.dart';
 import 'package:gel_rule_app/sources/booru/danbooru_provider.dart';
 import 'package:gel_rule_app/sources/booru/e621_provider.dart';
+import 'package:gel_rule_app/sources/booru/fapello_provider.dart';
 import 'package:gel_rule_app/sources/booru/gelbooru_provider.dart';
 import 'package:gel_rule_app/sources/booru/moebooru_provider.dart';
 import 'package:gel_rule_app/sources/booru/pawchive_provider.dart';
@@ -20,11 +21,21 @@ import 'package:gel_rule_app/sources/booru/pixiv_provider.dart';
 import 'package:gel_rule_app/sources/booru/safebooru_provider.dart';
 
 class ProviderFactory {
+  /// Upper bound on cached HTTP clients. Each client owns a socket pool, so
+  /// an unbounded cache leaks connections when many provider configs are
+  /// created over the app lifetime (e.g. after repeated edits).
+  static const _maxCachedClients = 8;
+
   final Map<String, DioClient> _clientCache = {};
 
   void clearCache() {
+    for (final client in _clientCache.values) {
+      client.close();
+    }
     _clientCache.clear();
   }
+
+  void dispose() => clearCache();
 
   ContentProvider create(ContentProviderConfig config) {
     final headers = Map<String, String>.from(config.customHeaders)
@@ -67,6 +78,7 @@ class ProviderFactory {
         headers: headers,
       ),
     );
+    _evictOldestClient();
     switch (config.apiType.toLowerCase()) {
       case 'mangadex':
         return MangaDexProvider(
@@ -176,6 +188,13 @@ class ProviderFactory {
           dioClient: client,
           queryParameters: queryParameters,
         );
+      case 'fapello':
+        return FapelloProvider(
+          id: config.id,
+          name: config.name,
+          baseUrl: config.baseUrl,
+          dioClient: client,
+        );
       default:
         return UnsupportedCustomProvider(
           id: config.id,
@@ -183,6 +202,16 @@ class ProviderFactory {
           baseUrl: config.baseUrl,
           apiType: config.apiType,
         );
+    }
+  }
+
+  /// Evicts the oldest cached client (Map preserves insertion order) once the
+  /// cache grows beyond [_maxCachedClients], closing its socket pool.
+  void _evictOldestClient() {
+    while (_clientCache.length > _maxCachedClients) {
+      final staleKey = _clientCache.keys.first;
+      final stale = _clientCache.remove(staleKey);
+      stale?.close();
     }
   }
 }

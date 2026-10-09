@@ -3,7 +3,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:gel_rule_app/core/utils/logger.dart';
 
 class PerformanceMetrics {
   final int rssBytes;
@@ -358,7 +361,9 @@ class SmartMemoryManager with WidgetsBindingObserver {
     _initialized = true;
     try {
       WidgetsBinding.instance.addObserver(this);
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.error('SmartMemoryManager: addObserver failed', e);
+    }
   }
 
   @override
@@ -387,7 +392,9 @@ class SmartMemoryManager with WidgetsBindingObserver {
       if (force) {
         cache.clear();
       }
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.error('SmartMemoryManager: trimMemory failed', e);
+    }
   }
 
   static void evictImageUrl(String url) {
@@ -395,7 +402,9 @@ class SmartMemoryManager with WidgetsBindingObserver {
     try {
       CachedNetworkImageProvider(url).evict();
       NetworkImage(url).evict();
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.error('SmartMemoryManager: evictImageUrl failed for $url', e);
+    }
   }
 }
 
@@ -409,7 +418,9 @@ class PerformanceMonitorService {
       final existing = HttpOverrides.current;
       HttpOverrides.global = PerformanceHttpOverrides(fallback: existing);
       SmartMemoryManager.instance.init();
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.error('PerformanceMonitorService: init failed', e);
+    }
   }
 
   int _prevCpuTicks = 0;
@@ -417,10 +428,11 @@ class PerformanceMonitorService {
   int _frameCount = 0;
   DateTime _lastFpsTime = DateTime.now();
   int _currentFps = 60;
+  TimingsCallback? _fpsCallback;
 
   void _initFpsMonitoring() {
     try {
-      WidgetsBinding.instance.addTimingsCallback((timings) {
+      _fpsCallback = (timings) {
         _frameCount += timings.length;
         final now = DateTime.now();
         final elapsed = now.difference(_lastFpsTime).inMilliseconds;
@@ -429,8 +441,19 @@ class PerformanceMonitorService {
           _frameCount = 0;
           _lastFpsTime = now;
         }
-      });
-    } catch (_) {}
+      };
+      WidgetsBinding.instance.addTimingsCallback(_fpsCallback!);
+    } catch (e) {
+      AppLogger.error('PerformanceMonitorService: FPS monitoring init failed', e);
+    }
+  }
+
+  void dispose() {
+    final callback = _fpsCallback;
+    if (callback != null) {
+      WidgetsBinding.instance.removeTimingsCallback(callback);
+      _fpsCallback = null;
+    }
   }
 
   double _sampleCpu() {
@@ -476,14 +499,18 @@ class PerformanceMonitorService {
     try {
       rss = ProcessInfo.currentRss;
       maxRss = ProcessInfo.maxRss;
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.error('PerformanceMonitorService: RSS sampling failed', e);
+    }
 
     int imageCacheBytes = 0;
     int imageCacheCount = 0;
     try {
       imageCacheBytes = PaintingBinding.instance.imageCache.currentSizeBytes;
       imageCacheCount = PaintingBinding.instance.imageCache.currentSize;
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.error('PerformanceMonitorService: image cache metrics failed', e);
+    }
 
     SmartMemoryManager.instance.checkAndTrim(
       currentRssBytes: rss,
@@ -508,7 +535,9 @@ class PerformanceMonitorService {
 }
 
 final performanceMonitorServiceProvider = Provider<PerformanceMonitorService>((ref) {
-  return PerformanceMonitorService();
+  final service = PerformanceMonitorService();
+  ref.onDispose(service.dispose);
+  return service;
 });
 
 final performanceMetricsStreamProvider = StreamProvider.autoDispose<PerformanceMetrics>((ref) {

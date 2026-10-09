@@ -184,7 +184,9 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
           }
           final displayedArtists = _artists.where((a) {
             final s = a.service.toLowerCase();
-            if (s != 'patreon' && s != 'fanbox') return false;
+            if (s != 'patreon' && s != 'fanbox' && s != 'fapello') {
+              return false;
+            }
             if (_selectedServices.isEmpty) return true;
             return _selectedServices.contains(s);
           }).toList(growable: false);
@@ -432,6 +434,8 @@ Color _serviceColor(String service) {
       return const Color(0xFFFF90E8);
     case 'afdian':
       return const Color(0xFF946CE6);
+    case 'fapello':
+      return const Color(0xFFE8467C);
     default:
       return const Color(0xFF7C4DFF);
   }
@@ -449,6 +453,8 @@ String _formatServiceName(String s) {
       return 'Boosty';
     case 'discord':
       return 'Discord';
+    case 'fapello':
+      return 'Fapello';
     default:
       return s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
   }
@@ -564,6 +570,7 @@ class _ArtistsHeader extends StatelessWidget {
   static const _availableServices = [
     'patreon',
     'fanbox',
+    'fapello',
   ];
 
   @override

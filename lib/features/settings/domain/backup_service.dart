@@ -3,11 +3,12 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_selector/file_selector.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:isar/isar.dart' hide Collection;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+
+import 'package:gel_rule_app/core/utils/logger.dart';
 
 import 'package:gel_rule_app/core/database/app_database.dart';
 import 'package:gel_rule_app/core/database/database_service.dart';
@@ -17,7 +18,6 @@ import 'package:gel_rule_app/features/providers/models/content_provider_config.d
 import 'package:gel_rule_app/core/models/post.dart';
 import 'package:gel_rule_app/features/providers/data/provider_repository.dart';
 import 'package:gel_rule_app/features/settings/domain/settings_service.dart';
-import 'package:gel_rule_app/core/utils/logger.dart';
 
 class BackupService {
   BackupService(
@@ -614,12 +614,12 @@ class BackupService {
       if (backupJson != null && backupJson.trim().isNotEmpty) {
         final result = await restoreFromJson(backupJson);
         if (result is Success<AppSettings>) {
-          debugPrint('Prisma: Auto-restored user data from persistent storage!');
+          AppLogger.log('Prisma: Auto-restored user data from persistent storage!');
           return true;
         }
       }
     } catch (e) {
-      debugPrint('autoRestoreIfNeeded error: $e');
+      AppLogger.error('autoRestoreIfNeeded error', e);
     }
     return false;
   }

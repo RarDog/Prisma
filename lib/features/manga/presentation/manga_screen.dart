@@ -177,7 +177,7 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
           _selectedProviderId = _mangaProviders.first.id;
         }
       });
-      _loadManga(refresh: true);
+      unawaited(_loadManga(refresh: true));
     }
   }
 
@@ -385,9 +385,9 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
     if (_scrollController.hasClients) {
       final currentOffset = _scrollController.offset;
       _savedScrollOffset = currentOffset;
-      ref.read(settingsControllerProvider.notifier).saveMangaCatalogState(
+      unawaited(ref.read(settingsControllerProvider.notifier).saveMangaCatalogState(
             scrollOffset: currentOffset,
-          );
+          ));
     }
 
     final returnedTag = await Navigator.of(context).push<String>(
@@ -405,7 +405,7 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
         _selectedTab = MangaTab.catalog;
         _savedScrollOffset = 0.0;
       });
-      _loadManga(refresh: true);
+      unawaited(_loadManga(refresh: true));
     } else if (mounted && _scrollController.hasClients && _savedScrollOffset > 0) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _scrollController.hasClients) {
@@ -419,9 +419,9 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
   }
 
   Future<void> _openLibraryEntry(MangaLibraryEntry entry) async {
-    HapticFeedback.lightImpact();
+    unawaited(HapticFeedback.lightImpact());
     if (entry.newChaptersCount > 0) {
-      ref.read(mangaLibraryServiceProvider).resetNewChapters(entry.mangaId);
+      unawaited(ref.read(mangaLibraryServiceProvider).resetNewChapters(entry.mangaId));
     }
     Post? post;
     try {

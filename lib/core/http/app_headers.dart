@@ -22,11 +22,6 @@ abstract final class AppHeaders {
   static const String mobileChromeUserAgent =
       'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/125 Mobile Safari/537.36';
 
-  /// Default headers map for general network requests.
-  static Map<String, String> get defaultHeaders => {
-        'User-Agent': defaultUserAgent,
-      };
-
   /// Common browser headers for scraping (MangaLib, RanobeLib, etc.)
   static Map<String, String> browserHeaders({
     String? referer,

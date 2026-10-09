@@ -12,3 +12,6 @@ analyzer:
 linter:
   rules:
     avoid_print: true
+    unawaited_futures: true
+    prefer_const_constructors: true
+    prefer_const_declarations: true

@@ -1,6 +1,7 @@
 export 'di/backend_providers.dart';
 
 // Core Models & Utils
+export 'package:gel_rule_app/core/utils/logger.dart';
 export 'package:gel_rule_app/core/models/post.dart';
 export 'package:gel_rule_app/core/models/post_comment.dart';
 export 'package:gel_rule_app/core/models/post_note.dart';
@@ -8,6 +9,8 @@ export 'package:gel_rule_app/core/models/tag_suggestion.dart';
 export 'package:gel_rule_app/core/models/top_period_filter.dart';
 export 'package:gel_rule_app/core/models/provider_health.dart';
 export 'package:gel_rule_app/core/models/provider_diagnostics.dart';
+export 'package:gel_rule_app/core/models/cloud_media_link.dart';
+export 'package:gel_rule_app/core/utils/cloud_link_extractor.dart';
 export 'package:gel_rule_app/core/utils/smart_blacklist.dart';
 export 'package:gel_rule_app/core/utils/media_quality.dart';
 
@@ -45,12 +48,10 @@ export 'package:gel_rule_app/features/viewed/domain/viewed_history_service.dart'
 // Feature: Downloads
 export 'package:gel_rule_app/features/downloads/models/download_task.dart';
 export 'package:gel_rule_app/features/downloads/models/downloaded_media.dart';
-export 'package:gel_rule_app/features/downloads/models/cloud_media_link.dart';
 export 'package:gel_rule_app/features/downloads/data/downloaded_media_repository.dart';
 export 'package:gel_rule_app/features/downloads/domain/download_service.dart';
 export 'package:gel_rule_app/features/downloads/domain/download_manager_service.dart';
 export 'package:gel_rule_app/features/downloads/domain/downloaded_media_service.dart';
-export 'package:gel_rule_app/features/downloads/domain/cloud_link_extractor.dart';
 
 // Feature: Settings & Backup
 export 'package:gel_rule_app/features/settings/models/app_update_info.dart';

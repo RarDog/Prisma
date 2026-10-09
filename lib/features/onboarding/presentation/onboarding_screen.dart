@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -70,7 +71,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Future<void> _setLanguage(String langCode) async {
-    HapticFeedback.selectionClick();
+    unawaited(HapticFeedback.selectionClick());
     final settingsService = ref.read(settingsServiceProvider);
     final result = await settingsService.getSettings();
     if (result is Success<AppSettings>) {
@@ -188,7 +189,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         count++;
       }
     } catch (e) {
-      debugPrint('Error saving onboarding API keys: $e');
+      AppLogger.error('Error saving onboarding API keys', e);
     } finally {
       if (mounted) {
         setState(() {
@@ -201,7 +202,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Future<void> _finishOnboarding() async {
-    HapticFeedback.mediumImpact();
+    unawaited(HapticFeedback.mediumImpact());
     await ref.read(onboardingServiceProvider).markCompleted();
     if (mounted) {
       context.go('/');
