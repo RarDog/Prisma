@@ -41,7 +41,8 @@ void main() {
       final restored = FavoriteArtistItem.fromJson(json);
       expect(restored.key, equals(item.key));
       expect(restored.name, equals('CoolArtist'));
-      expect(restored.avatarUrl, equals('https://pawchive.pw/icons/fanbox/12345'));
+      expect(
+          restored.avatarUrl, equals('https://pawchive.pw/icons/fanbox/12345'));
       expect(restored == item, isTrue);
     });
 
@@ -120,7 +121,8 @@ void main() {
   });
 
   group('PawchiveSyncService Tests', () {
-    test('fetchRemoteFavoriteArtists parses server response correctly', () async {
+    test('fetchRemoteFavoriteArtists parses server response correctly',
+        () async {
       final dio = Dio();
       dio.httpClientAdapter = _FakeAdapter((options) async {
         if (options.path.endsWith('/account/favorites') &&
@@ -164,14 +166,16 @@ void main() {
       expect(items[0].id, equals('98765'));
       expect(items[0].service, equals('fanbox'));
       expect(items[0].name, equals('AlphaCreator'));
-      expect(items[0].avatarUrl, equals('https://pawchive.pw/icons/fanbox/98765'));
+      expect(
+          items[0].avatarUrl, equals('https://pawchive.pw/icons/fanbox/98765'));
 
       expect(items[1].id, equals('43210'));
       expect(items[1].service, equals('patreon'));
       expect(items[1].name, equals('BetaCreator'));
     });
 
-    test('syncAccountFavorites merges remote artists into AppSettings', () async {
+    test('syncAccountFavorites merges remote artists into AppSettings',
+        () async {
       final dio = Dio();
       dio.httpClientAdapter = _FakeAdapter((options) async {
         final payload = jsonEncode([
@@ -222,7 +226,8 @@ void main() {
 
       expect(result.isSuccess, isTrue);
       expect(result.totalSyncedCount, equals(2));
-      expect(result.newlyAddedToLocal, equals(1)); // remote_1 added, existing_local skipped
+      expect(result.newlyAddedToLocal,
+          equals(1)); // remote_1 added, existing_local skipped
       expect(result.updatedSettings.favoriteArtists.length, equals(2));
     });
 
@@ -253,7 +258,8 @@ void main() {
       );
       expect(addResult, isTrue);
       expect(lastMethod, equals('POST'));
-      expect(lastPath, equals('https://pawchive.pw/api/v1/favorites/creator/fanbox/12345'));
+      expect(lastPath,
+          equals('https://pawchive.pw/api/v1/favorites/creator/fanbox/12345'));
 
       final removeResult = await service.toggleRemoteFavorite(
         account: account,
@@ -263,10 +269,12 @@ void main() {
       );
       expect(removeResult, isTrue);
       expect(lastMethod, equals('DELETE'));
-      expect(lastPath, equals('https://pawchive.pw/api/v1/favorites/creator/fanbox/12345'));
+      expect(lastPath,
+          equals('https://pawchive.pw/api/v1/favorites/creator/fanbox/12345'));
     });
 
-    test('pushLocalFavoritesToAccount exports local artists to Pawchive', () async {
+    test('pushLocalFavoritesToAccount exports local artists to Pawchive',
+        () async {
       final postedPaths = <String>[];
       final dio = Dio();
       dio.httpClientAdapter = _FakeAdapter((options) async {
@@ -340,8 +348,10 @@ void main() {
       expect(pushResult.totalLocalCandidates, equals(3));
       expect(pushResult.totalRemoteCount, equals(3)); // 1 existing + 2 pushed
       expect(postedPaths.length, equals(2));
-      expect(postedPaths[0], contains('/api/v1/favorites/creator/patreon/local_creator_99'));
-      expect(postedPaths[1], contains('/api/v1/favorites/creator/subscribestar/local_creator_88'));
+      expect(postedPaths[0],
+          contains('/api/v1/favorites/creator/patreon/local_creator_99'));
+      expect(postedPaths[1],
+          contains('/api/v1/favorites/creator/subscribestar/local_creator_88'));
     });
   });
 }

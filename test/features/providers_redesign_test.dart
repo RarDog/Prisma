@@ -42,7 +42,8 @@ void main() {
     TestWidgetsFlutterBinding.ensureInitialized();
   });
 
-  testWidgets('ProvidersScreen renders overview card, provider cards, and actions',
+  testWidgets(
+      'ProvidersScreen renders overview card, provider cards, and actions',
       (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1.0;

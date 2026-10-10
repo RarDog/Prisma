@@ -224,8 +224,7 @@ class PixivProvider
             queryParameters: {'lang': 'en', ..._queryParameters},
             options: _authOptions,
           );
-          if (pagesResponse.data is Map &&
-              pagesResponse.data['body'] is List) {
+          if (pagesResponse.data is Map && pagesResponse.data['body'] is List) {
             final pages = pagesResponse.data['body'] as List;
             if (pageIndex < pages.length) {
               final child = PixivMapper.postFromPageResponse(

@@ -60,7 +60,8 @@ class OnboardingService {
       final providersResult = await providerRepository.getProviders();
       if (providersResult is Success<List<ContentProviderConfig>>) {
         if (hasAnyProviderApiKey(providersResult.data)) {
-          AppLogger.log('Onboarding: skipped because API key already configured.');
+          AppLogger.log(
+              'Onboarding: skipped because API key already configured.');
           await markCompleted();
           return false;
         }

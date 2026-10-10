@@ -25,7 +25,9 @@ class SearchRepository {
           ..query = history.query
           ..tags = history.tags
           ..searchedAt = history.searchedAt
-          ..resultCount = history.resultCount,
+          ..resultCount = history.resultCount
+          ..providerId = history.providerId
+          ..providerName = history.providerName,
       );
       final count = await isar.searchHistoryEntitys.count();
       if (count > maxItems) {

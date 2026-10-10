@@ -1,4 +1,3 @@
-const appDisplayVersion = '4.1.7';
-const appBuildNumber = 115;
+const appDisplayVersion = '4.1.8';
+const appBuildNumber = 116;
 const appReleaseChannel = 'Stable';
-

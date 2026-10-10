@@ -18,6 +18,7 @@ import 'package:gel_rule_app/shared/widgets/error_view.dart';
 import 'package:gel_rule_app/shared/widgets/keyboard_shortcut_utils.dart';
 import 'package:gel_rule_app/shared/widgets/post_card.dart';
 import 'package:gel_rule_app/shared/widgets/post_masonry_grid.dart';
+import 'package:gel_rule_app/shared/widgets/provider_health_banner.dart';
 import 'package:gel_rule_app/features/collections/presentation/collection_form_dialog.dart';
 import 'package:gel_rule_app/features/favorites/presentation/favorites_controller.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
@@ -39,6 +40,8 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
   final Set<String> _selectedKeys = {};
   bool _selectionMode = false;
   bool _showScrollToTop = false;
+  bool _toolbarVisible = true;
+  double _lastScrollOffset = 0;
   String? _appliedInitialQuery;
   Timer? _scrollSaveDebounce;
   double _lastKnownScrollOffset = 0;
@@ -48,15 +51,28 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _scrollController.addListener(() {
+      final offset = _scrollController.offset;
       if (_scrollController.position.extentAfter < 800) {
         ref.read(feedControllerProvider.notifier).loadNextPage();
       }
-      _lastKnownScrollOffset = _scrollController.offset;
+      _lastKnownScrollOffset = offset;
       final shouldShow =
-          _scrollController.hasClients && _scrollController.offset > 1200;
+          _scrollController.hasClients && offset > 1200;
       if (shouldShow != _showScrollToTop) {
         setState(() => _showScrollToTop = shouldShow);
       }
+
+      // Responsive scroll: collapses on intentional downward scroll (28px),
+      // and immediately reveals on any gentle upward movement (6px) or when near top.
+      if (offset <= 80) {
+        if (!_toolbarVisible) setState(() => _toolbarVisible = true);
+      } else if (offset > _lastScrollOffset + 28) {
+        if (_toolbarVisible) setState(() => _toolbarVisible = false);
+      } else if (offset < _lastScrollOffset - 6) {
+        if (!_toolbarVisible) setState(() => _toolbarVisible = true);
+      }
+      _lastScrollOffset = offset;
+
       _scrollSaveDebounce?.cancel();
       _scrollSaveDebounce = Timer(const Duration(milliseconds: 600), () {
         ref
@@ -83,8 +99,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
   void didUpdateWidget(covariant FeedScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     final nextQuery = widget.initialQuery;
-    if (nextQuery != null &&
-        nextQuery != oldWidget.initialQuery) {
+    if (nextQuery != null && nextQuery != oldWidget.initialQuery) {
       _appliedInitialQuery = nextQuery;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -261,91 +276,104 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
             ),
             data: (state) => Column(
               children: [
-                // --- Search Presets Bar ---
-                if (settings.searchPresets.isNotEmpty)
-                  _SearchPresetsBar(
-                    presets: settings.searchPresets,
-                    currentTags: state.selectedTags,
-                    onApply: (preset) {
-                      final decoded =
-                          _decodePreset(preset);
-                      _submitSearch(decoded['tags'] ?? '');
-                    },
-                    onDelete: (preset) async {
-                      final updated = settings.searchPresets
-                          .where((p) => p != preset)
-                          .toList();
-                      await ref
-                          .read(settingsControllerProvider.notifier)
-                          .saveSettings(
-                              settings.copyWith(searchPresets: updated));
-                    },
+                // --- Offline sources notice ---
+                const ProviderHealthBanner(),
+                AnimatedCrossFade(
+                  firstChild: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (settings.searchPresets.isNotEmpty)
+                        _SearchPresetsBar(
+                          presets: settings.searchPresets,
+                          currentTags: state.selectedTags,
+                          onApply: (preset) {
+                            final decoded = _decodePreset(preset);
+                            _submitSearch(decoded['tags'] ?? '');
+                          },
+                          onDelete: (preset) async {
+                            final updated = settings.searchPresets
+                                .where((p) => p != preset)
+                                .toList();
+                            await ref
+                                .read(settingsControllerProvider.notifier)
+                                .saveSettings(
+                                    settings.copyWith(searchPresets: updated));
+                          },
+                        ),
+                      FeedToolbar(
+                        selectedTags: state.selectedTags,
+                        selectedProviderIds: state.selectedProviderIds,
+                        topPeriodFilter: state.topPeriodFilter,
+                        tagSuggestions: state.tagSuggestions,
+                        providers: state.providers,
+                        rating: state.ratingFilter,
+                        providerStatusMessage: state.providerStatusMessage,
+                        onSearchChanged: (query) => ref
+                            .read(feedControllerProvider.notifier)
+                            .updateTagSuggestions(query),
+                        onSuggestionTap: _submitSearch,
+                        onTopPeriodChanged: (period) => ref
+                            .read(feedControllerProvider.notifier)
+                            .setTopPeriod(period),
+                        onSearch: _submitSearch,
+                        onRefresh: () =>
+                            ref.read(feedControllerProvider.notifier).refresh(),
+                        onClearFilters: _clearFilters,
+                        onRandom: () => _openRandom(state.posts),
+                        selectionMode: _selectionMode,
+                        onToggleSelectionMode: () {
+                          setState(() {
+                            _selectionMode = !_selectionMode;
+                            if (!_selectionMode) _selectedKeys.clear();
+                          });
+                        },
+                        onQuickProviderToggle: (providerId) {
+                          if (providerId == '__all__') {
+                            ref
+                                .read(feedControllerProvider.notifier)
+                                .setProviders([]);
+                            return;
+                          }
+                          final selected =
+                              state.selectedProviderIds.contains(providerId)
+                                  ? state.selectedProviderIds
+                                      .where((id) => id != providerId)
+                                      .toList()
+                                  : [...state.selectedProviderIds, providerId];
+                          ref
+                              .read(feedControllerProvider.notifier)
+                              .setProviders(selected);
+                        },
+                        onProviderFilter: () async {
+                          final selected = await showProviderFilterSheet(
+                            context,
+                            providers: state.providers,
+                            selectedIds: state.selectedProviderIds,
+                          );
+                          if (selected != null) {
+                            await ref
+                                .read(feedControllerProvider.notifier)
+                                .setProviders(selected);
+                          }
+                        },
+                        onRatingFilter: () async {
+                          final result = await showRatingFilterSheet(
+                              context, state.ratingFilter);
+                          if (result != null) {
+                            await ref
+                                .read(feedControllerProvider.notifier)
+                                .setRating(result.rating);
+                          }
+                        },
+                      ),
+                    ],
                   ),
-                FeedToolbar(
-                  selectedTags: state.selectedTags,
-                  selectedProviderIds: state.selectedProviderIds,
-                  topPeriodFilter: state.topPeriodFilter,
-                  tagSuggestions: state.tagSuggestions,
-                  providers: state.providers,
-                  rating: state.ratingFilter,
-                  providerStatusMessage: state.providerStatusMessage,
-                  onSearchChanged: (query) => ref
-                      .read(feedControllerProvider.notifier)
-                      .updateTagSuggestions(query),
-                  onSuggestionTap: _submitSearch,
-                  onTopPeriodChanged: (period) => ref
-                      .read(feedControllerProvider.notifier)
-                      .setTopPeriod(period),
-                  onSearch: _submitSearch,
-                  onRefresh: () =>
-                      ref.read(feedControllerProvider.notifier).refresh(),
-                  onClearFilters: _clearFilters,
-                  onRandom: () => _openRandom(state.posts),
-                  selectionMode: _selectionMode,
-                  onToggleSelectionMode: () {
-                    setState(() {
-                      _selectionMode = !_selectionMode;
-                      if (!_selectionMode) _selectedKeys.clear();
-                    });
-                  },
-                  onQuickProviderToggle: (providerId) {
-                    if (providerId == '__all__') {
-                      ref
-                          .read(feedControllerProvider.notifier)
-                          .setProviders([]);
-                      return;
-                    }
-                    final selected =
-                        state.selectedProviderIds.contains(providerId)
-                            ? state.selectedProviderIds
-                                .where((id) => id != providerId)
-                                .toList()
-                            : [...state.selectedProviderIds, providerId];
-                    ref
-                        .read(feedControllerProvider.notifier)
-                        .setProviders(selected);
-                  },
-                  onProviderFilter: () async {
-                    final selected = await showProviderFilterSheet(
-                      context,
-                      providers: state.providers,
-                      selectedIds: state.selectedProviderIds,
-                    );
-                    if (selected != null) {
-                      await ref
-                          .read(feedControllerProvider.notifier)
-                          .setProviders(selected);
-                    }
-                  },
-                  onRatingFilter: () async {
-                    final result = await showRatingFilterSheet(
-                        context, state.ratingFilter);
-                    if (result != null) {
-                      await ref
-                          .read(feedControllerProvider.notifier)
-                          .setRating(result.rating);
-                    }
-                  },
+                  secondChild: const SizedBox.shrink(),
+                  crossFadeState: _toolbarVisible
+                      ? CrossFadeState.showFirst
+                      : CrossFadeState.showSecond,
+                  duration: const Duration(milliseconds: 220),
+                  sizeCurve: Curves.easeInOutCubic,
                 ),
                 Expanded(
                   child: state.posts.isEmpty && !state.isLoadingMore
@@ -504,9 +532,8 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
     List<Post> posts, [
     Set<String>? favoriteKeys,
   ]) async {
-    final keys = favoriteKeys ??
-        ref.read(favoriteKeysProvider).value ??
-        <String>{};
+    final keys =
+        favoriteKeys ?? ref.read(favoriteKeysProvider).value ?? <String>{};
     for (final post in _selectedPosts(posts)) {
       if (!keys.contains(post.cacheKey)) {
         await ref.read(favoriteServiceProvider).addFavorite(post);
@@ -860,7 +887,8 @@ class _SearchPresetsBar extends StatelessWidget {
           final active = currentTags.join(' ') == tags;
           return GestureDetector(
             onLongPress: () {
-              final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
+              final isRu =
+                  Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
               showDialog<void>(
                 context: context,
                 builder: (ctx) => AlertDialog(
@@ -910,4 +938,3 @@ class _SearchPresetsBar extends StatelessWidget {
     );
   }
 }
-

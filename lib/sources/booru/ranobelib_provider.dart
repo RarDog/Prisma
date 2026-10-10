@@ -95,7 +95,8 @@ class RanobeLibProvider
         queryParams['q'] = queryText;
       }
 
-      if (topPeriod == TopPeriodFilter.day || topPeriod == TopPeriodFilter.week) {
+      if (topPeriod == TopPeriodFilter.day ||
+          topPeriod == TopPeriodFilter.week) {
         queryParams['sort_by'] = 'views';
         queryParams['sort_type'] = 'desc';
       } else {
@@ -115,7 +116,9 @@ class RanobeLibProvider
       final data = response.data;
       if (data == null) return [];
 
-      final items = data is Map ? (data['data'] as List<dynamic>? ?? []) : (data is List ? data : []);
+      final items = data is Map
+          ? (data['data'] as List<dynamic>? ?? [])
+          : (data is List ? data : []);
       final posts = <Post>[];
 
       for (final raw in items) {
@@ -126,10 +129,13 @@ class RanobeLibProvider
         if (slugUrl.isEmpty) continue;
 
         final rusName = map['rus_name']?.toString() ?? '';
-        final engName = map['eng_name']?.toString() ?? map['name']?.toString() ?? '';
+        final engName =
+            map['eng_name']?.toString() ?? map['name']?.toString() ?? '';
         final title = rusName.isNotEmpty ? rusName : engName;
 
-        final coverMap = map['cover'] is Map ? Map<String, dynamic>.from(map['cover'] as Map) : null;
+        final coverMap = map['cover'] is Map
+            ? Map<String, dynamic>.from(map['cover'] as Map)
+            : null;
         final coverUrl = coverMap?['default']?.toString() ??
             coverMap?['thumbnail']?.toString() ??
             'https://cover.cdnlibs.org/uploads/cover/$slug/cover/cover.jpg';
@@ -138,7 +144,8 @@ class RanobeLibProvider
         if (map['genres'] is List) {
           for (final g in map['genres'] as List) {
             if (g is Map && g['name'] != null) {
-              genres.add(g['name'].toString().toLowerCase().replaceAll(' ', '_'));
+              genres
+                  .add(g['name'].toString().toLowerCase().replaceAll(' ', '_'));
             }
           }
         }
@@ -156,11 +163,16 @@ class RanobeLibProvider
             height: 600,
             tags: [
               ...genres,
-              if (rusName.isNotEmpty) rusName.toLowerCase().replaceAll(' ', '_'),
-              if (engName.isNotEmpty) engName.toLowerCase().replaceAll(' ', '_'),
+              if (rusName.isNotEmpty)
+                rusName.toLowerCase().replaceAll(' ', '_'),
+              if (engName.isNotEmpty)
+                engName.toLowerCase().replaceAll(' ', '_'),
             ],
             rating: 's',
-            score: (double.tryParse(map['rating']?['average']?.toString() ?? '0') ?? 0).round(),
+            score: (double.tryParse(
+                        map['rating']?['average']?.toString() ?? '0') ??
+                    0)
+                .round(),
             source: 'https://ranobelib.me/ru/$slugUrl',
             createdAt: DateTime.now(),
             tagGroups: {
@@ -169,7 +181,8 @@ class RanobeLibProvider
               'type': ['novel'],
               if (rusName.isNotEmpty) 'rus_title': [rusName],
               if (engName.isNotEmpty) 'eng_title': [engName],
-              if (map['summary'] != null) 'description': [map['summary'].toString()],
+              if (map['summary'] != null)
+                'description': [map['summary'].toString()],
             },
           ),
         );
@@ -177,7 +190,8 @@ class RanobeLibProvider
 
       return posts;
     } on DioException catch (e) {
-      throw BadResponseException(e.message ?? 'RanobeLib API error', details: e.toString());
+      throw BadResponseException(e.message ?? 'RanobeLib API error',
+          details: e.toString());
     }
   }
 
@@ -195,15 +209,19 @@ class RanobeLibProvider
       );
       final data = response.data;
       if (data == null || data is! Map) return null;
-      final map = Map<String, dynamic>.from(data['data'] is Map ? data['data'] as Map : data);
+      final map = Map<String, dynamic>.from(
+          data['data'] is Map ? data['data'] as Map : data);
 
       final slug = map['slug']?.toString() ?? postId;
       final slugUrl = map['slug_url']?.toString() ?? slug;
       final rusName = map['rus_name']?.toString() ?? '';
-      final engName = map['eng_name']?.toString() ?? map['name']?.toString() ?? '';
+      final engName =
+          map['eng_name']?.toString() ?? map['name']?.toString() ?? '';
       final title = rusName.isNotEmpty ? rusName : engName;
 
-      final coverMap = map['cover'] is Map ? Map<String, dynamic>.from(map['cover'] as Map) : null;
+      final coverMap = map['cover'] is Map
+          ? Map<String, dynamic>.from(map['cover'] as Map)
+          : null;
       final coverUrl = coverMap?['default']?.toString() ??
           coverMap?['thumbnail']?.toString() ??
           'https://cover.cdnlibs.org/uploads/cover/$slug/cover/cover.jpg';
@@ -231,7 +249,9 @@ class RanobeLibProvider
         height: 600,
         tags: genres,
         rating: 's',
-        score: (double.tryParse(map['rating']?['average']?.toString() ?? '0') ?? 0).round(),
+        score:
+            (double.tryParse(map['rating']?['average']?.toString() ?? '0') ?? 0)
+                .round(),
         source: 'https://ranobelib.me/ru/$slugUrl',
         createdAt: DateTime.now(),
         tagGroups: {
@@ -261,7 +281,9 @@ class RanobeLibProvider
 
       final data = response.data;
       if (data == null) return [];
-      final list = data is Map ? (data['data'] as List<dynamic>? ?? []) : (data is List ? data : []);
+      final list = data is Map
+          ? (data['data'] as List<dynamic>? ?? [])
+          : (data is List ? data : []);
 
       final chapters = <MangaDexChapter>[];
       for (final raw in list) {
@@ -300,7 +322,8 @@ class RanobeLibProvider
 
       return chapters;
     } catch (e, st) {
-      AppLogger.log('RanobeLibProvider.fetchChapters error for $novelId', e, st);
+      AppLogger.log(
+          'RanobeLibProvider.fetchChapters error for $novelId', e, st);
       return [];
     }
   }
@@ -334,7 +357,8 @@ class RanobeLibProvider
       } on DioException {
         // If query with branch_id failed, retry without branch_id
         if (queryParams.containsKey('branch_id')) {
-          final fallbackParams = Map<String, dynamic>.from(queryParams)..remove('branch_id');
+          final fallbackParams = Map<String, dynamic>.from(queryParams)
+            ..remove('branch_id');
           response = await _dio.get(
             '$_apiBase/manga/$novelSlug/chapter',
             queryParameters: fallbackParams,
@@ -365,21 +389,26 @@ class RanobeLibProvider
       for (final att in attachments) {
         if (att is Map && att['url'] != null) {
           final rawUrl = att['url'].toString();
-          final fullUrl = rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
-              ? rawUrl
-              : (rawUrl.startsWith('/') ? 'https://ranobelib.me$rawUrl' : 'https://ranobelib.me/$rawUrl');
+          final fullUrl =
+              rawUrl.startsWith('http://') || rawUrl.startsWith('https://')
+                  ? rawUrl
+                  : (rawUrl.startsWith('/')
+                      ? 'https://ranobelib.me$rawUrl'
+                      : 'https://ranobelib.me/$rawUrl');
           imageAttachmentUrls.add(fullUrl);
         }
       }
 
       // If text is empty (e.g. initial illustrations chapter) or has attachments:
       if (parsed.isEmpty && imageAttachmentUrls.isNotEmpty) {
-        parsed = imageAttachmentUrls.map((u) => '![illustration]($u)').join('\n\n');
+        parsed =
+            imageAttachmentUrls.map((u) => '![illustration]($u)').join('\n\n');
       }
 
       return parsed.trim();
     } catch (e, st) {
-      AppLogger.log('RanobeLib fetchChapterContent error for $chapterId', e, st);
+      AppLogger.log(
+          'RanobeLib fetchChapterContent error for $chapterId', e, st);
       return '';
     }
   }
@@ -412,9 +441,12 @@ class RanobeLibProvider
       } else if (type == 'image') {
         final src = attrs?['src']?.toString() ?? attrs?['url']?.toString();
         if (src != null && src.isNotEmpty) {
-          final fullSrc = src.startsWith('http://') || src.startsWith('https://')
-              ? src
-              : (src.startsWith('/') ? 'https://ranobelib.me$src' : 'https://ranobelib.me/$src');
+          final fullSrc =
+              src.startsWith('http://') || src.startsWith('https://')
+                  ? src
+                  : (src.startsWith('/')
+                      ? 'https://ranobelib.me$src'
+                      : 'https://ranobelib.me/$src');
           buffer.write('\n\n![illustration]($fullSrc)\n\n');
         }
       } else if (type == 'hardBreak') {
@@ -441,7 +473,8 @@ class RanobeLibProvider
     if (html.isEmpty) return '';
     return html
         .replaceAllMapped(
-          RegExp(r'''<img[^>]+src=["']([^"']+)["'][^>]*>''', caseSensitive: false),
+          RegExp(r'''<img[^>]+src=["']([^"']+)["'][^>]*>''',
+              caseSensitive: false),
           (match) {
             final src = match.group(1) ?? '';
             return '\n\n![illustration]($src)\n\n';
@@ -474,7 +507,8 @@ class RanobeLibProvider
   }
 
   @override
-  Future<List<TagSuggestion>> suggestTags(String query, {int limit = 20}) async {
+  Future<List<TagSuggestion>> suggestTags(String query,
+      {int limit = 20}) async {
     if (query.trim().isEmpty) return [];
     try {
       final posts = await searchPosts(tags: [query], page: 0, limit: limit);

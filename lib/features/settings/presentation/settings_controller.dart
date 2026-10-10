@@ -12,9 +12,15 @@ final settingsControllerProvider =
 class SettingsController extends AsyncNotifier<AppSettings> {
   @override
   Future<AppSettings> build() async {
+    final dbAsync = ref.watch(appDatabaseProvider);
+    if (!dbAsync.hasValue) {
+      return AppSettings.defaults;
+    }
     try {
       final result = await ref.read(settingsServiceProvider).getSettings();
-      return result is Success<AppSettings> ? result.data : AppSettings.defaults;
+      return result is Success<AppSettings>
+          ? result.data
+          : AppSettings.defaults;
     } catch (_) {
       return AppSettings.defaults;
     }
@@ -22,10 +28,15 @@ class SettingsController extends AsyncNotifier<AppSettings> {
 
   Future<void> saveSettings(AppSettings settings) async {
     state = AsyncData(settings);
+    final dbAsync = ref.read(appDatabaseProvider);
+    if (!dbAsync.hasValue) {
+      ref.invalidate(appSettingsProvider);
+      return;
+    }
     try {
       await ref.read(settingsServiceProvider).updateSettings(settings);
     } catch (e) {
-      const AppLogger().debug('Could not persist settings', e);
+      AppLogger.debug('Could not persist settings', e);
     }
     ref.invalidate(appSettingsProvider);
   }

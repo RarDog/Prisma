@@ -269,16 +269,6 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
                           apiType: 'mangadex',
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      _PresetChip(
-                        name: 'Fapello',
-                        color: const Color(0xFFE8467C),
-                        onTap: () => _applyPreset(
-                          name: 'Fapello',
-                          baseUrl: 'https://fapello.com',
-                          apiType: 'fapello',
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -363,10 +353,6 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
                           child: Text('Realbooru HTML'),
                         ),
                         DropdownMenuItem(
-                          value: 'fapello',
-                          child: Text('Fapello (HTML, artists only)'),
-                        ),
-                        DropdownMenuItem(
                           value: 'custom',
                           child: Text('Custom REST API'),
                         ),
@@ -400,7 +386,9 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              isRu ? 'Включить этот источник' : 'Enable provider',
+                              isRu
+                                  ? 'Включить этот источник'
+                                  : 'Enable provider',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
@@ -742,11 +730,12 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
       final now = DateTime.now();
       final id = widget.initialConfig?.id ??
           nameText.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_');
-      
+
       Map<String, dynamic> headersJson = {};
       try {
         if (_headers.text.trim().isNotEmpty) {
-          headersJson = jsonDecode(_headers.text.trim()) as Map<String, dynamic>;
+          headersJson =
+              jsonDecode(_headers.text.trim()) as Map<String, dynamic>;
         }
       } catch (_) {
         // Fallback to empty if parse error
@@ -800,8 +789,8 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
 
   Map<String, String> _visibleHeaders(Map<String, String> headers) {
     return Map<String, String>.from(headers)
-      ..removeWhere(
-          (key, _) => key.startsWith('query.') || key.toLowerCase() == 'phpsessid');
+      ..removeWhere((key, _) =>
+          key.startsWith('query.') || key.toLowerCase() == 'phpsessid');
   }
 }
 
@@ -1095,9 +1084,8 @@ class _GlassDropdown extends StatelessWidget {
       initialValue: value,
       items: items,
       onChanged: onChanged,
-      dropdownColor: isDark
-          ? theme.colorScheme.surfaceContainerHighest
-          : Colors.white,
+      dropdownColor:
+          isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
       borderRadius: BorderRadius.circular(16),
       decoration: InputDecoration(
         labelText: label,

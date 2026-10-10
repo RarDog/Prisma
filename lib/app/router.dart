@@ -24,10 +24,17 @@ import 'package:gel_rule_app/features/viewed/presentation/viewed_screen.dart';
 import 'package:gel_rule_app/shared/widgets/animated_branch_container.dart';
 import 'package:gel_rule_app/shared/widgets/app_shell.dart';
 
-final branchNavKeys = List.generate(9, (_) => GlobalKey<NavigatorState>());
+final branchNavKeysProvider = Provider<List<GlobalKey<NavigatorState>>>((ref) {
+  return List.generate(9, (_) => GlobalKey<NavigatorState>());
+});
+
+List<GlobalKey<NavigatorState>> get branchNavKeys => _fallbackBranchNavKeys;
+final _fallbackBranchNavKeys =
+    List.generate(9, (_) => GlobalKey<NavigatorState>());
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final showOnboarding = ref.watch(shouldShowOnboardingProvider);
+  final branchKeys = ref.watch(branchNavKeysProvider);
   return GoRouter(
     initialLocation: showOnboarding ? '/onboarding' : '/',
     routes: [
@@ -47,19 +54,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
         branches: [
           StatefulShellBranch(
-            navigatorKey: branchNavKeys[0],
+            navigatorKey: branchKeys[0],
             routes: [
               GoRoute(
                 path: '/',
                 pageBuilder: (context, state) => _transitionPage(
                   state,
-                  child: FeedScreen(initialQuery: state.uri.queryParameters['q']),
+                  child:
+                      FeedScreen(initialQuery: state.uri.queryParameters['q']),
                 ),
               ),
             ],
           ),
           StatefulShellBranch(
-            navigatorKey: branchNavKeys[1],
+            navigatorKey: branchKeys[1],
             routes: [
               GoRoute(
                 path: '/search',
@@ -70,7 +78,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
-            navigatorKey: branchNavKeys[2],
+            navigatorKey: branchKeys[2],
             routes: [
               GoRoute(
                 path: '/favorites',
@@ -79,7 +87,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
-            navigatorKey: branchNavKeys[3],
+            navigatorKey: branchKeys[3],
             routes: [
               GoRoute(
                 path: '/viewed',
@@ -88,7 +96,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
-            navigatorKey: branchNavKeys[4],
+            navigatorKey: branchKeys[4],
             routes: [
               GoRoute(
                 path: '/collections',
@@ -105,7 +113,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
-            navigatorKey: branchNavKeys[5],
+            navigatorKey: branchKeys[5],
             routes: [
               GoRoute(
                 path: '/artists',
@@ -126,7 +134,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
-            navigatorKey: branchNavKeys[6],
+            navigatorKey: branchKeys[6],
             routes: [
               GoRoute(
                 path: '/manga',
@@ -135,7 +143,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
-            navigatorKey: branchNavKeys[7],
+            navigatorKey: branchKeys[7],
             routes: [
               GoRoute(
                 path: '/providers',
@@ -158,7 +166,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
-            navigatorKey: branchNavKeys[8],
+            navigatorKey: branchKeys[8],
             routes: [
               GoRoute(
                 path: '/settings',

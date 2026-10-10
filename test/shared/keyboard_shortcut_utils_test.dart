@@ -8,7 +8,8 @@ class _TestIntent extends Intent {
 }
 
 void main() {
-  testWidgets('NonTextInputAction triggers when no text input is focused', (tester) async {
+  testWidgets('NonTextInputAction triggers when no text input is focused',
+      (tester) async {
     var invoked = false;
 
     await tester.pumpWidget(
@@ -46,7 +47,8 @@ void main() {
     expect(invoked, isTrue);
   });
 
-  testWidgets('NonTextInputAction is disabled when TextField has focus', (tester) async {
+  testWidgets('NonTextInputAction is disabled when TextField has focus',
+      (tester) async {
     var invoked = false;
 
     await tester.pumpWidget(

@@ -104,9 +104,8 @@ class _ViewedScreenState extends ConsumerState<ViewedScreen> {
                           : 'Posts you open from the feed will appear here',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                     ),
                     const SizedBox(height: 24),
@@ -178,7 +177,10 @@ class _ViewedScreenState extends ConsumerState<ViewedScreen> {
                             gradient: LinearGradient(
                               colors: [
                                 Theme.of(context).colorScheme.primary,
-                                Theme.of(context).colorScheme.primary.withValues(alpha: 0.82),
+                                Theme.of(context)
+                                    .colorScheme
+                                    .primary
+                                    .withValues(alpha: 0.82),
                               ],
                             ),
                             borderRadius: BorderRadius.circular(9),
@@ -217,18 +219,20 @@ class _ViewedScreenState extends ConsumerState<ViewedScreen> {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).brightness == Brightness.dark
-                                ? Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHighest
-                                    .withValues(alpha: 0.5)
-                                : Theme.of(context)
-                                    .colorScheme
-                                    .primary
-                                    .withValues(alpha: 0.12),
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? Theme.of(context)
+                                        .colorScheme
+                                        .surfaceContainerHighest
+                                        .withValues(alpha: 0.5)
+                                    : Theme.of(context)
+                                        .colorScheme
+                                        .primary
+                                        .withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: Theme.of(context).brightness == Brightness.dark
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
                                   ? Colors.white.withValues(alpha: 0.08)
                                   : Theme.of(context)
                                       .colorScheme
@@ -243,8 +247,11 @@ class _ViewedScreenState extends ConsumerState<ViewedScreen> {
                                 .labelSmall
                                 ?.copyWith(
                                   fontWeight: FontWeight.w700,
-                                  color: Theme.of(context).brightness == Brightness.dark
-                                      ? Theme.of(context).colorScheme.onSurfaceVariant
+                                  color: Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant
                                       : Theme.of(context).colorScheme.primary,
                                 ),
                           ),
@@ -383,10 +390,8 @@ class _ViewedPostTile extends StatelessWidget {
                     end: Alignment.bottomRight,
                     colors: isDark
                         ? [
-                            scheme.surfaceContainerHigh
-                                .withValues(alpha: 0.58),
-                            scheme.surfaceContainerLow
-                                .withValues(alpha: 0.36),
+                            scheme.surfaceContainerHigh.withValues(alpha: 0.58),
+                            scheme.surfaceContainerLow.withValues(alpha: 0.36),
                           ]
                         : [
                             Colors.white.withValues(alpha: 0.88),
@@ -477,8 +482,8 @@ class _ViewedPostTile extends StatelessWidget {
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: scheme.primary
-                                        .withValues(alpha: isDark ? 0.20 : 0.12),
+                                    color: scheme.primary.withValues(
+                                        alpha: isDark ? 0.20 : 0.12),
                                     borderRadius: BorderRadius.circular(6),
                                     border: Border.all(
                                       color: scheme.primary.withValues(
@@ -514,10 +519,15 @@ class _ViewedPostTile extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            post.tags.isEmpty ? '#${post.id}' : post.tags.take(4).join(' '),
+                            post.tags.isEmpty
+                                ? '#${post.id}'
+                                : post.tags.take(4).join(' '),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
                                   fontWeight: FontWeight.w600,
                                   letterSpacing: -0.1,
                                 ),

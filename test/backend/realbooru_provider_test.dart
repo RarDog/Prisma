@@ -8,7 +8,9 @@ import 'package:gel_rule_app/core/http/dio_client.dart';
 
 void main() {
   group('RealbooruProvider Tests', () {
-    test('ProviderFactory creates RealbooruHtmlProvider from both realbooru and realbooru_html', () {
+    test(
+        'ProviderFactory creates RealbooruHtmlProvider from both realbooru and realbooru_html',
+        () {
       final factory = ProviderFactory();
       for (final apiType in ['realbooru', 'realbooru_html']) {
         final config = ContentProviderConfig(

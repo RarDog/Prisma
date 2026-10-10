@@ -130,7 +130,8 @@ void main() {
       );
     });
 
-    test('downloadMangaChapter downloads pages and notifies progress', () async {
+    test('downloadMangaChapter downloads pages and notifies progress',
+        () async {
       final dio = Dio();
       dio.interceptors.add(
         InterceptorsWrapper(
@@ -150,7 +151,8 @@ void main() {
       );
 
       final mangaTempDir = Directory.systemTemp.createTempSync('manga_test_');
-      final offlineService = MangaOfflineService(dio: dio, baseDir: mangaTempDir.path);
+      final offlineService =
+          MangaOfflineService(dio: dio, baseDir: mangaTempDir.path);
       const chapter = MangaDexChapter(
         id: 'ch-test-101',
         chapterNumber: '10',
@@ -177,15 +179,19 @@ void main() {
       expect(progressCalls, isNotEmpty);
       expect(progressCalls.last, equals(3));
 
-      final isDownloaded = await offlineService.isChapterDownloaded('manga-test-101', 'ch-test-101');
+      final isDownloaded = await offlineService.isChapterDownloaded(
+          'manga-test-101', 'ch-test-101');
       expect(isDownloaded, isTrue);
 
-      final downloadedPages = await offlineService.getDownloadedPages('manga-test-101', 'ch-test-101');
+      final downloadedPages = await offlineService.getDownloadedPages(
+          'manga-test-101', 'ch-test-101');
       expect(downloadedPages.length, equals(3));
 
       try {
-        await offlineService.deleteDownloadedChapter('manga-test-101', 'ch-test-101');
-        final isDeleted = await offlineService.isChapterDownloaded('manga-test-101', 'ch-test-101');
+        await offlineService.deleteDownloadedChapter(
+            'manga-test-101', 'ch-test-101');
+        final isDeleted = await offlineService.isChapterDownloaded(
+            'manga-test-101', 'ch-test-101');
         expect(isDeleted, isFalse);
       } finally {
         try {

@@ -70,9 +70,8 @@ class CollectionsScreen extends ConsumerWidget {
                           : 'Create themed collections and organize your favorite posts',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                     ),
                     const SizedBox(height: 24),
@@ -229,9 +228,10 @@ class _CollectionCard extends ConsumerWidget {
                           collection.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                         ),
                         if (collection.description != null &&
                             collection.description!.isNotEmpty) ...[
@@ -240,9 +240,10 @@ class _CollectionCard extends ConsumerWidget {
                             collection.description!,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: scheme.onSurfaceVariant,
-                                ),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: scheme.onSurfaceVariant,
+                                    ),
                           ),
                         ],
                       ],
@@ -317,7 +318,8 @@ class _CollectionCard extends ConsumerWidget {
         memCacheWidth: 260,
         memCacheHeight: 260,
         fit: BoxFit.cover,
-        placeholder: (_, __) => Container(color: scheme.surfaceContainerHighest),
+        placeholder: (_, __) =>
+            Container(color: scheme.surfaceContainerHighest),
         errorWidget: (_, __, ___) => Container(
           color: scheme.surfaceContainerHighest,
           child: const Icon(Icons.broken_image_rounded),

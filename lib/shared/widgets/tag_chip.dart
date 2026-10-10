@@ -38,7 +38,8 @@ class TagChip extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cat = _resolvedCategory;
 
-    final (Color baseColor, Color textColor) = _colorsForCategory(cat, scheme, isDark);
+    final (Color baseColor, Color textColor) =
+        _colorsForCategory(cat, scheme, isDark);
 
     return Container(
       decoration: BoxDecoration(
@@ -119,4 +120,3 @@ class TagChip extends StatelessWidget {
     };
   }
 }
-

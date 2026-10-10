@@ -70,7 +70,8 @@ class MangaOfflineService {
             try {
               final content = await infoFile.readAsString();
               final json = jsonDecode(content);
-              final origId = json['chapterId']?.toString() ?? entity.path.split('/').last;
+              final origId =
+                  json['chapterId']?.toString() ?? entity.path.split('/').last;
               list.add(origId);
             } catch (_) {
               list.add(entity.path.split('/').last);
@@ -84,7 +85,8 @@ class MangaOfflineService {
     }
   }
 
-  Future<List<String>> getDownloadedPages(String mangaId, String chapterId) async {
+  Future<List<String>> getDownloadedPages(
+      String mangaId, String chapterId) async {
     try {
       final dir = await _getChapterDir(mangaId, chapterId);
       final infoFile = File('${dir.path}/info.json');
@@ -93,7 +95,8 @@ class MangaOfflineService {
       final entities = await dir.list().toList();
       final files = entities
           .whereType<File>()
-          .where((f) => !f.path.endsWith('info.json') && !f.path.endsWith('.txt'))
+          .where(
+              (f) => !f.path.endsWith('info.json') && !f.path.endsWith('.txt'))
           .map((f) => f.path)
           .toList();
 
@@ -109,7 +112,8 @@ class MangaOfflineService {
     }
   }
 
-  Future<String?> getDownloadedNovelContent(String mangaId, String chapterId) async {
+  Future<String?> getDownloadedNovelContent(
+      String mangaId, String chapterId) async {
     try {
       final dir = await _getChapterDir(mangaId, chapterId);
       final textFile = File('${dir.path}/novel.txt');
@@ -147,7 +151,8 @@ class MangaOfflineService {
       await Future.wait(
         chunkIndices.map((idx) async {
           final url = pageUrls[idx];
-          final ext = url.contains('.') ? url.split('.').last.split('?').first : 'jpg';
+          final ext =
+              url.contains('.') ? url.split('.').last.split('?').first : 'jpg';
           final savePath = '${dir.path}/$idx.$ext';
           final file = File(savePath);
 

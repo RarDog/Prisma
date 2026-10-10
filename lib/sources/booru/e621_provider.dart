@@ -87,16 +87,19 @@ class E621Provider
       'meta:',
       'lore:',
     ];
-    return tags.map((t) {
-      final trimmed = t.trim();
-      final lower = trimmed.toLowerCase();
-      for (final prefix in stripPrefixes) {
-        if (lower.startsWith(prefix)) {
-          return trimmed.substring(prefix.length);
-        }
-      }
-      return trimmed;
-    }).where((t) => t.isNotEmpty).toList();
+    return tags
+        .map((t) {
+          final trimmed = t.trim();
+          final lower = trimmed.toLowerCase();
+          for (final prefix in stripPrefixes) {
+            if (lower.startsWith(prefix)) {
+              return trimmed.substring(prefix.length);
+            }
+          }
+          return trimmed;
+        })
+        .where((t) => t.isNotEmpty)
+        .toList();
   }
 
   @override
@@ -152,7 +155,8 @@ class E621Provider
         queryParameters: _queryParameters,
       );
       if (response.data is Map) {
-        return E621Pool.fromJson(Map<String, dynamic>.from(response.data as Map));
+        return E621Pool.fromJson(
+            Map<String, dynamic>.from(response.data as Map));
       }
     } catch (_) {}
     return null;

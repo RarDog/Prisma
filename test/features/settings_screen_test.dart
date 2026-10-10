@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gel_rule_app/app/app.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
 import 'package:gel_rule_app/features/settings/presentation/screens/filters_settings_screen.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_screen.dart';
 
 void main() {
-  testWidgets('SettingsScreen renders category quick nav and sections without overflow', (tester) async {
+  testWidgets(
+      'SettingsScreen renders category quick nav and sections without overflow',
+      (tester) async {
     // Test on typical mobile viewport: 390x844
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1.0;
@@ -27,6 +30,9 @@ void main() {
           settingsControllerProvider.overrideWith(
             () => _FakeSettingsController(settings),
           ),
+          // The screens read their strings through `appStringsProvider`,
+          // which resolves the language from the settings blob.
+          appSettingsProvider.overrideWith((ref) => settings),
         ],
         child: const MaterialApp(
           home: SettingsScreen(),
@@ -67,7 +73,9 @@ void main() {
     }
   });
 
-  testWidgets('FiltersSettingsScreen renders blacklisted tags and smart rules properly', (tester) async {
+  testWidgets(
+      'FiltersSettingsScreen renders blacklisted tags and smart rules properly',
+      (tester) async {
     tester.view.physicalSize = const Size(800, 1600);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
@@ -88,6 +96,9 @@ void main() {
           settingsControllerProvider.overrideWith(
             () => _FakeSettingsController(settings),
           ),
+          // The screens read their strings through `appStringsProvider`,
+          // which resolves the language from the settings blob.
+          appSettingsProvider.overrideWith((ref) => settings),
         ],
         child: const MaterialApp(
           home: FiltersSettingsScreen(),

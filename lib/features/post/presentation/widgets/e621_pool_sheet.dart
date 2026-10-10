@@ -160,7 +160,9 @@ class _E621PoolSheetState extends State<E621PoolSheet> {
                             const SizedBox(height: 12),
                             Text(
                               _error == '__not_found__'
-                                  ? (isRu ? 'Не удалось загрузить информацию о серии' : 'Failed to load series info')
+                                  ? (isRu
+                                      ? 'Не удалось загрузить информацию о серии'
+                                      : 'Failed to load series info')
                                   : '${isRu ? 'Ошибка: ' : 'Error: '}$_error',
                             ),
                             const SizedBox(height: 12),
@@ -235,9 +237,7 @@ class _E621PoolSheetState extends State<E621PoolSheet> {
                                     child: Text(
                                       pool.category == 'series'
                                           ? (isRu ? 'Комикс / Серия' : 'Series')
-                                          : (isRu
-                                              ? 'Коллекция'
-                                              : 'Collection'),
+                                          : (isRu ? 'Коллекция' : 'Collection'),
                                       style: const TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
@@ -251,7 +251,8 @@ class _E621PoolSheetState extends State<E621PoolSheet> {
                                     decoration: BoxDecoration(
                                       color: isDark
                                           ? Colors.white.withValues(alpha: 0.08)
-                                          : Colors.black.withValues(alpha: 0.05),
+                                          : Colors.black
+                                              .withValues(alpha: 0.05),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
@@ -259,8 +260,8 @@ class _E621PoolSheetState extends State<E621PoolSheet> {
                                       style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w500,
-                                        color: theme
-                                            .colorScheme.onSurfaceVariant,
+                                        color:
+                                            theme.colorScheme.onSurfaceVariant,
                                       ),
                                     ),
                                   ),
@@ -291,9 +292,10 @@ class _E621PoolSheetState extends State<E621PoolSheet> {
                       onPressed: () {
                         HapticFeedback.mediumImpact();
                         Navigator.of(context).pop();
-                        final startId = pool.postIds.contains(widget.currentPost.id)
-                            ? widget.currentPost.id
-                            : pool.postIds.first;
+                        final startId =
+                            pool.postIds.contains(widget.currentPost.id)
+                                ? widget.currentPost.id
+                                : pool.postIds.first;
                         widget.onSelectPostId(startId);
                       },
                       icon: const Icon(Icons.auto_stories_rounded, size: 18),
@@ -341,7 +343,8 @@ class _E621PoolSheetState extends State<E621PoolSheet> {
                                     Navigator.of(context).pop();
                                     widget.onSelectPostId(prevId);
                                   },
-                            icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                            icon:
+                                const Icon(Icons.arrow_back_rounded, size: 18),
                           ),
                           Expanded(
                             child: Column(
@@ -369,7 +372,8 @@ class _E621PoolSheetState extends State<E621PoolSheet> {
                                       minHeight: 4,
                                       backgroundColor: isDark
                                           ? Colors.white.withValues(alpha: 0.1)
-                                          : Colors.black.withValues(alpha: 0.08),
+                                          : Colors.black
+                                              .withValues(alpha: 0.08),
                                     ),
                                   ),
                               ],
@@ -492,9 +496,7 @@ class _PageButton extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: isCurrent ? FontWeight.bold : FontWeight.w600,
-                color: isCurrent
-                    ? Colors.white
-                    : theme.colorScheme.onSurface,
+                color: isCurrent ? Colors.white : theme.colorScheme.onSurface,
               ),
             ),
           ),

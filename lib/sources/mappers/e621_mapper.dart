@@ -16,9 +16,7 @@ class E621Mapper {
       ];
     }
     final posts = data is Map ? (data['posts'] ?? data['post']) : data;
-    final items = posts is List
-        ? posts
-        : (posts is Map ? [posts] : const []);
+    final items = posts is List ? posts : (posts is Map ? [posts] : const []);
     return items
         .whereType<Map>()
         .map((item) => postFromJson(
@@ -48,7 +46,8 @@ class E621Mapper {
         entry.key: List<String>.from((entry.value as List?) ?? const []),
     }..removeWhere((_, value) => value.isEmpty);
 
-    final relationships = Map<String, dynamic>.from((json['relationships'] as Map?) ?? const {});
+    final relationships =
+        Map<String, dynamic>.from((json['relationships'] as Map?) ?? const {});
     final parentId = relationships['parent_id']?.toString();
     if (parentId != null && parentId.isNotEmpty && parentId != 'null') {
       tagGroups['parent_id'] = [parentId];

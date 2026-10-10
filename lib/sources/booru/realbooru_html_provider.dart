@@ -285,9 +285,8 @@ class RealbooruHtmlProvider
       r'''Current Score:\s*<b>\s*<span[^>]*>([+-]?\d+)</span>''',
       caseSensitive: false,
     ).firstMatch(html);
-    final score = scoreMatch != null
-        ? int.tryParse(scoreMatch.group(1) ?? '0') ?? 0
-        : 0;
+    final score =
+        scoreMatch != null ? int.tryParse(scoreMatch.group(1) ?? '0') ?? 0 : 0;
 
     // Parse Date and Author
     final metaMatch = RegExp(
@@ -441,8 +440,8 @@ class RealbooruHtmlProvider
   String _thumbnailFromMediaUrl(String mediaUrl) {
     final uri = Uri.tryParse(mediaUrl);
     if (uri == null) return mediaUrl;
-    final match = RegExp(r'/+images/([^/]+)/([^/]+)/([^/.]+)\.')
-        .firstMatch(uri.path);
+    final match =
+        RegExp(r'/+images/([^/]+)/([^/]+)/([^/.]+)\.').firstMatch(uri.path);
     if (match == null) return mediaUrl;
     final path =
         '/thumbnails/${match.group(1)}/${match.group(2)}/thumbnail_${match.group(3)}.jpg';
@@ -455,9 +454,18 @@ class RealbooruHtmlProvider
     final parts = clean.split(RegExp(r'\s+'));
     if (parts.length >= 3) {
       const months = {
-        'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4,
-        'may': 5, 'jun': 6, 'jul': 7, 'aug': 8,
-        'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12,
+        'jan': 1,
+        'feb': 2,
+        'mar': 3,
+        'apr': 4,
+        'may': 5,
+        'jun': 6,
+        'jul': 7,
+        'aug': 8,
+        'sep': 9,
+        'oct': 10,
+        'nov': 11,
+        'dec': 12,
       };
       final monthStr = parts[0].toLowerCase();
       final month =
@@ -470,8 +478,7 @@ class RealbooruHtmlProvider
     return DateTime.tryParse(clean) ?? DateTime.now();
   }
 
-  String _stripTags(String html) =>
-      html.replaceAll(RegExp(r'<[^>]+>'), '');
+  String _stripTags(String html) => html.replaceAll(RegExp(r'<[^>]+>'), '');
 
   String _cleanCommentBody(String raw) {
     var text = raw.replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n');
@@ -496,9 +503,9 @@ class RealbooruHtmlProvider
       ).firstMatch(block);
       String authorName = '';
       if (authorMatch != null) {
-        authorName =
-            _stripTags(_decode(authorMatch.group(2) ?? authorMatch.group(1) ?? ''))
-                .trim();
+        authorName = _stripTags(
+                _decode(authorMatch.group(2) ?? authorMatch.group(1) ?? ''))
+            .trim();
       } else {
         final anonMatch = RegExp(
           r'''<div[^>]*font-style:\s*italic[^>]*>([\s\S]*?)<span''',

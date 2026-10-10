@@ -6,10 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:gel_rule_app/app/app.dart';
-import 'package:gel_rule_app/app/app_strings.dart';
-import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/features/feed/presentation/feed_controller.dart';
+import 'package:gel_rule_app/features/search/models/search_history.dart';
 import 'package:gel_rule_app/shared/widgets/adaptive_scaffold.dart';
-import 'package:gel_rule_app/shared/widgets/app_search_bar.dart';
 import 'package:gel_rule_app/shared/widgets/confirm_dialog.dart';
 import 'package:gel_rule_app/shared/widgets/error_view.dart';
 import 'search_controller.dart';
@@ -25,7 +24,8 @@ class SearchScreen extends ConsumerStatefulWidget {
 }
 
 class _SearchScreenState extends ConsumerState<SearchScreen> {
-  bool _showTips = false;
+  final TextEditingBarController _searchBarController =
+      TextEditingBarController();
 
   @override
   void initState() {
@@ -51,50 +51,49 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     }
   }
 
-  void _onTagTap(String tag, String currentQuery) {
-    final trimmed = currentQuery.trim();
-    if (trimmed.isEmpty) {
-      context.go('/?q=${Uri.encodeQueryComponent(tag)}');
-    } else {
-      final newQuery = '$trimmed $tag';
-      ref.read(searchControllerProvider.notifier).updateQuery(newQuery);
-      context.go('/?q=${Uri.encodeQueryComponent(newQuery)}');
+  Future<void> _onRecentHistoryItemTap(SearchHistory item) async {
+    await HapticFeedback.selectionClick();
+    if (item.providerId.isNotEmpty) {
+      await ref
+          .read(feedControllerProvider.notifier)
+          .setProviders([item.providerId]);
+    }
+    if (mounted) {
+      context.go('/?q=${Uri.encodeQueryComponent(item.query)}');
     }
   }
 
-  void _appendToken(String token, String currentQuery) {
-    final trimmed = currentQuery.trim();
-    final newQuery = trimmed.isEmpty ? token : '$trimmed $token';
-    ref.read(searchControllerProvider.notifier).updateQuery(newQuery);
+  void _onRecentSearchTap(String query) async {
+    await HapticFeedback.selectionClick();
+    if (mounted) {
+      context.go('/?q=${Uri.encodeQueryComponent(query)}');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(searchControllerProvider);
-    final settings =
-        ref.watch(appSettingsProvider).value ?? AppSettings.defaults;
-    final strings = AppStrings(settings.languageCode);
+    final strings = ref.watch(appStringsProvider);
     final isRu = strings.ru;
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return AdaptiveScaffold(
-      title: strings.search,
+      title: isRu ? 'История' : 'History',
       actions: [
         IconButton(
           tooltip: isRu ? 'Очистить историю' : 'Clear history',
           onPressed: () async {
             final ok = await showConfirmDialog(
               context,
-              title: isRu ? 'Очистить историю поиска?' : 'Clear search history?',
+              title: isRu ? 'Очистить историю?' : 'Clear history?',
               message: isRu
-                  ? 'Все недавние поисковые запросы будут удалены.'
-                  : 'All recent search queries will be removed.',
+                  ? 'Все недавние запросы и история поиска будут удалены.'
+                  : 'All recent search queries and tag history will be cleared.',
             );
             if (ok) {
-              await ref
-                  .read(searchControllerProvider.notifier)
-                  .clearHistory();
+              await ref.read(searchControllerProvider.notifier).clearHistory();
             }
           },
           icon: const Icon(Icons.delete_sweep_rounded),
@@ -103,340 +102,402 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       body: state.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => ErrorView(message: error.toString()),
-        data: (data) => Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 860),
-            child: ListView(
-              // Extended bottom padding so the cheat sheet card is never obscured by the floating dock
-              padding: EdgeInsets.fromLTRB(16, 14, 16, 140 + bottomInset),
-              children: [
-                // 1. Search Bar with Quick Operators
-                _SearchLiquidCard(
-                  glowColor: theme.colorScheme.primary,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      TagInputSearchBar(
-                        initialValue: data.query,
-                        suggestions: data.suggestions,
-                        onSubmitted: (query) => context
-                            .go('/?q=${Uri.encodeQueryComponent(query)}'),
-                        onChanged: (query) => ref
-                            .read(searchControllerProvider.notifier)
-                            .updateQuery(query),
-                        onSuggestionApplied: (query) => ref
-                            .read(searchControllerProvider.notifier)
-                            .updateQuery(query),
-                        onTagRemoved: (query) => ref
-                            .read(searchControllerProvider.notifier)
-                            .updateQuery(query),
-                        onCleared: () => ref
-                            .read(searchControllerProvider.notifier)
-                            .updateQuery(''),
-                      ),
-                      const SizedBox(height: 12),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            _QuickOperatorChip(
-                              label: 'and',
-                              icon: Icons.alt_route_rounded,
-                              color: const Color(0xFFF59E0B),
-                              onTap: () => _appendToken('and', data.query),
-                            ),
-                            const SizedBox(width: 8),
-                            _QuickOperatorChip(
-                              label: 'type:video',
-                              icon: Icons.videocam_rounded,
-                              color: const Color(0xFF3B82F6),
-                              onTap: () =>
-                                  _appendToken('type:video', data.query),
-                            ),
-                            const SizedBox(width: 8),
-                            _QuickOperatorChip(
-                              label: 'type:gif',
-                              icon: Icons.gif_rounded,
-                              color: const Color(0xFF8B5CF6),
-                              onTap: () => _appendToken('type:gif', data.query),
-                            ),
-                            const SizedBox(width: 8),
-                            _QuickOperatorChip(
-                              label: 'rating:safe',
-                              icon: Icons.verified_user_rounded,
-                              color: const Color(0xFF10B981),
-                              onTap: () =>
-                                  _appendToken('rating:safe', data.query),
-                            ),
-                            const SizedBox(width: 8),
-                            _QuickOperatorChip(
-                              label: 'rating:explicit',
-                              icon: Icons.explicit_rounded,
-                              color: const Color(0xFFEF4444),
-                              onTap: () =>
-                                  _appendToken('rating:explicit', data.query),
-                            ),
-                            const SizedBox(width: 8),
-                            _QuickOperatorChip(
-                              label: 'score:>100',
-                              icon: Icons.star_rounded,
-                              color: const Color(0xFFF97316),
-                              onTap: () =>
-                                  _appendToken('score:>100', data.query),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
+        data: (data) {
+          final filteredRecent = data.filteredRecent;
 
-                // 2. Recent Searches Card
-                _SearchLiquidCard(
-                  glowColor: const Color(0xFF6366F1),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const _SearchIconBadge(
-                            icon: Icons.history_rounded,
-                            color: Color(0xFF6366F1),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    isRu ? 'Недавние запросы' : 'Recent searches',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+          // Unique providers found in recent searches
+          final availableProviders = <String, String>{};
+          for (final r in data.recent) {
+            if (r.providerId.isNotEmpty) {
+              availableProviders[r.providerId] = r.providerName.isNotEmpty
+                  ? r.providerName
+                  : r.providerId;
+            }
+          }
+
+          return Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 860),
+              child: ListView(
+                padding: EdgeInsets.fromLTRB(16, 14, 16, 140 + bottomInset),
+                children: [
+                  // 1. Search Bar for History
+                  _SearchLiquidCard(
+                    glowColor: theme.colorScheme.primary,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            const _SearchIconBadge(
+                              icon: Icons.history_rounded,
+                              color: Color(0xFF6366F1),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    isRu ? 'Поиск по истории' : 'Search history',
                                     style: theme.textTheme.titleMedium?.copyWith(
                                       fontWeight: FontWeight.w700,
-                                      fontSize: 15,
+                                      fontSize: 16,
                                       letterSpacing: -0.2,
                                     ),
                                   ),
+                                  Text(
+                                    isRu
+                                        ? 'Недавние запросы с фильтрацией по источникам'
+                                        : 'Recent queries with provider filtering',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.black.withValues(alpha: 0.28)
+                                : Colors.black.withValues(alpha: 0.04),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.12)
+                                  : Colors.black.withValues(alpha: 0.08),
+                            ),
+                          ),
+                          child: TextField(
+                            controller: _searchBarController,
+                            onChanged: (text) => ref
+                                .read(searchControllerProvider.notifier)
+                                .updateQuery(text),
+                            onSubmitted: (text) {
+                              if (text.trim().isNotEmpty) {
+                                context.go(
+                                    '/?q=${Uri.encodeQueryComponent(text.trim())}');
+                              }
+                            },
+                            decoration: InputDecoration(
+                              hintText: isRu
+                                  ? 'Поиск по запросам или новый поиск...'
+                                  : 'Search queries or enter new search...',
+                              prefixIcon: const Icon(Icons.search_rounded),
+                              suffixIcon: data.query.isNotEmpty
+                                  ? IconButton(
+                                      icon: const Icon(Icons.clear_rounded),
+                                      onPressed: () {
+                                        _searchBarController.clear();
+                                        ref
+                                            .read(
+                                                searchControllerProvider.notifier)
+                                            .updateQuery('');
+                                      },
+                                    )
+                                  : null,
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Providers Filter Row
+                        if (availableProviders.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                _ProviderFilterBadge(
+                                  label: isRu ? 'Все источники' : 'All sources',
+                                  isSelected: data.selectedProviderFilter == null,
+                                  color: theme.colorScheme.primary,
+                                  count: data.recent.length,
+                                  onTap: () => ref
+                                      .read(searchControllerProvider.notifier)
+                                      .setProviderFilter(null),
                                 ),
-                                if (data.recent.isNotEmpty) ...[
+                                for (final entry in availableProviders.entries) ...[
                                   const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 7, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF6366F1)
-                                          .withValues(alpha: 0.16),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Text(
-                                      '${data.recent.map((e) => e.query.trim().toLowerCase()).where((q) => q.isNotEmpty).toSet().length}',
-                                      style: theme.textTheme.labelSmall?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: const Color(0xFF6366F1),
-                                      ),
-                                    ),
+                                  _ProviderFilterBadge(
+                                    label: entry.value,
+                                    isSelected: data.selectedProviderFilter ==
+                                        entry.key,
+                                    color: _providerColor(entry.key),
+                                    count: data.recent
+                                        .where((r) => r.providerId == entry.key)
+                                        .length,
+                                    onTap: () {
+                                      final next = data.selectedProviderFilter ==
+                                              entry.key
+                                          ? null
+                                          : entry.key;
+                                      ref
+                                          .read(
+                                              searchControllerProvider.notifier)
+                                          .setProviderFilter(next);
+                                    },
                                   ),
                                 ],
                               ],
                             ),
                           ),
-                          if (data.recent.isNotEmpty)
-                            TextButton(
-                              style: TextButton.styleFrom(
-                                visualDensity: VisualDensity.compact,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 4),
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              onPressed: () {
-                                HapticFeedback.selectionClick();
-                                ref
-                                    .read(searchControllerProvider.notifier)
-                                    .clearHistory();
-                              },
-                              child: Text(
-                                isRu ? 'Очистить' : 'Clear',
-                                style: TextStyle(
-                                  color: theme.colorScheme.primary,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
                         ],
-                      ),
-                      const SizedBox(height: 14),
-                      RecentSearches(
-                        items: data.recent,
-                        onTap: (query) =>
-                            context.go('/?q=${Uri.encodeQueryComponent(query)}'),
-                        onDelete: (id) => ref
-                            .read(searchControllerProvider.notifier)
-                            .deleteHistory(id),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // 3. Explore Popular Categories & Tags
-                _SearchLiquidCard(
-                  glowColor: const Color(0xFF10B981),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const _SearchIconBadge(
-                            icon: Icons.explore_rounded,
-                            color: Color(0xFF10B981),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              isRu ? 'Популярные категории' : 'Explore categories',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
-                                letterSpacing: -0.2,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      _CategoryTagRow(
-                        categoryName: isRu ? 'Тематика' : 'Theme & Ambience',
-                        color: const Color(0xFF0EA5E9),
-                        tags: const [
-                          'scenery',
-                          'cyberpunk',
-                          'monochrome',
-                          'night',
-                          'fantasy',
-                          'original',
-                        ],
-                        onTap: (tag) => _onTagTap(tag, data.query),
-                      ),
-                      const SizedBox(height: 16),
-                      _CategoryTagRow(
-                        categoryName:
-                            isRu ? 'Персонажи и детали' : 'Characters & Attire',
-                        color: const Color(0xFFEC4899),
-                        tags: const [
-                          '1girl',
-                          'solo',
-                          'cat_ears',
-                          'short_hair',
-                          'long_hair',
-                          'maid',
-                          'uniform',
-                        ],
-                        onTap: (tag) => _onTagTap(tag, data.query),
-                      ),
-                      const SizedBox(height: 16),
-                      _CategoryTagRow(
-                        categoryName: isRu ? 'Провайдеры' : 'Providers',
-                        color: const Color(0xFF8B5CF6),
-                        tags: const [
-                          'provider:gelbooru',
-                          'provider:safebooru',
-                          'provider:danbooru',
-                          'provider:e621',
-                          'provider:rule34',
-                          'provider:pawchive',
-                        ],
-                        onTap: (tag) => _onTagTap(tag, data.query),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // 4. Search Tips / Cheat Sheet Card (Full Liquid Glass Container)
-                _SearchLiquidCard(
-                  padding: EdgeInsets.zero,
-                  glowColor: const Color(0xFFF59E0B),
-                  child: Theme(
-                    data: theme.copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      shape: const Border(),
-                      collapsedShape: const Border(),
-                      tilePadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 4),
-                      leading: const _SearchIconBadge(
-                        icon: Icons.lightbulb_rounded,
-                        color: Color(0xFFF59E0B),
-                      ),
-                      title: Text(
-                        isRu ? 'Шпаргалка по поиску' : 'Search tips & operators',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.2,
-                        ),
-                      ),
-                      initiallyExpanded: _showTips,
-                      onExpansionChanged: (exp) {
-                        HapticFeedback.selectionClick();
-                        setState(() => _showTips = exp);
-                      },
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _TipRow(
-                                code: 'tag_a and tag_b',
-                                description: isRu
-                                    ? 'Независимый опрос обоих тегов с чередованием постов в ленте.'
-                                    : 'Interleaves results from both queries independently.',
-                              ),
-                              const SizedBox(height: 8),
-                              _TipRow(
-                                code: 'type:video / type:gif',
-                                description: isRu
-                                    ? 'Показывает только видео или анимированные GIF.'
-                                    : 'Filters results to only videos or animated GIFs.',
-                              ),
-                              const SizedBox(height: 8),
-                              _TipRow(
-                                code: 'rating:safe / rating:explicit',
-                                description: isRu
-                                    ? 'Фильтр по возрастному рейтингу медиа.'
-                                    : 'Filter by age rating classification.',
-                              ),
-                              const SizedBox(height: 8),
-                              _TipRow(
-                                code: 'score:>50 / score:>100',
-                                description: isRu
-                                    ? 'Посты с оценкой пользователей выше указанной.'
-                                    : 'Posts with community score greater than threshold.',
-                              ),
-                              const SizedBox(height: 8),
-                              _TipRow(
-                                code: 'provider:gelbooru',
-                                description: isRu
-                                    ? 'Поиск исключительно в указанном источнике.'
-                                    : 'Search specifically on the given booru provider.',
-                              ),
-                            ],
-                          ),
-                        ),
                       ],
                     ),
                   ),
-                ),
-                const SizedBox(height: 24),
-              ],
+
+                  const SizedBox(height: 16),
+
+                  // 2. Recent Search Queries Card
+                  _SearchLiquidCard(
+                    glowColor: const Color(0xFF8B5CF6),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const _SearchIconBadge(
+                              icon: Icons.manage_search_rounded,
+                              color: Color(0xFF8B5CF6),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      isRu
+                                          ? 'Недавний поиск'
+                                          : 'Recent searches',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style:
+                                          theme.textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 16,
+                                        letterSpacing: -0.2,
+                                      ),
+                                    ),
+                                  ),
+                                  if (filteredRecent.isNotEmpty) ...[
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF8B5CF6)
+                                            .withValues(alpha: 0.16),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Text(
+                                        '${filteredRecent.length}',
+                                        style:
+                                            theme.textTheme.labelSmall?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: const Color(0xFF8B5CF6),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            if (data.recent.isNotEmpty)
+                              TextButton(
+                                style: TextButton.styleFrom(
+                                  visualDensity: VisualDensity.compact,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 4),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                onPressed: () {
+                                  HapticFeedback.selectionClick();
+                                  ref
+                                      .read(searchControllerProvider.notifier)
+                                      .clearHistory();
+                                },
+                                child: Text(
+                                  isRu ? 'Очистить' : 'Clear',
+                                  style: TextStyle(
+                                    color: theme.colorScheme.primary,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          isRu
+                              ? 'Нажмите на запрос, чтобы открыть его сразу с нужным источником'
+                              : 'Tap a query to open it directly with its provider',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        if (filteredRecent.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 24),
+                            child: Center(
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.history_toggle_off_rounded,
+                                    size: 40,
+                                    color: theme.colorScheme.onSurfaceVariant
+                                        .withValues(alpha: 0.5),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    isRu
+                                        ? 'Нет недавних запросов'
+                                        : 'No recent searches',
+                                    style: TextStyle(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        else
+                          RecentSearches(
+                            items: filteredRecent,
+                            onItemTap: _onRecentHistoryItemTap,
+                            onTap: _onRecentSearchTap,
+                            onDelete: (id) => ref
+                                .read(searchControllerProvider.notifier)
+                                .deleteHistory(id),
+                          ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
+          );
+        },
+      ),
+    );
+  }
+
+  static Color _providerColor(String pid) {
+    final lower = pid.toLowerCase();
+    if (lower.contains('gelbooru')) return const Color(0xFF006ffa);
+    if (lower.contains('danbooru')) return const Color(0xFFe45f34);
+    if (lower.contains('e621')) return const Color(0xFF00549e);
+    if (lower.contains('rule34')) return const Color(0xFF2e7d32);
+    if (lower.contains('safebooru')) return const Color(0xFF10b981);
+    if (lower.contains('realbooru')) return const Color(0xFF455a64);
+    if (lower.contains('mangalib') || lower.contains('manga')) {
+      return const Color(0xFFE53935);
+    }
+    return const Color(0xFF8B5CF6);
+  }
+}
+
+class TextEditingBarController extends TextEditingController {}
+
+class _ProviderFilterBadge extends StatelessWidget {
+  const _ProviderFilterBadge({
+    required this.label,
+    required this.isSelected,
+    required this.color,
+    required this.count,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final Color color;
+  final int count;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? color.withValues(alpha: isDark ? 0.32 : 0.20)
+                : (isDark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.black.withValues(alpha: 0.04)),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isSelected
+                  ? color
+                  : (isDark
+                      ? Colors.white.withValues(alpha: 0.12)
+                      : Colors.black.withValues(alpha: 0.08)),
+              width: isSelected ? 1.4 : 1.0,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: isSelected
+                      ? (isDark ? Colors.white : color)
+                      : theme.colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(width: 5),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? color.withValues(alpha: 0.35)
+                      : (isDark
+                          ? Colors.white.withValues(alpha: 0.10)
+                          : Colors.black.withValues(alpha: 0.08)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '$count',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: isSelected
+                        ? (isDark ? Colors.white : color)
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -447,12 +508,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 class _SearchLiquidCard extends StatelessWidget {
   const _SearchLiquidCard({
     required this.child,
-    this.padding,
     this.glowColor,
   });
 
   final Widget child;
-  final EdgeInsetsGeometry? padding;
   final Color? glowColor;
 
   @override
@@ -485,7 +544,7 @@ class _SearchLiquidCard extends StatelessWidget {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
           child: Container(
-            padding: padding ?? const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(24),
               gradient: LinearGradient(
@@ -555,238 +614,6 @@ class _SearchIconBadge extends StatelessWidget {
       child: Center(
         child: Icon(icon, size: iconSize, color: Colors.white),
       ),
-    );
-  }
-}
-
-class _QuickOperatorChip extends StatelessWidget {
-  const _QuickOperatorChip({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: () {
-          HapticFeedback.selectionClick();
-          onTap();
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: isDark ? 0.16 : 0.10),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: color.withValues(alpha: isDark ? 0.40 : 0.32),
-              width: 1.1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: color.withValues(alpha: isDark ? 0.14 : 0.06),
-                blurRadius: 6,
-                offset: const Offset(0, 1.5),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 14, color: color),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: color,
-                  fontFamily: 'monospace',
-                  letterSpacing: -0.2,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CategoryTagRow extends StatelessWidget {
-  const _CategoryTagRow({
-    required this.categoryName,
-    required this.color,
-    required this.tags,
-    required this.onTap,
-  });
-
-  final String categoryName;
-  final Color color;
-  final List<String> tags;
-  final ValueChanged<String> onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 7,
-              height: 7,
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.6),
-                    blurRadius: 4,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              categoryName,
-              style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: theme.colorScheme.onSurface,
-                letterSpacing: -0.2,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final tag in tags)
-              Material(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(14),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(14),
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    onTap(tag);
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 11, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? theme.colorScheme.surfaceContainerHighest
-                              .withValues(alpha: 0.45)
-                          : Colors.white.withValues(alpha: 0.60),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.10)
-                            : theme.colorScheme.outlineVariant
-                                .withValues(alpha: 0.35),
-                        width: 1.0,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 5,
-                          height: 5,
-                          decoration: BoxDecoration(
-                            color: color,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          tag,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: -0.1,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _TipRow extends StatelessWidget {
-  const _TipRow({required this.code, required this.description});
-
-  final String code;
-  final String description;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            color: isDark
-                ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6)
-                : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.8),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.08)
-                  : theme.colorScheme.outlineVariant.withValues(alpha: 0.25),
-            ),
-          ),
-          child: Text(
-            code,
-            style: TextStyle(
-              fontFamily: 'monospace',
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.primary,
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Text(
-              description,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                height: 1.35,
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:gel_rule_app/app/app_strings.dart';
+import 'package:gel_rule_app/app/app.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/features/artists/presentation/widgets/pawchive_accounts_sheet.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
@@ -15,7 +15,7 @@ class AccountsSettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings =
         ref.watch(settingsControllerProvider).value ?? AppSettings.defaults;
-    final strings = AppStrings(settings.languageCode);
+    final strings = ref.watch(appStringsProvider);
     final isRu = strings.ru;
 
     return Scaffold(
@@ -50,7 +50,9 @@ class AccountsSettingsScreen extends ConsumerWidget {
             children: [
               // Pawchive Accounts Section
               SettingsCardGroup(
-                title: isRu ? 'Pawchive (Авторы и художники)' : 'Pawchive Creators',
+                title: isRu
+                    ? 'Pawchive (Авторы и художники)'
+                    : 'Pawchive Creators',
                 icon: Icons.person_search_rounded,
                 accentColor: const Color(0xFF0EA5E9),
                 children: [
@@ -86,7 +88,9 @@ class AccountsSettingsScreen extends ConsumerWidget {
 
               // Booru Accounts & Providers
               SettingsCardGroup(
-                title: isRu ? 'Аккаунты источников (Booru)' : 'Booru Provider Accounts',
+                title: isRu
+                    ? 'Аккаунты источников (Booru)'
+                    : 'Booru Provider Accounts',
                 icon: Icons.hub_rounded,
                 accentColor: const Color(0xFF6366F1),
                 children: [

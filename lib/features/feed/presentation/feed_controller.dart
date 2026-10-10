@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gel_rule_app/app/app.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:gel_rule_app/features/providers/presentation/providers_controller.dart';
 import 'feed_state.dart';
 
 final feedControllerProvider =
@@ -75,6 +76,9 @@ class FeedController extends AsyncNotifier<FeedState> {
       clearError: true,
       providerStatusMessage: await _providerStatusMessage(current),
     ));
+    // A failed search records an `offline` health entry, so the feed/Artists
+    // banners need rebuilding after every load.
+    ref.invalidate(enabledProviderHealthProvider);
   }
 
   Future<void> refresh() async {
@@ -90,6 +94,7 @@ class FeedController extends AsyncNotifier<FeedState> {
       emptyPageStreak: 0,
       providerStatusMessage: await _providerStatusMessage(current),
     ));
+    ref.invalidate(enabledProviderHealthProvider);
   }
 
   Future<void> loadNextPage() async {
@@ -136,18 +141,38 @@ class FeedController extends AsyncNotifier<FeedState> {
     );
     await saveSession(scrollOffset: 0);
     final settingsRes = await ref.read(settingsServiceProvider).getSettings();
-    final settings =
-        settingsRes is Success<AppSettings> ? settingsRes.data : AppSettings.defaults;
+    final settings = settingsRes is Success<AppSettings>
+        ? settingsRes.data
+        : AppSettings.defaults;
+    final activeProviderId = current.selectedProviderIds.length == 1
+        ? current.selectedProviderIds.first
+        : '';
+    final activeProviderName = activeProviderId.isNotEmpty
+        ? (current.providers
+                .where((p) => p.id == activeProviderId)
+                .firstOrNull
+                ?.name ??
+            '')
+        : '';
+
     try {
       await refresh();
       final count = state.value?.posts.length ?? 0;
-      await ref
-          .read(searchServiceProvider)
-          .saveSearch(query, count, maxHistory: settings.searchHistoryLimit);
+      await ref.read(searchServiceProvider).saveSearch(
+            query,
+            count,
+            maxHistory: settings.searchHistoryLimit,
+            providerId: activeProviderId,
+            providerName: activeProviderName,
+          );
     } catch (_) {
-      await ref
-          .read(searchServiceProvider)
-          .saveSearch(query, 0, maxHistory: settings.searchHistoryLimit);
+      await ref.read(searchServiceProvider).saveSearch(
+            query,
+            0,
+            maxHistory: settings.searchHistoryLimit,
+            providerId: activeProviderId,
+            providerName: activeProviderName,
+          );
       rethrow;
     }
   }
@@ -178,17 +203,14 @@ class FeedController extends AsyncNotifier<FeedState> {
       final appSettings = settingsRes is Success<AppSettings>
           ? settingsRes.data
           : AppSettings.defaults;
-      final result = await ref
-          .read(searchServiceProvider)
-          .autocompleteDetailed(
+      final result = await ref.read(searchServiceProvider).autocompleteDetailed(
             cleanToken,
             limit: 16,
             tagCacheLimit: appSettings.tagCacheLimit,
           );
       if (requestId != _suggestionRequestId) return;
-      final suggestions = result is Success<List<TagSuggestion>>
-          ? result.data
-          : localMatches;
+      final suggestions =
+          result is Success<List<TagSuggestion>> ? result.data : localMatches;
       final latest = state.value ?? current;
       state = AsyncData(latest.copyWith(tagSuggestions: suggestions));
     });

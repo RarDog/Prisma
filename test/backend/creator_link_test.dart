@@ -21,21 +21,25 @@ Cloud links like https://drive.google.com/file/d/123/view and https://mega.nz/fi
       expect(yt.serviceName, 'YouTube');
       expect(yt.url, 'https://youtu.be/dQw4w9WgXcQ');
 
-      final twitter = links.firstWhere((l) => l.type == CreatorLinkType.twitter);
+      final twitter =
+          links.firstWhere((l) => l.type == CreatorLinkType.twitter);
       expect(twitter.serviceName, 'X (Twitter)');
       expect(twitter.url, 'https://x.com/artist_handle');
 
-      final insta = links.firstWhere((l) => l.type == CreatorLinkType.instagram);
+      final insta =
+          links.firstWhere((l) => l.type == CreatorLinkType.instagram);
       expect(insta.serviceName, 'Instagram');
       expect(insta.url, 'https://instagram.com/p/C1234567/');
 
-      final patreon = links.firstWhere((l) => l.type == CreatorLinkType.patreon);
+      final patreon =
+          links.firstWhere((l) => l.type == CreatorLinkType.patreon);
       expect(patreon.serviceName, 'Patreon');
 
       final fanbox = links.firstWhere((l) => l.type == CreatorLinkType.fanbox);
       expect(fanbox.serviceName, 'Fanbox');
 
-      final discord = links.firstWhere((l) => l.type == CreatorLinkType.discord);
+      final discord =
+          links.firstWhere((l) => l.type == CreatorLinkType.discord);
       expect(discord.serviceName, 'Discord');
 
       final hub = links.firstWhere((l) => l.type == CreatorLinkType.linkhub);

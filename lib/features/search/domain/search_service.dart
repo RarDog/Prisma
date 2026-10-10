@@ -43,6 +43,8 @@ class SearchService {
     String query,
     int resultCount, {
     int maxHistory = 500,
+    String providerId = '',
+    String providerName = '',
   }) async {
     final tags = parseTags(query);
     final history = SearchHistory(
@@ -51,6 +53,8 @@ class SearchService {
       tags: tags,
       searchedAt: DateTime.now(),
       resultCount: resultCount,
+      providerId: providerId,
+      providerName: providerName,
     );
 
     // Also register user-searched tags in persistent tag cache
@@ -118,14 +122,16 @@ class SearchService {
 
     final manager = _providerManager;
     if (manager == null) {
-      final local = instantSuggestions(clean, limit: limit, priorityTags: priorityTags);
+      final local =
+          instantSuggestions(clean, limit: limit, priorityTags: priorityTags);
       return Success(local);
     }
 
     final netResult = await manager.suggestTags(clean, limit: limit);
     if (netResult is Error<List<TagSuggestion>>) {
       // Fallback to local cached suggestions if network fails
-      final local = instantSuggestions(clean, limit: limit, priorityTags: priorityTags);
+      final local =
+          instantSuggestions(clean, limit: limit, priorityTags: priorityTags);
       return Success(local);
     }
 
@@ -133,12 +139,14 @@ class SearchService {
 
     // Cache remote suggestions to disk
     if (_tagCacheService != null && remoteItems.isNotEmpty) {
-      unawaited(_tagCacheService.cacheTags(remoteItems, maxLimit: tagCacheLimit));
+      unawaited(
+          _tagCacheService.cacheTags(remoteItems, maxLimit: tagCacheLimit));
     }
 
     // Merge local matches with remote results
     final merged = <String, TagSuggestion>{};
-    for (final item in instantSuggestions(clean, limit: limit, priorityTags: priorityTags)) {
+    for (final item in instantSuggestions(clean,
+        limit: limit, priorityTags: priorityTags)) {
       merged[item.name.toLowerCase()] = item;
     }
     for (final item in remoteItems) {

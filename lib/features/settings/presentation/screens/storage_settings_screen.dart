@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:gel_rule_app/app/app.dart';
-import 'package:gel_rule_app/app/app_strings.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/features/manga/domain/manga_library_providers.dart';
@@ -96,7 +95,8 @@ class StorageSettingsScreen extends ConsumerWidget {
                     color: theme.colorScheme.onPrimaryContainer,
                   ),
                 ),
-                title: Text(isRu ? 'Сохранить как файл .json' : 'Save as .json file'),
+                title: Text(
+                    isRu ? 'Сохранить как файл .json' : 'Save as .json file'),
                 subtitle: Text(
                   isRu
                       ? 'Полный бэкап настроек, аккаунтов, избранного и коллекций'
@@ -136,8 +136,9 @@ class StorageSettingsScreen extends ConsumerWidget {
                     color: theme.colorScheme.onSecondaryContainer,
                   ),
                 ),
-                title:
-                    Text(isRu ? 'Скопировать JSON в буфер' : 'Copy JSON to clipboard'),
+                title: Text(isRu
+                    ? 'Скопировать JSON в буфер'
+                    : 'Copy JSON to clipboard'),
                 subtitle: Text(
                   isRu
                       ? 'Скопировать текстовый JSON полного бэкапа'
@@ -353,7 +354,7 @@ class StorageSettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings =
         ref.watch(settingsControllerProvider).value ?? AppSettings.defaults;
-    final strings = AppStrings(settings.languageCode);
+    final strings = ref.watch(appStringsProvider);
     final isRu = strings.ru;
     final theme = Theme.of(context);
 
@@ -400,8 +401,7 @@ class StorageSettingsScreen extends ConsumerWidget {
                     subtitle: isRu
                         ? 'Просмотр размера картинок, видео и быстрое освобождение памяти'
                         : 'Detailed cache analytics and smart cleanup tools',
-                    trailing:
-                        const Icon(Icons.chevron_right_rounded, size: 20),
+                    trailing: const Icon(Icons.chevron_right_rounded, size: 20),
                     onTap: () => context.go('/settings/cache'),
                   ),
                   const SettingsDivider(),
@@ -453,22 +453,24 @@ class StorageSettingsScreen extends ConsumerWidget {
                   SettingsStepperTile(
                     icon: Icons.history_rounded,
                     iconColor: const Color(0xFF3B82F6),
-                    title: isRu ? 'Лимит истории поиска' : 'Search history limit',
+                    title:
+                        isRu ? 'Лимит истории поиска' : 'Search history limit',
                     subtitle: isRu
                         ? 'Хранение недавних поисковых запросов'
                         : 'Max search query entries stored',
                     value: settings.searchHistoryLimit,
                     min: 50,
                     max: 2000,
-                    onChanged: (val) =>
-                        _update(ref, settings.copyWith(searchHistoryLimit: val)),
+                    onChanged: (val) => _update(
+                        ref, settings.copyWith(searchHistoryLimit: val)),
                   ),
                   const SettingsDivider(),
                   SettingsStepperTile(
                     icon: Icons.tag_rounded,
                     iconColor: const Color(0xFF8B5CF6),
-                    title:
-                        isRu ? 'Лимит кэша тегов (диск)' : 'Tag cache limit (disk)',
+                    title: isRu
+                        ? 'Лимит кэша тегов (диск)'
+                        : 'Tag cache limit (disk)',
                     subtitle: isRu
                         ? 'Количество кэшируемых подсказок тегов на диске'
                         : 'Max tag autocomplete entries persisted on disk',
@@ -554,7 +556,9 @@ class StorageSettingsScreen extends ConsumerWidget {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              isRu ? 'История просмотров очищена' : 'Viewed history cleared',
+                              isRu
+                                  ? 'История просмотров очищена'
+                                  : 'Viewed history cleared',
                             ),
                           ),
                         );
@@ -604,8 +608,8 @@ class StorageSettingsScreen extends ConsumerWidget {
                                       isRu
                                           ? 'Автобэкап: Prisma'
                                           : 'Auto-Sync: Prisma',
-                                      style: theme.textTheme.labelLarge
-                                          ?.copyWith(
+                                      style:
+                                          theme.textTheme.labelLarge?.copyWith(
                                         fontWeight: FontWeight.w700,
                                         color: theme.colorScheme.primary,
                                       ),

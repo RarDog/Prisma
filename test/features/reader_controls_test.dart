@@ -8,36 +8,64 @@ import 'package:gel_rule_app/sources/booru/mangadex_provider.dart';
 void main() {
   group('ReaderNavigationHelper Tests', () {
     test('hasPrevious and hasNext handle boundary conditions correctly', () {
-      expect(ReaderNavigationHelper.hasPrevious(currentIndex: 0, totalCount: 5), isFalse);
-      expect(ReaderNavigationHelper.hasPrevious(currentIndex: 1, totalCount: 5), isTrue);
-      expect(ReaderNavigationHelper.hasPrevious(currentIndex: 4, totalCount: 5), isTrue);
-      expect(ReaderNavigationHelper.hasPrevious(currentIndex: -1, totalCount: 5), isFalse);
-      expect(ReaderNavigationHelper.hasPrevious(currentIndex: 1, totalCount: 0), isFalse);
+      expect(ReaderNavigationHelper.hasPrevious(currentIndex: 0, totalCount: 5),
+          isFalse);
+      expect(ReaderNavigationHelper.hasPrevious(currentIndex: 1, totalCount: 5),
+          isTrue);
+      expect(ReaderNavigationHelper.hasPrevious(currentIndex: 4, totalCount: 5),
+          isTrue);
+      expect(
+          ReaderNavigationHelper.hasPrevious(currentIndex: -1, totalCount: 5),
+          isFalse);
+      expect(ReaderNavigationHelper.hasPrevious(currentIndex: 1, totalCount: 0),
+          isFalse);
 
-      expect(ReaderNavigationHelper.hasNext(currentIndex: 0, totalCount: 5), isTrue);
-      expect(ReaderNavigationHelper.hasNext(currentIndex: 3, totalCount: 5), isTrue);
-      expect(ReaderNavigationHelper.hasNext(currentIndex: 4, totalCount: 5), isFalse);
-      expect(ReaderNavigationHelper.hasNext(currentIndex: 5, totalCount: 5), isFalse);
-      expect(ReaderNavigationHelper.hasNext(currentIndex: 0, totalCount: 0), isFalse);
+      expect(ReaderNavigationHelper.hasNext(currentIndex: 0, totalCount: 5),
+          isTrue);
+      expect(ReaderNavigationHelper.hasNext(currentIndex: 3, totalCount: 5),
+          isTrue);
+      expect(ReaderNavigationHelper.hasNext(currentIndex: 4, totalCount: 5),
+          isFalse);
+      expect(ReaderNavigationHelper.hasNext(currentIndex: 5, totalCount: 5),
+          isFalse);
+      expect(ReaderNavigationHelper.hasNext(currentIndex: 0, totalCount: 0),
+          isFalse);
     });
 
     test('previousIndex and nextIndex return proper next/prev or null', () {
-      expect(ReaderNavigationHelper.previousIndex(currentIndex: 0, totalCount: 3), isNull);
-      expect(ReaderNavigationHelper.previousIndex(currentIndex: 2, totalCount: 3), equals(1));
+      expect(
+          ReaderNavigationHelper.previousIndex(currentIndex: 0, totalCount: 3),
+          isNull);
+      expect(
+          ReaderNavigationHelper.previousIndex(currentIndex: 2, totalCount: 3),
+          equals(1));
 
-      expect(ReaderNavigationHelper.nextIndex(currentIndex: 0, totalCount: 3), equals(1));
-      expect(ReaderNavigationHelper.nextIndex(currentIndex: 2, totalCount: 3), isNull);
+      expect(ReaderNavigationHelper.nextIndex(currentIndex: 0, totalCount: 3),
+          equals(1));
+      expect(ReaderNavigationHelper.nextIndex(currentIndex: 2, totalCount: 3),
+          isNull);
     });
 
     test('formatChapterProgress formats labels accurately', () {
-      expect(ReaderNavigationHelper.formatChapterProgress(currentIndex: 0, totalCount: 10), equals('1 / 10'));
-      expect(ReaderNavigationHelper.formatChapterProgress(currentIndex: 9, totalCount: 10), equals('10 / 10'));
-      expect(ReaderNavigationHelper.formatChapterProgress(currentIndex: 0, totalCount: 0), equals('0 / 0'));
+      expect(
+          ReaderNavigationHelper.formatChapterProgress(
+              currentIndex: 0, totalCount: 10),
+          equals('1 / 10'));
+      expect(
+          ReaderNavigationHelper.formatChapterProgress(
+              currentIndex: 9, totalCount: 10),
+          equals('10 / 10'));
+      expect(
+          ReaderNavigationHelper.formatChapterProgress(
+              currentIndex: 0, totalCount: 0),
+          equals('0 / 0'));
     });
   });
 
   group('NovelReaderScreen & ReaderFullscreenMixin Tests', () {
-    testWidgets('NovelReaderScreen initializes controls, displays content and toggles fullscreen', (tester) async {
+    testWidgets(
+        'NovelReaderScreen initializes controls, displays content and toggles fullscreen',
+        (tester) async {
       final chapters = [
         const MangaDexChapter(
           id: 'ch1',
@@ -77,12 +105,15 @@ void main() {
       // Check title and content
       expect(find.text('Тестовая Новелла'), findsOneWidget);
       expect(find.text('Пролог'), findsOneWidget);
-      expect(find.text('Это первая строка новеллы. Приключения начинаются.'), findsOneWidget);
+      expect(find.text('Это первая строка новеллы. Приключения начинаются.'),
+          findsOneWidget);
       expect(find.text('1 / 2'), findsOneWidget);
 
       // Previous button should be disabled for chapter 0, Next should be enabled
-      final prevBtn = tester.widget<IconButton>(find.widgetWithIcon(IconButton, Icons.skip_previous));
-      final nextBtn = tester.widget<IconButton>(find.widgetWithIcon(IconButton, Icons.skip_next));
+      final prevBtn = tester.widget<IconButton>(
+          find.widgetWithIcon(IconButton, Icons.skip_previous));
+      final nextBtn = tester
+          .widget<IconButton>(find.widgetWithIcon(IconButton, Icons.skip_next));
       expect(prevBtn.onPressed, isNull);
       expect(nextBtn.onPressed, isNotNull);
 

@@ -95,11 +95,16 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
     try {
       final offlineService = ref.read(mangaOfflineServiceProvider);
       final providerManager = ref.read(providerManagerProvider);
-      final p = await providerManager.getProviderInstance(widget.post.providerId);
-      final NovelChapterProvider? novelProv = p is NovelChapterProvider ? (p as NovelChapterProvider) : null;
-      final MangaChapterProvider? mangaProv = p is MangaChapterProvider ? (p as MangaChapterProvider) : null;
+      final p =
+          await providerManager.getProviderInstance(widget.post.providerId);
+      final NovelChapterProvider? novelProv =
+          p is NovelChapterProvider ? (p as NovelChapterProvider) : null;
+      final MangaChapterProvider? mangaProv =
+          p is MangaChapterProvider ? (p as MangaChapterProvider) : null;
 
-      if (chapter.isNovel || widget.post.providerId == 'ranobelib' || novelProv != null) {
+      if (chapter.isNovel ||
+          widget.post.providerId == 'ranobelib' ||
+          novelProv != null) {
         String content = '';
         if (novelProv != null) {
           content = await novelProv.fetchChapterContent(chapter.id);
@@ -126,7 +131,9 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(isRu ? 'Глава ${chapter.chapterNumber} скачана для офлайн чтения' : 'Chapter ${chapter.chapterNumber} downloaded offline'),
+            content: Text(isRu
+                ? 'Глава ${chapter.chapterNumber} скачана для офлайн чтения'
+                : 'Chapter ${chapter.chapterNumber} downloaded offline'),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -202,8 +209,10 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
     try {
       final providerManager = ref.read(providerManagerProvider);
       final p = await providerManager.getProviderInstance(post.providerId);
-      final MangaChapterProvider? mangaProv = p is MangaChapterProvider ? (p as MangaChapterProvider) : null;
-      final NovelChapterProvider? novelProv = p is NovelChapterProvider ? (p as NovelChapterProvider) : null;
+      final MangaChapterProvider? mangaProv =
+          p is MangaChapterProvider ? (p as MangaChapterProvider) : null;
+      final NovelChapterProvider? novelProv =
+          p is NovelChapterProvider ? (p as NovelChapterProvider) : null;
 
       if (mangaProv != null || novelProv != null) {
         if (_allChapters.isEmpty) {
@@ -250,7 +259,9 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
         }
 
         final filtered = _selectedLanguage != null
-            ? _allChapters.where((c) => c.language == _selectedLanguage).toList()
+            ? _allChapters
+                .where((c) => c.language == _selectedLanguage)
+                .toList()
             : _allChapters;
         final chapters = filtered.isNotEmpty ? filtered : _allChapters;
 
@@ -267,22 +278,26 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
           final targetChapter = chapters[_selectedChapterIndex];
           // Check offline first
           final offlineService = ref.read(mangaOfflineServiceProvider);
-          final offlinePages = await offlineService.getDownloadedPages(post.id, targetChapter.id);
+          final offlinePages = await offlineService.getDownloadedPages(
+              post.id, targetChapter.id);
           if (offlinePages.isNotEmpty) {
             urls.addAll(offlinePages);
-            _chapters[_selectedChapterIndex] = targetChapter.copyWith(pageCount: offlinePages.length);
+            _chapters[_selectedChapterIndex] =
+                targetChapter.copyWith(pageCount: offlinePages.length);
           } else if (mangaProv != null) {
             final pages = await mangaProv.fetchChapterPages(targetChapter.id);
             urls.addAll(pages);
             if (pages.isNotEmpty) {
-              _chapters[_selectedChapterIndex] = targetChapter.copyWith(pageCount: pages.length);
+              _chapters[_selectedChapterIndex] =
+                  targetChapter.copyWith(pageCount: pages.length);
             }
           }
         }
       }
 
       if (urls.isEmpty) {
-        final fallback = post.sampleUrl.isNotEmpty ? post.sampleUrl : post.previewUrl;
+        final fallback =
+            post.sampleUrl.isNotEmpty ? post.sampleUrl : post.previewUrl;
         if (fallback.isNotEmpty) urls.add(fallback);
       }
 
@@ -296,7 +311,8 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
     } catch (_) {
       if (mounted) {
         setState(() {
-          final fallback = post.sampleUrl.isNotEmpty ? post.sampleUrl : post.previewUrl;
+          final fallback =
+              post.sampleUrl.isNotEmpty ? post.sampleUrl : post.previewUrl;
           _pageUrls = fallback.isNotEmpty ? [fallback] : [];
           _loadingPages = false;
         });
@@ -317,7 +333,11 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
   }
 
   void _switchChapter(int index) {
-    if (index == _selectedChapterIndex || index < 0 || index >= _chapters.length) return;
+    if (index == _selectedChapterIndex ||
+        index < 0 ||
+        index >= _chapters.length) {
+      return;
+    }
     HapticFeedback.selectionClick();
     setState(() {
       _selectedChapterIndex = index;
@@ -349,7 +369,9 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            isRu ? 'Вы дочитали последнюю главу тайтла!' : 'You have reached the last chapter!',
+            isRu
+                ? 'Вы дочитали последнюю главу тайтла!'
+                : 'You have reached the last chapter!',
           ),
           duration: const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
@@ -358,7 +380,8 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
     }
   }
 
-  void _showLanguagePicker({required void Function(String language) onSelected}) {
+  void _showLanguagePicker(
+      {required void Function(String language) onSelected}) {
     final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     showModalBottomSheet<void>(
       context: context,
@@ -378,10 +401,13 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Row(
                     children: [
-                      const Icon(Icons.translate_rounded, color: Color(0xFFFF6740), size: 22),
+                      const Icon(Icons.translate_rounded,
+                          color: Color(0xFFFF6740), size: 22),
                       const SizedBox(width: 10),
                       Text(
-                        isRu ? 'Выберите язык для чтения' : 'Select Reading Language',
+                        isRu
+                            ? 'Выберите язык для чтения'
+                            : 'Select Reading Language',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -408,7 +434,8 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                     itemBuilder: (context, index) {
                       final lang = _availableLanguages[index];
                       final isSelected = lang == _selectedLanguage;
-                      final count = _allChapters.where((c) => c.language == lang).length;
+                      final count =
+                          _allChapters.where((c) => c.language == lang).length;
                       return ListTile(
                         leading: Text(
                           MangaLanguageHelper.flag(lang),
@@ -417,17 +444,22 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                         title: Text(
                           MangaLanguageHelper.name(lang),
                           style: TextStyle(
-                            color: isSelected ? const Color(0xFFFF6740) : Colors.white,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                            color: isSelected
+                                ? const Color(0xFFFF6740)
+                                : Colors.white,
+                            fontWeight:
+                                isSelected ? FontWeight.bold : FontWeight.w600,
                             fontSize: 15,
                           ),
                         ),
                         subtitle: Text(
                           '$count ${isRu ? 'глав' : 'chapters'}',
-                          style: const TextStyle(color: Colors.white54, fontSize: 12),
+                          style: const TextStyle(
+                              color: Colors.white54, fontSize: 12),
                         ),
                         trailing: isSelected
-                            ? const Icon(Icons.check_circle_rounded, color: Color(0xFFFF6740), size: 22)
+                            ? const Icon(Icons.check_circle_rounded,
+                                color: Color(0xFFFF6740), size: 22)
                             : null,
                         onTap: () {
                           Navigator.of(context).pop();
@@ -469,7 +501,8 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
     final prog = _readingProgress!;
     int targetIndex = _selectedChapterIndex;
     if (_chapters.isNotEmpty) {
-      final foundIdx = _chapters.indexWhere((c) => c.id == prog.chapterId || c.chapterNumber == prog.chapterNumber);
+      final foundIdx = _chapters.indexWhere((c) =>
+          c.id == prog.chapterId || c.chapterNumber == prog.chapterNumber);
       if (foundIdx != -1) {
         targetIndex = foundIdx;
       }
@@ -481,7 +514,8 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
     );
   }
 
-  void _openFullscreenReader({String? language, int? initialChapterIndex, int? initialPage}) {
+  void _openFullscreenReader(
+      {String? language, int? initialChapterIndex, int? initialPage}) {
     HapticFeedback.mediumImpact();
     final lang = language ?? _selectedLanguage;
     final currentLangChapters = lang != null
@@ -489,33 +523,42 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
         : _chapters;
 
     final targetChapter = _chapters.isNotEmpty
-        ? _chapters[(initialChapterIndex ?? _selectedChapterIndex).clamp(0, _chapters.length - 1)]
+        ? _chapters[(initialChapterIndex ?? _selectedChapterIndex)
+            .clamp(0, _chapters.length - 1)]
         : null;
 
     if (targetChapter != null &&
         (targetChapter.isNovel || widget.post.providerId == 'ranobelib')) {
-      final title = widget.post.title ?? widget.post.tagGroups['title']?.firstOrNull ?? widget.post.tags.take(3).join(', ');
-      Navigator.of(context).push(
+      final title = widget.post.title ??
+          widget.post.tagGroups['title']?.firstOrNull ??
+          widget.post.tags.take(3).join(', ');
+      Navigator.of(context)
+          .push(
         MaterialPageRoute<void>(
           builder: (context) => NovelReaderScreen(
             mangaId: widget.post.id,
             chapter: targetChapter,
-            allChapters: currentLangChapters.isNotEmpty ? currentLangChapters : _chapters,
+            allChapters: currentLangChapters.isNotEmpty
+                ? currentLangChapters
+                : _chapters,
             title: title,
             providerId: widget.post.providerId,
           ),
         ),
-      ).then((_) {
+      )
+          .then((_) {
         _loadProgressAndLibrary();
       });
       return;
     }
 
-    Navigator.of(context).push(
+    Navigator.of(context)
+        .push(
       MaterialPageRoute<void>(
         builder: (context) => MangaReaderScreen(
           post: widget.post,
-          initialChapters: currentLangChapters.isNotEmpty ? currentLangChapters : _chapters,
+          initialChapters:
+              currentLangChapters.isNotEmpty ? currentLangChapters : _chapters,
           initialChapterIndex: initialChapterIndex ?? _selectedChapterIndex,
           initialLanguage: lang,
           initialPage: initialPage,
@@ -523,7 +566,8 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
           isRtl: _isRtl,
         ),
       ),
-    ).then((_) {
+    )
+        .then((_) {
       _loadProgressAndLibrary();
     });
   }
@@ -546,7 +590,9 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
         SnackBar(
           content: Text(
             status != null
-                ? (isRu ? 'Статус обновлен: ${_statusLabel(status, isRu)}' : 'Status updated: ${_statusLabel(status, isRu)}')
+                ? (isRu
+                    ? 'Статус обновлен: ${_statusLabel(status, isRu)}'
+                    : 'Status updated: ${_statusLabel(status, isRu)}')
                 : (isRu ? 'Удалено из библиотеки' : 'Removed from library'),
           ),
           duration: const Duration(seconds: 2),
@@ -558,7 +604,8 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
 
   Future<void> _toggleChapterRead(MangaDexChapter chapter) async {
     unawaited(HapticFeedback.selectionClick());
-    final isRead = _readingProgress?.readChapterIds.contains(chapter.id) ?? false;
+    final isRead =
+        _readingProgress?.readChapterIds.contains(chapter.id) ?? false;
     await ref.read(mangaLibraryServiceProvider).toggleChapterRead(
           mangaId: widget.post.id,
           chapterId: chapter.id,
@@ -638,16 +685,21 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
               tooltip: isRu ? 'Статус в библиотеке' : 'Library Status',
               icon: _libraryEntry != null
                   ? Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: _statusColor(_libraryEntry!.status).withValues(alpha: 0.2),
+                        color: _statusColor(_libraryEntry!.status)
+                            .withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: _statusColor(_libraryEntry!.status)),
+                        border: Border.all(
+                            color: _statusColor(_libraryEntry!.status)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.bookmark_rounded, size: 14, color: _statusColor(_libraryEntry!.status)),
+                          Icon(Icons.bookmark_rounded,
+                              size: 14,
+                              color: _statusColor(_libraryEntry!.status)),
                           const SizedBox(width: 4),
                           Text(
                             _statusLabel(_libraryEntry!.status, isRu),
@@ -673,7 +725,8 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                   value: 'reading',
                   child: Row(
                     children: [
-                      const Icon(Icons.auto_stories_rounded, color: Color(0xFFFF6740), size: 18),
+                      const Icon(Icons.auto_stories_rounded,
+                          color: Color(0xFFFF6740), size: 18),
                       const SizedBox(width: 10),
                       Text(isRu ? 'Читаю' : 'Reading'),
                     ],
@@ -683,7 +736,8 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                   value: 'plan_to_read',
                   child: Row(
                     children: [
-                      const Icon(Icons.bookmark_added_rounded, color: Color(0xFF3B82F6), size: 18),
+                      const Icon(Icons.bookmark_added_rounded,
+                          color: Color(0xFF3B82F6), size: 18),
                       const SizedBox(width: 10),
                       Text(isRu ? 'В планах' : 'Plan to read'),
                     ],
@@ -693,7 +747,8 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                   value: 'completed',
                   child: Row(
                     children: [
-                      const Icon(Icons.check_circle_outline_rounded, color: Color(0xFF10B981), size: 18),
+                      const Icon(Icons.check_circle_outline_rounded,
+                          color: Color(0xFF10B981), size: 18),
                       const SizedBox(width: 10),
                       Text(isRu ? 'Прочитано' : 'Completed'),
                     ],
@@ -703,7 +758,8 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                   value: 'dropped',
                   child: Row(
                     children: [
-                      const Icon(Icons.cancel_outlined, color: Color(0xFFEF4444), size: 18),
+                      const Icon(Icons.cancel_outlined,
+                          color: Color(0xFFEF4444), size: 18),
                       const SizedBox(width: 10),
                       Text(isRu ? 'Брошено' : 'Dropped'),
                     ],
@@ -715,10 +771,13 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                     value: 'remove',
                     child: Row(
                       children: [
-                        const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444), size: 18),
+                        const Icon(Icons.delete_outline_rounded,
+                            color: Color(0xFFEF4444), size: 18),
                         const SizedBox(width: 10),
                         Text(
-                          isRu ? 'Удалить из библиотеки' : 'Remove from library',
+                          isRu
+                              ? 'Удалить из библиотеки'
+                              : 'Remove from library',
                           style: const TextStyle(color: Color(0xFFEF4444)),
                         ),
                       ],
@@ -732,7 +791,8 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
               icon: const Icon(Icons.share_rounded, size: 20),
               tooltip: isRu ? 'Поделиться' : 'Share',
               onPressed: () {
-                final url = post.source ?? 'https://mangadex.org/title/${post.id}';
+                final url =
+                    post.source ?? 'https://mangadex.org/title/${post.id}';
                 Share.share('$title\n$url');
               },
             ),
@@ -740,7 +800,8 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
               icon: const Icon(Icons.open_in_browser_rounded, size: 20),
               tooltip: isRu ? 'Открыть в браузере' : 'Open in browser',
               onPressed: () {
-                final url = post.source ?? 'https://mangadex.org/title/${post.id}';
+                final url =
+                    post.source ?? 'https://mangadex.org/title/${post.id}';
                 launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
               },
             ),
@@ -758,7 +819,9 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                   child: Stack(
                     children: [
                       if (_loadingPages)
-                        const Center(child: CircularProgressIndicator(color: Color(0xFFFF6740)))
+                        const Center(
+                            child: CircularProgressIndicator(
+                                color: Color(0xFFFF6740)))
                       else
                         Positioned.fill(
                           child: PageFlip3D(
@@ -771,123 +834,140 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                             },
                             onEndReached: _onNextChapter,
                             itemBuilder: (context, index) {
-                              final url = _pageUrls.isNotEmpty && index < _pageUrls.length
+                              final url = _pageUrls.isNotEmpty &&
+                                      index < _pageUrls.length
                                   ? _pageUrls[index]
-                                  : (post.sampleUrl.isNotEmpty ? post.sampleUrl : post.previewUrl);
+                                  : (post.sampleUrl.isNotEmpty
+                                      ? post.sampleUrl
+                                      : post.previewUrl);
                               return Center(
-                              child: CachedNetworkImage(
-                                imageUrl: url,
-                                httpHeaders: headers,
-                                fit: BoxFit.contain,
-                                placeholder: (_, __) => const Center(
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white24),
+                                child: CachedNetworkImage(
+                                  imageUrl: url,
+                                  httpHeaders: headers,
+                                  fit: BoxFit.contain,
+                                  placeholder: (_, __) => const Center(
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2, color: Colors.white24),
+                                  ),
+                                  errorWidget: (_, __, ___) => const Center(
+                                    child: Icon(Icons.broken_image_rounded,
+                                        color: Colors.white38, size: 48),
+                                  ),
                                 ),
-                                errorWidget: (_, __, ___) => const Center(
-                                  child: Icon(Icons.broken_image_rounded, color: Colors.white38, size: 48),
+                              );
+                            },
+                          ),
+                        ),
+
+                      // Top controls overlay: Page count & Fullscreen toggle
+                      Positioned(
+                        top: 12,
+                        left: 12,
+                        right: 12,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.70),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: Colors.white12),
+                              ),
+                              child: Text(
+                                '${_currentPage + 1} / $totalPages',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                            );
-                          },
+                            ),
+                            Row(
+                              children: [
+                                GestureDetector(
+                                  onTap: () {
+                                    HapticFeedback.selectionClick();
+                                    final newRtl = !_isRtl;
+                                    setState(() => _isRtl = newRtl);
+                                    try {
+                                      ref
+                                          .read(settingsControllerProvider
+                                              .notifier)
+                                          .saveMangaReaderSettings(
+                                            readingMode: newRtl
+                                                ? 'pagedRtl'
+                                                : 'pagedLtr',
+                                            isRtl: newRtl,
+                                          );
+                                    } catch (_) {}
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          Colors.black.withValues(alpha: 0.70),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: Colors.white12),
+                                    ),
+                                    child: Icon(
+                                      _isRtl
+                                          ? Icons
+                                              .format_textdirection_r_to_l_rounded
+                                          : Icons
+                                              .format_textdirection_l_to_r_rounded,
+                                      color: Colors.white,
+                                      size: 18,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                GestureDetector(
+                                  onTap: _onReadFullscreenPressed,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(7),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFF6740)
+                                          .withValues(alpha: 0.85),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Icon(Icons.fullscreen_rounded,
+                                        color: Colors.white, size: 18),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
 
-                    // Top controls overlay: Page count & Fullscreen toggle
-                    Positioned(
-                      top: 12,
-                      left: 12,
-                      right: 12,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.70),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: Colors.white12),
-                            ),
-                            child: Text(
-                              '${_currentPage + 1} / $totalPages',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  HapticFeedback.selectionClick();
-                                  final newRtl = !_isRtl;
-                                  setState(() => _isRtl = newRtl);
-                                  try {
-                                    ref.read(settingsControllerProvider.notifier).saveMangaReaderSettings(
-                                          readingMode: newRtl ? 'pagedRtl' : 'pagedLtr',
-                                          isRtl: newRtl,
-                                        );
-                                  } catch (_) {}
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withValues(alpha: 0.70),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: Colors.white12),
-                                  ),
-                                  child: Icon(
-                                    _isRtl
-                                        ? Icons.format_textdirection_r_to_l_rounded
-                                        : Icons.format_textdirection_l_to_r_rounded,
-                                    color: Colors.white,
-                                    size: 18,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              GestureDetector(
-                                onTap: _onReadFullscreenPressed,
-                                child: Container(
-                                  padding: const EdgeInsets.all(7),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFFF6740).withValues(alpha: 0.85),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Icon(Icons.fullscreen_rounded, color: Colors.white, size: 18),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                      // Tap helpers (invisible left & right tap zones)
+                      Positioned(
+                        left: 0,
+                        top: 50,
+                        bottom: 0,
+                        width: 70,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.translucent,
+                          onTap: () => _flipKey.currentState?.previousPage(),
+                        ),
                       ),
-                    ),
-
-                    // Tap helpers (invisible left & right tap zones)
-                    Positioned(
-                      left: 0,
-                      top: 50,
-                      bottom: 0,
-                      width: 70,
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.translucent,
-                        onTap: () => _flipKey.currentState?.previousPage(),
+                      Positioned(
+                        right: 0,
+                        top: 50,
+                        bottom: 0,
+                        width: 70,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.translucent,
+                          onTap: () => _flipKey.currentState?.nextPage(),
+                        ),
                       ),
-                    ),
-                    Positioned(
-                      right: 0,
-                      top: 50,
-                      bottom: 0,
-                      width: 70,
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.translucent,
-                        onTap: () => _flipKey.currentState?.nextPage(),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
 
               // 2. BOTTOM DETAILS
               Padding(
@@ -913,7 +993,8 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                       children: [
                         if (author != null)
                           ActionChip(
-                            avatar: const Icon(Icons.person_outline_rounded, size: 16),
+                            avatar: const Icon(Icons.person_outline_rounded,
+                                size: 16),
                             label: Text(author),
                             visualDensity: VisualDensity.compact,
                             padding: EdgeInsets.zero,
@@ -935,11 +1016,14 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                           ),
                         if (rating != null)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: Colors.redAccent.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.redAccent.withValues(alpha: 0.4)),
+                              border: Border.all(
+                                  color:
+                                      Colors.redAccent.withValues(alpha: 0.4)),
                             ),
                             child: Text(
                               rating.toUpperCase(),
@@ -952,11 +1036,13 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                           ),
                         if (status != null)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: Colors.green.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.green.withValues(alpha: 0.4)),
+                              border: Border.all(
+                                  color: Colors.green.withValues(alpha: 0.4)),
                             ),
                             child: Text(
                               status.toUpperCase(),
@@ -977,13 +1063,17 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                         padding: const EdgeInsets.all(12),
                         margin: const EdgeInsets.only(bottom: 12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFF6740).withValues(alpha: 0.12),
+                          color:
+                              const Color(0xFFFF6740).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFFF6740).withValues(alpha: 0.3)),
+                          border: Border.all(
+                              color: const Color(0xFFFF6740)
+                                  .withValues(alpha: 0.3)),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.history_rounded, color: Color(0xFFFF6740), size: 20),
+                            const Icon(Icons.history_rounded,
+                                color: Color(0xFFFF6740), size: 20),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Column(
@@ -993,17 +1083,24 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                                     isRu
                                         ? 'Вы остановились на: Глава ${_readingProgress!.chapterNumber}, стр. ${_readingProgress!.pageIndex + 1}'
                                         : 'Last read: Chapter ${_readingProgress!.chapterNumber}, page ${_readingProgress!.pageIndex + 1}',
-                                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                    style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold),
                                   ),
                                   if (_readingProgress!.totalPages > 1) ...[
                                     const SizedBox(height: 6),
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(4),
                                       child: LinearProgressIndicator(
-                                        value: ((_readingProgress!.pageIndex + 1) / _readingProgress!.totalPages).clamp(0.0, 1.0),
+                                        value: ((_readingProgress!.pageIndex +
+                                                    1) /
+                                                _readingProgress!.totalPages)
+                                            .clamp(0.0, 1.0),
                                         minHeight: 4,
                                         backgroundColor: Colors.white10,
-                                        valueColor: const AlwaysStoppedAnimation(Color(0xFFFF6740)),
+                                        valueColor:
+                                            const AlwaysStoppedAnimation(
+                                                Color(0xFFFF6740)),
                                       ),
                                     ),
                                   ],
@@ -1020,13 +1117,17 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                             child: FilledButton.icon(
                               style: FilledButton.styleFrom(
                                 backgroundColor: const Color(0xFFFF6740),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16)),
                               ),
-                              icon: const Icon(Icons.play_arrow_rounded, size: 22),
+                              icon: const Icon(Icons.play_arrow_rounded,
+                                  size: 22),
                               label: Text(
                                 isRu ? 'Продолжить чтение' : 'Continue Reading',
-                                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    fontSize: 15, fontWeight: FontWeight.bold),
                               ),
                               onPressed: _onContinueReadingPressed,
                             ),
@@ -1036,13 +1137,16 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                             flex: 2,
                             child: OutlinedButton(
                               style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16)),
                               ),
                               onPressed: _onReadFullscreenPressed,
                               child: Text(
                                 isRu ? 'С начала' : 'From start',
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
                               ),
                             ),
                           ),
@@ -1055,12 +1159,16 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                           style: FilledButton.styleFrom(
                             backgroundColor: const Color(0xFFFF6740),
                             padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16)),
                           ),
                           icon: const Icon(Icons.menu_book_rounded, size: 20),
                           label: Text(
-                            isRu ? 'Читать на весь экран (3D / Webtoon)' : 'Read Fullscreen',
-                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                            isRu
+                                ? 'Читать на весь экран (3D / Webtoon)'
+                                : 'Read Fullscreen',
+                            style: const TextStyle(
+                                fontSize: 15, fontWeight: FontWeight.bold),
                           ),
                           onPressed: _onReadFullscreenPressed,
                         ),
@@ -1071,29 +1179,36 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                     if (description != null && description.isNotEmpty) ...[
                       Text(
                         isRu ? 'Описание' : 'Synopsis',
-                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                        style: theme.textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 6),
                       Text(
                         description,
                         maxLines: _descriptionExpanded ? null : 3,
-                        overflow: _descriptionExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+                        overflow: _descriptionExpanded
+                            ? TextOverflow.visible
+                            : TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 14,
                           height: 1.4,
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.85),
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.85),
                         ),
                       ),
                       if (description.length > 150)
                         GestureDetector(
-                          onTap: () => setState(() => _descriptionExpanded = !_descriptionExpanded),
+                          onTap: () => setState(() =>
+                              _descriptionExpanded = !_descriptionExpanded),
                           child: Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: Text(
                               _descriptionExpanded
                                   ? (isRu ? 'Свернуть' : 'Show less')
                                   : (isRu ? 'Развернуть...' : 'Read more...'),
-                              style: const TextStyle(color: Color(0xFFFF6740), fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                  color: Color(0xFFFF6740),
+                                  fontWeight: FontWeight.bold),
                             ),
                           ),
                         ),
@@ -1107,43 +1222,53 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                         children: [
                           Text(
                             isRu ? 'Главы' : 'Chapters',
-                            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                            style: theme.textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           Text(
                             '${_chapters.length} ${isRu ? 'глав' : 'chapters'}',
-                            style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 13),
+                            style: TextStyle(
+                                color: theme.colorScheme.onSurfaceVariant,
+                                fontSize: 13),
                           ),
                         ],
                       ),
                       const SizedBox(height: 8),
-
                       if (_availableLanguages.length > 1) ...[
                         SizedBox(
                           height: 32,
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             itemCount: _availableLanguages.length,
-                            separatorBuilder: (_, __) => const SizedBox(width: 6),
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(width: 6),
                             itemBuilder: (context, index) {
                               final lang = _availableLanguages[index];
                               final isSelected = lang == _selectedLanguage;
-                              final count = _allChapters.where((c) => c.language == lang).length;
+                              final count = _allChapters
+                                  .where((c) => c.language == lang)
+                                  .length;
                               return InkWell(
                                 onTap: () => _switchLanguage(lang),
                                 borderRadius: BorderRadius.circular(16),
                                 child: AnimatedContainer(
                                   duration: const Duration(milliseconds: 200),
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: isSelected
-                                        ? const Color(0xFFFF6740).withValues(alpha: 0.18)
+                                        ? const Color(0xFFFF6740)
+                                            .withValues(alpha: 0.18)
                                         : (isDark
-                                            ? Colors.white.withValues(alpha: 0.05)
-                                            : Colors.black.withValues(alpha: 0.04)),
+                                            ? Colors.white
+                                                .withValues(alpha: 0.05)
+                                            : Colors.black
+                                                .withValues(alpha: 0.04)),
                                     borderRadius: BorderRadius.circular(16),
                                     border: Border.all(
                                       color: isSelected
-                                          ? const Color(0xFFFF6740).withValues(alpha: 0.8)
+                                          ? const Color(0xFFFF6740)
+                                              .withValues(alpha: 0.8)
                                           : Colors.transparent,
                                       width: 1.2,
                                     ),
@@ -1151,16 +1276,22 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Text(MangaLanguageHelper.flag(lang), style: const TextStyle(fontSize: 13)),
+                                      Text(MangaLanguageHelper.flag(lang),
+                                          style: const TextStyle(fontSize: 13)),
                                       const SizedBox(width: 5),
                                       Text(
                                         '${MangaLanguageHelper.name(lang)} ($count)',
                                         style: TextStyle(
                                           fontSize: 12,
-                                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                          fontWeight: isSelected
+                                              ? FontWeight.bold
+                                              : FontWeight.w500,
                                           color: isSelected
-                                              ? (isDark ? Colors.white : Colors.black87)
-                                              : theme.colorScheme.onSurfaceVariant,
+                                              ? (isDark
+                                                  ? Colors.white
+                                                  : Colors.black87)
+                                              : theme
+                                                  .colorScheme.onSurfaceVariant,
                                         ),
                                       ),
                                     ],
@@ -1176,9 +1307,12 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                         constraints: const BoxConstraints(maxHeight: 230),
                         clipBehavior: Clip.antiAlias,
                         decoration: BoxDecoration(
-                          color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03),
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.04)
+                              : Colors.black.withValues(alpha: 0.03),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: isDark ? Colors.white10 : Colors.black12),
+                          border: Border.all(
+                              color: isDark ? Colors.white10 : Colors.black12),
                         ),
                         child: ListView.separated(
                           shrinkWrap: true,
@@ -1186,31 +1320,42 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                           separatorBuilder: (_, __) => Divider(
                             height: 1,
                             thickness: 1,
-                            color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.06),
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.06)
+                                : Colors.black.withValues(alpha: 0.06),
                           ),
                           itemBuilder: (context, index) {
                             final ch = _chapters[index];
                             final isSelected = index == _selectedChapterIndex;
-                            final isRead = _readingProgress?.readChapterIds.contains(ch.id) ?? false;
+                            final isRead = _readingProgress?.readChapterIds
+                                    .contains(ch.id) ??
+                                false;
 
                             return Material(
                               color: isSelected
-                                  ? const Color(0xFFFF6740).withValues(alpha: 0.14)
+                                  ? const Color(0xFFFF6740)
+                                      .withValues(alpha: 0.14)
                                   : Colors.transparent,
                               child: InkWell(
                                 onTap: () {
-                                  if (ch.isExternal && ch.externalUrl != null && ch.externalUrl!.isNotEmpty) {
-                                    launchUrl(Uri.parse(ch.externalUrl!), mode: LaunchMode.externalApplication);
+                                  if (ch.isExternal &&
+                                      ch.externalUrl != null &&
+                                      ch.externalUrl!.isNotEmpty) {
+                                    launchUrl(Uri.parse(ch.externalUrl!),
+                                        mode: LaunchMode.externalApplication);
                                     return;
                                   }
-                                  if (widget.post.providerId == 'ranobelib' || ch.isNovel) {
-                                    _openFullscreenReader(initialChapterIndex: index);
+                                  if (widget.post.providerId == 'ranobelib' ||
+                                      ch.isNovel) {
+                                    _openFullscreenReader(
+                                        initialChapterIndex: index);
                                   } else {
                                     _switchChapter(index);
                                   }
                                 },
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 14, vertical: 10),
                                   child: Row(
                                     children: [
                                       // Toggle read checkmark button
@@ -1218,31 +1363,48 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                                         padding: EdgeInsets.zero,
                                         constraints: const BoxConstraints(),
                                         icon: Icon(
-                                          isRead ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                                          isRead
+                                              ? Icons.check_circle_rounded
+                                              : Icons
+                                                  .radio_button_unchecked_rounded,
                                           color: isRead
                                               ? const Color(0xFF10B981)
-                                              : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                                              : theme
+                                                  .colorScheme.onSurfaceVariant
+                                                  .withValues(alpha: 0.4),
                                           size: 18,
                                         ),
                                         tooltip: isRu
-                                            ? (isRead ? 'Отметить как непрочитанную' : 'Отметить как прочитанную')
-                                            : (isRead ? 'Mark as unread' : 'Mark as read'),
+                                            ? (isRead
+                                                ? 'Отметить как непрочитанную'
+                                                : 'Отметить как прочитанную')
+                                            : (isRead
+                                                ? 'Mark as unread'
+                                                : 'Mark as read'),
                                         onPressed: () => _toggleChapterRead(ch),
                                       ),
                                       const SizedBox(width: 8),
 
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               '${isRu ? 'Глава' : 'Ch.'} ${ch.chapterNumber}${ch.title.isNotEmpty ? ' - ${ch.title}' : ''}',
                                               style: TextStyle(
                                                 fontSize: 14,
-                                                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                                fontWeight: isSelected
+                                                    ? FontWeight.bold
+                                                    : FontWeight.w500,
                                                 color: isSelected
                                                     ? const Color(0xFFFF6740)
-                                                    : (isRead ? theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6) : null),
+                                                    : (isRead
+                                                        ? theme.colorScheme
+                                                            .onSurfaceVariant
+                                                            .withValues(
+                                                                alpha: 0.6)
+                                                        : null),
                                               ),
                                             ),
                                             const SizedBox(height: 3),
@@ -1250,33 +1412,70 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                                               children: [
                                                 if (ch.language.isNotEmpty)
                                                   Container(
-                                                    margin: const EdgeInsets.only(right: 6),
-                                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                                    margin:
+                                                        const EdgeInsets.only(
+                                                            right: 6),
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        horizontal: 4,
+                                                        vertical: 1),
                                                     decoration: BoxDecoration(
-                                                      color: isDark ? Colors.white12 : Colors.black12,
-                                                      borderRadius: BorderRadius.circular(4),
+                                                      color: isDark
+                                                          ? Colors.white12
+                                                          : Colors.black12,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              4),
                                                     ),
                                                     child: Text(
                                                       ch.language.toUpperCase(),
-                                                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                                                      style: const TextStyle(
+                                                          fontSize: 10,
+                                                          fontWeight:
+                                                              FontWeight.bold),
                                                     ),
                                                   ),
                                                 if (ch.isExternal)
                                                   Container(
-                                                    margin: const EdgeInsets.only(right: 6),
-                                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                                    margin:
+                                                        const EdgeInsets.only(
+                                                            right: 6),
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        horizontal: 5,
+                                                        vertical: 1),
                                                     decoration: BoxDecoration(
-                                                      color: const Color(0xFF3B82F6).withValues(alpha: 0.18),
-                                                      borderRadius: BorderRadius.circular(4),
+                                                      color: const Color(
+                                                              0xFF3B82F6)
+                                                          .withValues(
+                                                              alpha: 0.18),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              4),
                                                     ),
                                                     child: Row(
-                                                      mainAxisSize: MainAxisSize.min,
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
                                                       children: [
-                                                        const Icon(Icons.open_in_new_rounded, size: 10, color: Color(0xFF3B82F6)),
-                                                        const SizedBox(width: 3),
+                                                        const Icon(
+                                                            Icons
+                                                                .open_in_new_rounded,
+                                                            size: 10,
+                                                            color: Color(
+                                                                0xFF3B82F6)),
+                                                        const SizedBox(
+                                                            width: 3),
                                                         Text(
-                                                          isRu ? 'Внешняя' : 'External',
-                                                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF3B82F6)),
+                                                          isRu
+                                                              ? 'Внешняя'
+                                                              : 'External',
+                                                          style: const TextStyle(
+                                                              fontSize: 10,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              color: Color(
+                                                                  0xFF3B82F6)),
                                                         ),
                                                       ],
                                                     ),
@@ -1285,7 +1484,8 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                                                   Text(
                                                     '${ch.pageCount} ${isRu ? 'стр.' : 'p.'}',
                                                     style: TextStyle(
-                                                      color: theme.colorScheme.onSurfaceVariant,
+                                                      color: theme.colorScheme
+                                                          .onSurfaceVariant,
                                                       fontSize: 11,
                                                     ),
                                                   ),
@@ -1295,9 +1495,11 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                                         ),
                                       ),
                                       // Offline download button
-                                      if (_downloadingChapterIds.contains(ch.id))
+                                      if (_downloadingChapterIds
+                                          .contains(ch.id))
                                         const Padding(
-                                          padding: EdgeInsets.symmetric(horizontal: 6),
+                                          padding: EdgeInsets.symmetric(
+                                              horizontal: 6),
                                           child: SizedBox(
                                             width: 18,
                                             height: 18,
@@ -1312,29 +1514,39 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                                           padding: EdgeInsets.zero,
                                           constraints: const BoxConstraints(),
                                           icon: Icon(
-                                            _downloadedChapterIds.contains(ch.id)
+                                            _downloadedChapterIds
+                                                    .contains(ch.id)
                                                 ? Icons.download_done_rounded
-                                                : Icons.download_for_offline_outlined,
-                                            color: _downloadedChapterIds.contains(ch.id)
+                                                : Icons
+                                                    .download_for_offline_outlined,
+                                            color: _downloadedChapterIds
+                                                    .contains(ch.id)
                                                 ? const Color(0xFF10B981)
-                                                : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                                                : theme.colorScheme
+                                                    .onSurfaceVariant
+                                                    .withValues(alpha: 0.4),
                                             size: 20,
                                           ),
                                           tooltip: isRu
-                                              ? (_downloadedChapterIds.contains(ch.id)
+                                              ? (_downloadedChapterIds
+                                                      .contains(ch.id)
                                                   ? 'Скачано (доступно офлайн)'
                                                   : 'Скачать главу офлайн')
-                                              : (_downloadedChapterIds.contains(ch.id)
+                                              : (_downloadedChapterIds
+                                                      .contains(ch.id)
                                                   ? 'Downloaded offline'
                                                   : 'Download offline'),
                                           onPressed: () => _downloadChapter(ch),
                                         ),
                                       const SizedBox(width: 8),
                                       Icon(
-                                        isSelected ? Icons.play_circle_filled_rounded : Icons.play_arrow_rounded,
+                                        isSelected
+                                            ? Icons.play_circle_filled_rounded
+                                            : Icons.play_arrow_rounded,
                                         color: isSelected
                                             ? const Color(0xFFFF6740)
-                                            : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                                            : theme.colorScheme.onSurfaceVariant
+                                                .withValues(alpha: 0.4),
                                         size: 20,
                                       ),
                                     ],
@@ -1412,7 +1624,9 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                     // 5. RECOMMENDATIONS SECTION
                     if (_recommendations.isNotEmpty) ...[
                       MangaHorizontalList(
-                        title: isRu ? 'Похожая манга и рекомендации' : 'Recommendations & Similar',
+                        title: isRu
+                            ? 'Похожая манга и рекомендации'
+                            : 'Recommendations & Similar',
                         icon: Icons.recommend_rounded,
                         items: _recommendations,
                         onSelect: (item) {
@@ -1430,26 +1644,39 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03),
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.04)
+                            : Colors.black.withValues(alpha: 0.03),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: isDark ? Colors.white10 : Colors.black12),
+                        border: Border.all(
+                            color: isDark ? Colors.white10 : Colors.black12),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             isRu ? 'Информация о тайтле' : 'Manga Info',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 14),
                           ),
                           const SizedBox(height: 8),
-                          _infoRow(isRu ? 'Источник' : 'Source', post.providerName),
+                          _infoRow(
+                              isRu ? 'Источник' : 'Source', post.providerName),
                           if (post.id.isNotEmpty) _infoRow('ID', post.id),
-                          if (author != null) _infoRow(isRu ? 'Автор' : 'Author', author),
-                          if (artist != null && artist != author) _infoRow(isRu ? 'Художник' : 'Artist', artist),
+                          if (author != null)
+                            _infoRow(isRu ? 'Автор' : 'Author', author),
+                          if (artist != null && artist != author)
+                            _infoRow(isRu ? 'Художник' : 'Artist', artist),
                           _infoRow(isRu ? 'Страниц' : 'Pages', '$totalPages'),
-                          if (_chapters.isNotEmpty) _infoRow(isRu ? 'Всего глав' : 'Total chapters', '${_chapters.length}'),
-                          if (rating != null) _infoRow(isRu ? 'Рейтинг' : 'Rating', rating.toUpperCase()),
-                          if (status != null) _infoRow(isRu ? 'Статус' : 'Status', status.toUpperCase()),
+                          if (_chapters.isNotEmpty)
+                            _infoRow(isRu ? 'Всего глав' : 'Total chapters',
+                                '${_chapters.length}'),
+                          if (rating != null)
+                            _infoRow(isRu ? 'Рейтинг' : 'Rating',
+                                rating.toUpperCase()),
+                          if (status != null)
+                            _infoRow(isRu ? 'Статус' : 'Status',
+                                status.toUpperCase()),
                         ],
                       ),
                     ),
@@ -1471,10 +1698,11 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+          Text(value,
+              style:
+                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
         ],
       ),
     );
   }
 }
-

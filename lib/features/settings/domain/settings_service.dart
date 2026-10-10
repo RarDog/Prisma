@@ -65,6 +65,7 @@ class AppSettings {
     this.searchHistoryLimit = 500,
     this.tagCacheLimit = 5000,
     this.lastActiveLocation = '/',
+    this.showProviderHealthBanner = true,
     this.hasCompletedOnboarding = false,
     this.mangaReaderRtl = true,
     this.mangaSelectedRating = 'All',
@@ -151,6 +152,7 @@ class AppSettings {
   final String downloadPathTemplate;
   final int searchHistoryLimit;
   final int tagCacheLimit;
+  final bool showProviderHealthBanner;
 
   static const defaults = AppSettings(
     enabledProviderIds: ['gelbooru', 'rule34', 'realbooru'],
@@ -264,6 +266,7 @@ class AppSettings {
     String? downloadPathTemplate,
     int? searchHistoryLimit,
     int? tagCacheLimit,
+    bool? showProviderHealthBanner,
     String? lastActiveLocation,
     bool? hasCompletedOnboarding,
     bool? mangaReaderRtl,
@@ -345,6 +348,8 @@ class AppSettings {
       downloadPathTemplate: downloadPathTemplate ?? this.downloadPathTemplate,
       searchHistoryLimit: searchHistoryLimit ?? this.searchHistoryLimit,
       tagCacheLimit: tagCacheLimit ?? this.tagCacheLimit,
+      showProviderHealthBanner:
+          showProviderHealthBanner ?? this.showProviderHealthBanner,
       hasCompletedOnboarding:
           hasCompletedOnboarding ?? this.hasCompletedOnboarding,
       mangaReaderRtl: mangaReaderRtl ?? this.mangaReaderRtl,
@@ -420,6 +425,7 @@ class AppSettings {
         'downloadPathTemplate': downloadPathTemplate,
         'searchHistoryLimit': searchHistoryLimit,
         'tagCacheLimit': tagCacheLimit,
+        'showProviderHealthBanner': showProviderHealthBanner,
         'lastActiveLocation': lastActiveLocation,
         'hasCompletedOnboarding': hasCompletedOnboarding,
         'mangaReaderRtl': mangaReaderRtl,
@@ -554,8 +560,11 @@ class AppSettings {
             (json['downloadPathTemplate'] as String?) ?? '{Artist}/{ID}',
         searchHistoryLimit: (json['searchHistoryLimit'] as num?)?.toInt() ??
             defaults.searchHistoryLimit,
-        tagCacheLimit: (json['tagCacheLimit'] as num?)?.toInt() ??
-            defaults.tagCacheLimit,
+        tagCacheLimit:
+            (json['tagCacheLimit'] as num?)?.toInt() ?? defaults.tagCacheLimit,
+        showProviderHealthBanner:
+            (json['showProviderHealthBanner'] as bool?) ??
+                defaults.showProviderHealthBanner,
         lastActiveLocation: (json['lastActiveLocation'] as String?) ??
             defaults.lastActiveLocation,
         hasCompletedOnboarding:
@@ -564,34 +573,32 @@ class AppSettings {
             (json['mangaReaderRtl'] as bool?) ?? defaults.mangaReaderRtl,
         mangaSelectedRating: (json['mangaSelectedRating'] as String?) ??
             defaults.mangaSelectedRating,
-        mangaScrollOffset:
-            (json['mangaScrollOffset'] as num?)?.toDouble() ??
-                defaults.mangaScrollOffset,
-        mangaSelectedProviderId:
-            (json['mangaSelectedProviderId'] as String?) ??
-                defaults.mangaSelectedProviderId,
-        mangaReadingMode: (json['mangaReadingMode'] as String?) ??
-            defaults.mangaReadingMode,
+        mangaScrollOffset: (json['mangaScrollOffset'] as num?)?.toDouble() ??
+            defaults.mangaScrollOffset,
+        mangaSelectedProviderId: (json['mangaSelectedProviderId'] as String?) ??
+            defaults.mangaSelectedProviderId,
+        mangaReadingMode:
+            (json['mangaReadingMode'] as String?) ?? defaults.mangaReadingMode,
         mangaVolumeNavigation: (json['mangaVolumeNavigation'] as bool?) ??
             defaults.mangaVolumeNavigation,
         mangaInvertVolumeKeys: (json['mangaInvertVolumeKeys'] as bool?) ??
             defaults.mangaInvertVolumeKeys,
-        debugHudEnabled: (json['debugHudEnabled'] as bool?) ??
-            defaults.debugHudEnabled,
-        debugHudShowCpu: (json['debugHudShowCpu'] as bool?) ??
-            defaults.debugHudShowCpu,
-        debugHudShowRam: (json['debugHudShowRam'] as bool?) ??
-            defaults.debugHudShowRam,
+        debugHudEnabled:
+            (json['debugHudEnabled'] as bool?) ?? defaults.debugHudEnabled,
+        debugHudShowCpu:
+            (json['debugHudShowCpu'] as bool?) ?? defaults.debugHudShowCpu,
+        debugHudShowRam:
+            (json['debugHudShowRam'] as bool?) ?? defaults.debugHudShowRam,
         debugHudShowNetwork: (json['debugHudShowNetwork'] as bool?) ??
             defaults.debugHudShowNetwork,
-        debugHudShowFps: (json['debugHudShowFps'] as bool?) ??
-            defaults.debugHudShowFps,
+        debugHudShowFps:
+            (json['debugHudShowFps'] as bool?) ?? defaults.debugHudShowFps,
         debugHudOpacity: (json['debugHudOpacity'] as num?)?.toDouble() ??
             defaults.debugHudOpacity,
-        debugHudX: (json['debugHudX'] as num?)?.toDouble() ??
-            defaults.debugHudX,
-        debugHudY: (json['debugHudY'] as num?)?.toDouble() ??
-            defaults.debugHudY,
+        debugHudX:
+            (json['debugHudX'] as num?)?.toDouble() ?? defaults.debugHudX,
+        debugHudY:
+            (json['debugHudY'] as num?)?.toDouble() ?? defaults.debugHudY,
       );
 
   List<PawchiveAccount> get parsedPawchiveAccounts {

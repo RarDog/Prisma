@@ -69,8 +69,10 @@ void main() {
         isRead: true,
       );
 
-      expect(await libraryService.isChapterRead('manga-456', 'chap-10'), isTrue);
-      expect(await libraryService.isChapterRead('manga-456', 'chap-11'), isFalse);
+      expect(
+          await libraryService.isChapterRead('manga-456', 'chap-10'), isTrue);
+      expect(
+          await libraryService.isChapterRead('manga-456', 'chap-11'), isFalse);
 
       await libraryService.toggleChapterRead(
         mangaId: 'manga-456',
@@ -78,7 +80,8 @@ void main() {
         isRead: false,
       );
 
-      expect(await libraryService.isChapterRead('manga-456', 'chap-10'), isFalse);
+      expect(
+          await libraryService.isChapterRead('manga-456', 'chap-10'), isFalse);
     });
 
     test('setLibraryStatus saves entry and filters work correctly', () async {
@@ -101,11 +104,13 @@ void main() {
       final all = await libraryService.getLibraryEntries();
       expect(all.length, equals(2));
 
-      final reading = await libraryService.getLibraryEntries(statusFilter: 'reading');
+      final reading =
+          await libraryService.getLibraryEntries(statusFilter: 'reading');
       expect(reading.length, equals(1));
       expect(reading.first.title, equals('Frieren'));
 
-      final completed = await libraryService.getLibraryEntries(statusFilter: 'completed');
+      final completed =
+          await libraryService.getLibraryEntries(statusFilter: 'completed');
       expect(completed.length, equals(1));
       expect(completed.first.title, equals('Dungeon Meshi'));
 
@@ -172,7 +177,9 @@ void main() {
       expect(entries.where((e) => e.mangaId == 'manga-99').isEmpty, isTrue);
     });
 
-    test('seamlessly migrates legacy AppSettingEntity JSON entries to Isar collections', () async {
+    test(
+        'seamlessly migrates legacy AppSettingEntity JSON entries to Isar collections',
+        () async {
       // Manually insert legacy JSON into AppSettingEntity
       await databaseService.safeWrite((isar) async {
         final legacyLib = AppSettingEntity()
@@ -224,12 +231,19 @@ void main() {
       expect(entries.first.title, equals('Legacy One Piece'));
       expect(entries.first.progress, isNotNull);
       expect(entries.first.progress!.chapterNumber, equals('1050'));
-      expect(entries.first.progress!.readChapterIds.contains('ch-1049'), isTrue);
+      expect(
+          entries.first.progress!.readChapterIds.contains('ch-1049'), isTrue);
 
       // Verify legacy keys were removed from AppSettingEntity
       final check = await databaseService.safeRead<bool>((isar) async {
-        final l1 = await isar.appSettingEntitys.filter().keyEqualTo('manga_library_entries_v1').findFirst();
-        final l2 = await isar.appSettingEntitys.filter().keyEqualTo('manga_reading_progress_v1').findFirst();
+        final l1 = await isar.appSettingEntitys
+            .filter()
+            .keyEqualTo('manga_library_entries_v1')
+            .findFirst();
+        final l2 = await isar.appSettingEntitys
+            .filter()
+            .keyEqualTo('manga_reading_progress_v1')
+            .findFirst();
         return l1 == null && l2 == null;
       });
       expect(check.isSuccess && (check as Success<bool>).data, isTrue);

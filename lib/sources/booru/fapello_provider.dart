@@ -93,11 +93,9 @@ class FapelloProvider
     dotAll: true,
   );
 
-  static final _imgSrcPattern =
-      RegExp(r'''<img[^>]+src=["']([^"']+)["']''');
+  static final _imgSrcPattern = RegExp(r'''<img[^>]+src=["']([^"']+)["']''');
 
-  static final _imgAltPattern =
-      RegExp(r'''<img[^>]+alt=["']([^"']*)["']''');
+  static final _imgAltPattern = RegExp(r'''<img[^>]+alt=["']([^"']*)["']''');
 
   /// The only in-grid discriminator between a video tile and an image tile:
   /// videos carry a play-icon overlay.
@@ -327,7 +325,8 @@ class FapelloProvider
       );
 
   @override
-  Future<List<ArtistTag>> getArtistTags(String service, String artistId) async =>
+  Future<List<ArtistTag>> getArtistTags(
+          String service, String artistId) async =>
       const [];
 
   @override
@@ -349,8 +348,7 @@ class FapelloProvider
     final slug = query.artistId.trim();
     if (slug.isEmpty) return const [];
     // `page` is 0-based here while the site is 1-based.
-    final path =
-        '/ajax/model/${Uri.encodeComponent(slug)}/page-${page + 1}/';
+    final path = '/ajax/model/${Uri.encodeComponent(slug)}/page-${page + 1}/';
     final html = await _getHtml(path);
     if (html.trim().isEmpty) return const [];
 
@@ -448,7 +446,9 @@ class FapelloProvider
       createdAt: _pseudoDate(item.mediaId),
       fileType: item.isVideo ? 'video' : 'image',
       score: 0,
-      tagGroups: {'artist': [artistName]},
+      tagGroups: {
+        'artist': [artistName]
+      },
     );
   }
 
@@ -606,14 +606,12 @@ class FapelloProvider
     if (dot <= 0) return mediaUrl;
     final thumbnailName =
         '${last.substring(0, dot)}_300px.${last.substring(dot + 1)}';
-    return uri
-        .replace(
-          pathSegments: [
-            ...segments.sublist(0, segments.length - 1),
-            thumbnailName,
-          ],
-        )
-        .toString();
+    return uri.replace(
+      pathSegments: [
+        ...segments.sublist(0, segments.length - 1),
+        thumbnailName,
+      ],
+    ).toString();
   }
 
   // ---------------------------------------------------------------- parsing
@@ -658,8 +656,8 @@ class FapelloProvider
       (match) {
         final entity = match.group(1)!;
         if (entity.startsWith('#')) {
-          final isHex = entity.length > 1 &&
-              (entity[1] == 'x' || entity[1] == 'X');
+          final isHex =
+              entity.length > 1 && (entity[1] == 'x' || entity[1] == 'X');
           final code = int.tryParse(
             isHex ? entity.substring(2) : entity.substring(1),
             radix: isHex ? 16 : 10,

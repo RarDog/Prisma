@@ -189,7 +189,8 @@ class PostActionBar extends StatelessWidget {
                     : scheme.secondaryContainer.withValues(alpha: 0.5),
                 foregroundColor:
                     isFavorite ? Colors.redAccent : scheme.onSecondaryContainer,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),

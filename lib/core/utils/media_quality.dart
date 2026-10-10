@@ -176,7 +176,10 @@ class MediaUrlSelector {
   static bool _isAudio(Post post) {
     final type = post.fileType.toLowerCase().trim();
     if (type == 'audio') return true;
-    if (type == 'video' || type == 'photo' || type == 'archive' || type == 'gif') {
+    if (type == 'video' ||
+        type == 'photo' ||
+        type == 'archive' ||
+        type == 'gif') {
       return false;
     }
 
@@ -194,7 +197,10 @@ class MediaUrlSelector {
   static bool _isVideo(Post post) {
     final type = post.fileType.toLowerCase().trim();
     if (type == 'video') return true;
-    if (type == 'audio' || type == 'photo' || type == 'archive' || type == 'gif') {
+    if (type == 'audio' ||
+        type == 'photo' ||
+        type == 'archive' ||
+        type == 'gif') {
       return false;
     }
 
@@ -228,4 +234,3 @@ class MediaUrlSelector {
     return _audioExtensions.contains(ext);
   }
 }
-

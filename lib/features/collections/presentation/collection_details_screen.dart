@@ -23,9 +23,8 @@ class CollectionDetailsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final postsAsync = ref.watch(collectionPostsProvider(collectionId));
     final collections = ref.watch(collectionsControllerProvider).valueOrNull;
-    final collection = collections
-        ?.where((c) => c.id == collectionId)
-        .firstOrNull;
+    final collection =
+        collections?.where((c) => c.id == collectionId).firstOrNull;
     final settings =
         ref.watch(appSettingsProvider).value ?? AppSettings.defaults;
     final isRu = settings.languageCode == 'ru';
@@ -93,7 +92,9 @@ class CollectionDetailsScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      isRu ? 'В коллекции пока нет постов' : 'Collection is empty',
+                      isRu
+                          ? 'В коллекции пока нет постов'
+                          : 'Collection is empty',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -105,9 +106,8 @@ class CollectionDetailsScreen extends ConsumerWidget {
                           : 'Add posts to this collection using "Add to collection" from post cards in the feed',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                     ),
                     const SizedBox(height: 24),
@@ -147,9 +147,8 @@ class CollectionDetailsScreen extends ConsumerWidget {
                     child: Text(
                       collection.description!,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                     ),
                   ),

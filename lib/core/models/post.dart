@@ -202,4 +202,3 @@ class PostNavigationContext {
   final Post currentPost;
   final List<Post> posts;
 }
-

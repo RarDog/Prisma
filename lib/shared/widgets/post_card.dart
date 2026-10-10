@@ -11,6 +11,7 @@ import 'package:media_kit_video/media_kit_video.dart';
 
 import 'package:gel_rule_app/app/motion.dart';
 import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/core/performance/performance_monitor.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/features/post/presentation/widgets/post_media_viewer.dart';
 import 'blur_content.dart';
@@ -18,6 +19,10 @@ import 'loading_skeleton.dart';
 import 'rating_badge.dart';
 
 class PostCard extends ConsumerStatefulWidget {
+  static void clearResolvedPostCache() {
+    _PostCardState.clearResolvedPostCache();
+  }
+
   const PostCard({
     required this.post,
     required this.blurExplicit,
@@ -60,6 +65,18 @@ class PostCard extends ConsumerStatefulWidget {
 class _PostCardState extends ConsumerState<PostCard>
     with SingleTickerProviderStateMixin {
   static final Map<String, Post> _resolvedRealbooruPosts = {};
+  static const int _maxResolvedPostsCache = 200;
+
+  static void _cacheResolvedPost(String key, Post post) {
+    if (_resolvedRealbooruPosts.length >= _maxResolvedPostsCache) {
+      _resolvedRealbooruPosts.remove(_resolvedRealbooruPosts.keys.first);
+    }
+    _resolvedRealbooruPosts[key] = post;
+  }
+
+  static void clearResolvedPostCache() {
+    _resolvedRealbooruPosts.clear();
+  }
 
   bool _hovered = false;
   bool _pressed = false;
@@ -74,6 +91,7 @@ class _PostCardState extends ConsumerState<PostCard>
   @override
   void initState() {
     super.initState();
+    SmartMemoryManager.registerTrimCallback(clearResolvedPostCache);
     _resolvedPost = _resolvedRealbooruPosts[widget.post.cacheKey];
     _maybeResolveRealbooruPost();
   }
@@ -93,8 +111,7 @@ class _PostCardState extends ConsumerState<PostCard>
           tween: Tween(begin: 1.3, end: 1.0)
               .chain(CurveTween(curve: Curves.easeIn)),
           weight: 30),
-      TweenSequenceItem(
-          tween: Tween(begin: 1.0, end: 1.0), weight: 30),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.0), weight: 30),
     ]).animate(controller);
     _heartOpacity = TweenSequence<double>([
       TweenSequenceItem(tween: ConstantTween(1.0), weight: 60),
@@ -242,275 +259,281 @@ class _PostCardState extends ConsumerState<PostCard>
             child: ClipRRect(
               borderRadius: BorderRadius.circular(15.2),
               child: Stack(
-              children: [
-                AspectRatio(
-                  aspectRatio: aspect.clamp(0.28, 2.2),
-                  child: BlurContent(
-                    enabled: widget.blurExplicit && sensitive,
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        if (isTextPost) {
-                          return _TextPostCardPreview(
-                            post: post,
-                            hovered: _hovered && !mobile,
+                children: [
+                  AspectRatio(
+                    aspectRatio: aspect.clamp(0.28, 2.2),
+                    child: BlurContent(
+                      enabled: widget.blurExplicit && sensitive,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          if (isTextPost) {
+                            return _TextPostCardPreview(
+                              post: post,
+                              hovered: _hovered && !mobile,
+                            );
+                          }
+                          if (isAudioPost &&
+                              (imageUrl.isEmpty ||
+                                  !imageUrl.startsWith('http'))) {
+                            return _AudioPostCardPreview(
+                              post: post,
+                              hovered: _hovered && !mobile,
+                            );
+                          }
+                          if (isVideoPost &&
+                              (imageUrl.isEmpty ||
+                                  !imageUrl.startsWith('http'))) {
+                            return _VideoPostCardPreview(
+                              post: post,
+                              hovered: _hovered && !mobile,
+                            );
+                          }
+                          final dpr = MediaQuery.devicePixelRatioOf(context);
+                          final cacheWidth = (constraints.maxWidth * dpr)
+                              .round()
+                              .clamp(280, 960);
+                          final headers = _headersFor(post);
+                          final videoUrls = MediaUrlSelector.video(post);
+                          if (!mobile &&
+                              _videoHoverActive &&
+                              post.providerId != 'realbooru' &&
+                              _resolvedPost != null &&
+                              MediaUrlSelector.isVideo(post) &&
+                              videoUrls.isNotEmpty) {
+                            return _FeedVideoPreview(
+                              videoUrl: videoUrls.first,
+                              headers: headers,
+                              fallbackImageUrl: imageUrl,
+                              cacheWidth: cacheWidth,
+                            );
+                          }
+                          return CachedNetworkImage(
+                            imageUrl: imageUrl,
+                            httpHeaders: headers,
+                            memCacheWidth: cacheWidth,
+                            maxWidthDiskCache: cacheWidth,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) =>
+                                const LoadingSkeleton(),
+                            errorWidget: (context, url, error) => ColoredBox(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest,
+                              child: Center(
+                                child: Icon(
+                                  isVideoPost
+                                      ? Icons.videocam_outlined
+                                      : (isAudioPost
+                                          ? Icons.music_note_rounded
+                                          : Icons.broken_image_rounded),
+                                ),
+                              ),
+                            ),
                           );
-                        }
-                        if (isAudioPost && (imageUrl.isEmpty || !imageUrl.startsWith('http'))) {
-                          return _AudioPostCardPreview(
-                            post: post,
-                            hovered: _hovered && !mobile,
-                          );
-                        }
-                        if (isVideoPost && (imageUrl.isEmpty || !imageUrl.startsWith('http'))) {
-                          return _VideoPostCardPreview(
-                            post: post,
-                            hovered: _hovered && !mobile,
-                          );
-                        }
-                        final dpr = MediaQuery.devicePixelRatioOf(context);
-                        final cacheWidth =
-                            (constraints.maxWidth * dpr).round().clamp(280, 960);
-                        final headers = _headersFor(post);
-                        final videoUrls = MediaUrlSelector.video(post);
-                        if (!mobile &&
-                            _videoHoverActive &&
-                            post.providerId != 'realbooru' &&
-                            _resolvedPost != null &&
-                            MediaUrlSelector.isVideo(post) &&
-                            videoUrls.isNotEmpty) {
-                          return _FeedVideoPreview(
-                            videoUrl: videoUrls.first,
-                            headers: headers,
-                            fallbackImageUrl: imageUrl,
-                            cacheWidth: cacheWidth,
-                          );
-                        }
-                        return CachedNetworkImage(
-                          imageUrl: imageUrl,
-                          httpHeaders: headers,
-                          memCacheWidth: cacheWidth,
-                          maxWidthDiskCache: cacheWidth,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => const LoadingSkeleton(),
-                          errorWidget: (context, url, error) => ColoredBox(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHighest,
-                            child: Center(
-                              child: Icon(
-                                isVideoPost
-                                    ? Icons.videocam_outlined
-                                    : (isAudioPost
-                                        ? Icons.music_note_rounded
-                                        : Icons.broken_image_rounded),
+                        },
+                      ),
+                    ),
+                  ),
+                  // Bottom cinematic gradient overlay for badges and favorite (only on media posts)
+                  if (!isTextPost)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      height: 64,
+                      child: IgnorePointer(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
+                              colors: [
+                                Colors.black.withValues(alpha: 0.72),
+                                Colors.transparent,
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (widget.showBadges) ...[
+                    Positioned(
+                      left: 8,
+                      top: 8,
+                      child: _ProviderBadge(name: post.providerName),
+                    ),
+                    if (post.fileType.toLowerCase().contains('video') ||
+                        post.fileType.toLowerCase().contains('webm') ||
+                        post.fileType.toLowerCase().contains('mp4') ||
+                        post.fileType.toLowerCase().contains('gif') ||
+                        isVideoPost ||
+                        isAudioPost ||
+                        isTextPost)
+                      Positioned(
+                        right: 8,
+                        top: 8,
+                        child: _MediaBadge(
+                          fileType: isAudioPost
+                              ? 'audio'
+                              : (isTextPost
+                                  ? 'text'
+                                  : (isVideoPost ? 'video' : post.fileType)),
+                        ),
+                      ),
+                    Positioned(
+                      left: 8,
+                      bottom: 8,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (widget.isViewed || widget.isDownloaded) ...[
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (widget.isViewed) const _SeenBadge(),
+                                if (widget.isViewed && widget.isDownloaded)
+                                  const SizedBox(width: 4),
+                                if (widget.isDownloaded)
+                                  const _DownloadedBadge(),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                          ],
+                          RatingBadge(rating: post.rating),
+                        ],
+                      ),
+                    ),
+                  ],
+                  if (widget.selected)
+                    Positioned.fill(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withValues(alpha: 0.24),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.primary,
+                            width: 3,
+                          ),
+                          borderRadius: BorderRadius.circular(13),
+                        ),
+                        child: const Align(
+                          alignment: Alignment.topRight,
+                          child: Padding(
+                            padding: EdgeInsets.all(8),
+                            child: Icon(Icons.check_circle_rounded),
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (mobile)
+                    Positioned(
+                      right: 8,
+                      bottom: 8,
+                      child: _FavoriteButton(
+                        isFavorite: widget.isFavorite,
+                        onPressed: widget.onFavorite,
+                      ),
+                    ),
+                  // Double-tap heart animation overlay
+                  if (_showHeart &&
+                      _heartController != null &&
+                      _heartOpacity != null &&
+                      _heartScale != null)
+                    Positioned.fill(
+                      child: Center(
+                        child: AnimatedBuilder(
+                          animation: _heartController!,
+                          builder: (context, _) => Opacity(
+                            opacity: _heartOpacity!.value,
+                            child: Transform.scale(
+                              scale: _heartScale!.value,
+                              child: const Icon(
+                                Icons.favorite_rounded,
+                                color: Colors.white,
+                                size: 72,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black54,
+                                    blurRadius: 12,
+                                  ),
+                                ],
                               ),
                             ),
                           ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                // Bottom cinematic gradient overlay for badges and favorite (only on media posts)
-                if (!isTextPost)
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    height: 64,
-                    child: IgnorePointer(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.bottomCenter,
-                            end: Alignment.topCenter,
-                            colors: [
-                              Colors.black.withValues(alpha: 0.72),
-                              Colors.transparent,
-                            ],
-                          ),
                         ),
                       ),
                     ),
-                  ),
-                if (widget.showBadges) ...[
-                  Positioned(
-                    left: 8,
-                    top: 8,
-                    child: _ProviderBadge(name: post.providerName),
-                  ),
-                  if (post.fileType.toLowerCase().contains('video') ||
-                      post.fileType.toLowerCase().contains('webm') ||
-                      post.fileType.toLowerCase().contains('mp4') ||
-                      post.fileType.toLowerCase().contains('gif') ||
-                      isVideoPost ||
-                      isAudioPost ||
-                      isTextPost)
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: _MediaBadge(
-                        fileType: isAudioPost
-                            ? 'audio'
-                            : (isTextPost
-                                ? 'text'
-                                : (isVideoPost ? 'video' : post.fileType)),
-                      ),
-                    ),
-                  Positioned(
-                    left: 8,
-                    bottom: 8,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (widget.isViewed || widget.isDownloaded) ...[
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (widget.isViewed) const _SeenBadge(),
-                              if (widget.isViewed && widget.isDownloaded)
-                                const SizedBox(width: 4),
-                              if (widget.isDownloaded)
-                                const _DownloadedBadge(),
-                            ],
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      ignoring: !_hovered || mobile,
+                      child: AnimatedOpacity(
+                        opacity: _hovered && !mobile ? 1 : 0,
+                        duration: AppMotion.duration(context, 140),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
+                              colors: [
+                                Colors.black.withValues(alpha: 0.55),
+                                Colors.transparent,
+                              ],
+                            ),
                           ),
-                          const SizedBox(height: 4),
-                        ],
-                        RatingBadge(rating: post.rating),
-                      ],
+                          child: Align(
+                            alignment: Alignment.bottomRight,
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton.filledTonal(
+                                    tooltip: widget.isFavorite
+                                        ? 'Remove favorite'
+                                        : 'Favorite',
+                                    onPressed: () {
+                                      HapticFeedback.lightImpact();
+                                      widget.onFavorite();
+                                    },
+                                    icon: Icon(
+                                      widget.isFavorite
+                                          ? Icons.favorite_rounded
+                                          : Icons.favorite_border_rounded,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  IconButton.filledTonal(
+                                    tooltip: 'Add to collection',
+                                    onPressed: widget.onAddToCollection,
+                                    icon: const Icon(Icons.add_rounded),
+                                  ),
+                                  if (widget.onHide != null) ...[
+                                    const SizedBox(width: 6),
+                                    IconButton.filledTonal(
+                                      tooltip: 'Hide post',
+                                      onPressed: widget.onHide,
+                                      icon: const Icon(
+                                          Icons.visibility_off_rounded),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ],
-                if (widget.selected)
-                  Positioned.fill(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .primary
-                            .withValues(alpha: 0.24),
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.primary,
-                          width: 3,
-                        ),
-                        borderRadius: BorderRadius.circular(13),
-                      ),
-                      child: const Align(
-                        alignment: Alignment.topRight,
-                        child: Padding(
-                          padding: EdgeInsets.all(8),
-                          child: Icon(Icons.check_circle_rounded),
-                        ),
-                      ),
-                    ),
-                  ),
-                if (mobile)
-                  Positioned(
-                    right: 8,
-                    bottom: 8,
-                    child: _FavoriteButton(
-                      isFavorite: widget.isFavorite,
-                      onPressed: widget.onFavorite,
-                    ),
-                  ),
-              // Double-tap heart animation overlay
-              if (_showHeart &&
-                  _heartController != null &&
-                  _heartOpacity != null &&
-                  _heartScale != null)
-                Positioned.fill(
-                  child: Center(
-                    child: AnimatedBuilder(
-                      animation: _heartController!,
-                      builder: (context, _) => Opacity(
-                        opacity: _heartOpacity!.value,
-                        child: Transform.scale(
-                          scale: _heartScale!.value,
-                          child: const Icon(
-                            Icons.favorite_rounded,
-                            color: Colors.white,
-                            size: 72,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black54,
-                                blurRadius: 12,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              Positioned.fill(
-                child: IgnorePointer(
-                  ignoring: !_hovered || mobile,
-                  child: AnimatedOpacity(
-                    opacity: _hovered && !mobile ? 1 : 0,
-                    duration: AppMotion.duration(context, 140),
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.topCenter,
-                          colors: [
-                            Colors.black.withValues(alpha: 0.55),
-                            Colors.transparent,
-                          ],
-                        ),
-                      ),
-                      child: Align(
-                        alignment: Alignment.bottomRight,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton.filledTonal(
-                                tooltip: widget.isFavorite
-                                    ? 'Remove favorite'
-                                    : 'Favorite',
-                                onPressed: () {
-                                  HapticFeedback.lightImpact();
-                                  widget.onFavorite();
-                                },
-                                icon: Icon(
-                                  widget.isFavorite
-                                      ? Icons.favorite_rounded
-                                      : Icons.favorite_border_rounded,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              IconButton.filledTonal(
-                                tooltip: 'Add to collection',
-                                onPressed: widget.onAddToCollection,
-                                icon: const Icon(Icons.add_rounded),
-                              ),
-                              if (widget.onHide != null) ...[
-                                const SizedBox(width: 6),
-                                IconButton.filledTonal(
-                                  tooltip: 'Hide post',
-                                  onPressed: widget.onHide,
-                                  icon:
-                                      const Icon(Icons.visibility_off_rounded),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
               ),
-              ],
             ),
           ),
         ),
       ),
-    ),
-  );
+    );
   }
 
   bool _isSensitive(String rating) {
@@ -537,8 +560,7 @@ class _PostCardState extends ConsumerState<PostCard>
       return [
         if (!MediaUrlSelector.looksLikeVideoUrl(post.previewUrl))
           post.previewUrl,
-        if (!MediaUrlSelector.looksLikeVideoUrl(post.sampleUrl))
-          post.sampleUrl,
+        if (!MediaUrlSelector.looksLikeVideoUrl(post.sampleUrl)) post.sampleUrl,
         post.previewUrl,
       ].where((url) => url.trim().isNotEmpty).toSet().toList(growable: false);
     }
@@ -573,7 +595,7 @@ class _PostCardState extends ConsumerState<PostCard>
       if (!mounted) return;
       if (result is Success<Post?> && result.data != null) {
         final resolved = result.data!;
-        _resolvedRealbooruPosts[post.cacheKey] = resolved;
+        _cacheResolvedPost(post.cacheKey, resolved);
         setState(() => _resolvedPost = resolved);
       }
     });
@@ -695,6 +717,8 @@ class _FeedVideoPreviewState extends State<_FeedVideoPreview> {
             ),
           );
           _errorSubscription = player.stream.error.listen((_) {
+            unawaited(player?.pause());
+            unawaited(player?.stop());
             if (mounted) setState(() => _failed = true);
           });
         }
@@ -1026,7 +1050,9 @@ class _TextPostCardPreview extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        isRu ? 'Вложения ($cloudCount)' : 'Attachments ($cloudCount)',
+                        isRu
+                            ? 'Вложения ($cloudCount)'
+                            : 'Attachments ($cloudCount)',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -1069,7 +1095,9 @@ class _AudioPostCardPreview extends StatelessWidget {
       }
     }
     final artist = post.tagGroups['artist']?.firstOrNull;
-    if (artist != null && artist.isNotEmpty) return isRu ? 'Аудиозапись от $artist' : 'Audio track by $artist';
+    if (artist != null && artist.isNotEmpty) {
+      return isRu ? 'Аудиозапись от $artist' : 'Audio track by $artist';
+    }
     return isRu ? 'Аудиозапись' : 'Audio track';
   }
 
@@ -1078,7 +1106,8 @@ class _AudioPostCardPreview extends StatelessWidget {
     final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final theme = Theme.of(context);
     final audioTitle = _deriveAudioTitle(isRu);
-    final artistName = post.tagGroups['artist']?.firstOrNull ?? post.providerName;
+    final artistName =
+        post.tagGroups['artist']?.firstOrNull ?? post.providerName;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -1142,7 +1171,8 @@ class _AudioPostCardPreview extends StatelessWidget {
                       '${post.createdAt.day.toString().padLeft(2, '0')}.${post.createdAt.month.toString().padLeft(2, '0')}.${post.createdAt.year}',
                       style: TextStyle(
                         fontSize: 10,
-                        color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                        color: theme.colorScheme.onSurfaceVariant
+                            .withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -1211,7 +1241,8 @@ class _VideoPostCardPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final title = (post.title ?? '').trim();
-    final artistName = post.tagGroups['artist']?.firstOrNull ?? post.providerName;
+    final artistName =
+        post.tagGroups['artist']?.firstOrNull ?? post.providerName;
 
     return Container(
       padding: const EdgeInsets.all(14),

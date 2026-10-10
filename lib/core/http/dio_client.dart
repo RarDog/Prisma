@@ -19,8 +19,8 @@ class DioClient {
       this.dio.httpClientAdapter = IOHttpClientAdapter(
         createHttpClient: () {
           final client = io.HttpClient();
-          client.idleTimeout = const Duration(seconds: 60);
-          client.maxConnectionsPerHost = 10;
+          client.idleTimeout = const Duration(seconds: 120);
+          client.maxConnectionsPerHost = 15;
           return client;
         },
       );
@@ -65,7 +65,7 @@ class _RetryInterceptor extends Interceptor {
   _RetryInterceptor(this._dio);
 
   final Dio _dio;
-  static const _maxAttempts = 2;
+  static const _maxAttempts = 3;
 
   @override
   Future<void> onError(
@@ -76,7 +76,10 @@ class _RetryInterceptor extends Interceptor {
       return;
     }
 
-    final delayMs = 350 * pow(2, attempt).toInt();
+    // Exponential backoff: if 429 Too Many Requests, wait longer (800ms, 1600ms, 3200ms)
+    final isRateLimited = err.response?.statusCode == 429;
+    final baseDelay = isRateLimited ? 800 : 350;
+    final delayMs = baseDelay * pow(2, attempt).toInt();
     await Future<void>.delayed(Duration(milliseconds: delayMs));
     try {
       final options = err.requestOptions;
@@ -97,7 +100,8 @@ class _RetryInterceptor extends Interceptor {
     final status = error.response?.statusCode;
     return error.type == DioExceptionType.connectionError ||
         error.type == DioExceptionType.receiveTimeout ||
+        error.type == DioExceptionType.connectionTimeout ||
         status == 429 ||
-        (status != null && status >= 500);
+        (status != null && status >= 500 && status != 501);
   }
 }

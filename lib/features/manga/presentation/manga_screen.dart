@@ -35,7 +35,8 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
   bool get wantKeepAlive => true;
 
   MangaTab _selectedTab = MangaTab.catalog;
-  String _libraryFilter = 'all'; // 'all', 'reading', 'plan_to_read', 'completed', 'history'
+  String _libraryFilter =
+      'all'; // 'all', 'reading', 'plan_to_read', 'completed', 'history'
 
   List<Post> _mangaList = [];
   List<ContentProvider> _mangaProviders = [];
@@ -64,12 +65,15 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
       final libService = ref.read(mangaLibraryServiceProvider);
       final providerManager = ref.read(providerManagerProvider);
 
-      final newCount = await libService.checkForUpdates((providerId, mangaId) async {
+      final newCount =
+          await libService.checkForUpdates((providerId, mangaId) async {
         final prov = await providerManager.getProviderInstance(providerId);
-        final MangaChapterProvider? mangaProv =
-            prov is MangaChapterProvider ? (prov as MangaChapterProvider) : null;
-        final NovelChapterProvider? novelProv =
-            prov is NovelChapterProvider ? (prov as NovelChapterProvider) : null;
+        final MangaChapterProvider? mangaProv = prov is MangaChapterProvider
+            ? (prov as MangaChapterProvider)
+            : null;
+        final NovelChapterProvider? novelProv = prov is NovelChapterProvider
+            ? (prov as NovelChapterProvider)
+            : null;
         if (mangaProv != null) {
           final chs = await mangaProv.fetchChapters(mangaId);
           return chs is List ? chs.length : 0;
@@ -85,8 +89,12 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
           SnackBar(
             content: Text(
               newCount > 0
-                  ? (isRu ? 'Найдено новых глав: $newCount' : 'Found $newCount new chapters')
-                  : (isRu ? 'Все главы актуальны' : 'All chapters are up to date'),
+                  ? (isRu
+                      ? 'Найдено новых глав: $newCount'
+                      : 'Found $newCount new chapters')
+                  : (isRu
+                      ? 'Все главы актуальны'
+                      : 'All chapters are up to date'),
             ),
             duration: const Duration(seconds: 2),
           ),
@@ -195,7 +203,8 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
 
     try {
       final providerManager = ref.read(providerManagerProvider);
-      final provider = await providerManager.getProviderInstance(_selectedProviderId);
+      final provider =
+          await providerManager.getProviderInstance(_selectedProviderId);
 
       if (provider == null) {
         if (mounted) {
@@ -342,10 +351,12 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
 
     _debounceTimer = Timer(const Duration(milliseconds: 300), () async {
       final providerManager = ref.read(providerManagerProvider);
-      final provider = await providerManager.getProviderInstance(_selectedProviderId);
+      final provider =
+          await providerManager.getProviderInstance(_selectedProviderId);
       final instance = provider;
-      final suggestionProvider =
-          instance is TagSuggestionProvider ? instance as TagSuggestionProvider : null;
+      final suggestionProvider = instance is TagSuggestionProvider
+          ? instance as TagSuggestionProvider
+          : null;
       if (suggestionProvider != null && mounted) {
         try {
           final res = await suggestionProvider.suggestTags(query, limit: 12);
@@ -385,9 +396,10 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
     if (_scrollController.hasClients) {
       final currentOffset = _scrollController.offset;
       _savedScrollOffset = currentOffset;
-      unawaited(ref.read(settingsControllerProvider.notifier).saveMangaCatalogState(
-            scrollOffset: currentOffset,
-          ));
+      unawaited(
+          ref.read(settingsControllerProvider.notifier).saveMangaCatalogState(
+                scrollOffset: currentOffset,
+              ));
     }
 
     final returnedTag = await Navigator.of(context).push<String>(
@@ -406,7 +418,9 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
         _savedScrollOffset = 0.0;
       });
       unawaited(_loadManga(refresh: true));
-    } else if (mounted && _scrollController.hasClients && _savedScrollOffset > 0) {
+    } else if (mounted &&
+        _scrollController.hasClients &&
+        _savedScrollOffset > 0) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _scrollController.hasClients) {
           final maxScroll = _scrollController.position.maxScrollExtent;
@@ -421,12 +435,15 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
   Future<void> _openLibraryEntry(MangaLibraryEntry entry) async {
     unawaited(HapticFeedback.lightImpact());
     if (entry.newChaptersCount > 0) {
-      unawaited(ref.read(mangaLibraryServiceProvider).resetNewChapters(entry.mangaId));
+      unawaited(ref
+          .read(mangaLibraryServiceProvider)
+          .resetNewChapters(entry.mangaId));
     }
     Post? post;
     try {
       final providerManager = ref.read(providerManagerProvider);
-      final provider = await providerManager.getProviderInstance(entry.providerId);
+      final provider =
+          await providerManager.getProviderInstance(entry.providerId);
       if (provider != null) {
         post = await provider.getPost(entry.mangaId);
       }
@@ -493,22 +510,27 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                   child: Text(
                     entry.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                 ),
                 const Divider(),
                 ListTile(
-                  leading: const Icon(Icons.auto_stories_rounded, color: Color(0xFFFF6740)),
+                  leading: const Icon(Icons.auto_stories_rounded,
+                      color: Color(0xFFFF6740)),
                   title: Text(isRu ? 'Читаю' : 'Reading'),
                   selected: entry.status == 'reading',
                   onTap: () async {
                     Navigator.of(ctx).pop();
-                    await ref.read(mangaLibraryServiceProvider).setLibraryStatus(
+                    await ref
+                        .read(mangaLibraryServiceProvider)
+                        .setLibraryStatus(
                           mangaId: entry.mangaId,
                           providerId: entry.providerId,
                           title: entry.title,
@@ -518,12 +540,15 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.bookmark_added_rounded, color: Color(0xFF3B82F6)),
+                  leading: const Icon(Icons.bookmark_added_rounded,
+                      color: Color(0xFF3B82F6)),
                   title: Text(isRu ? 'В планах' : 'Plan to read'),
                   selected: entry.status == 'plan_to_read',
                   onTap: () async {
                     Navigator.of(ctx).pop();
-                    await ref.read(mangaLibraryServiceProvider).setLibraryStatus(
+                    await ref
+                        .read(mangaLibraryServiceProvider)
+                        .setLibraryStatus(
                           mangaId: entry.mangaId,
                           providerId: entry.providerId,
                           title: entry.title,
@@ -533,12 +558,15 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.check_circle_outline_rounded, color: Color(0xFF10B981)),
+                  leading: const Icon(Icons.check_circle_outline_rounded,
+                      color: Color(0xFF10B981)),
                   title: Text(isRu ? 'Прочитано' : 'Completed'),
                   selected: entry.status == 'completed',
                   onTap: () async {
                     Navigator.of(ctx).pop();
-                    await ref.read(mangaLibraryServiceProvider).setLibraryStatus(
+                    await ref
+                        .read(mangaLibraryServiceProvider)
+                        .setLibraryStatus(
                           mangaId: entry.mangaId,
                           providerId: entry.providerId,
                           title: entry.title,
@@ -548,12 +576,15 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.cancel_outlined, color: Color(0xFFEF4444)),
+                  leading: const Icon(Icons.cancel_outlined,
+                      color: Color(0xFFEF4444)),
                   title: Text(isRu ? 'Брошено' : 'Dropped'),
                   selected: entry.status == 'dropped',
                   onTap: () async {
                     Navigator.of(ctx).pop();
-                    await ref.read(mangaLibraryServiceProvider).setLibraryStatus(
+                    await ref
+                        .read(mangaLibraryServiceProvider)
+                        .setLibraryStatus(
                           mangaId: entry.mangaId,
                           providerId: entry.providerId,
                           title: entry.title,
@@ -564,18 +595,23 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
                 ),
                 const Divider(),
                 ListTile(
-                  leading: const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444)),
+                  leading: const Icon(Icons.delete_outline_rounded,
+                      color: Color(0xFFEF4444)),
                   title: Text(
                     isRu ? 'Удалить из библиотеки' : 'Remove from library',
                     style: const TextStyle(color: Color(0xFFEF4444)),
                   ),
                   onTap: () async {
                     Navigator.of(ctx).pop();
-                    await ref.read(mangaLibraryServiceProvider).removeLibraryEntry(entry.mangaId);
+                    await ref
+                        .read(mangaLibraryServiceProvider)
+                        .removeLibraryEntry(entry.mangaId);
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(isRu ? 'Удалено из библиотеки' : 'Removed from library'),
+                          content: Text(isRu
+                              ? 'Удалено из библиотеки'
+                              : 'Removed from library'),
                           duration: const Duration(seconds: 2),
                           behavior: SnackBarBehavior.floating,
                         ),
@@ -618,7 +654,9 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
                   Container(
                     padding: const EdgeInsets.all(3),
                     decoration: BoxDecoration(
-                      color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
+                      color: isDark
+                          ? Colors.white10
+                          : Colors.black.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
@@ -656,14 +694,17 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
                       borderRadius: BorderRadius.circular(16),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 9, vertical: 5),
                         decoration: BoxDecoration(
-                          color: _ratingColor(_selectedRating, theme).withValues(alpha: 0.14),
+                          color: _ratingColor(_selectedRating, theme)
+                              .withValues(alpha: 0.14),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: _selectedRating == 'All'
                                 ? (isDark ? Colors.white24 : Colors.black12)
-                                : _ratingColor(_selectedRating, theme).withValues(alpha: 0.8),
+                                : _ratingColor(_selectedRating, theme)
+                                    .withValues(alpha: 0.8),
                             width: 1.2,
                           ),
                         ),
@@ -748,7 +789,8 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
     );
   }
 
-  Widget _buildCatalogView(BuildContext context, ThemeData theme, bool isDark, bool isRu) {
+  Widget _buildCatalogView(
+      BuildContext context, ThemeData theme, bool isDark, bool isRu) {
     return CustomScrollView(
       key: const PageStorageKey<String>('manga_catalog_scroll_view'),
       controller: _scrollController,
@@ -781,7 +823,8 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
                         ? 'Поиск манги, автора или тега...'
                         : 'Search manga, artist or tag...',
                     prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                    suffixIcon: _searchController.text.isNotEmpty || _activeQuery.isNotEmpty
+                    suffixIcon: _searchController.text.isNotEmpty ||
+                            _activeQuery.isNotEmpty
                         ? IconButton(
                             icon: const Icon(Icons.clear_rounded, size: 18),
                             onPressed: () {
@@ -799,7 +842,8 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
                     fillColor: isDark
                         ? Colors.white.withValues(alpha: 0.06)
                         : Colors.black.withValues(alpha: 0.04),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide.none,
@@ -888,28 +932,41 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
                           borderRadius: BorderRadius.circular(20),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 8),
                             decoration: BoxDecoration(
                               color: isSelected
                                   ? brandColor.withValues(alpha: 0.18)
-                                  : (isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03)),
+                                  : (isDark
+                                      ? Colors.white.withValues(alpha: 0.04)
+                                      : Colors.black.withValues(alpha: 0.03)),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: isSelected ? brandColor : Colors.transparent,
+                                color: isSelected
+                                    ? brandColor
+                                    : Colors.transparent,
                                 width: 1.5,
                               ),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(icon, size: 16, color: isSelected ? brandColor : theme.colorScheme.onSurfaceVariant),
+                                Icon(icon,
+                                    size: 16,
+                                    color: isSelected
+                                        ? brandColor
+                                        : theme.colorScheme.onSurfaceVariant),
                                 const SizedBox(width: 6),
                                 Text(
                                   provider.name,
                                   style: TextStyle(
                                     fontSize: 13,
-                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                                    color: isSelected ? brandColor : theme.colorScheme.onSurfaceVariant,
+                                    fontWeight: isSelected
+                                        ? FontWeight.bold
+                                        : FontWeight.w600,
+                                    color: isSelected
+                                        ? brandColor
+                                        : theme.colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                               ],
@@ -941,14 +998,21 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
                             ),
                             label: Text(
                               switch (period) {
-                                TopPeriodFilter.none => isRu ? 'Свежее' : 'Recent',
-                                TopPeriodFilter.allTime => isRu ? 'Топ за все время' : 'All-time Top',
-                                TopPeriodFilter.year => isRu ? 'Топ за год' : 'Year Top',
-                                TopPeriodFilter.month => isRu ? 'Топ за месяц' : 'Month Top',
-                                TopPeriodFilter.week => isRu ? 'Топ за неделю' : 'Week Top',
-                                TopPeriodFilter.day => isRu ? 'Топ за день' : 'Day Top',
+                                TopPeriodFilter.none =>
+                                  isRu ? 'Свежее' : 'Recent',
+                                TopPeriodFilter.allTime =>
+                                  isRu ? 'Топ за все время' : 'All-time Top',
+                                TopPeriodFilter.year =>
+                                  isRu ? 'Топ за год' : 'Year Top',
+                                TopPeriodFilter.month =>
+                                  isRu ? 'Топ за месяц' : 'Month Top',
+                                TopPeriodFilter.week =>
+                                  isRu ? 'Топ за неделю' : 'Week Top',
+                                TopPeriodFilter.day =>
+                                  isRu ? 'Топ за день' : 'Day Top',
                               },
-                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                  fontSize: 11, fontWeight: FontWeight.w600),
                             ),
                             selected: _selectedTopPeriod == period,
                             onSelected: (_) => _onTopPeriodSelected(period),
@@ -962,7 +1026,6 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
             ),
           ),
         ),
-
         if (_errorMessage != null)
           SliverToBoxAdapter(
             child: Padding(
@@ -970,7 +1033,8 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
               child: Center(
                 child: Column(
                   children: [
-                    const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 48),
+                    const Icon(Icons.error_outline_rounded,
+                        color: Colors.redAccent, size: 48),
                     const SizedBox(height: 12),
                     Text(
                       _errorMessage!,
@@ -994,11 +1058,13 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
               child: Center(
                 child: Column(
                   children: [
-                    Icon(Icons.search_off_rounded, size: 56, color: theme.colorScheme.onSurfaceVariant),
+                    Icon(Icons.search_off_rounded,
+                        size: 56, color: theme.colorScheme.onSurfaceVariant),
                     const SizedBox(height: 12),
                     Text(
                       isRu ? 'Ничего не найдено' : 'No manga found',
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      style: theme.textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -1027,15 +1093,14 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
               ),
             ),
           ),
-
         if (_loading)
           const SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
-              child: Center(child: CircularProgressIndicator(color: Color(0xFFFF6740))),
+              child: Center(
+                  child: CircularProgressIndicator(color: Color(0xFFFF6740))),
             ),
           ),
-
         SliverToBoxAdapter(
           child: SizedBox(height: MediaQuery.paddingOf(context).bottom + 80),
         ),
@@ -1043,10 +1108,13 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
     );
   }
 
-  Widget _buildLibraryView(BuildContext context, ThemeData theme, bool isDark, bool isRu) {
-    final AsyncValue<List<MangaLibraryEntry>> entriesAsync = _libraryFilter == 'history'
-        ? ref.watch(mangaReadingHistoryProvider)
-        : ref.watch(mangaLibraryEntriesProvider(_libraryFilter == 'all' ? null : _libraryFilter));
+  Widget _buildLibraryView(
+      BuildContext context, ThemeData theme, bool isDark, bool isRu) {
+    final AsyncValue<List<MangaLibraryEntry>> entriesAsync =
+        _libraryFilter == 'history'
+            ? ref.watch(mangaReadingHistoryProvider)
+            : ref.watch(mangaLibraryEntriesProvider(
+                _libraryFilter == 'all' ? null : _libraryFilter));
 
     return CustomScrollView(
       slivers: [
@@ -1102,7 +1170,9 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
                     const SizedBox(width: 8),
                     IconButton.filledTonal(
                       onPressed: _checkingUpdates ? null : _checkLibraryUpdates,
-                      tooltip: isRu ? 'Проверить обновления глав' : 'Check for new chapters',
+                      tooltip: isRu
+                          ? 'Проверить обновления глав'
+                          : 'Check for new chapters',
                       icon: _checkingUpdates
                           ? const SizedBox(
                               width: 18,
@@ -1117,19 +1187,20 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
             ),
           ),
         ),
-
         entriesAsync.when(
           loading: () => const SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: 60),
-              child: Center(child: CircularProgressIndicator(color: Color(0xFFFF6740))),
+              child: Center(
+                  child: CircularProgressIndicator(color: Color(0xFFFF6740))),
             ),
           ),
           error: (err, _) => SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Center(
-                child: Text('Ошибка загрузки библиотеки: $err', style: const TextStyle(color: Colors.redAccent)),
+                child: Text('Ошибка загрузки библиотеки: $err',
+                    style: const TextStyle(color: Colors.redAccent)),
               ),
             ),
           ),
@@ -1137,29 +1208,44 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
             if (entries.isEmpty) {
               return SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 24),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 80, horizontal: 24),
                   child: Center(
                     child: Column(
                       children: [
                         Icon(
-                          _libraryFilter == 'history' ? Icons.history_toggle_off_rounded : Icons.bookmark_border_rounded,
+                          _libraryFilter == 'history'
+                              ? Icons.history_toggle_off_rounded
+                              : Icons.bookmark_border_rounded,
                           size: 64,
-                          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                          color: theme.colorScheme.onSurfaceVariant
+                              .withValues(alpha: 0.5),
                         ),
                         const SizedBox(height: 16),
                         Text(
                           _libraryFilter == 'history'
-                              ? (isRu ? 'История чтения пуста' : 'Reading history is empty')
-                              : (isRu ? 'В библиотеке пока пусто' : 'Your library is empty'),
-                          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                              ? (isRu
+                                  ? 'История чтения пуста'
+                                  : 'Reading history is empty')
+                              : (isRu
+                                  ? 'В библиотеке пока пусто'
+                                  : 'Your library is empty'),
+                          style: theme.textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           _libraryFilter == 'history'
-                              ? (isRu ? 'Начните читать мангу в каталоге, и она появится здесь!' : 'Read any manga to see it here!')
-                              : (isRu ? 'Нажмите кнопку закладки на странице манги, чтобы добавить её сюда.' : 'Bookmark manga from details screen to save it here.'),
+                              ? (isRu
+                                  ? 'Начните читать мангу в каталоге, и она появится здесь!'
+                                  : 'Read any manga to see it here!')
+                              : (isRu
+                                  ? 'Нажмите кнопку закладки на странице манги, чтобы добавить её сюда.'
+                                  : 'Bookmark manga from details screen to save it here.'),
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 13),
+                          style: TextStyle(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontSize: 13),
                         ),
                       ],
                     ),
@@ -1192,7 +1278,6 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
             );
           },
         ),
-
         SliverToBoxAdapter(
           child: SizedBox(height: MediaQuery.paddingOf(context).bottom + 80),
         ),
@@ -1226,4 +1311,3 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
     );
   }
 }
-

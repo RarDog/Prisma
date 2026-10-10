@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' hide appBuildNumber;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:gel_rule_app/app/app_strings.dart';
+import 'package:gel_rule_app/app/app.dart';
 import 'package:gel_rule_app/app/app_version.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/features/settings/presentation/screens/about_settings_screen.dart';
@@ -23,8 +23,7 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settingsAsync = ref.watch(settingsControllerProvider);
-    final currentSettings = settingsAsync.value ?? AppSettings.defaults;
-    final strings = AppStrings(currentSettings.languageCode);
+    final strings = ref.watch(appStringsProvider);
 
     return AdaptiveScaffold(
       title: strings.settings,
@@ -50,14 +49,16 @@ class _SettingsHubContent extends ConsumerWidget {
   }
 
   Future<void> _update(WidgetRef ref, AppSettings newSettings) {
-    return ref.read(settingsControllerProvider.notifier).saveSettings(newSettings);
+    return ref
+        .read(settingsControllerProvider.notifier)
+        .saveSettings(newSettings);
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isRu = settings.languageCode == 'ru';
-    final strings = AppStrings(settings.languageCode);
+    final strings = ref.watch(appStringsProvider);
 
     // Dynamic subtitles reflecting current state
     final generalSummary = _buildGeneralSummary(isRu);
@@ -87,7 +88,8 @@ class _SettingsHubContent extends ConsumerWidget {
                 color: theme.colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(
-                  color: theme.colorScheme.outlineVariant.withValues(alpha: 0.35),
+                  color:
+                      theme.colorScheme.outlineVariant.withValues(alpha: 0.35),
                 ),
                 gradient: LinearGradient(
                   colors: [
@@ -110,7 +112,8 @@ class _SettingsHubContent extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(14),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFE84D8A).withValues(alpha: 0.30),
+                              color: const Color(0xFFE84D8A)
+                                  .withValues(alpha: 0.30),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
@@ -126,7 +129,10 @@ class _SettingsHubContent extends ConsumerWidget {
                             errorBuilder: (_, __, ___) => Container(
                               decoration: BoxDecoration(
                                 gradient: const LinearGradient(
-                                  colors: [Color(0xFFE84D8A), Color(0xFF8B5CF6)],
+                                  colors: [
+                                    Color(0xFFE84D8A),
+                                    Color(0xFF8B5CF6)
+                                  ],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                 ),
@@ -164,9 +170,11 @@ class _SettingsHubContent extends ConsumerWidget {
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                          color:
+                              theme.colorScheme.primary.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
@@ -185,7 +193,8 @@ class _SettingsHubContent extends ConsumerWidget {
                     segments: [
                       ButtonSegment(
                         value: 'system',
-                        icon: const Icon(Icons.brightness_auto_rounded, size: 16),
+                        icon:
+                            const Icon(Icons.brightness_auto_rounded, size: 16),
                         label: Text(
                           isRu ? 'Авто' : 'Auto',
                           maxLines: 1,
@@ -214,7 +223,8 @@ class _SettingsHubContent extends ConsumerWidget {
                     selected: {settings.themeMode},
                     showSelectedIcon: false,
                     style: ButtonStyle(
-                      visualDensity: const VisualDensity(horizontal: -2, vertical: -2),
+                      visualDensity:
+                          const VisualDensity(horizontal: -2, vertical: -2),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       padding: const WidgetStatePropertyAll(
                         EdgeInsets.symmetric(horizontal: 4, vertical: 6),
@@ -227,12 +237,14 @@ class _SettingsHubContent extends ConsumerWidget {
                         ),
                       ),
                       shape: WidgetStatePropertyAll(
-                        RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
                       ),
                     ),
                     onSelectionChanged: (selected) {
                       HapticFeedback.selectionClick();
-                      _update(ref, settings.copyWith(themeMode: selected.first));
+                      _update(
+                          ref, settings.copyWith(themeMode: selected.first));
                     },
                   ),
                 ],
@@ -338,7 +350,9 @@ class _SettingsHubContent extends ConsumerWidget {
 
   String _buildGeneralSummary(bool isRu) {
     final themeTitle = settings.themeMode == 'dark'
-        ? (settings.amoledMode ? (isRu ? 'AMOLED' : 'AMOLED') : (isRu ? 'Темная' : 'Dark'))
+        ? (settings.amoledMode
+            ? (isRu ? 'AMOLED' : 'AMOLED')
+            : (isRu ? 'Темная' : 'Dark'))
         : settings.themeMode == 'light'
             ? (isRu ? 'Светлая' : 'Light')
             : (isRu ? 'Авто' : 'Auto');
@@ -383,9 +397,7 @@ class _SettingsHubContent extends ConsumerWidget {
         : (isRu ? 'Только Safe' : 'Safe only');
     final blacklistCount =
         {...settings.blacklistedTags, ...settings.smartBlacklistRules}.length;
-    final bl = isRu
-        ? 'Бан: $blacklistCount'
-        : 'Blacklist: $blacklistCount';
+    final bl = isRu ? 'Бан: $blacklistCount' : 'Blacklist: $blacklistCount';
     return '$nsfw • $bl';
   }
 

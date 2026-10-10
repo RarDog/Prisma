@@ -95,7 +95,8 @@ void main() {
       expect(posts.first.tags, contains('cool_artist'));
     });
 
-    test('fetchAccountBlacklist fetches and splits newline-separated tags', () async {
+    test('fetchAccountBlacklist fetches and splits newline-separated tags',
+        () async {
       dio.httpClientAdapter = _FakeAdapter((options) async {
         expect(options.path, equals('/users.json'));
         expect(options.queryParameters['search[name]'], equals('testuser'));

@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -72,23 +71,25 @@ final cacheStatsProvider = FutureProvider.autoDispose<CacheStats>((ref) async {
         }
       }
     }
-  } catch (_) {}
+  } catch (e) {
+    AppLogger.debug('Error computing temp directory size', e);
+  }
 
-    final tagCache = ref.watch(tagCacheServiceProvider);
-    if (!tagCache.isInitialized) await tagCache.init();
-    final tagCount = tagCache.tagCount;
-    final tagBytes = await tagCache.getFileSizeBytes();
+  final tagCache = ref.watch(tagCacheServiceProvider);
+  if (!tagCache.isInitialized) await tagCache.init();
+  final tagCount = tagCache.tagCount;
+  final tagBytes = await tagCache.getFileSizeBytes();
 
-    return CacheStats(
-      cachedPostsCount: postsCount,
-      imageMemoryBytes: memBytes,
-      imageMemoryCount: memCount,
-      tempDirectoryBytes: tempBytes,
-      downloadedCount: downloadedCount,
-      tagCacheCount: tagCount,
-      tagCacheBytes: tagBytes,
-    );
-  });
+  return CacheStats(
+    cachedPostsCount: postsCount,
+    imageMemoryBytes: memBytes,
+    imageMemoryCount: memCount,
+    tempDirectoryBytes: tempBytes,
+    downloadedCount: downloadedCount,
+    tagCacheCount: tagCount,
+    tagCacheBytes: tagBytes,
+  );
+});
 
 class CacheManagerScreen extends ConsumerStatefulWidget {
   const CacheManagerScreen({super.key});
@@ -123,30 +124,14 @@ class _CacheManagerScreenState extends ConsumerState<CacheManagerScreen> {
     setState(() => _isClearing = true);
     PaintingBinding.instance.imageCache.clear();
     PaintingBinding.instance.imageCache.clearLiveImages();
-    try {
-      await DefaultCacheManager().emptyCache();
-    } catch (_) {}
+    await ref.read(cacheServiceProvider).clearDiskImageCache();
     ref.invalidate(cacheStatsProvider);
     if (mounted) setState(() => _isClearing = false);
   }
 
-  Future<void> _deleteTempEntities() async {
-    try {
-      final tempDir = await getTemporaryDirectory();
-      if (await tempDir.exists()) {
-        final entities = await tempDir.list(recursive: false).toList();
-        for (final entity in entities) {
-          try {
-            await entity.delete(recursive: true);
-          } catch (_) {}
-        }
-      }
-    } catch (_) {}
-  }
-
   Future<void> _clearTempFiles() async {
     setState(() => _isClearing = true);
-    await _deleteTempEntities();
+    await ref.read(cacheServiceProvider).clearTemporaryDirectory();
     ref.invalidate(cacheStatsProvider);
     if (mounted) setState(() => _isClearing = false);
   }
@@ -164,10 +149,8 @@ class _CacheManagerScreenState extends ConsumerState<CacheManagerScreen> {
     await ref.read(tagCacheServiceProvider).clear();
     PaintingBinding.instance.imageCache.clear();
     PaintingBinding.instance.imageCache.clearLiveImages();
-    try {
-      await DefaultCacheManager().emptyCache();
-    } catch (_) {}
-    await _deleteTempEntities();
+    await ref.read(cacheServiceProvider).clearDiskImageCache();
+    await ref.read(cacheServiceProvider).clearTemporaryDirectory();
     ref.invalidate(cacheStatsProvider);
     if (mounted) setState(() => _isClearing = false);
   }
@@ -198,7 +181,8 @@ class _CacheManagerScreenState extends ConsumerState<CacheManagerScreen> {
             children: [
               // Summary card
               Card(
-                color: theme.colorScheme.primaryContainer.withValues(alpha: 0.35),
+                color:
+                    theme.colorScheme.primaryContainer.withValues(alpha: 0.35),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                   side: BorderSide(
@@ -240,7 +224,9 @@ class _CacheManagerScreenState extends ConsumerState<CacheManagerScreen> {
               // Detail cards
               _CacheCategoryTile(
                 icon: Icons.article_rounded,
-                title: strings.ru ? 'Кэш постов (база данных)' : 'Posts cache (DB)',
+                title: strings.ru
+                    ? 'Кэш постов (база данных)'
+                    : 'Posts cache (DB)',
                 subtitle: strings.ru
                     ? '${stats.cachedPostsCount} сохраненных постов'
                     : '${stats.cachedPostsCount} cached posts',
@@ -251,7 +237,8 @@ class _CacheManagerScreenState extends ConsumerState<CacheManagerScreen> {
 
               _CacheCategoryTile(
                 icon: Icons.image_rounded,
-                title: strings.ru ? 'Кэш картинок в памяти' : 'Image memory cache',
+                title:
+                    strings.ru ? 'Кэш картинок в памяти' : 'Image memory cache',
                 subtitle: strings.ru
                     ? '${stats.imageMemoryCount} картинок в ОЗУ'
                     : '${stats.imageMemoryCount} images in RAM',
@@ -262,7 +249,9 @@ class _CacheManagerScreenState extends ConsumerState<CacheManagerScreen> {
 
               _CacheCategoryTile(
                 icon: Icons.folder_open_rounded,
-                title: strings.ru ? 'Временные файлы и медиа' : 'Temp files & media',
+                title: strings.ru
+                    ? 'Временные файлы и медиа'
+                    : 'Temp files & media',
                 subtitle: strings.ru
                     ? 'Файлы для отправки и временные буферы'
                     : 'Share exports & temporary buffers',
@@ -273,7 +262,9 @@ class _CacheManagerScreenState extends ConsumerState<CacheManagerScreen> {
 
               _CacheCategoryTile(
                 icon: Icons.label_rounded,
-                title: strings.ru ? 'Кэш подсказок тегов' : 'Tag suggestions cache',
+                title: strings.ru
+                    ? 'Кэш подсказок тегов'
+                    : 'Tag suggestions cache',
                 subtitle: strings.ru
                     ? '${stats.tagCacheCount} закэшированных тегов на диске'
                     : '${stats.tagCacheCount} cached tags on disk',

@@ -8,20 +8,21 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'audio_player_surface.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'fullscreen_image_viewer_page.dart';
+import 'media_viewer_shortcuts.dart';
+
 import 'package:gel_rule_app/app/motion.dart';
 import 'package:gel_rule_app/core/http/app_headers.dart';
-import 'package:gel_rule_app/app/responsive.dart';
 import 'package:gel_rule_app/backend/backend.dart';
-import 'package:gel_rule_app/core/performance/performance_monitor.dart';
-import 'package:gel_rule_app/features/feed/presentation/feed_controller.dart';
 import 'package:gel_rule_app/shared/widgets/formatted_content_text.dart';
 import 'post_notes_overlay.dart';
 
-final Map<String, VideoPlaybackSnapshot> _playbackMemory =
+final Map<String, VideoPlaybackSnapshot> playbackMemory =
     <String, VideoPlaybackSnapshot>{};
 
 final isFullscreenViewerActiveProvider = StateProvider<bool>((ref) => false);
@@ -29,7 +30,34 @@ final isFullscreenViewerActiveProvider = StateProvider<bool>((ref) => false);
 final postMediaDimensionsProvider =
     StateProvider.autoDispose.family<Size?, String>((ref, cacheKey) => null);
 
-Map<String, String> getPostMediaHeaders(Post post, [Map<String, String>? extraHeaders]) {
+/// Decides which list a fullscreen gallery should page through.
+///
+/// The gallery owns its list ([posts]); the only reason to prefer the live
+/// feed is that the gallery was opened from the feed, where `onLoadMore`
+/// appends to it. Everything else — Artists, Favorites, collections, search —
+/// must keep its own list, otherwise the gallery silently shows whatever the
+/// global feed happens to hold.
+///
+/// [useLiveFeed] is the caller's explicit statement of origin, so it never
+/// has to be inferred from list sizes: an unrelated feed that is merely
+/// larger than the given one must never win.
+List<Post> resolveFullscreenPosts({
+  required List<Post> posts,
+  required List<Post>? liveFeed,
+  required int currentIndex,
+  required bool useLiveFeed,
+}) {
+  if (!useLiveFeed) return posts;
+  if (liveFeed == null || liveFeed.isEmpty) return posts;
+  if (currentIndex < 0 || currentIndex >= posts.length) return posts;
+  // Still on a post that belongs to the live feed, so swapping the list in
+  // keeps `onLoadMore` appending instead of resetting the gallery.
+  final current = posts[currentIndex];
+  return liveFeed.any((p) => p.cacheKey == current.cacheKey) ? liveFeed : posts;
+}
+
+Map<String, String> getPostMediaHeaders(Post post,
+    [Map<String, String>? extraHeaders]) {
   String? defaultReferer;
   final pid = post.providerId.toLowerCase();
   if (pid.contains('gelbooru')) {
@@ -91,7 +119,7 @@ Map<String, String> getPostMediaHeaders(Post post, [Map<String, String>? extraHe
 }
 
 Duration getPostVideoPlaybackPosition(String cacheKey) {
-  return _playbackMemory[cacheKey]?.position ?? Duration.zero;
+  return playbackMemory[cacheKey]?.position ?? Duration.zero;
 }
 
 Future<void> openPostFullscreenGallery({
@@ -104,11 +132,12 @@ Future<void> openPostFullscreenGallery({
   bool showNotes = false,
   String? localFilePath,
   Duration? initialVideoPosition,
+  bool useLiveFeed = false,
   ValueChanged<int>? onPostChanged,
   VoidCallback? onLoadMore,
 }) async {
-  final initPos = initialVideoPosition ??
-      getPostVideoPlaybackPosition(post.cacheKey);
+  final initPos =
+      initialVideoPosition ?? getPostVideoPlaybackPosition(post.cacheKey);
   ref.read(isFullscreenViewerActiveProvider.notifier).state = true;
   final posts =
       (postsList != null && postsList.isNotEmpty) ? postsList : [post];
@@ -121,7 +150,7 @@ Future<void> openPostFullscreenGallery({
       PageRouteBuilder(
         opaque: false,
         barrierColor: Colors.black,
-        pageBuilder: (_, __, ___) => _FullscreenImageViewerPage(
+        pageBuilder: (_, __, ___) => FullscreenImageViewerPage(
           posts: posts,
           initialIndex: initialIndex,
           qualityMode: qualityMode,
@@ -130,6 +159,7 @@ Future<void> openPostFullscreenGallery({
           headersBuilder: (p) => getPostMediaHeaders(p),
           localFilePath: localFilePath,
           initialVideoPosition: initPos,
+          useLiveFeed: useLiveFeed,
           onPostChanged: onPostChanged,
           onLoadMore: onLoadMore,
         ),
@@ -148,6 +178,7 @@ class PostMediaViewer extends ConsumerStatefulWidget {
     required this.post,
     this.localFilePath,
     this.fullscreen = false,
+    this.useLiveFeed = false,
     this.notes = const [],
     this.showNotes = true,
     this.initialPosition = Duration.zero,
@@ -191,6 +222,10 @@ class PostMediaViewer extends ConsumerStatefulWidget {
   final List<Post>? postsList;
   final ValueChanged<int>? onPostIndexChanged;
   final VoidCallback? onLoadMore;
+
+  /// True when this viewer is part of the feed, so its fullscreen gallery
+  /// should track the live feed list while `onLoadMore` keeps appending.
+  final bool useLiveFeed;
   final bool isActive;
 
   @override
@@ -309,7 +344,7 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
 
     if (_controller != null || _player != null) {
       if (_isAudio(widget.post) && _player != null) {
-        return _AudioSurface(
+        return AudioSurface(
           player: _player!,
           post: widget.post,
           muted: _muted,
@@ -354,11 +389,11 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
       }
       return Shortcuts(
         shortcuts: {
-          LogicalKeySet(LogicalKeyboardKey.space): const _TogglePlayIntent(),
+          LogicalKeySet(LogicalKeyboardKey.space): const TogglePlayIntent(),
         },
         child: Actions(
           actions: {
-            _TogglePlayIntent: CallbackAction<_TogglePlayIntent>(
+            TogglePlayIntent: CallbackAction<TogglePlayIntent>(
               onInvoke: (_) {
                 _togglePlay();
                 return null;
@@ -367,15 +402,27 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
           },
           child: Focus(
             autofocus: true,
-            child: _VideoSurface(
+            child: VideoSurface(
               player: _player!,
               controller: _controller!,
               aspectRatio: widget.post.width > 0 && widget.post.height > 0
                   ? widget.post.width / widget.post.height
-                  : (ref.watch(postMediaDimensionsProvider(widget.post.cacheKey)) != null &&
-                          ref.watch(postMediaDimensionsProvider(widget.post.cacheKey))!.height > 0
-                      ? ref.watch(postMediaDimensionsProvider(widget.post.cacheKey))!.width /
-                          ref.watch(postMediaDimensionsProvider(widget.post.cacheKey))!.height
+                  : (ref.watch(postMediaDimensionsProvider(
+                                  widget.post.cacheKey)) !=
+                              null &&
+                          ref
+                                  .watch(postMediaDimensionsProvider(
+                                      widget.post.cacheKey))!
+                                  .height >
+                              0
+                      ? ref
+                              .watch(postMediaDimensionsProvider(
+                                  widget.post.cacheKey))!
+                              .width /
+                          ref
+                              .watch(postMediaDimensionsProvider(
+                                  widget.post.cacheKey))!
+                              .height
                       : 16 / 9),
               isSoftwareDecoding: _useSoftwareDecoding,
               onToggleDecoder: _toggleDecoderMode,
@@ -462,7 +509,7 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
       image = Image.file(
         File(cleanPath),
         fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) => _DioImageFallback(
+        errorBuilder: (context, error, stackTrace) => DioImageFallback(
           imageUrl: _imageUrls.length > 1 ? _imageUrls[1] : '',
           headers: headers,
           fit: BoxFit.contain,
@@ -473,8 +520,7 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
       final mq = MediaQuery.maybeOf(context);
       final dpr = mq?.devicePixelRatio ?? 1.5;
       final screenWidth = mq?.size.width ?? 1080;
-      final maxCacheWidth =
-          (screenWidth * dpr).round().clamp(720, 1600);
+      final maxCacheWidth = (screenWidth * dpr).round().clamp(720, 1600);
       final isGif = MediaUrlSelector.isGif(widget.post) ||
           url.toLowerCase().contains('.gif') ||
           widget.post.fileType.toLowerCase() == 'gif';
@@ -487,7 +533,7 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
         placeholder: (context, url) =>
             const Center(child: CircularProgressIndicator()),
         errorWidget: (context, url, error) {
-          return _DioImageFallback(
+          return DioImageFallback(
             imageUrl: url,
             headers: headers,
             fit: BoxFit.contain,
@@ -558,21 +604,21 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
     );
 
     final shortcutsMap = <ShortcutActivator, Intent>{
-      LogicalKeySet(LogicalKeyboardKey.keyF): const _FullscreenImageIntent(),
+      LogicalKeySet(LogicalKeyboardKey.keyF): const FullscreenImageIntent(),
     };
     if (_imageUrls.length > 1) {
       shortcutsMap[LogicalKeySet(LogicalKeyboardKey.arrowLeft)] =
-          const _PrevImageIntent();
+          const PrevImageIntent();
       shortcutsMap[LogicalKeySet(LogicalKeyboardKey.keyA)] =
-          const _PrevImageIntent();
+          const PrevImageIntent();
       shortcutsMap[LogicalKeySet(LogicalKeyboardKey.arrowRight)] =
-          const _NextImageIntent();
+          const NextImageIntent();
       shortcutsMap[LogicalKeySet(LogicalKeyboardKey.keyD)] =
-          const _NextImageIntent();
+          const NextImageIntent();
     }
 
     final actionsMap = <Type, Action<Intent>>{
-      _FullscreenImageIntent: CallbackAction<_FullscreenImageIntent>(
+      FullscreenImageIntent: CallbackAction<FullscreenImageIntent>(
         onInvoke: (_) {
           if (!widget.fullscreen) _openFullscreenImage(context);
           return null;
@@ -580,7 +626,7 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
       ),
     };
     if (_imageUrls.length > 1) {
-      actionsMap[_PrevImageIntent] = CallbackAction<_PrevImageIntent>(
+      actionsMap[PrevImageIntent] = CallbackAction<PrevImageIntent>(
         onInvoke: (_) {
           if (_imageIndex > 0) {
             setState(() => _imageIndex--);
@@ -588,7 +634,7 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
           return null;
         },
       );
-      actionsMap[_NextImageIntent] = CallbackAction<_NextImageIntent>(
+      actionsMap[NextImageIntent] = CallbackAction<NextImageIntent>(
         onInvoke: (_) {
           if (_imageIndex < _imageUrls.length - 1) {
             setState(() => _imageIndex++);
@@ -625,7 +671,11 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
 
   void _initializeVideo() {
     MediaKit.ensureInitialized();
-    _player = Player();
+    _player = Player(
+      configuration: const PlayerConfiguration(
+        bufferSize: 32 * 1024 * 1024,
+      ),
+    );
     final bool enableHw = !_useSoftwareDecoding && !_softwareDecodingFallback;
     _controller = VideoController(
       _player!,
@@ -640,25 +690,35 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
     );
     _errorSubscription = _player!.stream.error.listen((message) {
       if (!mounted) return;
+      // Stop playback immediately so background playback/audio doesn't continue with error
+      unawaited(_player?.pause());
+      unawaited(_player?.stop());
       unawaited(_handleVideoError(message));
     });
     _positionSubscription = _player!.stream.position.listen((_) {
       final snapshot = _snapshot();
-      _playbackMemory[widget.post.cacheKey] = snapshot;
+      playbackMemory[widget.post.cacheKey] = snapshot;
       _emitPlaybackSnapshotThrottled(snapshot);
     });
     _playingSubscription = _player!.stream.playing.listen((_) {
       final snapshot = _snapshot();
-      _playbackMemory[widget.post.cacheKey] = snapshot;
+      playbackMemory[widget.post.cacheKey] = snapshot;
       widget.onPlaybackSnapshot?.call(snapshot);
     });
     _videoParamsSubscription = _player!.stream.videoParams.listen((params) {
-      if (params.w != null && params.h != null && params.w! > 0 && params.h! > 0) {
+      if (params.w != null &&
+          params.h != null &&
+          params.w! > 0 &&
+          params.h! > 0) {
         final newSize = Size(params.w!.toDouble(), params.h!.toDouble());
-        if (ref.read(postMediaDimensionsProvider(widget.post.cacheKey)) != newSize) {
+        if (ref.read(postMediaDimensionsProvider(widget.post.cacheKey)) !=
+            newSize) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
-              ref.read(postMediaDimensionsProvider(widget.post.cacheKey).notifier).state = newSize;
+              ref
+                  .read(postMediaDimensionsProvider(widget.post.cacheKey)
+                      .notifier)
+                  .state = newSize;
             }
           });
         }
@@ -671,7 +731,7 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
   Future<void> _openVideo({required bool play}) async {
     final player = _player;
     if (player == null || _videoUrls.isEmpty) return;
-    final remembered = _playbackMemory[widget.post.cacheKey];
+    final remembered = playbackMemory[widget.post.cacheKey];
     final initialPosition = widget.initialPosition > Duration.zero
         ? widget.initialPosition
         : remembered?.position ?? Duration.zero;
@@ -727,6 +787,12 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
         return;
       }
     }
+    // Fully interrupt playback so video/audio never continues playing in background on error
+    try {
+      await _player?.pause();
+      await _player?.stop();
+    } catch (_) {}
+
     if (mounted) {
       setState(() => _videoError = message);
     }
@@ -776,7 +842,7 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
     _playingSubscription?.cancel();
     _videoParamsSubscription?.cancel();
     final snapshot = _snapshot();
-    _playbackMemory[widget.post.cacheKey] = snapshot;
+    playbackMemory[widget.post.cacheKey] = snapshot;
     widget.onPlaybackSnapshot?.call(snapshot);
     _player?.pause();
     _player?.stop();
@@ -803,7 +869,9 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
       if (w > 0 && h > 0) {
         final newSize = Size(w, h);
         if (mounted) {
-          ref.read(postMediaDimensionsProvider(widget.post.cacheKey).notifier).state = newSize;
+          ref
+              .read(postMediaDimensionsProvider(widget.post.cacheKey).notifier)
+              .state = newSize;
         }
       }
       stream.removeListener(listener);
@@ -926,7 +994,7 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
         PageRouteBuilder(
           opaque: false,
           barrierColor: Colors.black,
-          pageBuilder: (_, __, ___) => _FullscreenImageViewerPage(
+          pageBuilder: (_, __, ___) => FullscreenImageViewerPage(
             posts: posts,
             initialIndex: initialIndex,
             qualityMode: widget.qualityMode,
@@ -935,6 +1003,7 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
             headersBuilder: (p) => _headersFor(p),
             localFilePath: widget.localFilePath,
             initialVideoPosition: initialVideoPos,
+            useLiveFeed: widget.useLiveFeed,
             onPostChanged: (idx) {
               widget.onPostIndexChanged?.call(idx);
             },
@@ -951,7 +1020,7 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
     if (mounted && nextIndex != null && nextIndex != initialIndex) {
       widget.onPostIndexChanged?.call(nextIndex);
     }
-    final memory = _playbackMemory[widget.post.cacheKey];
+    final memory = playbackMemory[widget.post.cacheKey];
     if (memory != null && _player != null) {
       await _player!.seek(memory.position);
       if (memory.playing) {
@@ -985,7 +1054,7 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
 
   void _emitPlaybackPreferences() {
     final snapshot = _snapshot();
-    _playbackMemory[widget.post.cacheKey] = snapshot;
+    playbackMemory[widget.post.cacheKey] = snapshot;
     widget.onPlaybackPreferencesChanged?.call(snapshot);
   }
 
@@ -1009,72 +1078,6 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
     }
     _showControls();
   }
-}
-
-class _TogglePlayIntent extends Intent {
-  const _TogglePlayIntent();
-}
-
-class _SeekVideoIntent extends Intent {
-  const _SeekVideoIntent(this.seconds);
-  final int seconds;
-}
-
-class _VolumeVideoIntent extends Intent {
-  const _VolumeVideoIntent(this.deltaY);
-  final double deltaY;
-}
-
-class _MuteVideoIntent extends Intent {
-  const _MuteVideoIntent();
-}
-
-class _FullscreenVideoIntent extends Intent {
-  const _FullscreenVideoIntent();
-}
-
-class _LoopVideoIntent extends Intent {
-  const _LoopVideoIntent();
-}
-
-class _ZoomInIntent extends Intent {
-  const _ZoomInIntent();
-}
-
-class _ZoomOutIntent extends Intent {
-  const _ZoomOutIntent();
-}
-
-class _ResetZoomIntent extends Intent {
-  const _ResetZoomIntent();
-}
-
-class _PrevImageIntent extends Intent {
-  const _PrevImageIntent();
-}
-
-class _NextImageIntent extends Intent {
-  const _NextImageIntent();
-}
-
-class _FullscreenImageIntent extends Intent {
-  const _FullscreenImageIntent();
-}
-
-class _CloseFullscreenIntent extends Intent {
-  const _CloseFullscreenIntent();
-}
-
-class _ToggleControlsIntent extends Intent {
-  const _ToggleControlsIntent();
-}
-
-class _PrevFullscreenImageIntent extends Intent {
-  const _PrevFullscreenImageIntent();
-}
-
-class _NextFullscreenImageIntent extends Intent {
-  const _NextFullscreenImageIntent();
 }
 
 class _UnsupportedSwfPanel extends StatelessWidget {
@@ -1125,1588 +1128,10 @@ class VideoPlaybackSnapshot {
   final double volume;
 }
 
-class _FullscreenImageViewerPage extends ConsumerStatefulWidget {
-  const _FullscreenImageViewerPage({
-    required this.posts,
-    required this.initialIndex,
-    required this.qualityMode,
-    required this.notes,
-    required this.showNotes,
-    required this.headersBuilder,
-    this.localFilePath,
-    this.initialVideoPosition = Duration.zero,
-    this.onPostChanged,
-    this.onLoadMore,
-  });
 
-  final List<Post> posts;
-  final int initialIndex;
-  final MediaQualityMode qualityMode;
-  final List<PostNote> notes;
-  final bool showNotes;
-  final Map<String, String> Function(Post post) headersBuilder;
-  final String? localFilePath;
-  final Duration initialVideoPosition;
-  final ValueChanged<int>? onPostChanged;
-  final VoidCallback? onLoadMore;
-
-  static List<String> _urlsForPost(
-    Post post,
-    MediaQualityMode qualityMode, {
-    String? localFilePath,
-  }) {
-    if (localFilePath != null &&
-        localFilePath.isNotEmpty &&
-        File(localFilePath).existsSync()) {
-      return [localFilePath];
-    }
-    final isGif = MediaUrlSelector.isGif(post) ||
-        post.fileUrl.toLowerCase().contains('.gif') ||
-        post.fileType.toLowerCase() == 'gif';
-    if (isGif) {
-      final result = <String>[];
-      if (post.fileUrl.isNotEmpty) result.add(post.fileUrl);
-      if (post.sampleUrl.isNotEmpty && !result.contains(post.sampleUrl)) {
-        result.add(post.sampleUrl);
-      }
-      if (post.previewUrl.isNotEmpty && !result.contains(post.previewUrl)) {
-        result.add(post.previewUrl);
-      }
-      return result;
-    }
-    final result = <String>[];
-    if (post.sampleUrl.isNotEmpty) result.add(post.sampleUrl);
-    if (post.fileUrl.isNotEmpty && !result.contains(post.fileUrl)) {
-      result.add(post.fileUrl);
-    }
-    if (post.previewUrl.isNotEmpty && !result.contains(post.previewUrl)) {
-      result.add(post.previewUrl);
-    }
-    return result;
-  }
-
-  @override
-  ConsumerState<_FullscreenImageViewerPage> createState() =>
-      _FullscreenImageViewerPageState();
-}
-
-class _FullscreenImageViewerPageState
-    extends ConsumerState<_FullscreenImageViewerPage>
-    with SingleTickerProviderStateMixin {
-  late int _currentIndex;
-  late PageController _pageController;
-  bool _controlsVisible = true;
-  Timer? _hideTimer;
-  double _dragOffsetY = 0.0;
-  bool _isCurrentZoomed = false;
-  late bool _showNotes;
-  bool _isLandscape = false;
-  late AnimationController _animController;
-  Animation<double>? _dragAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _currentIndex = widget.initialIndex.clamp(0, widget.posts.length - 1);
-    _pageController = PageController(initialPage: _currentIndex);
-    _pageController.addListener(_handlePageScroll);
-    _showNotes = widget.showNotes;
-    _animController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 200),
-    )..addListener(() {
-        if (_dragAnimation != null) {
-          setState(() => _dragOffsetY = _dragAnimation!.value);
-        }
-      });
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    _scheduleControlsHide();
-    if (_currentIndex >= widget.posts.length - 3) {
-      widget.onLoadMore?.call();
-    }
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _prefetchAround(_currentIndex, widget.posts);
-    });
-  }
-
-  void _handlePageScroll() {
-    if (!_pageController.hasClients || _pageController.page == null) return;
-    final page = _pageController.page!;
-    final rounded = page.round();
-    if ((page - _currentIndex).abs() > 0.35 && rounded != _currentIndex) {
-      if (mounted) {
-        setState(() {
-          _currentIndex = rounded;
-        });
-      }
-    }
-  }
-
-  void _prefetchAround(int index, List<Post> posts) {
-    if (!mounted) return;
-    for (final targetIndex in [index + 1, index - 1, index + 2]) {
-      if (targetIndex >= 0 && targetIndex < posts.length) {
-        final p = posts[targetIndex];
-        if (!MediaUrlSelector.isVideo(p) && !MediaUrlSelector.isAudio(p)) {
-          final isGif = MediaUrlSelector.isGif(p) ||
-              p.fileUrl.toLowerCase().contains('.gif') ||
-              p.fileType.toLowerCase() == 'gif';
-          final url = isGif
-              ? (p.fileUrl.isNotEmpty ? p.fileUrl : p.sampleUrl)
-              : (p.sampleUrl.isNotEmpty ? p.sampleUrl : p.fileUrl);
-          if (url.isNotEmpty &&
-              !url.startsWith('/') &&
-              !url.startsWith('file://')) {
-            precacheImage(
-              CachedNetworkImageProvider(url, headers: widget.headersBuilder(p)),
-              context,
-            );
-          }
-        }
-      }
-    }
-  }
-
-  void _scheduleControlsHide() {
-    _hideTimer?.cancel();
-    _hideTimer = Timer(const Duration(seconds: 4), () {
-      if (mounted && _controlsVisible && !_isCurrentZoomed) {
-        setState(() => _controlsVisible = false);
-      }
-    });
-  }
-
-  void _showControls() {
-    if (!mounted) return;
-    setState(() => _controlsVisible = true);
-    _scheduleControlsHide();
-  }
-
-  void _toggleControls() {
-    if (!mounted) return;
-    if (_controlsVisible) {
-      _hideTimer?.cancel();
-      setState(() => _controlsVisible = false);
-    } else {
-      _showControls();
-    }
-  }
-
-  void _toggleOrientation() {
-    setState(() => _isLandscape = !_isLandscape);
-    if (_isLandscape) {
-      SystemChrome.setPreferredOrientations([
-        DeviceOrientation.landscapeLeft,
-        DeviceOrientation.landscapeRight,
-      ]);
-    } else {
-      SystemChrome.setPreferredOrientations([
-        DeviceOrientation.portraitUp,
-        DeviceOrientation.portraitDown,
-      ]);
-    }
-    _showControls();
-  }
-
-  void _close() {
-    Navigator.of(context, rootNavigator: true).pop(_currentIndex);
-  }
-
-  void _onPageChanged(int idx, List<Post> posts) {
-    setState(() {
-      _currentIndex = idx;
-      _isCurrentZoomed = false;
-    });
-    widget.onPostChanged?.call(idx);
-    _showControls();
-    _prefetchAround(idx, posts);
-    // Evict distant posts (>= 3 posts away) from RAM
-    for (int i = 0; i < posts.length; i++) {
-      if ((i - idx).abs() >= 3) {
-        final p = posts[i];
-        SmartMemoryManager.evictImageUrl(p.fileUrl);
-        SmartMemoryManager.evictImageUrl(p.sampleUrl);
-      }
-    }
-    PaintingBinding.instance.imageCache.clearLiveImages();
-    if (idx >= posts.length - 3) {
-      widget.onLoadMore?.call();
-    }
-  }
-
-  @override
-  void dispose() {
-    _hideTimer?.cancel();
-    _animController.dispose();
-    _pageController.removeListener(_handlePageScroll);
-    _pageController.dispose();
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-      SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-      Future.delayed(const Duration(milliseconds: 300), () {
-        SystemChrome.setPreferredOrientations([]);
-      });
-    } else {
-      SystemChrome.setPreferredOrientations(DeviceOrientation.values);
-    }
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
-    final backdropAlpha = (1.0 - (_dragOffsetY.abs() / 320.0)).clamp(0.0, 1.0);
-
-    final feedPosts = ref.watch(feedControllerProvider).value?.posts;
-    final List<Post> resolvedPosts;
-    if (feedPosts != null && feedPosts.isNotEmpty) {
-      final hasCurrent = _currentIndex < widget.posts.length &&
-          feedPosts.any((p) => p.cacheKey == widget.posts[_currentIndex].cacheKey);
-      if (hasCurrent || feedPosts.length >= widget.posts.length) {
-        resolvedPosts = feedPosts;
-      } else {
-        resolvedPosts = widget.posts;
-      }
-    } else {
-      resolvedPosts = widget.posts;
-    }
-
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (didPop) return;
-        _close();
-      },
-      child: Scaffold(
-        backgroundColor: Colors.black.withValues(alpha: backdropAlpha),
-        body: Shortcuts(
-          shortcuts: {
-            LogicalKeySet(LogicalKeyboardKey.escape): const _CloseFullscreenIntent(),
-            LogicalKeySet(LogicalKeyboardKey.keyF): const _CloseFullscreenIntent(),
-            LogicalKeySet(LogicalKeyboardKey.space): const _ToggleControlsIntent(),
-            LogicalKeySet(LogicalKeyboardKey.arrowLeft): const _PrevFullscreenImageIntent(),
-            LogicalKeySet(LogicalKeyboardKey.keyA): const _PrevFullscreenImageIntent(),
-            LogicalKeySet(LogicalKeyboardKey.arrowRight): const _NextFullscreenImageIntent(),
-            LogicalKeySet(LogicalKeyboardKey.keyD): const _NextFullscreenImageIntent(),
-          },
-          child: Actions(
-            actions: {
-              _CloseFullscreenIntent: CallbackAction<_CloseFullscreenIntent>(
-                onInvoke: (_) {
-                  _close();
-                  return null;
-                },
-              ),
-              _ToggleControlsIntent: CallbackAction<_ToggleControlsIntent>(
-                onInvoke: (_) {
-                  _toggleControls();
-                  return null;
-                },
-              ),
-              _PrevFullscreenImageIntent: CallbackAction<_PrevFullscreenImageIntent>(
-                onInvoke: (_) {
-                  if (_currentIndex > 0) {
-                    _pageController.previousPage(
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeOutCubic,
-                    );
-                    _showControls();
-                  }
-                  return null;
-                },
-              ),
-              _NextFullscreenImageIntent: CallbackAction<_NextFullscreenImageIntent>(
-                onInvoke: (_) {
-                  if (_currentIndex < resolvedPosts.length - 1) {
-                    _pageController.nextPage(
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeOutCubic,
-                    );
-                    _showControls();
-                  }
-                  return null;
-                },
-              ),
-            },
-            child: Focus(
-              autofocus: true,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  GestureDetector(
-                    onVerticalDragStart: (details) {
-                      if (_isCurrentZoomed) return;
-                      _animController.stop();
-                    },
-                    onVerticalDragUpdate: (details) {
-                      if (_isCurrentZoomed) return;
-                      setState(() {
-                        _dragOffsetY += details.delta.dy;
-                      });
-                    },
-                    onVerticalDragEnd: (details) {
-                      if (_isCurrentZoomed) return;
-                      final velocity = details.primaryVelocity ?? 0.0;
-                      if (_dragOffsetY.abs() > 100 || velocity.abs() > 500) {
-                        _close();
-                      } else {
-                        _dragAnimation = Tween<double>(
-                          begin: _dragOffsetY,
-                          end: 0.0,
-                        ).animate(
-                          CurvedAnimation(
-                            parent: _animController,
-                            curve: Curves.easeOutCubic,
-                          ),
-                        );
-                        _animController.forward(from: 0.0);
-                      }
-                    },
-                    child: Transform.translate(
-                      offset: Offset(0, _dragOffsetY),
-                      child: Transform.scale(
-                        scale: (1.0 - (_dragOffsetY.abs() / 1500.0)).clamp(0.82, 1.0),
-                        child: PageView.builder(
-                          controller: _pageController,
-                          itemCount: resolvedPosts.length,
-                          physics: _isCurrentZoomed
-                              ? const NeverScrollableScrollPhysics()
-                              : const BouncingScrollPhysics(),
-                          onPageChanged: (idx) => _onPageChanged(idx, resolvedPosts),
-                          itemBuilder: (context, index) {
-                            final currentPost = resolvedPosts[index];
-                            final isInitial = index == widget.initialIndex;
-                            final localPath = isInitial ? widget.localFilePath : null;
-                            final isVideo = MediaUrlSelector.isVideo(currentPost) ||
-                                MediaUrlSelector.isAudio(currentPost) ||
-                                currentPost.cloudLinks.any((l) => l.isStreamable);
-
-                            if (isVideo) {
-                              return _FullscreenVideoItem(
-                                key: ValueKey('fs_vid_${currentPost.cacheKey}'),
-                                post: currentPost,
-                                isActive: index == _currentIndex,
-                                headers: widget.headersBuilder(currentPost),
-                                initialPosition: isInitial
-                                    ? widget.initialVideoPosition
-                                    : Duration.zero,
-                                localFilePath: localPath,
-                                onTap: _toggleControls,
-                              );
-                            }
-
-                            final urls = _FullscreenImageViewerPage._urlsForPost(
-                              currentPost,
-                              widget.qualityMode,
-                              localFilePath: localPath,
-                            );
-                            return _InteractiveFullscreenImageItem(
-                              key: ValueKey('fs_img_${currentPost.cacheKey}'),
-                              urls: urls,
-                              headers: widget.headersBuilder(currentPost),
-                              post: currentPost,
-                              notes: isInitial ? widget.notes : const [],
-                              showNotes: _showNotes,
-                              onZoomChanged: (zoomed) {
-                                if (index == _currentIndex &&
-                                    _isCurrentZoomed != zoomed) {
-                                  setState(() => _isCurrentZoomed = zoomed);
-                                }
-                              },
-                              onTap: _toggleControls,
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // Top controls overlay
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    child: AnimatedOpacity(
-                      opacity: _controlsVisible ? 1.0 : 0.0,
-                      duration: const Duration(milliseconds: 200),
-                      child: IgnorePointer(
-                        ignoring: !_controlsVisible,
-                        child: Container(
-                          padding: EdgeInsets.only(
-                            top: MediaQuery.of(context).padding.top + 6,
-                            left: 12,
-                            right: 12,
-                            bottom: 16,
-                          ),
-                          decoration: const BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [Colors.black87, Colors.transparent],
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              IconButton(
-                                tooltip: isRu ? 'Закрыть (Esc)' : 'Close (Esc)',
-                                icon: const Icon(
-                                  Icons.close_rounded,
-                                  color: Colors.white,
-                                  size: 26,
-                                ),
-                                onPressed: _close,
-                              ),
-                              const SizedBox(width: 8),
-                              if (resolvedPosts.length > 1)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black45,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: Colors.white24,
-                                      width: 0.8,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    '${_currentIndex + 1} / ${resolvedPosts.length}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              const Spacer(),
-                              if (Responsive.isMobile(context))
-                                IconButton(
-                                  tooltip: isRu
-                                      ? 'Повернуть экран'
-                                      : 'Rotate screen',
-                                  icon: Icon(
-                                    _isLandscape
-                                        ? Icons.screen_lock_landscape_rounded
-                                        : Icons.screen_lock_portrait_rounded,
-                                    color: Colors.white,
-                                  ),
-                                  onPressed: _toggleOrientation,
-                                ),
-                              if (widget.notes.isNotEmpty)
-                                IconButton(
-                                  tooltip: isRu
-                                      ? 'Заметки / перевод'
-                                      : 'Notes / translation',
-                                  icon: Icon(
-                                    _showNotes
-                                        ? Icons.subtitles_rounded
-                                        : Icons.subtitles_off_rounded,
-                                    color: _showNotes
-                                        ? Colors.amber
-                                        : Colors.white70,
-                                  ),
-                                  onPressed: () {
-                                    setState(() => _showNotes = !_showNotes);
-                                    _showControls();
-                                  },
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // Desktop chevrons
-                  if (resolvedPosts.length > 1 &&
-                      !Responsive.isMobile(context)) ...[
-                    if (_currentIndex > 0)
-                      Positioned(
-                        left: 16,
-                        top: 0,
-                        bottom: 0,
-                        child: Center(
-                          child: AnimatedOpacity(
-                            opacity: _controlsVisible ? 1.0 : 0.0,
-                            duration: const Duration(milliseconds: 200),
-                            child: IgnorePointer(
-                              ignoring: !_controlsVisible,
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  onTap: () {
-                                    _pageController.previousPage(
-                                      duration:
-                                          const Duration(milliseconds: 250),
-                                      curve: Curves.easeOutCubic,
-                                    );
-                                    _showControls();
-                                  },
-                                  borderRadius: BorderRadius.circular(24),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black45,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: Colors.white24,
-                                        width: 0.8,
-                                      ),
-                                    ),
-                                    child: const Icon(
-                                      Icons.chevron_left_rounded,
-                                      color: Colors.white,
-                                      size: 28,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    if (_currentIndex < resolvedPosts.length - 1)
-                      Positioned(
-                        right: 16,
-                        top: 0,
-                        bottom: 0,
-                        child: Center(
-                          child: AnimatedOpacity(
-                            opacity: _controlsVisible ? 1.0 : 0.0,
-                            duration: const Duration(milliseconds: 200),
-                            child: IgnorePointer(
-                              ignoring: !_controlsVisible,
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  onTap: () {
-                                    _pageController.nextPage(
-                                      duration:
-                                          const Duration(milliseconds: 250),
-                                      curve: Curves.easeOutCubic,
-                                    );
-                                    _showControls();
-                                  },
-                                  borderRadius: BorderRadius.circular(24),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black45,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: Colors.white24,
-                                        width: 0.8,
-                                      ),
-                                    ),
-                                    child: const Icon(
-                                      Icons.chevron_right_rounded,
-                                      color: Colors.white,
-                                      size: 28,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _FullscreenVideoItem extends StatefulWidget {
-  const _FullscreenVideoItem({
-    required this.post,
-    required this.isActive,
-    required this.headers,
-    this.initialPosition = Duration.zero,
-    this.localFilePath,
-    required this.onTap,
+class VideoSurface extends StatefulWidget {
+  const VideoSurface({
     super.key,
-  });
-
-  final Post post;
-  final bool isActive;
-  final Map<String, String> headers;
-  final Duration initialPosition;
-  final String? localFilePath;
-  final VoidCallback onTap;
-
-  @override
-  State<_FullscreenVideoItem> createState() => _FullscreenVideoItemState();
-}
-
-class _FullscreenVideoItemState extends State<_FullscreenVideoItem> {
-  Player? _player;
-  VideoController? _controller;
-  bool _initialized = false;
-  bool _controlsVisible = true;
-  Timer? _hideTimer;
-  bool _muted = false;
-  bool _loopVideo = true;
-  bool _coverVideo = false;
-  bool _halfVolume = false;
-  double _volume = 100.0;
-  bool _isLandscape = false;
-  bool _isSoftwareDecoding = false;
-  String? _errorMessage;
-  StreamSubscription<String>? _errorSub;
-  StreamSubscription<Duration>? _posSub;
-
-  void _cancelSubscriptions() {
-    _errorSub?.cancel();
-    _errorSub = null;
-    _posSub?.cancel();
-    _posSub = null;
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.isActive) {
-      _initPlayer();
-    }
-  }
-
-  @override
-  void didUpdateWidget(_FullscreenVideoItem oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.isActive && !oldWidget.isActive) {
-      if (_player == null) {
-        _initPlayer();
-      }
-    } else if (!widget.isActive && oldWidget.isActive) {
-      _player?.pause();
-    }
-  }
-
-  void _initPlayer() {
-    _cancelSubscriptions();
-    MediaKit.ensureInitialized();
-    final p = Player();
-    final enableHw = !_isSoftwareDecoding;
-    final c = VideoController(
-      p,
-      configuration: VideoControllerConfiguration(
-        enableHardwareAcceleration: enableHw,
-        hwdec: enableHw ? (Platform.isAndroid ? 'auto-safe' : 'auto') : 'no',
-      ),
-    );
-    _player = p;
-    _controller = c;
-    _applyVolume();
-    p.setPlaylistMode(_loopVideo ? PlaylistMode.single : PlaylistMode.none);
-
-    _errorSub = p.stream.error.listen((message) {
-      if (mounted) setState(() => _errorMessage = message);
-    });
-
-    _posSub = p.stream.position.listen((pos) {
-      if (!mounted) return;
-      _playbackMemory[widget.post.cacheKey] = VideoPlaybackSnapshot(
-        position: pos,
-        playing: p.state.playing,
-        muted: _muted,
-        halfVolume: _halfVolume,
-        loopVideo: _loopVideo,
-        coverVideo: _coverVideo,
-        volume: _volume,
-      );
-    });
-
-    final videoUrls = _buildVideoUrls();
-    if (videoUrls.isNotEmpty) {
-      final src = videoUrls.first;
-      final isLocal = src.startsWith('/') || src.startsWith('file://');
-      p.open(
-        Media(src, httpHeaders: isLocal ? null : widget.headers),
-        play: false,
-      ).then((_) {
-        if (widget.initialPosition > Duration.zero) {
-          p.seek(widget.initialPosition);
-        }
-      }).catchError((err) {
-        if (mounted) setState(() => _errorMessage = err.toString());
-      });
-    }
-
-    if (mounted) {
-      setState(() => _initialized = true);
-    }
-    _scheduleControlsHide();
-  }
-
-  List<String> _buildVideoUrls() {
-    final local = widget.localFilePath;
-    if (local != null && local.isNotEmpty && File(local).existsSync()) {
-      return [local];
-    }
-    final list = MediaUrlSelector.isVideo(widget.post)
-        ? List<String>.from(MediaUrlSelector.video(widget.post))
-        : List<String>.from(MediaUrlSelector.audio(widget.post));
-    final cloudStreams = widget.post.cloudLinks
-        .where((l) => l.isStreamable && l.directStreamUrl != null)
-        .map((l) => l.directStreamUrl!);
-    for (final stream in cloudStreams) {
-      if (!list.contains(stream)) list.add(stream);
-    }
-    if (list.isEmpty) {
-      if (widget.post.fileUrl.isNotEmpty) list.add(widget.post.fileUrl);
-      if (widget.post.sampleUrl.isNotEmpty) list.add(widget.post.sampleUrl);
-    }
-    return list;
-  }
-
-  void _applyVolume() {
-    _player?.setVolume(_muted ? 0.0 : _halfVolume ? 50.0 : _volume);
-  }
-
-  void _scheduleControlsHide() {
-    _hideTimer?.cancel();
-    _hideTimer = Timer(const Duration(seconds: 3), () {
-      if (mounted && _errorMessage == null) {
-        setState(() => _controlsVisible = false);
-      }
-    });
-  }
-
-  void _toggleControls() {
-    if (!mounted) return;
-    if (_controlsVisible) {
-      _hideTimer?.cancel();
-      setState(() => _controlsVisible = false);
-    } else {
-      setState(() => _controlsVisible = true);
-      _scheduleControlsHide();
-    }
-    widget.onTap();
-  }
-
-  @override
-  void dispose() {
-    _hideTimer?.cancel();
-    _cancelSubscriptions();
-    if (_player != null) {
-      final pos = _player!.state.position;
-      final isPlaying = _player!.state.playing;
-      _playbackMemory[widget.post.cacheKey] = VideoPlaybackSnapshot(
-        position: pos,
-        playing: isPlaying,
-        muted: _muted,
-        halfVolume: _halfVolume,
-        loopVideo: _loopVideo,
-        coverVideo: _coverVideo,
-        volume: _volume,
-      );
-    }
-    _player?.pause();
-    _player?.stop();
-    _player?.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (!_initialized || _player == null || _controller == null) {
-      return Stack(
-        fit: StackFit.expand,
-        children: [
-          if (widget.post.previewUrl.isNotEmpty)
-            CachedNetworkImage(
-              imageUrl: widget.post.previewUrl,
-              httpHeaders: widget.headers,
-              fit: BoxFit.contain,
-              errorWidget: (_, __, ___) => const SizedBox.shrink(),
-            ),
-          const Center(
-            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-          ),
-        ],
-      );
-    }
-
-    final double aspect = (widget.post.width > 0 && widget.post.height > 0)
-        ? (widget.post.width / widget.post.height).clamp(0.4, 2.5)
-        : 16 / 9;
-
-    final topOffset = MediaQuery.of(context).padding.top + 50.0;
-
-    return _VideoSurface(
-      player: _player!,
-      controller: _controller!,
-      aspectRatio: aspect,
-      isSoftwareDecoding: _isSoftwareDecoding,
-      topOffset: topOffset,
-      inGallery: true,
-      onToggleDecoder: () {
-        setState(() => _isSoftwareDecoding = !_isSoftwareDecoding);
-        _player?.dispose();
-        _initialized = false;
-        _initPlayer();
-      },
-      controlsVisible: _controlsVisible,
-      coverVideo: _coverVideo,
-      muted: _muted,
-      loopVideo: _loopVideo,
-      halfVolume: _halfVolume,
-      initialVolume: _volume,
-      onVolumeChanged: (v) {
-        _volume = v;
-        _applyVolume();
-      },
-      fullscreen: true,
-      errorMessage: _errorMessage,
-      onTapSurface: _toggleControls,
-      onInteract: () {
-        setState(() => _controlsVisible = true);
-        _scheduleControlsHide();
-      },
-      isLandscape: _isLandscape,
-      onToggleOrientation: () {
-        setState(() => _isLandscape = !_isLandscape);
-        if (_isLandscape) {
-          SystemChrome.setPreferredOrientations([
-            DeviceOrientation.landscapeLeft,
-            DeviceOrientation.landscapeRight,
-          ]);
-        } else {
-          SystemChrome.setPreferredOrientations([
-            DeviceOrientation.portraitUp,
-            DeviceOrientation.portraitDown,
-          ]);
-        }
-      },
-      onRetry: () {
-        setState(() => _errorMessage = null);
-        _player?.dispose();
-        _initialized = false;
-        _initPlayer();
-      },
-      onToggleFit: () => setState(() => _coverVideo = !_coverVideo),
-      onToggleMute: () {
-        setState(() => _muted = !_muted);
-        _applyVolume();
-      },
-      onToggleHalfVolume: () {
-        setState(() => _halfVolume = !_halfVolume);
-        _applyVolume();
-      },
-      onToggleLoop: () {
-        setState(() => _loopVideo = !_loopVideo);
-        _player?.setPlaylistMode(
-          _loopVideo ? PlaylistMode.single : PlaylistMode.none,
-        );
-      },
-      onFullscreen: () => Navigator.of(context, rootNavigator: true).maybePop(),
-    );
-  }
-}
-
-class _InteractiveFullscreenImageItem extends StatefulWidget {
-  const _InteractiveFullscreenImageItem({
-    required this.urls,
-    required this.headers,
-    required this.post,
-    required this.notes,
-    required this.showNotes,
-    required this.onZoomChanged,
-    required this.onTap,
-    super.key,
-  });
-
-  final List<String> urls;
-  final Map<String, String> headers;
-  final Post post;
-  final List<PostNote> notes;
-  final bool showNotes;
-  final ValueChanged<bool> onZoomChanged;
-  final VoidCallback onTap;
-
-  @override
-  State<_InteractiveFullscreenImageItem> createState() =>
-      _InteractiveFullscreenImageItemState();
-}
-
-class _InteractiveFullscreenImageItemState
-    extends State<_InteractiveFullscreenImageItem> {
-  final _controller = TransformationController();
-  TapDownDetails? _doubleTapDetails;
-  bool _zoomed = false;
-  int _pointerCount = 0;
-  int _urlIndex = 0;
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _zoomIn([Offset? targetOffset]) {
-    final currentScale = _controller.value.getMaxScaleOnAxis();
-    final newScale = (currentScale * 1.4).clamp(1.0, 10.0);
-    final target = targetOffset ??
-        Offset(
-          MediaQuery.of(context).size.width / 2,
-          MediaQuery.of(context).size.height / 2,
-        );
-    _controller.value = Matrix4.identity()
-      ..translateByDouble(
-          -target.dx * (newScale - 1), -target.dy * (newScale - 1), 0, 1)
-      ..scaleByDouble(newScale, newScale, 1, 1);
-    final nextZoomed = newScale > 1.02;
-    if (mounted) setState(() => _zoomed = nextZoomed);
-    widget.onZoomChanged(nextZoomed);
-  }
-
-  void _zoomOut([Offset? targetOffset]) {
-    final currentScale = _controller.value.getMaxScaleOnAxis();
-    final newScale = (currentScale / 1.4).clamp(1.0, 10.0);
-    if (newScale <= 1.02) {
-      _controller.value = Matrix4.identity();
-      if (mounted) setState(() => _zoomed = false);
-      widget.onZoomChanged(false);
-    } else {
-      final target = targetOffset ??
-          Offset(
-            MediaQuery.of(context).size.width / 2,
-            MediaQuery.of(context).size.height / 2,
-          );
-      _controller.value = Matrix4.identity()
-        ..translateByDouble(
-            -target.dx * (newScale - 1), -target.dy * (newScale - 1), 0, 1)
-        ..scaleByDouble(newScale, newScale, 1, 1);
-      if (mounted) setState(() => _zoomed = true);
-      widget.onZoomChanged(true);
-    }
-  }
-
-  void _toggleZoom() {
-    final tap = _doubleTapDetails?.localPosition ?? Offset.zero;
-    if (_zoomed) {
-      _controller.value = Matrix4.identity();
-      if (mounted) setState(() => _zoomed = false);
-      widget.onZoomChanged(false);
-      return;
-    }
-    const scale = 2.8;
-    _controller.value = Matrix4.identity()
-      ..translateByDouble(-tap.dx * (scale - 1), -tap.dy * (scale - 1), 0, 1)
-      ..scaleByDouble(scale, scale, 1, 1);
-    if (mounted) setState(() => _zoomed = true);
-    widget.onZoomChanged(true);
-  }
-
-  void _advanceFallback() {
-    if (_urlIndex < widget.urls.length - 1) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) setState(() => _urlIndex++);
-      });
-    }
-  }
-
-  Widget _buildPlaceholder() {
-    if (widget.post.previewUrl.isNotEmpty) {
-      return CachedNetworkImage(
-        imageUrl: widget.post.previewUrl,
-        httpHeaders: widget.headers,
-        fit: BoxFit.contain,
-        errorWidget: (_, __, ___) => const Center(
-          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white54),
-        ),
-      );
-    }
-    return const Center(
-      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white54),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final currentUrl = widget.urls.isNotEmpty && _urlIndex < widget.urls.length
-        ? widget.urls[_urlIndex]
-        : widget.post.fileUrl;
-    final isLocal =
-        currentUrl.startsWith('/') || currentUrl.startsWith('file://');
-    final Widget imageWidget;
-    if (isLocal) {
-      final cleanPath = currentUrl.startsWith('file://')
-          ? currentUrl.replaceFirst('file://', '')
-          : currentUrl;
-      imageWidget = Image.file(
-        File(cleanPath),
-        fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) => const Center(
-          child: Icon(Icons.broken_image_rounded, size: 64, color: Colors.white54),
-        ),
-      );
-    } else {
-      final mq = MediaQuery.maybeOf(context);
-      final dpr = mq?.devicePixelRatio ?? 1.5;
-      final screenWidth = mq?.size.width ?? 1080;
-      final maxCacheWidth = (screenWidth * dpr).round().clamp(720, 2048);
-      final isGif = MediaUrlSelector.isGif(widget.post) ||
-          currentUrl.toLowerCase().contains('.gif') ||
-          widget.post.fileType.toLowerCase() == 'gif';
-
-      imageWidget = CachedNetworkImage(
-        key: ValueKey(currentUrl),
-        imageUrl: currentUrl,
-        httpHeaders: widget.headers,
-        memCacheWidth: isGif ? null : maxCacheWidth,
-        fit: BoxFit.contain,
-        placeholder: (context, url) => _buildPlaceholder(),
-        errorWidget: (context, url, error) {
-          if (_urlIndex < widget.urls.length - 1) {
-            _advanceFallback();
-            return _buildPlaceholder();
-          }
-          return _DioImageFallback(
-            imageUrl: url,
-            headers: widget.headers,
-            fit: BoxFit.contain,
-            onFailed: () {},
-          );
-        },
-      );
-    }
-
-    final content = Stack(
-      fit: StackFit.expand,
-      children: [
-        imageWidget,
-        if (widget.showNotes && widget.notes.isNotEmpty)
-          PostNotesOverlay(
-            post: widget.post,
-            notes: widget.notes,
-          ),
-      ],
-    );
-
-    return Listener(
-      onPointerDown: (_) => _pointerCount++,
-      onPointerUp: (_) {
-        if (_pointerCount > 0) _pointerCount--;
-      },
-      onPointerCancel: (_) {
-        if (_pointerCount > 0) _pointerCount--;
-      },
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () {
-          if (!_zoomed) {
-            widget.onTap();
-          }
-        },
-        onDoubleTapDown: (details) => _doubleTapDetails = details,
-        onDoubleTap: _toggleZoom,
-        child: InteractiveViewer(
-          transformationController: _controller,
-          minScale: 1.0,
-          maxScale: 10.0,
-          boundaryMargin: const EdgeInsets.all(200),
-          panEnabled: _zoomed,
-          scaleEnabled: _zoomed || _pointerCount >= 2,
-          clipBehavior: Clip.none,
-          onInteractionEnd: (_) {
-            final scale = _controller.value.getMaxScaleOnAxis();
-            final nextZoomed = scale > 1.03;
-            if (!nextZoomed) {
-              _controller.value = Matrix4.identity();
-            }
-            if (mounted) setState(() => _zoomed = nextZoomed);
-            widget.onZoomChanged(nextZoomed);
-          },
-          child: Listener(
-            onPointerSignal: (event) {
-              if (event is PointerScrollEvent) {
-                GestureBinding.instance.pointerSignalResolver
-                    .register(event, (_) {
-                  if (event.scrollDelta.dy < 0) {
-                    _zoomIn(event.localPosition);
-                  } else if (event.scrollDelta.dy > 0) {
-                    _zoomOut(event.localPosition);
-                  }
-                });
-              }
-            },
-            child: Center(
-              child: content,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AudioSurface extends StatefulWidget {
-  const _AudioSurface({
-    required this.player,
-    required this.post,
-    required this.muted,
-    required this.loopAudio,
-    this.initialVolume = 100.0,
-    this.onVolumeChanged,
-    required this.fullscreen,
-    required this.errorMessage,
-    required this.onRetry,
-    required this.onToggleMute,
-    required this.onToggleLoop,
-  });
-
-  final Player player;
-  final Post post;
-  final bool muted;
-  final bool loopAudio;
-  final double initialVolume;
-  final ValueChanged<double>? onVolumeChanged;
-  final bool fullscreen;
-  final String? errorMessage;
-  final VoidCallback onRetry;
-  final VoidCallback onToggleMute;
-  final VoidCallback onToggleLoop;
-
-  @override
-  State<_AudioSurface> createState() => _AudioSurfaceState();
-}
-
-class _AudioSurfaceState extends State<_AudioSurface>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _rotationController;
-  StreamSubscription<Duration>? _posSub;
-  StreamSubscription<Duration>? _durSub;
-  StreamSubscription<bool>? _playSub;
-  StreamSubscription<bool>? _buffSub;
-
-  Duration _position = Duration.zero;
-  Duration _duration = Duration.zero;
-  bool _playing = false;
-  bool _buffering = false;
-  bool _isDragging = false;
-  double _dragValue = 0.0;
-
-  @override
-  void initState() {
-    super.initState();
-    _rotationController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 14),
-    );
-    _position = widget.player.state.position;
-    _duration = widget.player.state.duration;
-    _playing = widget.player.state.playing;
-    _buffering = widget.player.state.buffering;
-    if (_playing) _rotationController.repeat();
-
-    _posSub = widget.player.stream.position.listen((pos) {
-      if (mounted && !_isDragging) {
-        setState(() => _position = pos);
-      }
-    });
-    _durSub = widget.player.stream.duration.listen((dur) {
-      if (mounted) setState(() => _duration = dur);
-    });
-    _playSub = widget.player.stream.playing.listen((playing) {
-      if (mounted) {
-        setState(() => _playing = playing);
-        if (playing) {
-          _rotationController.repeat();
-        } else {
-          _rotationController.stop();
-        }
-      }
-    });
-    _buffSub = widget.player.stream.buffering.listen((buffering) {
-      if (mounted) setState(() => _buffering = buffering);
-    });
-  }
-
-  @override
-  void dispose() {
-    _rotationController.dispose();
-    _posSub?.cancel();
-    _durSub?.cancel();
-    _playSub?.cancel();
-    _buffSub?.cancel();
-    super.dispose();
-  }
-
-  String _formatTime(Duration d) {
-    final minutes = d.inMinutes;
-    final seconds = d.inSeconds % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-  }
-
-  String _deriveTitle() {
-    final title = (widget.post.title ?? '').trim();
-    if (title.isNotEmpty) return title;
-    final uri = Uri.tryParse(widget.post.fileUrl);
-    if (uri != null) {
-      final q = uri.queryParameters['f'];
-      if (q != null && q.trim().isNotEmpty) return q.trim();
-      final seg = uri.pathSegments.lastOrNull;
-      if (seg != null && seg.isNotEmpty) return seg;
-    }
-    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
-    return isRu ? 'Аудиозапись' : 'Audio track';
-  }
-
-  void _seekRelative(int seconds) {
-    final target = _position + Duration(seconds: seconds);
-    final maxDur = _duration > Duration.zero ? _duration : target;
-    final clamped = Duration(
-      milliseconds: target.inMilliseconds.clamp(0, maxDur.inMilliseconds),
-    );
-    widget.player.seek(clamped);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
-    final theme = Theme.of(context);
-    final title = _deriveTitle();
-    final artistName =
-        widget.post.tagGroups['artist']?.firstOrNull ?? widget.post.providerName;
-    final hasCover = widget.post.previewUrl.isNotEmpty &&
-        widget.post.previewUrl.startsWith('http');
-
-    if (widget.errorMessage != null) {
-      return Center(
-        child: Container(
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.4)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.error_outline_rounded,
-                  size: 40, color: theme.colorScheme.error),
-              const SizedBox(height: 12),
-              Text(
-                isRu
-                    ? 'Не удалось воспроизвести аудио'
-                    : 'Could not play audio',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                widget.errorMessage!,
-                textAlign: TextAlign.center,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: widget.onRetry,
-                icon: const Icon(Icons.refresh_rounded),
-                label: Text(isRu ? 'Повторить попытку' : 'Retry'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    final maxMs = _duration.inMilliseconds > 0
-        ? _duration.inMilliseconds.toDouble()
-        : 1.0;
-    final currentMs = (_isDragging ? _dragValue : _position.inMilliseconds.toDouble())
-        .clamp(0.0, maxMs);
-
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            theme.colorScheme.surfaceContainerHighest,
-            theme.colorScheme.surfaceContainer,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.35),
-          width: 0.8,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Top Row: Vinyl / Album Art + Title + Artist
-          Row(
-            children: [
-              // Rotating Album Art / Vinyl
-              RotationTransition(
-                turns: _rotationController,
-                child: Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        theme.colorScheme.primary.withValues(alpha: 0.9),
-                        Colors.black87,
-                      ],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.35),
-                        blurRadius: 12,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: hasCover
-                        ? ClipOval(
-                            child: CachedNetworkImage(
-                              imageUrl: widget.post.previewUrl,
-                              width: 44,
-                              height: 44,
-                              fit: BoxFit.cover,
-                              errorWidget: (_, __, ___) => Icon(
-                                Icons.audiotrack_rounded,
-                                color: theme.colorScheme.onPrimary,
-                                size: 26,
-                              ),
-                            ),
-                          )
-                        : Container(
-                            width: 26,
-                            height: 26,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: theme.colorScheme.surface,
-                            ),
-                            child: Icon(
-                              Icons.audiotrack_rounded,
-                              size: 16,
-                              color: theme.colorScheme.primary,
-                            ),
-                          ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              // Track & Artist Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: -0.2,
-                        height: 1.25,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.person_outline_rounded,
-                          size: 14,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            artistName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-
-          // Timeline Slider
-          SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              trackHeight: 4.5,
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6.5),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
-              activeTrackColor: theme.colorScheme.primary,
-              inactiveTrackColor:
-                  theme.colorScheme.onSurface.withValues(alpha: 0.15),
-              thumbColor: theme.colorScheme.primary,
-            ),
-            child: Slider(
-              value: currentMs,
-              min: 0.0,
-              max: maxMs,
-              onChanged: (val) {
-                setState(() {
-                  _isDragging = true;
-                  _dragValue = val;
-                });
-              },
-              onChangeEnd: (val) {
-                _isDragging = false;
-                widget.player.seek(Duration(milliseconds: val.toInt()));
-              },
-            ),
-          ),
-
-          // Time numbers: elapsed & total
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  _formatTime(_position),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontSize: 11,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
-                if (_buffering)
-                  SizedBox(
-                    width: 12,
-                    height: 12,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                Text(
-                  _formatTime(_duration),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontSize: 11,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-
-          // Controls Row: Loop, -10s, Play/Pause, +10s, Mute
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              IconButton(
-                tooltip: widget.loopAudio
-                    ? (isRu ? 'Повтор: включен' : 'Repeat: on')
-                    : (isRu ? 'Повтор: выключен' : 'Repeat: off'),
-                icon: Icon(
-                  widget.loopAudio ? Icons.repeat_one_rounded : Icons.repeat_rounded,
-                  color: widget.loopAudio
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurfaceVariant,
-                  size: 22,
-                ),
-                onPressed: widget.onToggleLoop,
-              ),
-              IconButton(
-                tooltip: isRu ? 'Назад на 10 сек' : 'Rewind 10 sec',
-                icon: const Icon(Icons.replay_10_rounded, size: 26),
-                color: theme.colorScheme.onSurface,
-                onPressed: () => _seekRelative(-10),
-              ),
-              // Big Play / Pause Button
-              GestureDetector(
-                onTap: () {
-                  if (_playing) {
-                    widget.player.pause();
-                  } else {
-                    widget.player.play();
-                  }
-                },
-                child: Container(
-                  width: 54,
-                  height: 54,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.4),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    _playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                    color: theme.colorScheme.onPrimary,
-                    size: 30,
-                  ),
-                ),
-              ),
-              IconButton(
-                tooltip: isRu ? 'Вперед на 10 сек' : 'Forward 10 sec',
-                icon: const Icon(Icons.forward_10_rounded, size: 26),
-                color: theme.colorScheme.onSurface,
-                onPressed: () => _seekRelative(10),
-              ),
-              IconButton(
-                tooltip: widget.muted
-                    ? (isRu ? 'Включить звук' : 'Unmute')
-                    : (isRu ? 'Выключить звук' : 'Mute'),
-                icon: Icon(
-                  widget.muted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
-                  color: widget.muted
-                      ? theme.colorScheme.error
-                      : theme.colorScheme.onSurfaceVariant,
-                  size: 22,
-                ),
-                onPressed: widget.onToggleMute,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _VideoSurface extends StatefulWidget {
-  const _VideoSurface({
     required this.player,
     required this.controller,
     required this.aspectRatio,
@@ -2763,10 +1188,10 @@ class _VideoSurface extends StatefulWidget {
   final bool inGallery;
 
   @override
-  State<_VideoSurface> createState() => _VideoSurfaceState();
+  State<VideoSurface> createState() => VideoSurfaceState();
 }
 
-class _VideoSurfaceState extends State<_VideoSurface> {
+class VideoSurfaceState extends State<VideoSurface> {
   bool _isLocked = false;
   bool _showLeftSeek = false;
   bool _showRightSeek = false;
@@ -2792,7 +1217,7 @@ class _VideoSurfaceState extends State<_VideoSurface> {
   }
 
   @override
-  void didUpdateWidget(covariant _VideoSurface oldWidget) {
+  void didUpdateWidget(covariant VideoSurface oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.initialVolume != widget.initialVolume) {
       _currentVolume = widget.initialVolume;
@@ -2964,8 +1389,7 @@ class _VideoSurfaceState extends State<_VideoSurface> {
               _VolumeGestureBadge(volume: _currentVolume),
             if (_showBrightnessIndicator)
               _BrightnessGestureBadge(brightness: _currentBrightness),
-            if (_isSpeedBoosted)
-              const _SpeedBoostOverlayBadge(),
+            if (_isSpeedBoosted) const _SpeedBoostOverlayBadge(),
             if (widget.errorMessage != null)
               VideoErrorOverlay(
                 message: widget.errorMessage!,
@@ -3012,26 +1436,28 @@ class _VideoSurfaceState extends State<_VideoSurface> {
 
     return Shortcuts(
       shortcuts: {
-        LogicalKeySet(LogicalKeyboardKey.space): const _TogglePlayIntent(),
-        LogicalKeySet(LogicalKeyboardKey.keyK): const _TogglePlayIntent(),
-        LogicalKeySet(LogicalKeyboardKey.arrowLeft): const _SeekVideoIntent(-5),
-        LogicalKeySet(LogicalKeyboardKey.keyJ): const _SeekVideoIntent(-5),
-        LogicalKeySet(LogicalKeyboardKey.arrowRight): const _SeekVideoIntent(5),
-        LogicalKeySet(LogicalKeyboardKey.keyL): const _SeekVideoIntent(5),
+        LogicalKeySet(LogicalKeyboardKey.space): const TogglePlayIntent(),
+        LogicalKeySet(LogicalKeyboardKey.keyK): const TogglePlayIntent(),
+        LogicalKeySet(LogicalKeyboardKey.arrowLeft): const SeekVideoIntent(-5),
+        LogicalKeySet(LogicalKeyboardKey.keyJ): const SeekVideoIntent(-5),
+        LogicalKeySet(LogicalKeyboardKey.arrowRight): const SeekVideoIntent(5),
+        LogicalKeySet(LogicalKeyboardKey.keyL): const SeekVideoIntent(5),
         LogicalKeySet(LogicalKeyboardKey.shift, LogicalKeyboardKey.arrowLeft):
-            const _SeekVideoIntent(-15),
+            const SeekVideoIntent(-15),
         LogicalKeySet(LogicalKeyboardKey.shift, LogicalKeyboardKey.arrowRight):
-            const _SeekVideoIntent(15),
-        LogicalKeySet(LogicalKeyboardKey.arrowUp): const _VolumeVideoIntent(-10),
-        LogicalKeySet(LogicalKeyboardKey.arrowDown): const _VolumeVideoIntent(10),
-        LogicalKeySet(LogicalKeyboardKey.keyM): const _MuteVideoIntent(),
-        LogicalKeySet(LogicalKeyboardKey.keyF): const _FullscreenVideoIntent(),
+            const SeekVideoIntent(15),
+        LogicalKeySet(LogicalKeyboardKey.arrowUp):
+            const VolumeVideoIntent(-10),
+        LogicalKeySet(LogicalKeyboardKey.arrowDown):
+            const VolumeVideoIntent(10),
+        LogicalKeySet(LogicalKeyboardKey.keyM): const MuteVideoIntent(),
+        LogicalKeySet(LogicalKeyboardKey.keyF): const FullscreenVideoIntent(),
         LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyL):
-            const _LoopVideoIntent(),
+            const LoopVideoIntent(),
       },
       child: Actions(
         actions: {
-          _TogglePlayIntent: CallbackAction<_TogglePlayIntent>(
+          TogglePlayIntent: CallbackAction<TogglePlayIntent>(
             onInvoke: (_) {
               if (widget.player.state.playing) {
                 widget.player.pause();
@@ -3045,31 +1471,31 @@ class _VideoSurfaceState extends State<_VideoSurface> {
               return null;
             },
           ),
-          _SeekVideoIntent: CallbackAction<_SeekVideoIntent>(
+          SeekVideoIntent: CallbackAction<SeekVideoIntent>(
             onInvoke: (intent) {
               _seekBy(Duration(seconds: intent.seconds));
               return null;
             },
           ),
-          _VolumeVideoIntent: CallbackAction<_VolumeVideoIntent>(
+          VolumeVideoIntent: CallbackAction<VolumeVideoIntent>(
             onInvoke: (intent) {
               _adjustVolume(intent.deltaY);
               return null;
             },
           ),
-          _MuteVideoIntent: CallbackAction<_MuteVideoIntent>(
+          MuteVideoIntent: CallbackAction<MuteVideoIntent>(
             onInvoke: (_) {
               widget.onToggleMute();
               return null;
             },
           ),
-          _FullscreenVideoIntent: CallbackAction<_FullscreenVideoIntent>(
+          FullscreenVideoIntent: CallbackAction<FullscreenVideoIntent>(
             onInvoke: (_) {
               widget.onFullscreen();
               return null;
             },
           ),
-          _LoopVideoIntent: CallbackAction<_LoopVideoIntent>(
+          LoopVideoIntent: CallbackAction<LoopVideoIntent>(
             onInvoke: (_) {
               widget.onToggleLoop();
               return null;
@@ -3121,37 +1547,68 @@ class VideoErrorOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     return ColoredBox(
-      color: Colors.black.withValues(alpha: 0.62),
+      color: Colors.black,
       child: Center(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline_rounded,
-                  color: Colors.white, size: 42),
-              const SizedBox(height: 10),
-              Text(
-                'Could not load video',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(color: Colors.white),
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: Colors.redAccent.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.redAccent.withValues(alpha: 0.35),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.error_outline_rounded,
+                  color: Colors.redAccent,
+                  size: 36,
+                ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 16),
+              Text(
+                isRu ? 'Ошибка воспроизведения' : 'Playback error',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 8),
               Text(
                 message,
-                maxLines: 3,
+                maxLines: 4,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white70),
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12.5,
+                  height: 1.3,
+                ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 20),
               FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
                 onPressed: onRetry,
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Retry'),
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: Text(
+                  isRu ? 'Повторить' : 'Retry',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
             ],
           ),
@@ -3161,8 +1618,9 @@ class VideoErrorOverlay extends StatelessWidget {
   }
 }
 
-class _DioImageFallback extends StatefulWidget {
-  const _DioImageFallback({
+class DioImageFallback extends StatefulWidget {
+  const DioImageFallback({
+    super.key,
     required this.imageUrl,
     required this.headers,
     required this.fit,
@@ -3175,10 +1633,10 @@ class _DioImageFallback extends StatefulWidget {
   final VoidCallback onFailed;
 
   @override
-  State<_DioImageFallback> createState() => _DioImageFallbackState();
+  State<DioImageFallback> createState() => DioImageFallbackState();
 }
 
-class _DioImageFallbackState extends State<_DioImageFallback> {
+class DioImageFallbackState extends State<DioImageFallback> {
   late final Future<Uint8List> _bytes = _load();
   bool _reportedFailure = false;
 
@@ -3287,7 +1745,8 @@ class _ZoomableImageState extends State<_ZoomableImage> {
   void _zoomIn() {
     final currentScale = _controller.value.getMaxScaleOnAxis();
     final newScale = (currentScale * 1.35).clamp(1.0, 6.0);
-    _controller.value = Matrix4.identity()..scaleByDouble(newScale, newScale, 1, 1);
+    _controller.value = Matrix4.identity()
+      ..scaleByDouble(newScale, newScale, 1, 1);
     if (mounted) setState(() => _zoomed = newScale > 1.02);
     _setLocked(_zoomed);
   }
@@ -3300,7 +1759,8 @@ class _ZoomableImageState extends State<_ZoomableImage> {
       if (mounted) setState(() => _zoomed = false);
       _setLocked(false);
     } else {
-      _controller.value = Matrix4.identity()..scaleByDouble(newScale, newScale, 1, 1);
+      _controller.value = Matrix4.identity()
+        ..scaleByDouble(newScale, newScale, 1, 1);
       if (mounted) setState(() => _zoomed = true);
       _setLocked(true);
     }
@@ -3316,30 +1776,31 @@ class _ZoomableImageState extends State<_ZoomableImage> {
   Widget build(BuildContext context) {
     return Shortcuts(
       shortcuts: {
-        LogicalKeySet(LogicalKeyboardKey.equal): const _ZoomInIntent(),
-        LogicalKeySet(LogicalKeyboardKey.add): const _ZoomInIntent(),
-        LogicalKeySet(LogicalKeyboardKey.numpadAdd): const _ZoomInIntent(),
-        LogicalKeySet(LogicalKeyboardKey.minus): const _ZoomOutIntent(),
-        LogicalKeySet(LogicalKeyboardKey.numpadSubtract): const _ZoomOutIntent(),
-        LogicalKeySet(LogicalKeyboardKey.digit0): const _ResetZoomIntent(),
-        LogicalKeySet(LogicalKeyboardKey.numpad0): const _ResetZoomIntent(),
-        LogicalKeySet(LogicalKeyboardKey.escape): const _ResetZoomIntent(),
+        LogicalKeySet(LogicalKeyboardKey.equal): const ZoomInIntent(),
+        LogicalKeySet(LogicalKeyboardKey.add): const ZoomInIntent(),
+        LogicalKeySet(LogicalKeyboardKey.numpadAdd): const ZoomInIntent(),
+        LogicalKeySet(LogicalKeyboardKey.minus): const ZoomOutIntent(),
+        LogicalKeySet(LogicalKeyboardKey.numpadSubtract):
+            const ZoomOutIntent(),
+        LogicalKeySet(LogicalKeyboardKey.digit0): const ResetZoomIntent(),
+        LogicalKeySet(LogicalKeyboardKey.numpad0): const ResetZoomIntent(),
+        LogicalKeySet(LogicalKeyboardKey.escape): const ResetZoomIntent(),
       },
       child: Actions(
         actions: {
-          _ZoomInIntent: CallbackAction<_ZoomInIntent>(
+          ZoomInIntent: CallbackAction<ZoomInIntent>(
             onInvoke: (_) {
               _zoomIn();
               return null;
             },
           ),
-          _ZoomOutIntent: CallbackAction<_ZoomOutIntent>(
+          ZoomOutIntent: CallbackAction<ZoomOutIntent>(
             onInvoke: (_) {
               _zoomOut();
               return null;
             },
           ),
-          _ResetZoomIntent: CallbackAction<_ResetZoomIntent>(
+          ResetZoomIntent: CallbackAction<ResetZoomIntent>(
             onInvoke: (_) {
               if (_zoomed) {
                 _resetZoom();
@@ -3417,10 +1878,12 @@ class _ZoomableImageState extends State<_ZoomableImage> {
                             });
                           } else {
                             final scrollable = Scrollable.maybeOf(context);
-                            if (scrollable != null && scrollable.position.hasPixels) {
+                            if (scrollable != null &&
+                                scrollable.position.hasPixels) {
                               final pos = scrollable.position;
                               final target = (pos.pixels + event.scrollDelta.dy)
-                                  .clamp(pos.minScrollExtent, pos.maxScrollExtent);
+                                  .clamp(
+                                      pos.minScrollExtent, pos.maxScrollExtent);
                               pos.jumpTo(target);
                             }
                           }
@@ -3623,7 +2086,8 @@ class _SpeedBoostOverlayBadge extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.black.withValues(alpha: 0.78),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.amberAccent.withValues(alpha: 0.7)),
+            border:
+                Border.all(color: Colors.amberAccent.withValues(alpha: 0.7)),
             boxShadow: [
               BoxShadow(
                 color: Colors.amberAccent.withValues(alpha: 0.28),
@@ -3635,7 +2099,8 @@ class _SpeedBoostOverlayBadge extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.bolt_rounded, color: Colors.amberAccent, size: 18),
+              const Icon(Icons.bolt_rounded,
+                  color: Colors.amberAccent, size: 18),
               const SizedBox(width: 6),
               Text(
                 isRu ? '2X УСКОРЕНИЕ' : '2X SPEED',
@@ -3937,7 +2402,8 @@ class _VideoControlsState extends State<_VideoControls> {
               left: 0,
               right: 0,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
                   gradient: widget.topOffset > 0
                       ? null
@@ -3967,8 +2433,12 @@ class _VideoControlsState extends State<_VideoControls> {
                           !widget.inGallery) ...[
                         _RoundControlButton(
                           tooltip: (widget.isLandscape ?? false)
-                              ? (isRu ? 'Портретная ориентация' : 'Portrait orientation')
-                              : (isRu ? 'Альбомная ориентация' : 'Landscape orientation'),
+                              ? (isRu
+                                  ? 'Портретная ориентация'
+                                  : 'Portrait orientation')
+                              : (isRu
+                                  ? 'Альбомная ориентация'
+                                  : 'Landscape orientation'),
                           icon: (widget.isLandscape ?? false)
                               ? Icons.screen_lock_portrait_rounded
                               : Icons.screen_lock_landscape_rounded,
@@ -4258,16 +2728,16 @@ class _VideoControlsState extends State<_VideoControls> {
                                                       _scrubValue = value);
                                                   widget.onInteract?.call();
                                                 },
-                                                onChanged: duration ==
-                                                        Duration.zero
-                                                    ? null
-                                                    : (value) {
-                                                        setState(() =>
-                                                            _scrubValue =
-                                                                value);
-                                                        widget.onInteract
-                                                            ?.call();
-                                                      },
+                                                onChanged:
+                                                    duration == Duration.zero
+                                                        ? null
+                                                        : (value) {
+                                                            setState(() =>
+                                                                _scrubValue =
+                                                                    value);
+                                                            widget.onInteract
+                                                                ?.call();
+                                                          },
                                                 onChangeEnd: (value) {
                                                   widget.player.seek(
                                                     Duration(
@@ -4351,9 +2821,8 @@ class _CloudMediaHero extends StatelessWidget {
     final theme = Theme.of(context);
     final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final links = post.cloudLinks;
-    final primaryColor = links.isNotEmpty
-        ? links.first.brandColor
-        : theme.colorScheme.primary;
+    final primaryColor =
+        links.isNotEmpty ? links.first.brandColor : theme.colorScheme.primary;
 
     return Center(
       child: Container(
@@ -4390,16 +2859,16 @@ class _CloudMediaHero extends StatelessWidget {
                 ),
               ),
               child: Icon(
-                links.isNotEmpty ? links.first.iconData : Icons.cloud_queue_rounded,
+                links.isNotEmpty
+                    ? links.first.iconData
+                    : Icons.cloud_queue_rounded,
                 size: 34,
                 color: primaryColor,
               ),
             ),
             const SizedBox(height: 16),
             Text(
-              isRu
-                  ? 'Контент на внешнем диске'
-                  : 'Cloud Drive Media',
+              isRu ? 'Контент на внешнем диске' : 'Cloud Drive Media',
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -4587,9 +3056,8 @@ class _TextArticleHero extends StatelessWidget {
                 const SizedBox(height: 18),
                 CreatorLinkChips(
                   links: creatorLinks,
-                  title: isRu
-                      ? 'Ссылки из публикации'
-                      : 'Links from publication',
+                  title:
+                      isRu ? 'Ссылки из публикации' : 'Links from publication',
                 ),
               ],
               if (cleanTags.isNotEmpty) ...[
@@ -4626,5 +3094,3 @@ class _TextArticleHero extends StatelessWidget {
     );
   }
 }
-
-

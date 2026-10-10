@@ -62,7 +62,8 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen>
     super.initState();
     initReaderFullscreen();
     _currentChapter = widget.chapter;
-    _currentChapterIndex = widget.allChapters.indexWhere((c) => c.id == widget.chapter.id);
+    _currentChapterIndex =
+        widget.allChapters.indexWhere((c) => c.id == widget.chapter.id);
     if (_currentChapterIndex == -1) _currentChapterIndex = 0;
 
     _loadContent();
@@ -77,8 +78,11 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen>
   }
 
   void _onScroll() {
-    if (_scrollController.hasClients && _scrollController.position.maxScrollExtent > 0) {
-      final progress = (_scrollController.position.pixels / _scrollController.position.maxScrollExtent).clamp(0.0, 1.0);
+    if (_scrollController.hasClients &&
+        _scrollController.position.maxScrollExtent > 0) {
+      final progress = (_scrollController.position.pixels /
+              _scrollController.position.maxScrollExtent)
+          .clamp(0.0, 1.0);
       if (progress >= 0.85) {
         _markRead();
       }
@@ -110,7 +114,8 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen>
 
     try {
       // 1. If chapter already has content attached
-      if (_currentChapter.textContent != null && _currentChapter.textContent!.isNotEmpty) {
+      if (_currentChapter.textContent != null &&
+          _currentChapter.textContent!.isNotEmpty) {
         if (mounted) {
           setState(() {
             _content = _currentChapter.textContent!;
@@ -123,7 +128,8 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen>
 
       // 2. Check offline storage
       final offlineService = ref.read(mangaOfflineServiceProvider);
-      final offlineText = await offlineService.getDownloadedNovelContent(widget.mangaId, _currentChapter.id);
+      final offlineText = await offlineService.getDownloadedNovelContent(
+          widget.mangaId, _currentChapter.id);
       if (offlineText != null && offlineText.isNotEmpty) {
         if (mounted) {
           setState(() {
@@ -205,9 +211,18 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen>
       };
 
   TextStyle? get _effectiveFont => switch (_fontFamily) {
-        'Serif' => TextStyle(fontFamily: 'serif', fontSize: _fontSize, height: _lineHeight, color: _textColor),
-        'Mono' => TextStyle(fontFamily: 'monospace', fontSize: _fontSize, height: _lineHeight, color: _textColor),
-        _ => TextStyle(fontSize: _fontSize, height: _lineHeight, color: _textColor),
+        'Serif' => TextStyle(
+            fontFamily: 'serif',
+            fontSize: _fontSize,
+            height: _lineHeight,
+            color: _textColor),
+        'Mono' => TextStyle(
+            fontFamily: 'monospace',
+            fontSize: _fontSize,
+            height: _lineHeight,
+            color: _textColor),
+        _ => TextStyle(
+            fontSize: _fontSize, height: _lineHeight, color: _textColor),
       };
 
   List<Widget> _buildContentWidgets() {
@@ -318,9 +333,13 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen>
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.error_outline, size: 48, color: Colors.redAccent.withValues(alpha: 0.8)),
+                              Icon(Icons.error_outline,
+                                  size: 48,
+                                  color:
+                                      Colors.redAccent.withValues(alpha: 0.8)),
                               const SizedBox(height: 12),
-                              Text(_error!, style: TextStyle(color: _textColor)),
+                              Text(_error!,
+                                  style: TextStyle(color: _textColor)),
                               const SizedBox(height: 12),
                               ElevatedButton(
                                 onPressed: _loadContent,
@@ -333,7 +352,8 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen>
                           controller: _scrollController,
                           child: SingleChildScrollView(
                             controller: _scrollController,
-                            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 32),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 22, vertical: 32),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -352,15 +372,22 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen>
                                 const SizedBox(height: 48),
                                 // Bottom chapter nav buttons
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     ElevatedButton.icon(
-                                      onPressed: hasPrev ? () => _switchChapter(_currentChapterIndex - 1) : null,
+                                      onPressed: hasPrev
+                                          ? () => _switchChapter(
+                                              _currentChapterIndex - 1)
+                                          : null,
                                       icon: const Icon(Icons.arrow_back),
                                       label: const Text('Пред. глава'),
                                     ),
                                     ElevatedButton.icon(
-                                      onPressed: hasNext ? () => _switchChapter(_currentChapterIndex + 1) : null,
+                                      onPressed: hasNext
+                                          ? () => _switchChapter(
+                                              _currentChapterIndex + 1)
+                                          : null,
                                       icon: const Icon(Icons.arrow_forward),
                                       label: const Text('След. глава'),
                                     ),
@@ -436,24 +463,37 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen>
                 child: SafeArea(
                   top: false,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         IconButton(
-                          icon: Icon(Icons.skip_previous, color: hasPrev ? _textColor : _textColor.withValues(alpha: 0.3)),
-                          onPressed: hasPrev ? () => _switchChapter(_currentChapterIndex - 1) : null,
+                          icon: Icon(Icons.skip_previous,
+                              color: hasPrev
+                                  ? _textColor
+                                  : _textColor.withValues(alpha: 0.3)),
+                          onPressed: hasPrev
+                              ? () => _switchChapter(_currentChapterIndex - 1)
+                              : null,
                         ),
                         Text(
                           ReaderNavigationHelper.formatChapterProgress(
                             currentIndex: _currentChapterIndex,
                             totalCount: widget.allChapters.length,
                           ),
-                          style: TextStyle(color: _textColor.withValues(alpha: 0.7), fontSize: 13),
+                          style: TextStyle(
+                              color: _textColor.withValues(alpha: 0.7),
+                              fontSize: 13),
                         ),
                         IconButton(
-                          icon: Icon(Icons.skip_next, color: hasNext ? _textColor : _textColor.withValues(alpha: 0.3)),
-                          onPressed: hasNext ? () => _switchChapter(_currentChapterIndex + 1) : null,
+                          icon: Icon(Icons.skip_next,
+                              color: hasNext
+                                  ? _textColor
+                                  : _textColor.withValues(alpha: 0.3)),
+                          onPressed: hasNext
+                              ? () => _switchChapter(_currentChapterIndex + 1)
+                              : null,
                         ),
                       ],
                     ),
@@ -484,7 +524,10 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen>
                 children: [
                   Text(
                     'Настройки чтения',
-                    style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16),
+                    style: TextStyle(
+                        color: _textColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16),
                   ),
                   const SizedBox(height: 16),
                   // Font size slider
@@ -492,7 +535,8 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen>
                     children: [
                       Icon(Icons.text_fields, color: _textColor, size: 18),
                       const SizedBox(width: 8),
-                      Text('Размер: ${_fontSize.round()}', style: TextStyle(color: _textColor)),
+                      Text('Размер: ${_fontSize.round()}',
+                          style: TextStyle(color: _textColor)),
                       Expanded(
                         child: Slider(
                           value: _fontSize,
@@ -510,9 +554,11 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen>
                   // Line height slider
                   Row(
                     children: [
-                      Icon(Icons.format_line_spacing, color: _textColor, size: 18),
+                      Icon(Icons.format_line_spacing,
+                          color: _textColor, size: 18),
                       const SizedBox(width: 8),
-                      Text('Интервал: ${_lineHeight.toStringAsFixed(1)}', style: TextStyle(color: _textColor)),
+                      Text('Интервал: ${_lineHeight.toStringAsFixed(1)}',
+                          style: TextStyle(color: _textColor)),
                       Expanded(
                         child: Slider(
                           value: _lineHeight,

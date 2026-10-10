@@ -20,6 +20,7 @@ import 'favorites_controller.dart';
 import 'widgets/e621_favorites_view.dart';
 
 enum FavoriteMediaType { all, video, image }
+
 enum OfflineSortOption { dateAddedDesc, sizeDesc, artist }
 
 class FavoritesScreen extends ConsumerStatefulWidget {
@@ -193,9 +194,8 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                           : 'Tap ❤️ on posts in the feed to save them here',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                     ),
                     const SizedBox(height: 24),
@@ -223,14 +223,17 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                       child: Container(
                         decoration: BoxDecoration(
                           color: Theme.of(context).brightness == Brightness.dark
-                              ? Theme.of(context).colorScheme.surfaceContainerHigh
+                              ? Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHigh
                                   .withValues(alpha: 0.55)
                               : Colors.white.withValues(alpha: 0.80),
                           borderRadius: BorderRadius.circular(18),
                           border: Border.all(
-                            color: Theme.of(context).brightness == Brightness.dark
-                                ? Colors.white.withValues(alpha: 0.14)
-                                : Colors.white.withValues(alpha: 0.85),
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? Colors.white.withValues(alpha: 0.14)
+                                    : Colors.white.withValues(alpha: 0.85),
                             width: 1.1,
                           ),
                         ),
@@ -300,9 +303,10 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                                   .withValues(alpha: 0.50)
                               : Colors.white.withValues(alpha: 0.72),
                           border: Border.all(
-                            color: Theme.of(context).brightness == Brightness.dark
-                                ? Colors.white.withValues(alpha: 0.12)
-                                : Colors.white.withValues(alpha: 0.85),
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? Colors.white.withValues(alpha: 0.12)
+                                    : Colors.white.withValues(alpha: 0.85),
                             width: 1.1,
                           ),
                         ),
@@ -321,11 +325,13 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                             segments: [
                               ButtonSegment(
                                 value: 0,
-                                icon: const Icon(Icons.favorite_rounded, size: 18),
+                                icon: const Icon(Icons.favorite_rounded,
+                                    size: 18),
                                 label: Text(
                                   '${isRu ? 'Все' : 'All'} (${allPosts.length})',
                                   style: const TextStyle(
-                                      fontSize: 12, fontWeight: FontWeight.w600),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
@@ -336,17 +342,20 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                                 label: Text(
                                   '${isRu ? 'Офлайн' : 'Offline'} (${offlinePosts.length})',
                                   style: const TextStyle(
-                                      fontSize: 12, fontWeight: FontWeight.w600),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               ButtonSegment(
                                 value: 2,
-                                icon: const Icon(Icons.groups_rounded, size: 18),
+                                icon:
+                                    const Icon(Icons.groups_rounded, size: 18),
                                 label: Text(
                                   '${isRu ? 'Авторы' : 'Artists'} (${artistGroups.length})',
                                   style: const TextStyle(
-                                      fontSize: 12, fontWeight: FontWeight.w600),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
@@ -357,7 +366,8 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                                 label: Text(
                                   'e621',
                                   style: TextStyle(
-                                      fontSize: 12, fontWeight: FontWeight.w600),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
@@ -381,7 +391,8 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
               // Media Type Filter Chips (for Tab 0 and Tab 1)
               if (_tabIndex != 2 && _tabIndex != 3)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   child: Row(
                     children: [
                       FilterChip(
@@ -759,11 +770,10 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                       const SizedBox(width: 4),
                       Text(
                         isRu ? 'Всё готово' : 'Synced',
-                        style:
-                            Theme.of(context).textTheme.labelSmall?.copyWith(
-                                  color: scheme.primary,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: scheme.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
                       ),
                     ],
                   ),
@@ -926,10 +936,11 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                     children: [
                       Text(
                         selected,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: -0.2,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: -0.2,
+                                ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -950,7 +961,8 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                   ),
                   onPressed: () {
                     HapticFeedback.selectionClick();
-                    context.push('/search?q=${Uri.encodeComponent('artist:$selected')}');
+                    context.push(
+                        '/search?q=${Uri.encodeComponent('artist:$selected')}');
                   },
                   icon: const Icon(Icons.search_rounded, size: 16),
                   label: Text(isRu ? 'В сети' : 'Search'),
@@ -1013,8 +1025,15 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     Set<String> downloadedKeys,
   ) {
     if (posts.isEmpty) return const EmptyView(title: 'Nothing here yet');
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
     return PostMasonryGrid(
       posts: posts,
+      padding: EdgeInsets.fromLTRB(
+        Responsive.isMobile(context) ? 8 : 16,
+        Responsive.isMobile(context) ? 8 : 16,
+        Responsive.isMobile(context) ? 8 : 16,
+        150.0 + bottomInset,
+      ),
       columns: Responsive.columnsFor(
         context,
         mobileColumns: settings.mobileColumns,
@@ -1169,10 +1188,8 @@ class _ArtistCard extends StatelessWidget {
                     end: Alignment.bottomRight,
                     colors: isDark
                         ? [
-                            scheme.surfaceContainerHigh
-                                .withValues(alpha: 0.58),
-                            scheme.surfaceContainerLow
-                                .withValues(alpha: 0.36),
+                            scheme.surfaceContainerHigh.withValues(alpha: 0.58),
+                            scheme.surfaceContainerLow.withValues(alpha: 0.36),
                           ]
                         : [
                             Colors.white.withValues(alpha: 0.88),
@@ -1212,7 +1229,9 @@ class _ArtistCard extends StatelessWidget {
                       ),
                       child: Center(
                         child: Text(
-                          artistName.isNotEmpty ? artistName[0].toUpperCase() : '?',
+                          artistName.isNotEmpty
+                              ? artistName[0].toUpperCase()
+                              : '?',
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -1229,7 +1248,10 @@ class _ArtistCard extends StatelessWidget {
                         children: [
                           Text(
                             artistName,
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   letterSpacing: -0.2,
                                 ),
@@ -1248,7 +1270,10 @@ class _ArtistCard extends StatelessWidget {
                             ),
                             child: Text(
                               '$postsCount ${isRu ? 'работ' : 'posts'}',
-                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
                                     color: scheme.primary,
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -1274,7 +1299,8 @@ class _ArtistCard extends StatelessWidget {
                                     border: Border.all(
                                       color: isDark
                                           ? Colors.white.withValues(alpha: 0.10)
-                                          : scheme.outlineVariant.withValues(alpha: 0.25),
+                                          : scheme.outlineVariant
+                                              .withValues(alpha: 0.25),
                                     ),
                                     borderRadius: BorderRadius.circular(10),
                                   ),

@@ -48,7 +48,8 @@ class CloudLinkExtractor {
       if (cleanUrl == null || seenUrls.contains(cleanUrl)) return;
       seenUrls.add(cleanUrl);
 
-      final link = _classifyLink(cleanUrl, customTitle: customTitle, password: detectedPass);
+      final link = _classifyLink(cleanUrl,
+          customTitle: customTitle, password: detectedPass);
       if (link != null) {
         results.add(link);
       }
@@ -97,11 +98,18 @@ class CloudLinkExtractor {
   static String? _cleanUrl(String raw) {
     var url = raw.trim();
     // Trim trailing punctuation like ), ., ,, ;, etc.
-    while (url.isNotEmpty && (url.endsWith(')') || url.endsWith('.') || url.endsWith(',') || url.endsWith(';') || url.endsWith('>'))) {
+    while (url.isNotEmpty &&
+        (url.endsWith(')') ||
+            url.endsWith('.') ||
+            url.endsWith(',') ||
+            url.endsWith(';') ||
+            url.endsWith('>'))) {
       url = url.substring(0, url.length - 1);
     }
     final parsed = Uri.tryParse(url);
-    if (parsed == null || !parsed.hasScheme || (!parsed.scheme.startsWith('http'))) {
+    if (parsed == null ||
+        !parsed.hasScheme ||
+        (!parsed.scheme.startsWith('http'))) {
       return null;
     }
     return url;
@@ -124,17 +132,21 @@ class CloudLinkExtractor {
 
     // Google Drive
     if (host.contains('drive.google.com')) {
-      final isFolder = path.contains('/folders/') || uri.queryParameters.containsKey('folder');
+      final isFolder = path.contains('/folders/') ||
+          uri.queryParameters.containsKey('folder');
       String? directStreamUrl;
-      final fileIdMatch = RegExp(r'/file/d/([a-zA-Z0-9_-]+)').firstMatch(uri.path);
+      final fileIdMatch =
+          RegExp(r'/file/d/([a-zA-Z0-9_-]+)').firstMatch(uri.path);
       final idParam = fileIdMatch?.group(1) ?? uri.queryParameters['id'];
       if (idParam != null && !isFolder) {
-        directStreamUrl = 'https://drive.google.com/uc?export=download&id=$idParam';
+        directStreamUrl =
+            'https://drive.google.com/uc?export=download&id=$idParam';
       }
       return CloudMediaLink(
         url: url,
         service: CloudServiceType.googleDrive,
-        title: customTitle ?? (isFolder ? 'Google Drive Folder' : 'Google Drive File'),
+        title: customTitle ??
+            (isFolder ? 'Google Drive Folder' : 'Google Drive File'),
         directStreamUrl: directStreamUrl,
         isFolder: isFolder,
         isStreamable: directStreamUrl != null,
@@ -144,12 +156,16 @@ class CloudLinkExtractor {
 
     // MEGA
     if (host.contains('mega.nz') || host.contains('mega.co.nz')) {
-      final isFolder = url.contains('/folder/') || url.contains('/#F!') || url.contains('#F!');
+      final isFolder = url.contains('/folder/') ||
+          url.contains('/#F!') ||
+          url.contains('#F!');
       return CloudMediaLink(
         url: url,
         service: CloudServiceType.mega,
-        title: customTitle ?? (isFolder ? 'MEGA Cloud Folder' : 'MEGA Video / Archive'),
-        directStreamUrl: null, // End-to-end encrypted; launches in MEGA app/browser
+        title: customTitle ??
+            (isFolder ? 'MEGA Cloud Folder' : 'MEGA Video / Archive'),
+        directStreamUrl:
+            null, // End-to-end encrypted; launches in MEGA app/browser
         isFolder: isFolder,
         isStreamable: false,
         detectedPassword: password,
@@ -181,11 +197,13 @@ class CloudLinkExtractor {
       final fileMatch = RegExp(r'/u/([a-zA-Z0-9_-]+)').firstMatch(uri.path);
       final isList = path.contains('/l/');
       final fileId = fileMatch?.group(1);
-      final direct = fileId != null ? 'https://pixeldrain.com/api/file/$fileId' : null;
+      final direct =
+          fileId != null ? 'https://pixeldrain.com/api/file/$fileId' : null;
       return CloudMediaLink(
         url: url,
         service: CloudServiceType.pixeldrain,
-        title: customTitle ?? (isList ? 'Pixeldrain Gallery/List' : 'Pixeldrain Video'),
+        title: customTitle ??
+            (isList ? 'Pixeldrain Gallery/List' : 'Pixeldrain Video'),
         directStreamUrl: direct,
         isFolder: isList,
         isStreamable: direct != null,
@@ -195,7 +213,10 @@ class CloudLinkExtractor {
 
     // Catbox / Litterbox
     if (host.contains('catbox.moe')) {
-      final isVideo = path.endsWith('.mp4') || path.endsWith('.webm') || path.endsWith('.mov') || path.endsWith('.m4v');
+      final isVideo = path.endsWith('.mp4') ||
+          path.endsWith('.webm') ||
+          path.endsWith('.mov') ||
+          path.endsWith('.m4v');
       return CloudMediaLink(
         url: url,
         service: CloudServiceType.catbox,
@@ -213,7 +234,8 @@ class CloudLinkExtractor {
       return CloudMediaLink(
         url: url,
         service: CloudServiceType.mediafire,
-        title: customTitle ?? (isFolder ? 'MediaFire Folder' : 'MediaFire Download'),
+        title: customTitle ??
+            (isFolder ? 'MediaFire Folder' : 'MediaFire Download'),
         directStreamUrl: null,
         isFolder: isFolder,
         isStreamable: false,
@@ -249,7 +271,9 @@ class CloudLinkExtractor {
     }
 
     // TeraBox
-    if (host.contains('terabox') || host.contains('1024tera') || host.contains('dubox')) {
+    if (host.contains('terabox') ||
+        host.contains('1024tera') ||
+        host.contains('dubox')) {
       return CloudMediaLink(
         url: url,
         service: CloudServiceType.terabox,
@@ -262,8 +286,13 @@ class CloudLinkExtractor {
     }
 
     // Direct Video Link (MP4, WEBM, MKV, MOV)
-    if (path.endsWith('.mp4') || path.endsWith('.webm') || path.endsWith('.mov') || path.endsWith('.m4v') || path.endsWith('.mkv')) {
-      final filename = uri.pathSegments.isNotEmpty ? uri.pathSegments.last : 'Video Stream';
+    if (path.endsWith('.mp4') ||
+        path.endsWith('.webm') ||
+        path.endsWith('.mov') ||
+        path.endsWith('.m4v') ||
+        path.endsWith('.mkv')) {
+      final filename =
+          uri.pathSegments.isNotEmpty ? uri.pathSegments.last : 'Video Stream';
       return CloudMediaLink(
         url: url,
         service: CloudServiceType.genericVideo,
@@ -303,7 +332,8 @@ class CloudLinkExtractor {
           caseSensitive: false, dotAll: true),
       (match) {
         final href = match.group(1)?.trim() ?? '';
-        final label = match.group(2)?.replaceAll(RegExp(r'<[^>]*>'), '').trim() ?? '';
+        final label =
+            match.group(2)?.replaceAll(RegExp(r'<[^>]*>'), '').trim() ?? '';
         if (label.isEmpty || label == href || href.contains(label)) {
           return href;
         }

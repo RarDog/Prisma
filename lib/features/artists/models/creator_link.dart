@@ -222,7 +222,9 @@ class CreatorLink {
       results.add(CreatorLink(
         url: url,
         type: type,
-        title: (customTitle != null && customTitle.isNotEmpty && customTitle != url)
+        title: (customTitle != null &&
+                customTitle.isNotEmpty &&
+                customTitle != url)
             ? customTitle
             : defaultTitle,
       ));
@@ -236,7 +238,8 @@ class CreatorLink {
         final cleanTitle =
             rawTitle?.replaceAll(RegExp(r'<[^>]*>'), '').trim() ?? '';
         if (href != null && href.isNotEmpty) {
-          processUrl(href, customTitle: cleanTitle.isNotEmpty ? cleanTitle : null);
+          processUrl(href,
+              customTitle: cleanTitle.isNotEmpty ? cleanTitle : null);
         }
       }
     }
@@ -258,7 +261,9 @@ class CreatorLink {
       return (CreatorLinkType.youtube, 'YouTube');
     }
     // X / Twitter
-    if (host.contains('twitter.com') || host.contains('x.com') || host == 't.co') {
+    if (host.contains('twitter.com') ||
+        host.contains('x.com') ||
+        host == 't.co') {
       return (CreatorLinkType.twitter, 'X (Twitter)');
     }
     // Instagram
@@ -306,7 +311,8 @@ class CreatorLink {
       return (CreatorLinkType.gumroad, 'Gumroad');
     }
     // SubscribeStar
-    if (host.contains('subscribestar.adult') || host.contains('subscribestar.com')) {
+    if (host.contains('subscribestar.adult') ||
+        host.contains('subscribestar.com')) {
       return (CreatorLinkType.subscribestar, 'SubscribeStar');
     }
     // ArtStation
@@ -318,7 +324,9 @@ class CreatorLink {
       return (CreatorLinkType.deviantart, 'DeviantArt');
     }
     // Link hubs
-    if (host.contains('linktr.ee') || host.contains('carrd.co') || host.contains('lit.link')) {
+    if (host.contains('linktr.ee') ||
+        host.contains('carrd.co') ||
+        host.contains('lit.link')) {
       return (CreatorLinkType.linkhub, 'Links Hub');
     }
 
@@ -327,6 +335,9 @@ class CreatorLink {
     if (cleanHost.length > 25) {
       cleanHost = cleanHost.substring(0, 25);
     }
-    return (CreatorLinkType.other, cleanHost.isNotEmpty ? cleanHost : 'Web Link');
+    return (
+      CreatorLinkType.other,
+      cleanHost.isNotEmpty ? cleanHost : 'Web Link'
+    );
   }
 }

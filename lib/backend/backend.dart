@@ -32,6 +32,7 @@ export 'package:gel_rule_app/features/collections/domain/collection_service.dart
 
 // Feature: Search
 export 'package:gel_rule_app/features/search/models/search_history.dart';
+export 'package:gel_rule_app/features/search/models/history_tag_item.dart';
 export 'package:gel_rule_app/features/search/data/search_repository.dart';
 export 'package:gel_rule_app/features/search/domain/search_service.dart';
 export 'package:gel_rule_app/features/search/domain/tag_cache_service.dart';

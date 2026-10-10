@@ -67,8 +67,11 @@ ThemeData buildTheme(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: dark
-            ? BorderSide(color: Colors.white.withValues(alpha: 0.07), width: 0.8)
-            : BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.28), width: 0.8),
+            ? BorderSide(
+                color: Colors.white.withValues(alpha: 0.07), width: 0.8)
+            : BorderSide(
+                color: scheme.outlineVariant.withValues(alpha: 0.28),
+                width: 0.8),
       ),
     ),
     dialogTheme: DialogThemeData(
@@ -77,8 +80,11 @@ ThemeData buildTheme(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),
         side: dark
-            ? BorderSide(color: Colors.white.withValues(alpha: 0.08), width: 0.8)
-            : BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.25), width: 0.8),
+            ? BorderSide(
+                color: Colors.white.withValues(alpha: 0.08), width: 0.8)
+            : BorderSide(
+                color: scheme.outlineVariant.withValues(alpha: 0.25),
+                width: 0.8),
       ),
     ),
     bottomSheetTheme: BottomSheetThemeData(
@@ -105,12 +111,17 @@ ThemeData buildTheme(
     ),
     popupMenuTheme: PopupMenuThemeData(
       elevation: 6,
-      color: dark ? (amoled ? const Color(0xFF141418) : const Color(0xFF22242B)) : Colors.white,
+      color: dark
+          ? (amoled ? const Color(0xFF141418) : const Color(0xFF22242B))
+          : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: dark
-            ? BorderSide(color: Colors.white.withValues(alpha: 0.08), width: 0.8)
-            : BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.25), width: 0.8),
+            ? BorderSide(
+                color: Colors.white.withValues(alpha: 0.08), width: 0.8)
+            : BorderSide(
+                color: scheme.outlineVariant.withValues(alpha: 0.25),
+                width: 0.8),
       ),
     ),
     tooltipTheme: TooltipThemeData(
@@ -133,13 +144,16 @@ ThemeData buildTheme(
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
         borderSide: BorderSide(
-          color: dark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04),
+          color: dark
+              ? Colors.white.withValues(alpha: 0.06)
+              : Colors.black.withValues(alpha: 0.04),
           width: 1,
         ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: scheme.primary.withValues(alpha: 0.8), width: 1.5),
+        borderSide: BorderSide(
+            color: scheme.primary.withValues(alpha: 0.8), width: 1.5),
       ),
     ),
   );

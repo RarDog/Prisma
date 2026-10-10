@@ -48,9 +48,13 @@ class _FormattedContentTextState extends State<FormattedContentText> {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } catch (_) {
         if (mounted) {
-          final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
+          final isRu =
+              Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(isRu ? 'Не удалось открыть ссылку: $url' : 'Could not open link: $url')),
+            SnackBar(
+                content: Text(isRu
+                    ? 'Не удалось открыть ссылку: $url'
+                    : 'Could not open link: $url')),
           );
         }
       }
@@ -63,18 +67,21 @@ class _FormattedContentTextState extends State<FormattedContentText> {
 
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final defaultStyle = widget.style ?? theme.textTheme.bodyMedium ?? const TextStyle();
+    final defaultStyle =
+        widget.style ?? theme.textTheme.bodyMedium ?? const TextStyle();
     final linkStyle = defaultStyle.copyWith(
       color: widget.linkColor ?? scheme.primary,
       fontWeight: FontWeight.w600,
       decoration: TextDecoration.underline,
-      decorationColor: (widget.linkColor ?? scheme.primary).withValues(alpha: 0.45),
+      decorationColor:
+          (widget.linkColor ?? scheme.primary).withValues(alpha: 0.45),
     );
 
     final text = widget.text;
     if (text.isEmpty) return const SizedBox.shrink();
 
-    final urlRegex = RegExp(r'''https?://[^\s<>"{}|\\^`\[\]]+''', caseSensitive: false);
+    final urlRegex =
+        RegExp(r'''https?://[^\s<>"{}|\\^`\[\]]+''', caseSensitive: false);
     final spans = <InlineSpan>[];
     var lastIndex = 0;
 
@@ -160,9 +167,13 @@ class CreatorLinkChips extends StatelessWidget {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } catch (_) {
         if (context.mounted) {
-          final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
+          final isRu =
+              Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(isRu ? 'Не удалось открыть ссылку: $url' : 'Could not open link: $url')),
+            SnackBar(
+                content: Text(isRu
+                    ? 'Не удалось открыть ссылку: $url'
+                    : 'Could not open link: $url')),
           );
         }
       }
@@ -205,7 +216,8 @@ class CreatorLinkChips extends StatelessWidget {
           runSpacing: 6,
           children: links.map((link) {
             final brand = link.brandColor;
-            final labelText = link.title.isNotEmpty ? link.title : link.serviceName;
+            final labelText =
+                link.title.isNotEmpty ? link.title : link.serviceName;
 
             return Material(
               color: brand.withValues(alpha: 0.1),
@@ -214,7 +226,8 @@ class CreatorLinkChips extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
                 onTap: () => _openLink(context, link.url),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(

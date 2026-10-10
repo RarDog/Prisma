@@ -86,7 +86,8 @@ abstract class ArtistProvider {
     String postId,
   );
 
-  Future<List<ArtistTag>> getArtistTags(String service, String artistId) async =>
+  Future<List<ArtistTag>> getArtistTags(
+          String service, String artistId) async =>
       const [];
 
   Future<List<ArtistLink>> getArtistLinks(
@@ -107,4 +108,3 @@ abstract class NovelChapterProvider {
   Future<dynamic> fetchChapters(String novelId);
   Future<String> fetchChapterContent(String chapterId);
 }
-

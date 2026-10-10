@@ -23,7 +23,8 @@ class _FakeSettingsService extends Fake implements SettingsService {
 
 void main() {
   group('Persistent Backup Tests', () {
-    test('BackupService exports and restores comprehensive user data', () async {
+    test('BackupService exports and restores comprehensive user data',
+        () async {
       final fakeSettings = _FakeSettingsService();
       final backupService = BackupService(fakeSettings);
 

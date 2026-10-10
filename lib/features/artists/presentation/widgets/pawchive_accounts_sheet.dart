@@ -78,7 +78,9 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
 
       final settings =
           ref.read(appSettingsProvider).value ?? AppSettings.defaults;
-      final existingAccounts = settings.parsedPawchiveAccounts.where((a) => a.id != account.id).toList();
+      final existingAccounts = settings.parsedPawchiveAccounts
+          .where((a) => a.id != account.id)
+          .toList();
       // Set as active
       final updatedList = [
         account.copyWith(isActive: true),
@@ -120,7 +122,10 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _errorMessage = e.toString().replaceFirst('Exception: ', '').replaceFirst('StateError: ', ''));
+        setState(() => _errorMessage = e
+            .toString()
+            .replaceFirst('Exception: ', '')
+            .replaceFirst('StateError: ', ''));
       }
     } finally {
       if (mounted) {
@@ -152,7 +157,9 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
 
       final settings =
           ref.read(appSettingsProvider).value ?? AppSettings.defaults;
-      final existingAccounts = settings.parsedPawchiveAccounts.where((a) => a.id != account.id).toList();
+      final existingAccounts = settings.parsedPawchiveAccounts
+          .where((a) => a.id != account.id)
+          .toList();
       final updatedList = [
         account.copyWith(isActive: true),
         ...existingAccounts.map((a) => a.copyWith(isActive: false)),
@@ -192,7 +199,10 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _errorMessage = e.toString().replaceFirst('Exception: ', '').replaceFirst('StateError: ', ''));
+        setState(() => _errorMessage = e
+            .toString()
+            .replaceFirst('Exception: ', '')
+            .replaceFirst('StateError: ', ''));
       }
     } finally {
       if (mounted) {
@@ -450,8 +460,9 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
 
     final settings =
         ref.read(appSettingsProvider).value ?? AppSettings.defaults;
-    final filtered =
-        settings.parsedPawchiveAccounts.where((a) => a.id != target.id).toList();
+    final filtered = settings.parsedPawchiveAccounts
+        .where((a) => a.id != target.id)
+        .toList();
 
     // If active was removed, make first remaining active
     if (filtered.isNotEmpty && !filtered.any((a) => a.isActive)) {
@@ -510,7 +521,8 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
               ),
               // Header
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 child: Row(
                   children: [
                     Container(
@@ -561,7 +573,8 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                             ? const SizedBox(
                                 width: 18,
                                 height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
                               )
                             : const Icon(Icons.sync_rounded, size: 20),
                         tooltip: isRu
@@ -578,7 +591,8 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
               Expanded(
                 child: ListView(
                   controller: scrollController,
-                  padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + keyboardPadding),
+                  padding:
+                      EdgeInsets.fromLTRB(16, 12, 16, 16 + keyboardPadding),
                   children: [
                     // Connected accounts section
                     if (accounts.isNotEmpty) ...[
@@ -595,13 +609,15 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                           ),
                         ),
                       ),
-                      ...accounts.map((acc) => _buildAccountCard(acc, scheme, theme, isRu)),
+                      ...accounts.map(
+                          (acc) => _buildAccountCard(acc, scheme, theme, isRu)),
                       const SizedBox(height: 12),
 
                       // Two-way sync & Export to Pawchive panel
                       Card(
                         elevation: 0,
-                        color: scheme.surfaceContainerHigh.withValues(alpha: 0.6),
+                        color:
+                            scheme.surfaceContainerHigh.withValues(alpha: 0.6),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                           side: BorderSide(
@@ -609,20 +625,23 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                           ),
                         ),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               Row(
                                 children: [
-                                  Icon(Icons.swap_vert_rounded, size: 20, color: scheme.primary),
+                                  Icon(Icons.swap_vert_rounded,
+                                      size: 20, color: scheme.primary),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
                                       isRu
                                           ? 'Двусторонняя синхронизация'
                                           : 'Bidirectional sync',
-                                      style: theme.textTheme.titleSmall?.copyWith(
+                                      style:
+                                          theme.textTheme.titleSmall?.copyWith(
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -634,7 +653,8 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                                         pawchiveBidirectionalSync: val,
                                       );
                                       await ref
-                                          .read(settingsControllerProvider.notifier)
+                                          .read(settingsControllerProvider
+                                              .notifier)
                                           .saveSettings(newSettings);
                                     },
                                   ),
@@ -651,19 +671,24 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                               ),
                               const SizedBox(height: 10),
                               OutlinedButton.icon(
-                                onPressed: (_syncingAll || _pushingAccountId != null)
+                                onPressed: (_syncingAll ||
+                                        _pushingAccountId != null)
                                     ? null
                                     : () {
-                                        final target = settings.activePawchiveAccount ?? accounts.first;
+                                        final target =
+                                            settings.activePawchiveAccount ??
+                                                accounts.first;
                                         _pushFavoritesToAccount(target);
                                       },
                                 icon: _pushingAccountId != null
                                     ? const SizedBox(
                                         width: 16,
                                         height: 16,
-                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2),
                                       )
-                                    : const Icon(Icons.cloud_upload_rounded, size: 18),
+                                    : const Icon(Icons.cloud_upload_rounded,
+                                        size: 18),
                                 label: Text(
                                   isRu
                                       ? 'Выгрузить избранное (${settings.favoriteArtists.length}) в @${(settings.activePawchiveAccount ?? accounts.first).username}'
@@ -683,7 +708,9 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                       child: Text(
                         accounts.isEmpty
                             ? (isRu ? 'ДОБАВИТЬ АККАУНТ' : 'ADD ACCOUNT')
-                            : (isRu ? 'ДОБАВИТЬ ЕЩЁ АККАУНТ' : 'ADD ANOTHER ACCOUNT'),
+                            : (isRu
+                                ? 'ДОБАВИТЬ ЕЩЁ АККАУНТ'
+                                : 'ADD ANOTHER ACCOUNT'),
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: scheme.primary,
                           fontWeight: FontWeight.bold,
@@ -708,7 +735,10 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                             TabBar(
                               controller: _addTabController,
                               tabs: [
-                                Tab(text: isRu ? 'Логин и пароль' : 'Login & password'),
+                                Tab(
+                                    text: isRu
+                                        ? 'Логин и пароль'
+                                        : 'Login & password'),
                                 const Tab(text: 'Session Cookie'),
                               ],
                             ),
@@ -756,7 +786,8 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                                           labelText: isRu
                                               ? 'Имя пользователя'
                                               : 'Username',
-                                          prefixIcon: const Icon(Icons.person_outline_rounded),
+                                          prefixIcon: const Icon(
+                                              Icons.person_outline_rounded),
                                           isDense: true,
                                         ),
                                       ),
@@ -765,29 +796,36 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                                         controller: _passwordController,
                                         obscureText: _obscurePassword,
                                         decoration: InputDecoration(
-                                          labelText: isRu ? 'Пароль' : 'Password',
-                                          prefixIcon: const Icon(Icons.lock_outline_rounded),
+                                          labelText:
+                                              isRu ? 'Пароль' : 'Password',
+                                          prefixIcon: const Icon(
+                                              Icons.lock_outline_rounded),
                                           isDense: true,
                                           suffixIcon: IconButton(
                                             icon: Icon(
                                               _obscurePassword
                                                   ? Icons.visibility_outlined
-                                                  : Icons.visibility_off_outlined,
+                                                  : Icons
+                                                      .visibility_off_outlined,
                                             ),
                                             onPressed: () => setState(
-                                              () => _obscurePassword = !_obscurePassword,
+                                              () => _obscurePassword =
+                                                  !_obscurePassword,
                                             ),
                                           ),
                                         ),
                                       ),
                                       const Spacer(),
                                       FilledButton.icon(
-                                        onPressed: _isAdding ? null : _handleLoginCredentials,
+                                        onPressed: _isAdding
+                                            ? null
+                                            : _handleLoginCredentials,
                                         icon: _isAdding
                                             ? const SizedBox(
                                                 width: 16,
                                                 height: 16,
-                                                child: CircularProgressIndicator(
+                                                child:
+                                                    CircularProgressIndicator(
                                                   strokeWidth: 2,
                                                   color: Colors.white,
                                                 ),
@@ -810,7 +848,8 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                                           labelText: isRu
                                               ? 'Никнейм (необязательно)'
                                               : 'Nickname (optional)',
-                                          prefixIcon: const Icon(Icons.badge_outlined),
+                                          prefixIcon:
+                                              const Icon(Icons.badge_outlined),
                                           isDense: true,
                                         ),
                                       ),
@@ -825,25 +864,32 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                                           hintText: isRu
                                               ? 'session=ey... или значение куки'
                                               : 'session=ey... or cookie value',
-                                          prefixIcon: const Icon(Icons.cookie_outlined),
+                                          prefixIcon:
+                                              const Icon(Icons.cookie_outlined),
                                           isDense: true,
                                         ),
                                       ),
                                       const Spacer(),
                                       FilledButton.icon(
-                                        onPressed: _isAdding ? null : _handleLoginCookie,
+                                        onPressed: _isAdding
+                                            ? null
+                                            : _handleLoginCookie,
                                         icon: _isAdding
                                             ? const SizedBox(
                                                 width: 16,
                                                 height: 16,
-                                                child: CircularProgressIndicator(
+                                                child:
+                                                    CircularProgressIndicator(
                                                   strokeWidth: 2,
                                                   color: Colors.white,
                                                 ),
                                               )
-                                            : const Icon(Icons.check_circle_outline_rounded),
+                                            : const Icon(Icons
+                                                .check_circle_outline_rounded),
                                         label: Text(
-                                          isRu ? 'Сохранить куку' : 'Save cookie',
+                                          isRu
+                                              ? 'Сохранить куку'
+                                              : 'Save cookie',
                                         ),
                                       ),
                                     ],
@@ -889,8 +935,10 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
         leading: CircleAvatar(
-          backgroundColor: acc.isActive ? scheme.primary : scheme.surfaceContainerHighest,
-          foregroundColor: acc.isActive ? scheme.onPrimary : scheme.onSurfaceVariant,
+          backgroundColor:
+              acc.isActive ? scheme.primary : scheme.surfaceContainerHighest,
+          foregroundColor:
+              acc.isActive ? scheme.onPrimary : scheme.onSurfaceVariant,
           child: Text(
             acc.username.isNotEmpty ? acc.username[0].toUpperCase() : 'P',
             style: const TextStyle(fontWeight: FontWeight.bold),
@@ -901,7 +949,8 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
             Flexible(
               child: Text(
                 acc.username,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -967,9 +1016,8 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.sync_rounded),
-              tooltip: isRu
-                  ? 'Синхронизировать этот аккаунт'
-                  : 'Sync this account',
+              tooltip:
+                  isRu ? 'Синхронизировать этот аккаунт' : 'Sync this account',
               onPressed: isBusy ? null : () => _syncSingleAccount(acc),
             ),
             PopupMenuButton<String>(
@@ -992,7 +1040,8 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                     value: 'active',
                     child: Row(
                       children: [
-                        const Icon(Icons.check_circle_outline_rounded, size: 20),
+                        const Icon(Icons.check_circle_outline_rounded,
+                            size: 20),
                         const SizedBox(width: 8),
                         Text(isRu ? 'Сделать активным' : 'Set as active'),
                       ],
@@ -1012,7 +1061,8 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
                   value: 'delete',
                   child: Row(
                     children: [
-                      const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
+                      const Icon(Icons.delete_outline_rounded,
+                          color: Colors.red, size: 20),
                       const SizedBox(width: 8),
                       Text(
                         isRu ? 'Удалить аккаунт' : 'Delete account',
@@ -1031,8 +1081,8 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
 
   String _formatDate(DateTime dt, bool isRu) {
     final now = DateTime.now();
-    if (now.difference(dt).inMinutes < 1) return isRu ? 'только что' : 'just now';
-    if (now.difference(dt).inHours < 1) {
+    if (now.difference(dt).inMinutes < 1) {
+      if (now.difference(dt).inHours < 1) {}
       return isRu
           ? '${now.difference(dt).inMinutes} мин назад'
           : '${now.difference(dt).inMinutes} min ago';

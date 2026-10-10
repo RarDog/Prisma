@@ -212,7 +212,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final settings = ref.watch(appSettingsProvider).value ?? AppSettings.defaults;
+    final settings =
+        ref.watch(appSettingsProvider).value ?? AppSettings.defaults;
     final isRu = settings.languageCode == 'ru';
 
     return Scaffold(
@@ -247,7 +248,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         decoration: BoxDecoration(
                           color: isActive
                               ? theme.colorScheme.primary
-                              : theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                              : theme.colorScheme.outlineVariant
+                                  .withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(4),
                         ),
                       );
@@ -262,7 +264,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       },
                       child: Text(
                         isRu ? 'Пропустить всё' : 'Skip all',
-                        style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                        style: TextStyle(
+                            color: theme.colorScheme.onSurfaceVariant),
                       ),
                     )
                   else
@@ -362,7 +365,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
             style: FilledButton.styleFrom(
               minimumSize: const Size(double.infinity, 54),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
             ),
           ),
         ],
@@ -401,7 +405,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           ),
           const SizedBox(height: 20),
           Text(
-            isRu ? 'Быстрый и современный Booru-клиент' : 'Fast & Modern Booru Client',
+            isRu
+                ? 'Быстрый и современный Booru-клиент'
+                : 'Fast & Modern Booru Client',
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -418,7 +424,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 28),
-
           _FeatureTile(
             icon: Icons.search_rounded,
             color: const Color(0xFF3B82F6),
@@ -454,7 +459,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 ? 'Все настройки, аккаунты и закладки автоматически сохраняются и выдерживают переустановку.'
                 : 'All settings, accounts, and bookmarks survive app reinstallation automatically.',
           ),
-
           const SizedBox(height: 32),
           FilledButton.icon(
             onPressed: _nextPage,
@@ -465,7 +469,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
             style: FilledButton.styleFrom(
               minimumSize: const Size(double.infinity, 54),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
             ),
           ),
         ],
@@ -486,7 +491,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.4),
+                color:
+                    theme.colorScheme.secondaryContainer.withValues(alpha: 0.4),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -532,7 +538,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   labelText: isRu ? 'User ID (ID пользователя)' : 'User ID',
                   hintText: 'e.g. 123456',
                   prefixIcon: const Icon(Icons.person_outline_rounded),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
                   isDense: true,
                 ),
                 keyboardType: TextInputType.number,
@@ -544,7 +551,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   labelText: 'API Key',
                   hintText: isRu ? 'Вставьте API ключ' : 'Paste API Key',
                   prefixIcon: const Icon(Icons.key_rounded),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
                   isDense: true,
                 ),
                 obscureText: true,
@@ -574,7 +582,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   labelText: isRu ? 'Логин (Username)' : 'Username',
                   hintText: 'e.g. your_username',
                   prefixIcon: const Icon(Icons.account_circle_outlined),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
                   isDense: true,
                 ),
               ),
@@ -583,9 +592,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 controller: _e621ApiKey,
                 decoration: InputDecoration(
                   labelText: 'API Key',
-                  hintText: isRu ? 'Вставьте API ключ e621' : 'Paste e621 API Key',
+                  hintText:
+                      isRu ? 'Вставьте API ключ e621' : 'Paste e621 API Key',
                   prefixIcon: const Icon(Icons.key_rounded),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
                   isDense: true,
                 ),
                 obscureText: true,
@@ -615,7 +626,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   labelText: isRu ? 'Логин (Username)' : 'Username',
                   hintText: 'e.g. your_username',
                   prefixIcon: const Icon(Icons.account_circle_outlined),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
                   isDense: true,
                 ),
               ),
@@ -626,7 +638,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   labelText: 'API Key',
                   hintText: isRu ? 'Вставьте API ключ' : 'Paste API Key',
                   prefixIcon: const Icon(Icons.key_rounded),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
                   isDense: true,
                 ),
                 obscureText: true,
@@ -650,7 +663,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
                   )
                 : const Icon(Icons.check_rounded),
             label: Text(
@@ -659,7 +673,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
             style: FilledButton.styleFrom(
               minimumSize: const Size(double.infinity, 54),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
             ),
           ),
           const SizedBox(height: 10),
@@ -667,7 +682,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             onPressed: _nextPage,
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(double.infinity, 48),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
             ),
             child: Text(
               isRu ? 'Пропустить ввод ключей' : 'Skip entering keys',
@@ -725,7 +741,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+              color: theme.colorScheme.surfaceContainerHighest
+                  .withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
@@ -768,7 +785,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
             style: FilledButton.styleFrom(
               minimumSize: const Size(double.infinity, 58),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18)),
             ),
           ),
         ],
@@ -806,7 +824,8 @@ class _LanguageCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: isSelected
                 ? theme.colorScheme.primaryContainer.withValues(alpha: 0.4)
-                : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                : theme.colorScheme.surfaceContainerHighest
+                    .withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isSelected
@@ -935,7 +954,8 @@ class _ProviderSectionCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+        color:
+            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),

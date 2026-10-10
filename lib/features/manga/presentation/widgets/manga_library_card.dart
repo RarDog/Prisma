@@ -212,8 +212,7 @@ class MangaLibraryCard extends StatelessWidget {
                       },
                       style: TextStyle(
                         fontSize: 10,
-                        color:
-                            Theme.of(context).colorScheme.onSurfaceVariant,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                 ],

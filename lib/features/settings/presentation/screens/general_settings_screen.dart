@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:gel_rule_app/app/app_strings.dart';
+import 'package:gel_rule_app/app/app.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
 import 'package:gel_rule_app/features/settings/presentation/widgets/settings_shared_widgets.dart';
@@ -17,7 +17,7 @@ class GeneralSettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings =
         ref.watch(settingsControllerProvider).value ?? AppSettings.defaults;
-    final strings = AppStrings(settings.languageCode);
+    final strings = ref.watch(appStringsProvider);
     final isRu = strings.ru;
 
     return Scaffold(
@@ -76,7 +76,8 @@ class GeneralSettingsScreen extends ConsumerWidget {
                       ),
                       ButtonSegment(
                         value: 'system',
-                        icon: const Icon(Icons.brightness_auto_rounded, size: 16),
+                        icon:
+                            const Icon(Icons.brightness_auto_rounded, size: 16),
                         label: Text(isRu ? 'Авто' : 'Auto'),
                       ),
                     ],

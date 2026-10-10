@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:gel_rule_app/app/app.dart';
-import 'package:gel_rule_app/app/app_strings.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/sources/booru/e621_provider.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
@@ -19,14 +18,14 @@ class FiltersSettingsScreen extends ConsumerWidget {
     return ref.read(settingsControllerProvider.notifier).saveSettings(settings);
   }
 
-  Future<void> _syncE621Blacklist(BuildContext context, WidgetRef ref, AppSettings settings) async {
+  Future<void> _syncE621Blacklist(
+      BuildContext context, WidgetRef ref, AppSettings settings) async {
     final isRu = settings.languageCode == 'ru';
     unawaited(HapticFeedback.mediumImpact());
 
     try {
-      final providerInstance = await ref
-          .read(providerManagerProvider)
-          .getProviderInstance('e621');
+      final providerInstance =
+          await ref.read(providerManagerProvider).getProviderInstance('e621');
       if (providerInstance is! E621Provider) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -71,9 +70,8 @@ class FiltersSettingsScreen extends ConsumerWidget {
         return;
       }
 
-      final res = await ref
-          .read(settingsServiceProvider)
-          .importBlacklistFromE621(tags);
+      final res =
+          await ref.read(settingsServiceProvider).importBlacklistFromE621(tags);
       ref.invalidate(settingsControllerProvider);
       ref.invalidate(appSettingsProvider);
 
@@ -120,7 +118,7 @@ class FiltersSettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings =
         ref.watch(settingsControllerProvider).value ?? AppSettings.defaults;
-    final strings = AppStrings(settings.languageCode);
+    final strings = ref.watch(appStringsProvider);
     final isRu = strings.ru;
 
     return Scaffold(
@@ -179,8 +177,8 @@ class FiltersSettingsScreen extends ConsumerWidget {
                         ? 'Мягко размывать превью откровенных постов в ленте'
                         : 'Blur sensitive thumbnails in feed grid',
                     value: settings.blurExplicitContent,
-                    onChanged: (val) =>
-                        _update(ref, settings.copyWith(blurExplicitContent: val)),
+                    onChanged: (val) => _update(
+                        ref, settings.copyWith(blurExplicitContent: val)),
                   ),
                 ],
               ),
@@ -286,7 +284,9 @@ class FiltersSettingsScreen extends ConsumerWidget {
                   SettingsTile(
                     icon: Icons.restore_rounded,
                     iconColor: const Color(0xFF6366F1),
-                    title: isRu ? 'Управление скрытыми постами' : 'Manage hidden posts',
+                    title: isRu
+                        ? 'Управление скрытыми постами'
+                        : 'Manage hidden posts',
                     subtitle: isRu
                         ? 'Скрыто вручную: ${settings.hiddenPostKeys.length} постов'
                         : 'Manually hidden: ${settings.hiddenPostKeys.length} posts',
@@ -298,7 +298,9 @@ class FiltersSettingsScreen extends ConsumerWidget {
                     SettingsTile(
                       icon: Icons.delete_sweep_rounded,
                       iconColor: const Color(0xFFEF4444),
-                      title: isRu ? 'Очистить скрытые посты' : 'Clear hidden posts',
+                      title: isRu
+                          ? 'Очистить скрытые посты'
+                          : 'Clear hidden posts',
                       subtitle: isRu
                           ? 'Сбросить весь список вручную скрытых постов'
                           : 'Un-hide all manually hidden posts',

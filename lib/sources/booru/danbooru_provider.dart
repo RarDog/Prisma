@@ -200,10 +200,8 @@ class DanbooruProvider
     String query, {
     int limit = 20,
   }) async {
-    final cleanQuery = query
-        .replaceAll(RegExp(r'^[\(\)]+|[\(\)]+$'), '')
-        .trim()
-        .toLowerCase();
+    final cleanQuery =
+        query.replaceAll(RegExp(r'^[\(\)]+|[\(\)]+$'), '').trim().toLowerCase();
     if (cleanQuery.isEmpty) return const [];
     try {
       final response = await _dio.get<dynamic>(

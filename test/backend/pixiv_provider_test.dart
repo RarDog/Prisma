@@ -35,7 +35,8 @@ void main() {
       expect(provider, isA<PostPageProvider>());
     });
 
-    test('PixivMapper.toMasterUrl transforms thumbnails to master image URLs', () {
+    test('PixivMapper.toMasterUrl transforms thumbnails to master image URLs',
+        () {
       const thumb =
           'https://i.pximg.net/c/250x250_80_a2/img-master/img/2026/09/22/23/23/46/149987432_p0_square1200.jpg';
       final master = PixivMapper.toMasterUrl(thumb);

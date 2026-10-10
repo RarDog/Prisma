@@ -17,7 +17,8 @@ class AnimatedBranchContainer extends StatefulWidget {
   final Duration duration;
 
   @override
-  State<AnimatedBranchContainer> createState() => _AnimatedBranchContainerState();
+  State<AnimatedBranchContainer> createState() =>
+      _AnimatedBranchContainerState();
 }
 
 class _AnimatedBranchContainerState extends State<AnimatedBranchContainer>

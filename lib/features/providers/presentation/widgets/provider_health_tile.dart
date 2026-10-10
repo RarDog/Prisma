@@ -50,8 +50,8 @@ class _ProviderHealthTileState extends State<ProviderHealthTile> {
       ProviderStatus.unknown => const Color(0xFF94A3B8),
     };
 
-    final hasError = diagnostics?.lastErrorMessage != null ||
-        health?.errorMessage != null;
+    final hasError =
+        diagnostics?.lastErrorMessage != null || health?.errorMessage != null;
     final errorMessage = diagnostics?.lastErrorMessage ?? health?.errorMessage;
 
     return Container(
@@ -279,7 +279,8 @@ class _ProviderHealthTileState extends State<ProviderHealthTile> {
                       _DiagItem(
                         icon: Icons.link_rounded,
                         label: isRu ? 'Сервер' : 'Endpoint',
-                        value: '${config.baseUrl} (${config.enabled ? (isRu ? 'Активен' : 'Enabled') : (isRu ? 'Выключен' : 'Disabled')})',
+                        value:
+                            '${config.baseUrl} (${config.enabled ? (isRu ? 'Активен' : 'Enabled') : (isRu ? 'Выключен' : 'Disabled')})',
                         isMonospace: true,
                       ),
                       const SizedBox(height: 8),
@@ -287,8 +288,10 @@ class _ProviderHealthTileState extends State<ProviderHealthTile> {
                       // Diagnostic row 2: API Type & Priority
                       _DiagItem(
                         icon: Icons.hub_outlined,
-                        label: isRu ? 'Движок и приоритет' : 'Engine & Priority',
-                        value: '${config.apiType} · ${isRu ? 'приоритет' : 'priority'} ${config.priority}',
+                        label:
+                            isRu ? 'Движок и приоритет' : 'Engine & Priority',
+                        value:
+                            '${config.apiType} · ${isRu ? 'приоритет' : 'priority'} ${config.priority}',
                       ),
                       const SizedBox(height: 8),
 
@@ -307,7 +310,8 @@ class _ProviderHealthTileState extends State<ProviderHealthTile> {
                         _DiagItem(
                           icon: Icons.schedule_rounded,
                           label: isRu ? 'Проверено' : 'Last Checked',
-                          value: health!.lastCheckedAt.toString().split('.').first,
+                          value:
+                              health!.lastCheckedAt.toString().split('.').first,
                           isMonospace: true,
                         ),
                         const SizedBox(height: 8),

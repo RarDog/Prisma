@@ -11,7 +11,8 @@ import 'package:gel_rule_app/features/settings/domain/settings_service.dart';
 
 void main() {
   group('Manga & 3D Reader Tests', () {
-    testWidgets('PageFlip3D renders initial page and handles flip', (tester) async {
+    testWidgets('PageFlip3D renders initial page and handles flip',
+        (tester) async {
       int changedPage = -1;
 
       await tester.pumpWidget(
@@ -41,7 +42,9 @@ void main() {
       expect(find.text('Page 1'), findsOneWidget);
     });
 
-    testWidgets('MangaReaderScreen renders title, direction and fullscreen buttons', (tester) async {
+    testWidgets(
+        'MangaReaderScreen renders title, direction and fullscreen buttons',
+        (tester) async {
       final post = Post(
         id: '999999',
         providerId: 'mangalib',
@@ -72,12 +75,14 @@ void main() {
 
       expect(find.text('Epic Manga Title'), findsOneWidget);
       expect(find.byIcon(Icons.fullscreen_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.format_textdirection_r_to_l_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.format_textdirection_r_to_l_rounded),
+          findsOneWidget);
 
       // Tap direction button to toggle to LTR
       await tester.tap(find.byIcon(Icons.format_textdirection_r_to_l_rounded));
       await tester.pump();
-      expect(find.byIcon(Icons.format_textdirection_l_to_r_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.format_textdirection_l_to_r_rounded),
+          findsOneWidget);
 
       // Tap fullscreen button to toggle fullscreen
       await tester.tap(find.byIcon(Icons.fullscreen_rounded));
@@ -86,7 +91,8 @@ void main() {
       expect(find.text('Epic Manga Title'), findsNothing);
     });
 
-    testWidgets('PageFlip3D triggers onEndReached at last page', (tester) async {
+    testWidgets('PageFlip3D triggers onEndReached at last page',
+        (tester) async {
       bool endReached = false;
 
       await tester.pumpWidget(
@@ -111,13 +117,16 @@ void main() {
       expect(endReached, isTrue);
     });
 
-    testWidgets('MangaReaderScreen displays chapters and language switcher', (tester) async {
+    testWidgets('MangaReaderScreen displays chapters and language switcher',
+        (tester) async {
       final post = Post(
         id: 'md_manga_1',
         providerId: 'mangadex',
         providerName: 'MangaDex',
-        previewUrl: 'https://uploads.mangadex.org/covers/md_manga_1/cover.jpg.256.jpg',
-        sampleUrl: 'https://uploads.mangadex.org/covers/md_manga_1/cover.jpg.512.jpg',
+        previewUrl:
+            'https://uploads.mangadex.org/covers/md_manga_1/cover.jpg.256.jpg',
+        sampleUrl:
+            'https://uploads.mangadex.org/covers/md_manga_1/cover.jpg.512.jpg',
         fileUrl: 'https://uploads.mangadex.org/covers/md_manga_1/cover.jpg',
         tags: const ['Manga', 'Action'],
         rating: 's',
@@ -208,8 +217,10 @@ void main() {
         id: 'rokudenashi_1',
         providerId: 'mangadex',
         providerName: 'MangaDex',
-        previewUrl: 'https://uploads.mangadex.org/covers/rokudenashi_1/cover.jpg',
-        sampleUrl: 'https://uploads.mangadex.org/covers/rokudenashi_1/cover.jpg',
+        previewUrl:
+            'https://uploads.mangadex.org/covers/rokudenashi_1/cover.jpg',
+        sampleUrl:
+            'https://uploads.mangadex.org/covers/rokudenashi_1/cover.jpg',
         fileUrl: 'https://uploads.mangadex.org/covers/rokudenashi_1/cover.jpg',
         tags: const ['Manga', 'Comedy'],
         rating: 's',

@@ -241,12 +241,14 @@ class ProviderRepository {
         } else if (exists.apiType != seed.apiType ||
             exists.baseUrl != seed.baseUrl ||
             (seed.customHeaders.isNotEmpty &&
-                (exists.customHeadersJson.isEmpty || exists.customHeadersJson == '{}'))) {
+                (exists.customHeadersJson.isEmpty ||
+                    exists.customHeadersJson == '{}'))) {
           exists.name = seed.name;
           exists.baseUrl = seed.baseUrl;
           exists.apiType = seed.apiType;
           if (seed.customHeaders.isNotEmpty &&
-              (exists.customHeadersJson.isEmpty || exists.customHeadersJson == '{}')) {
+              (exists.customHeadersJson.isEmpty ||
+                  exists.customHeadersJson == '{}')) {
             exists.customHeadersJson = jsonEncode(seed.customHeaders);
           }
           exists.timeoutSeconds = seed.timeoutSeconds;

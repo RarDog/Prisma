@@ -93,7 +93,9 @@ class MangaDexMapper {
           final nameMap = t['attributes']['name'] as Map<dynamic, dynamic>?;
           if (nameMap != null) {
             final name = nameMap['en']?.toString() ??
-                (nameMap.values.isNotEmpty ? nameMap.values.first?.toString() : null);
+                (nameMap.values.isNotEmpty
+                    ? nameMap.values.first?.toString()
+                    : null);
             if (name != null && name.trim().isNotEmpty) {
               final trimmed = name.trim();
               allTags.add(trimmed);
@@ -125,7 +127,8 @@ class MangaDexMapper {
       if (status != null && status.isNotEmpty) 'status': [status],
       'is_comic': ['true'],
       'media_type': ['manga'],
-      if (description != null && description.isNotEmpty) 'description': [description],
+      if (description != null && description.isNotEmpty)
+        'description': [description],
     };
 
     DateTime createdAt = DateTime.now();
@@ -142,7 +145,9 @@ class MangaDexMapper {
       sampleUrl: sampleUrl,
       fileUrl: fileUrl,
       tags: allTags,
-      rating: contentRating == 'safe' ? 'g' : (contentRating == 'suggestive' ? 's' : 'e'),
+      rating: contentRating == 'safe'
+          ? 'g'
+          : (contentRating == 'suggestive' ? 's' : 'e'),
       width: 700,
       height: 1000,
       source: 'https://mangadex.org/title/$id',
@@ -153,7 +158,8 @@ class MangaDexMapper {
     );
   }
 
-  static String extractTitle(Map<dynamic, dynamic> titleMap, List<dynamic>? altTitles) {
+  static String extractTitle(
+      Map<dynamic, dynamic> titleMap, List<dynamic>? altTitles) {
     if (titleMap['ru']?.toString().trim().isNotEmpty == true) {
       return titleMap['ru'].toString().trim();
     }

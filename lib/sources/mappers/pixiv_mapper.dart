@@ -201,8 +201,7 @@ class PixivMapper {
           ? DateTime.tryParse(createDateStr) ?? DateTime.now()
           : DateTime.now();
 
-      final bookmarkCount =
-          int.tryParse('${item['bookmarkCount'] ?? 0}') ?? 0;
+      final bookmarkCount = int.tryParse('${item['bookmarkCount'] ?? 0}') ?? 0;
       final likeCount = int.tryParse('${item['likeCount'] ?? 0}') ?? 0;
 
       posts.add(Post(
@@ -240,7 +239,9 @@ class PixivMapper {
     if (rawId == null) return null;
     final id = rawId.toString();
 
-    final urls = body['urls'] is Map ? Map<String, dynamic>.from(body['urls']) : const {};
+    final urls = body['urls'] is Map
+        ? Map<String, dynamic>.from(body['urls'])
+        : const {};
     final original = urls['original']?.toString() ?? '';
     final regular = urls['regular']?.toString() ?? '';
     final small = urls['small']?.toString() ?? '';
@@ -248,7 +249,8 @@ class PixivMapper {
 
     final fileUrl = original.isNotEmpty ? original : regular;
     final sampleUrl = regular.isNotEmpty ? regular : fileUrl;
-    final previewUrl = small.isNotEmpty ? small : (thumb.isNotEmpty ? thumb : sampleUrl);
+    final previewUrl =
+        small.isNotEmpty ? small : (thumb.isNotEmpty ? thumb : sampleUrl);
 
     final title = body['title']?.toString() ?? '';
     final artist = body['userName']?.toString() ?? '';
@@ -325,10 +327,13 @@ class PixivMapper {
 
     final fileUrl = original.isNotEmpty ? original : regular;
     final sampleUrl = regular.isNotEmpty ? regular : fileUrl;
-    final previewUrl = small.isNotEmpty ? small : (thumbMini.isNotEmpty ? thumbMini : sampleUrl);
+    final previewUrl = small.isNotEmpty
+        ? small
+        : (thumbMini.isNotEmpty ? thumbMini : sampleUrl);
 
     final width = int.tryParse('${pageData['width'] ?? 0}') ?? parentPost.width;
-    final height = int.tryParse('${pageData['height'] ?? 0}') ?? parentPost.height;
+    final height =
+        int.tryParse('${pageData['height'] ?? 0}') ?? parentPost.height;
 
     final tagGroups = Map<String, List<String>>.from(parentPost.tagGroups)
       ..['parent_id'] = [parentPost.id]

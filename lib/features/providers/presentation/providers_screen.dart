@@ -36,7 +36,8 @@ class ProvidersScreen extends ConsumerWidget {
               centerTitle: false,
               leading: Navigator.of(context).canPop()
                   ? IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+                      icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                          size: 20),
                       onPressed: () => context.pop(),
                       tooltip: isRu ? 'Назад' : 'Back',
                     )
@@ -64,8 +65,8 @@ class ProvidersScreen extends ConsumerWidget {
                       ],
                     ),
                     child: const Center(
-                      child:
-                          Icon(Icons.hub_rounded, size: 16, color: Colors.white),
+                      child: Icon(Icons.hub_rounded,
+                          size: 16, color: Colors.white),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -193,7 +194,8 @@ class ProvidersScreen extends ConsumerWidget {
       body: providers.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => ErrorView(message: error.toString()),
-        data: (items) {
+        data: (rawItems) {
+          final items = rawItems.where((p) => p.apiType != 'fapello' && p.id != 'fapello').toList();
           final activeCount = items.where((p) => p.enabled).length;
 
           return Align(
@@ -231,8 +233,8 @@ class ProvidersScreen extends ConsumerWidget {
                       ),
                       border: Border.all(
                         color: isDark
-                          ? Colors.white.withValues(alpha: 0.14)
-                          : Colors.white.withValues(alpha: 0.85),
+                            ? Colors.white.withValues(alpha: 0.14)
+                            : Colors.white.withValues(alpha: 0.85),
                         width: 1.1,
                       ),
                       boxShadow: [
@@ -364,7 +366,8 @@ class ProvidersScreen extends ConsumerWidget {
                         onDelete: () async {
                           final ok = await showConfirmDialog(
                             context,
-                            title: isRu ? 'Удалить источник' : 'Delete provider',
+                            title:
+                                isRu ? 'Удалить источник' : 'Delete provider',
                             message: isRu
                                 ? 'Вы действительно хотите удалить ${item.name}?'
                                 : 'Remove ${item.name}?',

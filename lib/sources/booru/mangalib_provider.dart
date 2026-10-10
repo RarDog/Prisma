@@ -95,7 +95,8 @@ class MangaLibProvider
         queryParams['q'] = queryText;
       }
 
-      if (topPeriod == TopPeriodFilter.day || topPeriod == TopPeriodFilter.week) {
+      if (topPeriod == TopPeriodFilter.day ||
+          topPeriod == TopPeriodFilter.week) {
         queryParams['sort_by'] = 'views';
         queryParams['sort_type'] = 'desc';
       } else {
@@ -115,7 +116,9 @@ class MangaLibProvider
       final data = response.data;
       if (data == null) return [];
 
-      final items = data is Map ? (data['data'] as List<dynamic>? ?? []) : (data is List ? data : []);
+      final items = data is Map
+          ? (data['data'] as List<dynamic>? ?? [])
+          : (data is List ? data : []);
       final posts = <Post>[];
 
       for (final raw in items) {
@@ -126,10 +129,13 @@ class MangaLibProvider
         if (slugUrl.isEmpty) continue;
 
         final rusName = map['rus_name']?.toString() ?? '';
-        final engName = map['eng_name']?.toString() ?? map['name']?.toString() ?? '';
+        final engName =
+            map['eng_name']?.toString() ?? map['name']?.toString() ?? '';
         final title = rusName.isNotEmpty ? rusName : engName;
 
-        final coverMap = map['cover'] is Map ? Map<String, dynamic>.from(map['cover'] as Map) : null;
+        final coverMap = map['cover'] is Map
+            ? Map<String, dynamic>.from(map['cover'] as Map)
+            : null;
         final coverUrl = coverMap?['default']?.toString() ??
             coverMap?['thumbnail']?.toString() ??
             'https://cover.cdnlibs.org/uploads/cover/$slug/cover/cover.jpg';
@@ -138,7 +144,8 @@ class MangaLibProvider
         if (map['genres'] is List) {
           for (final g in map['genres'] as List) {
             if (g is Map && g['name'] != null) {
-              genres.add(g['name'].toString().toLowerCase().replaceAll(' ', '_'));
+              genres
+                  .add(g['name'].toString().toLowerCase().replaceAll(' ', '_'));
             }
           }
         }
@@ -156,11 +163,16 @@ class MangaLibProvider
             height: 600,
             tags: [
               ...genres,
-              if (rusName.isNotEmpty) rusName.toLowerCase().replaceAll(' ', '_'),
-              if (engName.isNotEmpty) engName.toLowerCase().replaceAll(' ', '_'),
+              if (rusName.isNotEmpty)
+                rusName.toLowerCase().replaceAll(' ', '_'),
+              if (engName.isNotEmpty)
+                engName.toLowerCase().replaceAll(' ', '_'),
             ],
             rating: 's',
-            score: (double.tryParse(map['rating']?['average']?.toString() ?? '0') ?? 0).round(),
+            score: (double.tryParse(
+                        map['rating']?['average']?.toString() ?? '0') ??
+                    0)
+                .round(),
             source: 'https://mangalib.me/ru/$slugUrl',
             createdAt: DateTime.now(),
             tagGroups: {
@@ -168,7 +180,8 @@ class MangaLibProvider
               'title': [title],
               if (rusName.isNotEmpty) 'rus_title': [rusName],
               if (engName.isNotEmpty) 'eng_title': [engName],
-              if (map['summary'] != null) 'description': [map['summary'].toString()],
+              if (map['summary'] != null)
+                'description': [map['summary'].toString()],
             },
           ),
         );
@@ -176,7 +189,8 @@ class MangaLibProvider
 
       return posts;
     } on DioException catch (e) {
-      throw BadResponseException(e.message ?? 'MangaLib API error', details: e.toString());
+      throw BadResponseException(e.message ?? 'MangaLib API error',
+          details: e.toString());
     }
   }
 
@@ -194,15 +208,19 @@ class MangaLibProvider
       );
       final data = response.data;
       if (data == null || data is! Map) return null;
-      final map = Map<String, dynamic>.from(data['data'] is Map ? data['data'] as Map : data);
+      final map = Map<String, dynamic>.from(
+          data['data'] is Map ? data['data'] as Map : data);
 
       final slug = map['slug']?.toString() ?? postId;
       final slugUrl = map['slug_url']?.toString() ?? slug;
       final rusName = map['rus_name']?.toString() ?? '';
-      final engName = map['eng_name']?.toString() ?? map['name']?.toString() ?? '';
+      final engName =
+          map['eng_name']?.toString() ?? map['name']?.toString() ?? '';
       final title = rusName.isNotEmpty ? rusName : engName;
 
-      final coverMap = map['cover'] is Map ? Map<String, dynamic>.from(map['cover'] as Map) : null;
+      final coverMap = map['cover'] is Map
+          ? Map<String, dynamic>.from(map['cover'] as Map)
+          : null;
       final coverUrl = coverMap?['default']?.toString() ??
           coverMap?['thumbnail']?.toString() ??
           'https://cover.cdnlibs.org/uploads/cover/$slug/cover/cover.jpg';
@@ -230,7 +248,9 @@ class MangaLibProvider
         height: 600,
         tags: genres,
         rating: 's',
-        score: (double.tryParse(map['rating']?['average']?.toString() ?? '0') ?? 0).round(),
+        score:
+            (double.tryParse(map['rating']?['average']?.toString() ?? '0') ?? 0)
+                .round(),
         source: 'https://mangalib.me/ru/$slugUrl',
         createdAt: DateTime.now(),
         tagGroups: {
@@ -259,7 +279,9 @@ class MangaLibProvider
 
       final data = response.data;
       if (data == null) return [];
-      final list = data is Map ? (data['data'] as List<dynamic>? ?? []) : (data is List ? data : []);
+      final list = data is Map
+          ? (data['data'] as List<dynamic>? ?? [])
+          : (data is List ? data : []);
 
       final chapters = <MangaDexChapter>[];
       for (final raw in list) {
@@ -329,13 +351,15 @@ class MangaLibProvider
       }
       return urls;
     } catch (e, st) {
-      AppLogger.log('MangaLibProvider.fetchChapterPages error for $chapterId', e, st);
+      AppLogger.log(
+          'MangaLibProvider.fetchChapterPages error for $chapterId', e, st);
       return [];
     }
   }
 
   @override
-  Future<List<TagSuggestion>> suggestTags(String query, {int limit = 20}) async {
+  Future<List<TagSuggestion>> suggestTags(String query,
+      {int limit = 20}) async {
     if (query.trim().isEmpty) return [];
     try {
       final posts = await searchPosts(tags: [query], page: 0, limit: limit);

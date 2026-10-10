@@ -96,7 +96,8 @@ class PawchiveSyncService {
           validateStatus: (status) => status != null && status < 500,
           headers: {
             'User-Agent': AppHeaders.defaultUserAgent,
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept':
+                'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
           },
         ),
       );
@@ -175,7 +176,8 @@ class PawchiveSyncService {
     required String username,
     String baseUrl = 'https://pawchive.pw',
   }) async {
-    final cleanUser = username.trim().isEmpty ? 'Pawchive User' : username.trim();
+    final cleanUser =
+        username.trim().isEmpty ? 'Pawchive User' : username.trim();
     final cleanCookie = _normalizeCookie(sessionCookie);
     if (cleanCookie.isEmpty) {
       throw ArgumentError('Session cookie cannot be empty');
@@ -294,7 +296,8 @@ class PawchiveSyncService {
           );
           existingKeys.add(parsed.key);
           if (parsed.service.isNotEmpty && parsed.id.isNotEmpty) {
-            existingServiceId.add('${parsed.service}:${parsed.id}'.toLowerCase());
+            existingServiceId
+                .add('${parsed.service}:${parsed.id}'.toLowerCase());
           }
         } catch (_) {}
       }
@@ -302,7 +305,8 @@ class PawchiveSyncService {
       var addedCount = 0;
       for (final artist in remoteArtists) {
         final pair = '${artist.service}:${artist.id}'.toLowerCase();
-        if (!existingKeys.contains(artist.key) && !existingServiceId.contains(pair)) {
+        if (!existingKeys.contains(artist.key) &&
+            !existingServiceId.contains(pair)) {
           currentFavorites.insert(0, jsonEncode(artist.toJson()));
           existingKeys.add(artist.key);
           existingServiceId.add(pair);

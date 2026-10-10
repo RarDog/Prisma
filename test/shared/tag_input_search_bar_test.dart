@@ -363,7 +363,8 @@ void main() {
     expect(find.text('dog'), findsOneWidget);
   });
 
-  testWidgets('clear button triggers onCleared and onSubmitted with empty string',
+  testWidgets(
+      'clear button triggers onCleared and onSubmitted with empty string',
       (tester) async {
     bool cleared = false;
     String? submitted;
@@ -459,7 +460,8 @@ void main() {
     expect(find.text('genshin'), findsNothing);
   });
 
-  testWidgets('Escape key hides suggestions first, then unfocuses', (tester) async {
+  testWidgets('Escape key hides suggestions first, then unfocuses',
+      (tester) async {
     await tester.pumpWidget(_Harness(
       child: TagInputSearchBar(
         suggestions: const [
@@ -497,7 +499,9 @@ void main() {
     expect(editable.focusNode.hasFocus, isFalse);
   });
 
-  testWidgets('desktop wide screen does not throw ArgumentError on suggestions dropdown', (tester) async {
+  testWidgets(
+      'desktop wide screen does not throw ArgumentError on suggestions dropdown',
+      (tester) async {
     tester.view.physicalSize = const Size(1920, 1080);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
@@ -526,7 +530,8 @@ void main() {
     expect(find.text('genshin'), findsOneWidget);
   });
 
-  testWidgets('clicking tag suggestion with mouse pointer applies suggestion cleanly',
+  testWidgets(
+      'clicking tag suggestion with mouse pointer applies suggestion cleanly',
       (tester) async {
     String? applied;
     await tester.pumpWidget(_Harness(
@@ -561,7 +566,9 @@ void main() {
     expect(applied, 'vocaloid');
   });
 
-  testWidgets('tapping outer search bar container requests focus and soft keyboard', (tester) async {
+  testWidgets(
+      'tapping outer search bar container requests focus and soft keyboard',
+      (tester) async {
     await tester.pumpWidget(_Harness(
       child: TagInputSearchBar(
         onSubmitted: (_) {},

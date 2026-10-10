@@ -80,7 +80,6 @@ class PostPoolsCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-
           Wrap(
             spacing: 8,
             runSpacing: 8,

@@ -94,8 +94,7 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color:
-                              Theme.of(context).colorScheme.primaryContainer,
+                          color: Theme.of(context).colorScheme.primaryContainer,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -127,7 +126,9 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.search_rounded),
-                    title: Text(isRu ? 'Искать только этот тег' : 'Search only this tag'),
+                    title: Text(isRu
+                        ? 'Искать только этот тег'
+                        : 'Search only this tag'),
                     onTap: () {
                       Navigator.pop(modalContext);
                       _navigateToFeed(context, tag);
@@ -135,9 +136,13 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
                   ),
                   ListTile(
                     leading: const Icon(Icons.add_circle_outline_rounded),
-                    title: Text(isRu ? 'Добавить к поиску (+тег)' : 'Add to search (+tag)'),
+                    title: Text(isRu
+                        ? 'Добавить к поиску (+тег)'
+                        : 'Add to search (+tag)'),
                     subtitle: currentTags.isNotEmpty
-                        ? Text(isRu ? 'Текущие: ${currentTags.join(', ')}' : 'Current: ${currentTags.join(', ')}')
+                        ? Text(isRu
+                            ? 'Текущие: ${currentTags.join(', ')}'
+                            : 'Current: ${currentTags.join(', ')}')
                         : null,
                     onTap: () {
                       Navigator.pop(modalContext);
@@ -149,7 +154,9 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
                   ),
                   ListTile(
                     leading: const Icon(Icons.remove_circle_outline_rounded),
-                    title: Text(isRu ? 'Исключить из поиска (-тег)' : 'Exclude from search (-tag)'),
+                    title: Text(isRu
+                        ? 'Исключить из поиска (-тег)'
+                        : 'Exclude from search (-tag)'),
                     onTap: () {
                       Navigator.pop(modalContext);
                       final filtered = currentTags
@@ -161,17 +168,19 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
                   ),
                   ListTile(
                     leading: Icon(
-                      isBlacklisted
-                          ? Icons.block_flipped
-                          : Icons.block_rounded,
+                      isBlacklisted ? Icons.block_flipped : Icons.block_rounded,
                       color: isBlacklisted
                           ? null
                           : Theme.of(context).colorScheme.error,
                     ),
                     title: Text(
                       isBlacklisted
-                          ? (isRu ? 'Удалить из чёрного списка' : 'Remove from blacklist')
-                          : (isRu ? 'В чёрный список (Blacklist)' : 'Add to blacklist'),
+                          ? (isRu
+                              ? 'Удалить из чёрного списка'
+                              : 'Remove from blacklist')
+                          : (isRu
+                              ? 'В чёрный список (Blacklist)'
+                              : 'Add to blacklist'),
                     ),
                     onTap: () async {
                       Navigator.pop(modalContext);
@@ -199,8 +208,12 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
                           SnackBar(
                             content: Text(
                               isBlacklisted
-                                  ? (isRu ? 'Тег "$tag" удалён из чёрного списка' : 'Tag "$tag" removed from blacklist')
-                                  : (isRu ? 'Тег "$tag" добавлен в чёрный список' : 'Tag "$tag" added to blacklist'),
+                                  ? (isRu
+                                      ? 'Тег "$tag" удалён из чёрного списка'
+                                      : 'Tag "$tag" removed from blacklist')
+                                  : (isRu
+                                      ? 'Тег "$tag" добавлен в чёрный список'
+                                      : 'Tag "$tag" added to blacklist'),
                             ),
                             behavior: SnackBarBehavior.floating,
                           ),
@@ -216,7 +229,9 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
                       Clipboard.setData(ClipboardData(text: tag));
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text(isRu ? 'Тег "$tag" скопирован в буфер' : 'Tag "$tag" copied to clipboard'),
+                          content: Text(isRu
+                              ? 'Тег "$tag" скопирован в буфер'
+                              : 'Tag "$tag" copied to clipboard'),
                           behavior: SnackBarBehavior.floating,
                           duration: const Duration(seconds: 2),
                         ),
@@ -226,7 +241,9 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
                   if (isArtist)
                     ListTile(
                       leading: const Icon(Icons.palette_rounded),
-                      title: Text(isRu ? 'Все работы этого автора' : 'All works by this artist'),
+                      title: Text(isRu
+                          ? 'Все работы этого автора'
+                          : 'All works by this artist'),
                       onTap: () {
                         Navigator.pop(modalContext);
                         _navigateToFeed(context, tag);
@@ -368,7 +385,8 @@ class _TagGroupBlock extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
                 decoration: BoxDecoration(
                   color: Theme.of(context).brightness == Brightness.dark
                       ? Colors.white.withValues(alpha: 0.08)
@@ -433,5 +451,3 @@ class _TagGroupBlock extends StatelessWidget {
     };
   }
 }
-
-

@@ -14,12 +14,15 @@ void main() {
       final links = CloudLinkExtractor.extractLinks(content: html);
       expect(links.length, 2);
 
-      final fileLink = links.firstWhere((l) => l.service == CloudServiceType.googleDrive && !l.isFolder);
+      final fileLink = links.firstWhere(
+          (l) => l.service == CloudServiceType.googleDrive && !l.isFolder);
       expect(fileLink.title, 'Google Drive 4K');
       expect(fileLink.isStreamable, isTrue);
-      expect(fileLink.directStreamUrl, 'https://drive.google.com/uc?export=download&id=1AbC-DeFgHiJkLmNoPqRsTuVwXyZ123');
+      expect(fileLink.directStreamUrl,
+          'https://drive.google.com/uc?export=download&id=1AbC-DeFgHiJkLmNoPqRsTuVwXyZ123');
 
-      final folderLink = links.firstWhere((l) => l.service == CloudServiceType.googleDrive && l.isFolder);
+      final folderLink = links.firstWhere(
+          (l) => l.service == CloudServiceType.googleDrive && l.isFolder);
       expect(folderLink.isFolder, isTrue);
       expect(folderLink.isStreamable, isFalse);
     });
@@ -51,7 +54,8 @@ void main() {
       final link = links.first;
       expect(link.service, CloudServiceType.dropbox);
       expect(link.isStreamable, isTrue);
-      expect(link.directStreamUrl, 'https://www.dropbox.com/s/sample123/video.mp4?raw=1');
+      expect(link.directStreamUrl,
+          'https://www.dropbox.com/s/sample123/video.mp4?raw=1');
     });
 
     test('extracts Pixeldrain file IDs and generates API endpoints', () {
@@ -66,7 +70,8 @@ void main() {
 
     test('extracts archive passwords from content', () {
       expect(
-        CloudLinkExtractor.extractPassword('Here is the zip! Password: SuperSecret123'),
+        CloudLinkExtractor.extractPassword(
+            'Here is the zip! Password: SuperSecret123'),
         'SuperSecret123',
       );
       expect(
@@ -80,12 +85,15 @@ void main() {
     });
 
     test('cleans HTML commentary correctly', () {
-      const html = '<p>Hello world!<br/>Check out the new video.</p><p>&amp; enjoy!</p>';
+      const html =
+          '<p>Hello world!<br/>Check out the new video.</p><p>&amp; enjoy!</p>';
       final clean = CloudLinkExtractor.cleanCommentary(html);
       expect(clean, 'Hello world!\nCheck out the new video.\n\n& enjoy!');
     });
 
-    test('cleans HTML commentary and announcements correctly without style artifacts', () {
+    test(
+        'cleans HTML commentary and announcements correctly without style artifacts',
+        () {
       const html =
           '<p style=""><strong>Thank you!</strong> </p><p style="">Here\'s the link to the archive</p><p style=""><a href="https://www.patreon.com/posts/full-fugtrup-14581297" rel="noopener noreferrer nofollow">https://www.patreon.com/posts/full-fugtrup-14581297</a></p><p style="">and the link to my <strong>discord server</strong>, if you\'d like to join it <a href="https://discord.com/invite/xR2AbkX" rel="noopener noreferrer nofollow">https://discord.com/invite/xR2AbkX</a></p>';
       final clean = CloudLinkExtractor.cleanCommentary(html);

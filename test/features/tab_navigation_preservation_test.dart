@@ -6,7 +6,9 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Tab Navigation & State Preservation Tests', () {
-    test('AppShell branchIndexForLocation and locationForBranchIndex map correctly', () {
+    test(
+        'AppShell branchIndexForLocation and locationForBranchIndex map correctly',
+        () {
       expect(AppShell.branchIndexForLocation('/'), 0);
       expect(AppShell.branchIndexForLocation('/?q=test'), 0);
       expect(AppShell.branchIndexForLocation('/search'), 1);
@@ -15,7 +17,8 @@ void main() {
       expect(AppShell.branchIndexForLocation('/collections'), 4);
       expect(AppShell.branchIndexForLocation('/collections/123'), 4);
       expect(AppShell.branchIndexForLocation('/artists'), 5);
-      expect(AppShell.branchIndexForLocation('/artists/pawchive/patreon/99'), 5);
+      expect(
+          AppShell.branchIndexForLocation('/artists/pawchive/patreon/99'), 5);
       expect(AppShell.branchIndexForLocation('/manga'), 6);
       expect(AppShell.branchIndexForLocation('/providers'), 7);
       expect(AppShell.branchIndexForLocation('/settings'), 8);
@@ -36,7 +39,8 @@ void main() {
       const defaults = AppSettings.defaults;
       expect(defaults.lastActiveLocation, '/');
 
-      final updated = defaults.copyWith(lastActiveLocation: '/artists/pawchive/patreon/12345');
+      final updated = defaults.copyWith(
+          lastActiveLocation: '/artists/pawchive/patreon/12345');
       expect(updated.lastActiveLocation, '/artists/pawchive/patreon/12345');
 
       final json = updated.toJson();

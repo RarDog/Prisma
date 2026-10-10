@@ -363,38 +363,32 @@ class PawchiveProvider
   List<ArtistProfile> _artistsFromResponse(dynamic data) {
     final items = data is Map ? data['data'] : data;
     if (items is! List) return const [];
-    return items
-        .whereType<Map>()
-        .map((item) {
-          final json = Map<String, dynamic>.from(item);
-          final service = (json['service'] ?? '').toString();
-          final artistId =
-              (json['id'] ?? json['creator_id'] ?? json['user_id'] ?? '')
-                  .toString();
-          final name = (json['name'] ??
-                  json['display_name'] ??
-                  json['username'] ??
-                  artistId)
+    return items.whereType<Map>().map((item) {
+      final json = Map<String, dynamic>.from(item);
+      final service = (json['service'] ?? '').toString();
+      final artistId =
+          (json['id'] ?? json['creator_id'] ?? json['user_id'] ?? '')
               .toString();
-          final iconUrl = '$baseUrl/icons/$service/$artistId';
-          return ArtistProfile(
-            id: artistId,
-            providerId: id,
-            service: service,
-            name: name,
-            displayName: name,
-            avatarUrl: iconUrl,
-            updatedAt: _dateFromAny(json['updated']),
-            postCount: (json['favorited'] as num?)?.toInt(),
-            url: '$baseUrl/$service/user/$artistId',
-          );
-        })
-        .where((artist) {
-          if (artist.id.isEmpty) return false;
-          final s = artist.service.toLowerCase();
-          return s == 'patreon' || s == 'fanbox';
-        })
-        .toList(growable: false);
+      final name =
+          (json['name'] ?? json['display_name'] ?? json['username'] ?? artistId)
+              .toString();
+      final iconUrl = '$baseUrl/icons/$service/$artistId';
+      return ArtistProfile(
+        id: artistId,
+        providerId: id,
+        service: service,
+        name: name,
+        displayName: name,
+        avatarUrl: iconUrl,
+        updatedAt: _dateFromAny(json['updated']),
+        postCount: (json['favorited'] as num?)?.toInt(),
+        url: '$baseUrl/$service/user/$artistId',
+      );
+    }).where((artist) {
+      if (artist.id.isEmpty) return false;
+      final s = artist.service.toLowerCase();
+      return s == 'patreon' || s == 'fanbox';
+    }).toList(growable: false);
   }
 
   List<Post> _postsFromArtistPost(
@@ -410,13 +404,15 @@ class PawchiveProvider
     final postSource =
         '$baseUrl/${query.service}/user/${query.artistId}/post/$postId';
     final rawContent = (json['content'] ?? '').toString();
-    final embed = json['embed'] is Map ? Map<String, dynamic>.from(json['embed']) : null;
+    final embed =
+        json['embed'] is Map ? Map<String, dynamic>.from(json['embed']) : null;
     final cloudLinks = CloudLinkExtractor.extractLinks(
       content: rawContent,
       source: postSource,
       embed: embed,
     );
-    final cloudLinksJson = cloudLinks.map((e) => e.encode()).toList(growable: false);
+    final cloudLinksJson =
+        cloudLinks.map((e) => e.encode()).toList(growable: false);
     final cleanDesc = CloudLinkExtractor.cleanCommentary(rawContent);
 
     final files = <Map<String, dynamic>>[];
@@ -430,7 +426,8 @@ class PawchiveProvider
         final m = Map<String, dynamic>.from(att);
         final path = (m['path'] ?? '').toString();
         if (path.isNotEmpty &&
-            files.any((existing) => (existing['path'] ?? '').toString() == path)) {
+            files.any(
+                (existing) => (existing['path'] ?? '').toString() == path)) {
           continue;
         }
         files.add(m);
@@ -511,9 +508,8 @@ class PawchiveProvider
 
           // img.pawchive.pw/thumbnail only generates thumbnails for images/gifs.
           // Non-image files (audio, video, archive) return 404 from thumbnail server.
-          final previewUrl = isPhoto
-              ? _thumbnailUrl(rawPath)
-              : (postCoverUrl ?? '');
+          final previewUrl =
+              isPhoto ? _thumbnailUrl(rawPath) : (postCoverUrl ?? '');
 
           final fileUrl = previewOnly
               ? (isPhoto ? previewUrl : _fileDownloadUrl(rawPath, fileName))

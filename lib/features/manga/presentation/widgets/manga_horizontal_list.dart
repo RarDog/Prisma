@@ -52,9 +52,8 @@ class MangaHorizontalList extends StatelessWidget {
             itemBuilder: (context, index) {
               final item = items[index];
               final itemTitle = item.title ?? item.tags.take(2).join(', ');
-              final coverUrl = item.previewUrl.isNotEmpty
-                  ? item.previewUrl
-                  : item.sampleUrl;
+              final coverUrl =
+                  item.previewUrl.isNotEmpty ? item.previewUrl : item.sampleUrl;
 
               return InkWell(
                 onTap: () {

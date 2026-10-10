@@ -140,4 +140,3 @@ class Rule34Provider extends GelbooruProvider {
     throw error;
   }
 }
-

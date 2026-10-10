@@ -11,8 +11,7 @@ void main() {
       expect(DownloadedMediaService.formatBytes(1536), '1.5 KB');
       expect(DownloadedMediaService.formatBytes(2 * 1024 * 1024), '2.0 MB');
       expect(
-        DownloadedMediaService.formatBytes(
-            (2.5 * 1024 * 1024 * 1024).toInt()),
+        DownloadedMediaService.formatBytes((2.5 * 1024 * 1024 * 1024).toInt()),
         '2.50 GB',
       );
     });

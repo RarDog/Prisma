@@ -2,33 +2,45 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gel_rule_app/sources/provider_manager.dart';
 
 void main() {
-  group('Tag groups splitting: space groups together, and separates streams', () {
+  group('Tag groups splitting: space groups together, and separates streams',
+      () {
     test('single tag returns one group', () {
       final groups = ProviderManager.splitTagGroups(['cat']);
-      expect(groups, equals([['cat']]));
+      expect(
+          groups,
+          equals([
+            ['cat']
+          ]));
     });
 
     test('tags separated by space are grouped together in one query', () {
       final groups = ProviderManager.splitTagGroups(['raiden', 'miku']);
-      expect(groups, equals([
-        ['raiden', 'miku'],
-      ]));
+      expect(
+          groups,
+          equals([
+            ['raiden', 'miku'],
+          ]));
     });
 
     test('tags separated by and are split into independent query streams', () {
       final groups = ProviderManager.splitTagGroups(['raiden', 'and', 'miku']);
-      expect(groups, equals([
-        ['raiden'],
-        ['miku'],
-      ]));
+      expect(
+          groups,
+          equals([
+            ['raiden'],
+            ['miku'],
+          ]));
     });
 
     test('cat and dog anthro applies trailing anthro tag to both branches', () {
-      final groups = ProviderManager.splitTagGroups(['cat', 'and', 'dog', 'anthro']);
-      expect(groups, equals([
-        ['cat', 'anthro'],
-        ['dog', 'anthro'],
-      ]));
+      final groups =
+          ProviderManager.splitTagGroups(['cat', 'and', 'dog', 'anthro']);
+      expect(
+          groups,
+          equals([
+            ['cat', 'anthro'],
+            ['dog', 'anthro'],
+          ]));
     });
 
     test('multiple trailing modifiers apply to all and-branches', () {
@@ -41,19 +53,24 @@ void main() {
         'anthro',
         'solo',
       ]);
-      expect(groups, equals([
-        ['cat', 'anthro', 'solo'],
-        ['dog', 'anthro', 'solo'],
-        ['fox', 'anthro', 'solo'],
-      ]));
+      expect(
+          groups,
+          equals([
+            ['cat', 'anthro', 'solo'],
+            ['dog', 'anthro', 'solo'],
+            ['fox', 'anthro', 'solo'],
+          ]));
     });
 
     test('supports optional parentheses around and branches', () {
-      final groups = ProviderManager.splitTagGroups(['(cat', 'and', 'dog)', 'anthro']);
-      expect(groups, equals([
-        ['cat', 'anthro'],
-        ['dog', 'anthro'],
-      ]));
+      final groups =
+          ProviderManager.splitTagGroups(['(cat', 'and', 'dog)', 'anthro']);
+      expect(
+          groups,
+          equals([
+            ['cat', 'anthro'],
+            ['dog', 'anthro'],
+          ]));
     });
 
     test('multiple multi-tag groups separated by and', () {
@@ -64,18 +81,22 @@ void main() {
         'vocaloid',
         'miku',
       ]);
-      expect(groups, equals([
-        ['genshin', 'raiden'],
-        ['vocaloid', 'miku'],
-      ]));
+      expect(
+          groups,
+          equals([
+            ['genshin', 'raiden'],
+            ['vocaloid', 'miku'],
+          ]));
     });
 
     test('case-insensitive AND separator', () {
       final groups = ProviderManager.splitTagGroups(['cat', 'AND', 'dog']);
-      expect(groups, equals([
-        ['cat'],
-        ['dog'],
-      ]));
+      expect(
+          groups,
+          equals([
+            ['cat'],
+            ['dog'],
+          ]));
     });
 
     test('empty tags return empty group list', () {

@@ -52,9 +52,11 @@ class PageFlip3DState extends State<PageFlip3D>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 380),
-    )..addListener(() {
+    )
+      ..addListener(() {
         setState(() {});
-      })..addStatusListener((status) {
+      })
+      ..addStatusListener((status) {
         if (status == AnimationStatus.completed) {
           setState(() {
             _currentIndex = _targetIndex;
@@ -106,7 +108,9 @@ class PageFlip3DState extends State<PageFlip3D>
   }
 
   void jumpToPage(int index) {
-    if (index == _currentIndex || index < 0 || index >= widget.itemCount) return;
+    if (index == _currentIndex || index < 0 || index >= widget.itemCount) {
+      return;
+    }
     setState(() {
       _currentIndex = index;
       _dragOffset = 0.0;
@@ -116,7 +120,9 @@ class PageFlip3DState extends State<PageFlip3D>
   }
 
   void _turnTo(int target) {
-    if (target < 0 || target >= widget.itemCount || target == _currentIndex) return;
+    if (target < 0 || target >= widget.itemCount || target == _currentIndex) {
+      return;
+    }
     _targetIndex = target;
     _isForward = target > _currentIndex;
     _isDragging = false;
@@ -209,7 +215,8 @@ class PageFlip3DState extends State<PageFlip3D>
           onHorizontalDragStart: _onHorizontalDragStart,
           onHorizontalDragUpdate: (details) =>
               _onHorizontalDragUpdate(details, width),
-          onHorizontalDragEnd: (details) => _onHorizontalDragEnd(details, width),
+          onHorizontalDragEnd: (details) =>
+              _onHorizontalDragEnd(details, width),
           behavior: HitTestBehavior.opaque,
           child: ClipRect(
             child: Stack(

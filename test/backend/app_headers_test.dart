@@ -7,7 +7,8 @@ void main() {
     test('defaultUserAgent contains appDisplayVersion', () {
       expect(AppHeaders.defaultUserAgent, contains(appDisplayVersion));
       expect(AppHeaders.defaultUserAgent, startsWith('Prisma/'));
-      expect(AppHeaders.defaultUserAgent, endsWith('Flutter local booru browser'));
+      expect(
+          AppHeaders.defaultUserAgent, endsWith('Flutter local booru browser'));
     });
 
     test('mangaDexUserAgent contains appDisplayVersion', () {

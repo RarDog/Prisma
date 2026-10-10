@@ -840,9 +840,7 @@ class ProviderManager {
 
   static bool _isMangaConfig(ContentProviderConfig config) {
     final type = config.apiType.toLowerCase();
-    return type == 'mangadex' ||
-        type == 'mangalib' ||
-        type == 'ranobelib';
+    return type == 'mangadex' || type == 'mangalib' || type == 'ranobelib';
   }
 
   static bool _isFeedConfig(ContentProviderConfig config) {

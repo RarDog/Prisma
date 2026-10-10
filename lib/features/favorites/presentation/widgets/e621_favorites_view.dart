@@ -69,9 +69,8 @@ class _E621FavoritesViewState extends ConsumerState<E621FavoritesView> {
   }
 
   Future<E621Provider?> _getE621Provider() async {
-    final instance = await ref
-        .read(providerManagerProvider)
-        .getProviderInstance('e621');
+    final instance =
+        await ref.read(providerManagerProvider).getProviderInstance('e621');
     return instance is E621Provider ? instance : null;
   }
 
@@ -224,9 +223,8 @@ class _E621FavoritesViewState extends ConsumerState<E621FavoritesView> {
       if (mounted) {
         setState(() {
           final existingIds = _posts.map((p) => p.id).toSet();
-          final additional = allNewPosts
-              .where((p) => !existingIds.contains(p.id))
-              .toList();
+          final additional =
+              allNewPosts.where((p) => !existingIds.contains(p.id)).toList();
           _posts.addAll(additional);
           _hasMore = false;
         });
@@ -289,7 +287,8 @@ class _E621FavoritesViewState extends ConsumerState<E621FavoritesView> {
         return;
       }
 
-      final res = await ref.read(settingsServiceProvider).importBlacklistFromE621(tags);
+      final res =
+          await ref.read(settingsServiceProvider).importBlacklistFromE621(tags);
       ref.invalidate(appSettingsProvider);
       if (mounted) {
         setState(() => _isSyncingBlacklist = false);
@@ -311,7 +310,9 @@ class _E621FavoritesViewState extends ConsumerState<E621FavoritesView> {
           },
           onError: (f) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('${widget.isRu ? 'Ошибка: ' : 'Error: '}${f.message}')),
+              SnackBar(
+                  content: Text(
+                      '${widget.isRu ? 'Ошибка: ' : 'Error: '}${f.message}')),
             );
           },
         );
@@ -320,7 +321,9 @@ class _E621FavoritesViewState extends ConsumerState<E621FavoritesView> {
       if (mounted) {
         setState(() => _isSyncingBlacklist = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${widget.isRu ? 'Ошибка синхронизации: ' : 'Sync error: '}$e')),
+          SnackBar(
+              content: Text(
+                  '${widget.isRu ? 'Ошибка синхронизации: ' : 'Sync error: '}$e')),
         );
       }
     }
@@ -405,8 +408,8 @@ class _E621FavoritesViewState extends ConsumerState<E621FavoritesView> {
               ),
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFF0055AA),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -422,11 +425,13 @@ class _E621FavoritesViewState extends ConsumerState<E621FavoritesView> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final downloaded = ref.watch(
-          downloadedMediaByKeysProvider(
-            _posts.map((post) => post.cacheKey).toList(growable: false),
-          ),
-        ).value ??
+    final downloaded = ref
+            .watch(
+              downloadedMediaByKeysProvider(
+                _posts.map((post) => post.cacheKey).toList(growable: false),
+              ),
+            )
+            .value ??
         const <String, DownloadedMedia>{};
 
     final favoriteKeys = ref.watch(favoriteKeysProvider).value ?? <String>{};
@@ -456,15 +461,18 @@ class _E621FavoritesViewState extends ConsumerState<E621FavoritesView> {
                     icon: const Icon(Icons.favorite_rounded, size: 16),
                     label: Text(
                       widget.isRu ? 'Избранное' : 'Favorites',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                          fontSize: 12, fontWeight: FontWeight.w600),
                     ),
                   ),
                   ButtonSegment(
                     value: E621SubTab.popular,
-                    icon: const Icon(Icons.local_fire_department_rounded, size: 16),
+                    icon: const Icon(Icons.local_fire_department_rounded,
+                        size: 16),
                     label: Text(
                       widget.isRu ? 'Популярное' : 'Popular',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                          fontSize: 12, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -576,7 +584,9 @@ class _E621FavoritesViewState extends ConsumerState<E621FavoritesView> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                widget.isRu ? 'Избранное: @$_currentLogin' : 'Favorites: @$_currentLogin',
+                                widget.isRu
+                                    ? 'Избранное: @$_currentLogin'
+                                    : 'Favorites: @$_currentLogin',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 13,
@@ -604,13 +614,14 @@ class _E621FavoritesViewState extends ConsumerState<E621FavoritesView> {
                           tooltip: widget.isRu
                               ? 'Синхронизировать черный список'
                               : 'Sync Blacklist from e621',
-                          onPressed: _isSyncingBlacklist ? null : _syncBlacklist,
+                          onPressed:
+                              _isSyncingBlacklist ? null : _syncBlacklist,
                           icon: _isSyncingBlacklist
                               ? const SizedBox(
                                   width: 16,
                                   height: 16,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2),
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
                                 )
                               : const Icon(Icons.sync_rounded, size: 18),
                         ),
@@ -687,8 +698,12 @@ class _E621FavoritesViewState extends ConsumerState<E621FavoritesView> {
                               )
                             : ListView(
                                 controller: _scrollController,
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 8),
+                                padding: EdgeInsets.fromLTRB(
+                                  8,
+                                  0,
+                                  8,
+                                  150.0 + MediaQuery.paddingOf(context).bottom,
+                                ),
                                 children: [
                                   PostMasonryGrid(
                                     posts: _posts,

@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'package:gel_rule_app/app/app_strings.dart';
+import 'package:gel_rule_app/app/app.dart';
 import 'package:gel_rule_app/app/app_version.dart';
 import 'package:gel_rule_app/app/changelog.dart';
 import 'package:gel_rule_app/backend/backend.dart';
@@ -19,7 +19,8 @@ import 'package:gel_rule_app/features/settings/presentation/widgets/settings_sha
 class AboutSettingsScreen extends ConsumerWidget {
   const AboutSettingsScreen({super.key});
 
-  Future<void> _checkUpdates(BuildContext context, WidgetRef ref, bool isRu) async {
+  Future<void> _checkUpdates(
+      BuildContext context, WidgetRef ref, bool isRu) async {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -38,7 +39,8 @@ class AboutSettingsScreen extends ConsumerWidget {
                 color: isDark
                     ? theme.colorScheme.surface.withValues(alpha: 0.88)
                     : Colors.white.withValues(alpha: 0.94),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(28)),
                 border: Border(
                   top: BorderSide(
                     color: isDark
@@ -67,7 +69,8 @@ class AboutSettingsScreen extends ConsumerWidget {
                           height: 4.5,
                           margin: const EdgeInsets.only(bottom: 16),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.35),
+                            color: theme.colorScheme.onSurfaceVariant
+                                .withValues(alpha: 0.35),
                             borderRadius: BorderRadius.circular(3),
                           ),
                         ),
@@ -95,7 +98,8 @@ class AboutSettingsScreen extends ConsumerWidget {
                       // GitHub
                       Material(
                         color: isDark
-                            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.35)
+                            ? theme.colorScheme.primaryContainer
+                                .withValues(alpha: 0.35)
                             : theme.colorScheme.primary.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(18),
                         child: InkWell(
@@ -111,7 +115,8 @@ class AboutSettingsScreen extends ConsumerWidget {
                               border: Border.all(
                                 color: isDark
                                     ? Colors.white.withValues(alpha: 0.15)
-                                    : theme.colorScheme.primary.withValues(alpha: 0.35),
+                                    : theme.colorScheme.primary
+                                        .withValues(alpha: 0.35),
                                 width: 1.2,
                               ),
                             ),
@@ -122,14 +127,18 @@ class AboutSettingsScreen extends ConsumerWidget {
                                   height: 44,
                                   decoration: BoxDecoration(
                                     gradient: const LinearGradient(
-                                      colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
+                                      colors: [
+                                        Color(0xFF6366F1),
+                                        Color(0xFF4F46E5)
+                                      ],
                                       begin: Alignment.topLeft,
                                       end: Alignment.bottomRight,
                                     ),
                                     borderRadius: BorderRadius.circular(13),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: const Color(0xFF6366F1).withValues(alpha: 0.40),
+                                        color: const Color(0xFF6366F1)
+                                            .withValues(alpha: 0.40),
                                         blurRadius: 10,
                                         offset: const Offset(0, 3),
                                       ),
@@ -146,13 +155,15 @@ class AboutSettingsScreen extends ConsumerWidget {
                                 const SizedBox(width: 14),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: [
                                           Text(
                                             'GitHub',
-                                            style: theme.textTheme.titleSmall?.copyWith(
+                                            style: theme.textTheme.titleSmall
+                                                ?.copyWith(
                                               fontWeight: FontWeight.w700,
                                             ),
                                           ),
@@ -163,11 +174,15 @@ class AboutSettingsScreen extends ConsumerWidget {
                                               vertical: 2.5,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: Colors.green.withValues(alpha: 0.20),
-                                              borderRadius: BorderRadius.circular(6),
+                                              color: Colors.green
+                                                  .withValues(alpha: 0.20),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
                                             ),
                                             child: Text(
-                                              isRu ? 'Рекомендуется' : 'Recommended',
+                                              isRu
+                                                  ? 'Рекомендуется'
+                                                  : 'Recommended',
                                               style: const TextStyle(
                                                 fontSize: 10.5,
                                                 fontWeight: FontWeight.w700,
@@ -182,8 +197,10 @@ class AboutSettingsScreen extends ConsumerWidget {
                                         isRu
                                             ? 'Прямая быстрая загрузка релизов без задержек'
                                             : 'Direct fast download without limits',
-                                        style: theme.textTheme.bodySmall?.copyWith(
-                                          color: theme.colorScheme.onSurfaceVariant,
+                                        style:
+                                            theme.textTheme.bodySmall?.copyWith(
+                                          color: theme
+                                              .colorScheme.onSurfaceVariant,
                                         ),
                                       ),
                                     ],
@@ -204,8 +221,10 @@ class AboutSettingsScreen extends ConsumerWidget {
                       // Gitea
                       Material(
                         color: isDark
-                            ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35)
-                            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.40),
+                            ? theme.colorScheme.surfaceContainerHighest
+                                .withValues(alpha: 0.35)
+                            : theme.colorScheme.surfaceContainerHighest
+                                .withValues(alpha: 0.40),
                         borderRadius: BorderRadius.circular(18),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(18),
@@ -220,7 +239,8 @@ class AboutSettingsScreen extends ConsumerWidget {
                               border: Border.all(
                                 color: isDark
                                     ? Colors.white.withValues(alpha: 0.12)
-                                    : theme.colorScheme.outlineVariant.withValues(alpha: 0.35),
+                                    : theme.colorScheme.outlineVariant
+                                        .withValues(alpha: 0.35),
                                 width: 1.2,
                               ),
                             ),
@@ -231,14 +251,18 @@ class AboutSettingsScreen extends ConsumerWidget {
                                   height: 44,
                                   decoration: BoxDecoration(
                                     gradient: const LinearGradient(
-                                      colors: [Color(0xFF0EA5E9), Color(0xFF0284C7)],
+                                      colors: [
+                                        Color(0xFF0EA5E9),
+                                        Color(0xFF0284C7)
+                                      ],
                                       begin: Alignment.topLeft,
                                       end: Alignment.bottomRight,
                                     ),
                                     borderRadius: BorderRadius.circular(13),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: const Color(0xFF0EA5E9).withValues(alpha: 0.35),
+                                        color: const Color(0xFF0EA5E9)
+                                            .withValues(alpha: 0.35),
                                         blurRadius: 10,
                                         offset: const Offset(0, 3),
                                       ),
@@ -255,11 +279,13 @@ class AboutSettingsScreen extends ConsumerWidget {
                                 const SizedBox(width: 14),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'Gitea (Synapse)',
-                                        style: theme.textTheme.titleSmall?.copyWith(
+                                        style: theme.textTheme.titleSmall
+                                            ?.copyWith(
                                           fontWeight: FontWeight.w700,
                                         ),
                                       ),
@@ -268,8 +294,10 @@ class AboutSettingsScreen extends ConsumerWidget {
                                         isRu
                                             ? 'Альтернативный независимый сервер релизов'
                                             : 'Alternative independent release mirror',
-                                        style: theme.textTheme.bodySmall?.copyWith(
-                                          color: theme.colorScheme.onSurfaceVariant,
+                                        style:
+                                            theme.textTheme.bodySmall?.copyWith(
+                                          color: theme
+                                              .colorScheme.onSurfaceVariant,
                                         ),
                                       ),
                                     ],
@@ -303,8 +331,12 @@ class AboutSettingsScreen extends ConsumerWidget {
       SnackBar(
         content: Text(
           selectedSource == UpdateSource.gitea
-              ? (isRu ? 'Проверка обновлений на Gitea...' : 'Checking updates on Gitea...')
-              : (isRu ? 'Проверка обновлений на GitHub...' : 'Checking updates on GitHub...'),
+              ? (isRu
+                  ? 'Проверка обновлений на Gitea...'
+                  : 'Checking updates on Gitea...')
+              : (isRu
+                  ? 'Проверка обновлений на GitHub...'
+                  : 'Checking updates on GitHub...'),
         ),
       ),
     );
@@ -323,7 +355,9 @@ class AboutSettingsScreen extends ConsumerWidget {
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            isRu ? 'У вас установлена последняя версия Prisma' : 'Prisma is up to date',
+            isRu
+                ? 'У вас установлена последняя версия Prisma'
+                : 'Prisma is up to date',
           ),
         ),
       );
@@ -376,7 +410,8 @@ class AboutSettingsScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _copyDiagnostics(BuildContext context, WidgetRef ref, bool isRu) async {
+  Future<void> _copyDiagnostics(
+      BuildContext context, WidgetRef ref, bool isRu) async {
     final report =
         await ref.read(settingsControllerProvider.notifier).diagnosticsReport();
     await Clipboard.setData(ClipboardData(text: report));
@@ -405,9 +440,7 @@ class AboutSettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final settings =
-        ref.watch(settingsControllerProvider).value ?? AppSettings.defaults;
-    final strings = AppStrings(settings.languageCode);
+    final strings = ref.watch(appStringsProvider);
     final isRu = strings.ru;
 
     return Scaffold(
@@ -438,7 +471,8 @@ class AboutSettingsScreen extends ConsumerWidget {
                   color: theme.colorScheme.surfaceContainerLow,
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: theme.colorScheme.outlineVariant.withValues(alpha: 0.35),
+                    color: theme.colorScheme.outlineVariant
+                        .withValues(alpha: 0.35),
                   ),
                   gradient: LinearGradient(
                     colors: [
@@ -458,7 +492,8 @@ class AboutSettingsScreen extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(22),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFE84D8A).withValues(alpha: 0.35),
+                            color:
+                                const Color(0xFFE84D8A).withValues(alpha: 0.35),
                             blurRadius: 20,
                             offset: const Offset(0, 6),
                           ),
@@ -499,7 +534,8 @@ class AboutSettingsScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 5),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4.5),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 4.5),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.secondaryContainer,
                         borderRadius: BorderRadius.circular(12),
@@ -563,7 +599,8 @@ class AboutSettingsScreen extends ConsumerWidget {
                     iconColor: const Color(0xFF374151),
                     onTap: () async {
                       final url = Uri.parse('https://github.com/RarDog/Prisma');
-                      await launchUrl(url, mode: LaunchMode.externalApplication);
+                      await launchUrl(url,
+                          mode: LaunchMode.externalApplication);
                     },
                   ),
                 ],
@@ -662,7 +699,8 @@ class _PerformanceDebugSection extends ConsumerWidget {
           child: Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+              color: theme.colorScheme.surfaceContainerHighest
+                  .withValues(alpha: 0.35),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: theme.colorScheme.outlineVariant.withValues(alpha: 0.25),
@@ -675,7 +713,9 @@ class _PerformanceDebugSection extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      isRu ? 'Текущее состояние процесса' : 'Live Process Stats',
+                      isRu
+                          ? 'Текущее состояние процесса'
+                          : 'Live Process Stats',
                       style: theme.textTheme.labelMedium?.copyWith(
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.2,
@@ -683,7 +723,8 @@ class _PerformanceDebugSection extends ConsumerWidget {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: const Color(0xFF10B981).withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(6),
@@ -727,7 +768,8 @@ class _PerformanceDebugSection extends ConsumerWidget {
                 _StatItem(
                   icon: Icons.image_rounded,
                   label: isRu ? 'Кэш картинок в ОЗУ' : 'Image RAM Cache',
-                  value: PerformanceMetrics.formatBytes(metrics.imageCacheBytes),
+                  value:
+                      PerformanceMetrics.formatBytes(metrics.imageCacheBytes),
                   subValue: isRu
                       ? '${metrics.imageCacheCount} объектов'
                       : '${metrics.imageCacheCount} items',
@@ -745,7 +787,8 @@ class _PerformanceDebugSection extends ConsumerWidget {
                 _StatItem(
                   icon: Icons.wifi_rounded,
                   label: isRu ? 'Сеть (скачивание)' : 'Network (Download)',
-                  value: PerformanceMetrics.formatSpeed(metrics.downloadSpeedBytesPerSec),
+                  value: PerformanceMetrics.formatSpeed(
+                      metrics.downloadSpeedBytesPerSec),
                   subValue: isRu
                       ? 'всего: ${PerformanceMetrics.formatBytes(metrics.totalDownloadedBytes)}'
                       : 'total: ${PerformanceMetrics.formatBytes(metrics.totalDownloadedBytes)}',
@@ -777,7 +820,9 @@ class _PerformanceDebugSection extends ConsumerWidget {
                     );
                   },
                   icon: const Icon(Icons.cleaning_services_rounded, size: 16),
-                  label: Text(isRu ? 'Очистить кэш картинок в ОЗУ' : 'Clear RAM image cache'),
+                  label: Text(isRu
+                      ? 'Очистить кэш картинок в ОЗУ'
+                      : 'Clear RAM image cache'),
                 ),
               ],
             ),
@@ -788,7 +833,9 @@ class _PerformanceDebugSection extends ConsumerWidget {
 
         // Toggle HUD
         SettingsSwitchTile(
-          title: isRu ? 'Плавающее окно поверх экрана (HUD)' : 'Floating On-Screen HUD',
+          title: isRu
+              ? 'Плавающее окно поверх экрана (HUD)'
+              : 'Floating On-Screen HUD',
           subtitle: isRu
               ? 'Отображает полупрозрачное окно с метриками поверх всех экранов'
               : 'Shows a semi-transparent floating widget with live metrics across all screens',
@@ -796,7 +843,9 @@ class _PerformanceDebugSection extends ConsumerWidget {
           iconColor: const Color(0xFF10B981),
           value: settings.debugHudEnabled,
           onChanged: (val) {
-            ref.read(settingsControllerProvider.notifier).updateDebugHudSettings(enabled: val);
+            ref
+                .read(settingsControllerProvider.notifier)
+                .updateDebugHudSettings(enabled: val);
           },
         ),
 
@@ -808,7 +857,9 @@ class _PerformanceDebugSection extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  isRu ? 'Отображаемые показатели в окне:' : 'Display metrics in HUD:',
+                  isRu
+                      ? 'Отображаемые показатели в окне:'
+                      : 'Display metrics in HUD:',
                   style: theme.textTheme.labelMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
@@ -875,7 +926,9 @@ class _PerformanceDebugSection extends ConsumerWidget {
                 ),
                 TextButton.icon(
                   onPressed: () {
-                    ref.read(settingsControllerProvider.notifier).updateDebugHudSettings(
+                    ref
+                        .read(settingsControllerProvider.notifier)
+                        .updateDebugHudSettings(
                           x: 16.0,
                           y: 90.0,
                         );

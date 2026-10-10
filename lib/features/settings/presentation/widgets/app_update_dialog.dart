@@ -76,9 +76,8 @@ class _AppUpdateDialogState extends ConsumerState<AppUpdateDialog> {
       if (mounted) {
         setState(() {
           _isDownloading = false;
-          _error = e.toString().contains('cancel')
-              ? null
-              : 'Ошибка обновления: $e';
+          _error =
+              e.toString().contains('cancel') ? null : 'Ошибка обновления: $e';
           _statusText = null;
         });
       }
@@ -219,13 +218,43 @@ class _AppUpdateDialogState extends ConsumerState<AppUpdateDialog> {
                                 ),
                               ),
                             ),
+                            if (widget.info.isPrerelease) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: Colors.amber.withValues(alpha: 0.5),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Text(
+                                  'BETA',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.amber.shade300,
+                                    letterSpacing: 0.4,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                         const SizedBox(height: 4),
                         Text(
                           isRu
-                              ? 'Доступна новая версия'
-                              : 'A new version is available',
+                              ? (widget.info.isPrerelease
+                                  ? 'Доступна тестовая версия (Beta)'
+                                  : 'Доступна новая версия')
+                              : (widget.info.isPrerelease
+                                  ? 'A new beta version is available'
+                                  : 'A new version is available'),
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: scheme.onSurfaceVariant,
                           ),
@@ -246,7 +275,8 @@ class _AppUpdateDialogState extends ConsumerState<AppUpdateDialog> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: scheme.surfaceContainerHighest.withValues(alpha: 0.6),
+                    color:
+                        scheme.surfaceContainerHighest.withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: scheme.outlineVariant.withValues(alpha: 0.5),
@@ -284,7 +314,8 @@ class _AppUpdateDialogState extends ConsumerState<AppUpdateDialog> {
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: scheme.surfaceContainerHighest.withValues(alpha: 0.35),
+                    color:
+                        scheme.surfaceContainerHighest.withValues(alpha: 0.35),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: scheme.outlineVariant.withValues(alpha: 0.4),
@@ -317,7 +348,8 @@ class _AppUpdateDialogState extends ConsumerState<AppUpdateDialog> {
                               );
                             }
                           },
-                          styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+                          styleSheet:
+                              MarkdownStyleSheet.fromTheme(theme).copyWith(
                             p: theme.textTheme.bodyMedium?.copyWith(
                               color: scheme.onSurfaceVariant,
                               height: 1.45,
@@ -440,7 +472,9 @@ class _AppUpdateDialogState extends ConsumerState<AppUpdateDialog> {
                       icon: const Icon(Icons.auto_awesome_rounded, size: 20),
                       label: Text(
                         Platform.isAndroid
-                            ? (isRu ? 'Скачать и установить' : 'Download & Install')
+                            ? (isRu
+                                ? 'Скачать и установить'
+                                : 'Download & Install')
                             : (isRu
                                 ? 'Обновить и перезапустить'
                                 : 'Update & Restart'),

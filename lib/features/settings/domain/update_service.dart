@@ -57,7 +57,8 @@ class UpdateService {
   Future<List<String>> getSupportedAbis() async {
     if (!Platform.isAndroid) return const [];
     try {
-      final abis = await _deviceChannel.invokeMethod<List<Object?>>('getSupportedAbis');
+      final abis =
+          await _deviceChannel.invokeMethod<List<Object?>>('getSupportedAbis');
       return abis?.whereType<String>().toList() ?? const [];
     } catch (_) {
       return const [];
@@ -192,7 +193,8 @@ class UpdateService {
         // Detect per-ABI APKs by name pattern produced by --split-per-abi.
         if (name.contains('arm64-v8a') || name.contains('arm64_v8a')) {
           apkArm64Url = url;
-        } else if (name.contains('armeabi-v7a') || name.contains('armeabi_v7a')) {
+        } else if (name.contains('armeabi-v7a') ||
+            name.contains('armeabi_v7a')) {
           apkArmv7Url = url;
         } else if (name.contains('x86_64')) {
           apkX86_64Url = url;
@@ -216,6 +218,11 @@ class UpdateService {
       }
     }
 
+    final isPrerelease = json['prerelease'] == true ||
+        tag.toLowerCase().contains('beta') ||
+        tag.toLowerCase().contains('rc') ||
+        tag.toLowerCase().contains('alpha');
+
     return AppUpdateInfo(
       version: _versionFromTag(tag),
       tagName: tag,
@@ -223,6 +230,7 @@ class UpdateService {
       body: (json['body'] ?? '').toString(),
       htmlUrl: (json['html_url'] ?? '').toString(),
       publishedAt: DateTime.tryParse((json['published_at'] ?? '').toString()),
+      isPrerelease: isPrerelease,
       apkUrl: apkUrl,
       apkArm64Url: apkArm64Url,
       apkArmv7Url: apkArmv7Url,
@@ -256,7 +264,9 @@ class UpdateService {
       return info.linuxTarGzUrl ?? info.portableZipUrl ?? info.linuxAppImageUrl;
     }
     if (Platform.isWindows) {
-      return info.windowsInstallerUrl ?? info.windowsZipUrl ?? info.portableZipUrl;
+      return info.windowsInstallerUrl ??
+          info.windowsZipUrl ??
+          info.portableZipUrl;
     }
     if (Platform.isMacOS) {
       return info.macosZipUrl ?? info.portableZipUrl;
@@ -318,7 +328,8 @@ class UpdateService {
           final ratio = received / total;
           final mbReceived = (received / (1024 * 1024)).toStringAsFixed(1);
           final mbTotal = (total / (1024 * 1024)).toStringAsFixed(1);
-          onProgress(ratio, '$mbReceived / $mbTotal МБ (${(ratio * 100).toInt()}%)');
+          onProgress(
+              ratio, '$mbReceived / $mbTotal МБ (${(ratio * 100).toInt()}%)');
         } else {
           final mbReceived = (received / (1024 * 1024)).toStringAsFixed(1);
           onProgress(-1.0, '$mbReceived МБ');
@@ -381,7 +392,8 @@ class UpdateService {
         } catch (e) {
           // Rollback on failure so the original AppImage is not lost or broken
           try {
-            if (!File(runningAppImage).existsSync() && File(oldBackup).existsSync()) {
+            if (!File(runningAppImage).existsSync() &&
+                File(oldBackup).existsSync()) {
               File(oldBackup).renameSync(runningAppImage);
             }
           } catch (_) {}
@@ -393,7 +405,8 @@ class UpdateService {
           File(oldBackup).deleteSync();
         } catch (_) {}
 
-        await Process.start(runningAppImage, [], mode: ProcessStartMode.detached);
+        await Process.start(runningAppImage, [],
+            mode: ProcessStartMode.detached);
         exit(0);
       }
     }
@@ -401,7 +414,8 @@ class UpdateService {
     if (isAppImageFile) {
       await Process.start(downloadedPath, [], mode: ProcessStartMode.detached);
       exit(0);
-    } else if (downloadedPath.endsWith('.tar.gz') || downloadedPath.endsWith('.tgz')) {
+    } else if (downloadedPath.endsWith('.tar.gz') ||
+        downloadedPath.endsWith('.tgz')) {
       final appDir = File(Platform.resolvedExecutable).parent.path;
       final res = await Process.run(
         'tar',
@@ -410,7 +424,8 @@ class UpdateService {
       if (res.exitCode != 0) {
         await Process.run('tar', ['-xzf', downloadedPath, '-C', appDir]);
       }
-      await Process.start(Platform.resolvedExecutable, [], mode: ProcessStartMode.detached);
+      await Process.start(Platform.resolvedExecutable, [],
+          mode: ProcessStartMode.detached);
       exit(0);
     }
   }
@@ -432,13 +447,15 @@ class UpdateService {
 
   Future<void> _installWindowsUpdate(String downloadedPath) async {
     if (downloadedPath.toLowerCase().endsWith('.exe')) {
-      await Process.start(downloadedPath, ['/SILENT'], mode: ProcessStartMode.detached);
+      await Process.start(downloadedPath, ['/SILENT'],
+          mode: ProcessStartMode.detached);
       exit(0);
     }
 
     final exePath = Platform.resolvedExecutable;
     final exeDir = File(exePath).parent.path;
-    final cleanExeDir = exeDir.replaceAll('/', '\\').replaceAll(RegExp(r'\\+$'), '');
+    final cleanExeDir =
+        exeDir.replaceAll('/', '\\').replaceAll(RegExp(r'\\+$'), '');
     final cleanDownloadedPath = downloadedPath.replaceAll('/', '\\');
     final cleanExePath = exePath.replaceAll('/', '\\');
 
@@ -452,7 +469,8 @@ start "" "$cleanExePath"
 del /f /q "%~f0"
 ''';
     await File(scriptPath).writeAsString(scriptContent);
-    await Process.start('cmd.exe', ['/c', scriptPath], mode: ProcessStartMode.detached);
+    await Process.start('cmd.exe', ['/c', scriptPath],
+        mode: ProcessStartMode.detached);
     exit(0);
   }
 
@@ -488,31 +506,104 @@ rm -f "\$0"
   }
 
   static String _versionFromTag(String tag) {
-    final match = RegExp(r'v?(\d+\.\d+\.\d+)').firstMatch(tag);
-    return match?.group(1) ?? tag.replaceFirst(RegExp(r'^v'), '');
+    // Preserve full version including prerelease, e.g. "1.2.3-beta.1"
+    final clean = tag.trim().replaceFirst(RegExp(r'^v', caseSensitive: false), '');
+    return clean;
   }
 
   static bool _isNewerVersion(String latest, String current) {
     return _compareVersions(latest, current) > 0;
   }
 
+  /// Compares two version strings supporting Semantic Versioning and prerelease suffixes:
+  /// Examples:
+  /// - 1.2.1 > 1.2.0
+  /// - 1.2.0 > 1.2.0-beta.2
+  /// - 1.2.0-beta.2 > 1.2.0-beta.1
+  /// - 1.2.0-rc.1 > 1.2.0-beta.2
   static int _compareVersions(String latest, String current) {
-    final left = _parts(latest);
-    final right = _parts(current);
-    for (var i = 0; i < 3; i++) {
-      if (left[i] > right[i]) return 1;
-      if (left[i] < right[i]) return -1;
-    }
-    return 0;
+    final vA = _ParsedVersion.parse(latest);
+    final vB = _ParsedVersion.parse(current);
+    return vA.compareTo(vB);
   }
 
-  static List<int> _parts(String value) {
-    final match = RegExp(r'(\d+)\.(\d+)\.(\d+)').firstMatch(value);
-    if (match == null) return const [0, 0, 0];
-    return [
-      int.tryParse(match.group(1) ?? '') ?? 0,
-      int.tryParse(match.group(2) ?? '') ?? 0,
-      int.tryParse(match.group(3) ?? '') ?? 0,
-    ];
+  static int compareVersionsForTest(String latest, String current) =>
+      _compareVersions(latest, current);
+}
+
+class _ParsedVersion implements Comparable<_ParsedVersion> {
+  const _ParsedVersion({
+    required this.major,
+    required this.minor,
+    required this.patch,
+    this.preType,
+    this.preNumber = 0,
+  });
+
+  final int major;
+  final int minor;
+  final int patch;
+  final String? preType; // e.g. "alpha", "beta", "rc"
+  final int preNumber; // e.g. 1 in beta.1
+
+  static _ParsedVersion parse(String value) {
+    final clean = value.trim().replaceFirst(RegExp(r'^v', caseSensitive: false), '');
+    final match = RegExp(
+      r'^(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:[-._]?(alpha|beta|rc|dev|preview)[-._]?(\d+)?)?',
+      caseSensitive: false,
+    ).firstMatch(clean);
+    if (match == null) {
+      return const _ParsedVersion(major: 0, minor: 0, patch: 0);
+    }
+
+    final maj = int.tryParse(match.group(1) ?? '0') ?? 0;
+    final min = int.tryParse(match.group(2) ?? '0') ?? 0;
+    final pat = int.tryParse(match.group(3) ?? '0') ?? 0;
+    final type = match.group(4)?.toLowerCase();
+    final num = int.tryParse(match.group(5) ?? '1') ?? 1;
+
+    return _ParsedVersion(
+      major: maj,
+      minor: min,
+      patch: pat,
+      preType: type,
+      preNumber: num,
+    );
+  }
+
+  @override
+  int compareTo(_ParsedVersion other) {
+    if (major != other.major) return major.compareTo(other.major);
+    if (minor != other.minor) return minor.compareTo(other.minor);
+    if (patch != other.patch) return patch.compareTo(other.patch);
+
+    // If major.minor.patch are equal:
+    // A stable release (no preType) is ALWAYS newer than a prerelease (e.g. 1.2.0 > 1.2.0-beta)
+    if (preType == null && other.preType != null) return 1;
+    if (preType != null && other.preType == null) return -1;
+    if (preType == null && other.preType == null) return 0;
+
+    // Both are prereleases: order alpha < beta < rc
+    final rankA = _preRank(preType!);
+    final rankB = _preRank(other.preType!);
+    if (rankA != rankB) return rankA.compareTo(rankB);
+
+    // Same pre-type, compare pre-number (e.g. beta.2 > beta.1)
+    return preNumber.compareTo(other.preNumber);
+  }
+
+  static int _preRank(String type) {
+    switch (type) {
+      case 'alpha':
+      case 'dev':
+        return 1;
+      case 'beta':
+      case 'preview':
+        return 2;
+      case 'rc':
+        return 3;
+      default:
+        return 2;
+    }
   }
 }

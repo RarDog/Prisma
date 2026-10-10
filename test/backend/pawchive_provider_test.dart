@@ -50,7 +50,8 @@ void main() {
     expect(query.artistName, 'BOKABA');
   });
 
-  test('MediaUrlSelector accurately classifies audio, video and photo posts', () {
+  test('MediaUrlSelector accurately classifies audio, video and photo posts',
+      () {
     final audioPost = Post(
       id: 'patreon:123:456:0',
       providerId: 'pawchive',
@@ -112,7 +113,9 @@ void main() {
     expect(MediaUrlSelector.isVideo(photoPost), isFalse);
   });
 
-  test('MediaUrlSelector classifies mp4 containing "audio" in query parameter as video and not audio', () {
+  test(
+      'MediaUrlSelector classifies mp4 containing "audio" in query parameter as video and not audio',
+      () {
     final trickyVideoPost = Post(
       id: 'patreon:123:456:3',
       providerId: 'pawchive',
@@ -132,7 +135,7 @@ void main() {
 
     expect(MediaUrlSelector.isVideo(trickyVideoPost), isTrue);
     expect(MediaUrlSelector.isAudio(trickyVideoPost), isFalse);
-    expect(MediaUrlSelector.video(trickyVideoPost), contains(trickyVideoPost.fileUrl));
+    expect(MediaUrlSelector.video(trickyVideoPost),
+        contains(trickyVideoPost.fileUrl));
   });
 }
-

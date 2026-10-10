@@ -63,7 +63,8 @@ void main() {
       expect(restored.mangaReaderRtl, isTrue);
     });
 
-    test('DownloadService resolveSubDir replaces template variables correctly', () {
+    test('DownloadService resolveSubDir replaces template variables correctly',
+        () {
       final downloadService = DownloadService();
       final post = Post(
         id: '12345',
@@ -84,7 +85,8 @@ void main() {
         },
       );
 
-      final resolved = downloadService.resolveSubDir(post, '{Provider}/{Artist}');
+      final resolved =
+          downloadService.resolveSubDir(post, '{Provider}/{Artist}');
       expect(resolved, equals('Pawchive/CoolArtist'));
 
       final singleDir = downloadService.resolveSubDir(post, '{Artist}');
@@ -120,7 +122,8 @@ void main() {
       expect(restoreResult.isSuccess, isTrue);
       expect(fakeSettings.current.amoledMode, isTrue);
       expect(fakeSettings.current.gridMode, equals('list'));
-      expect(fakeSettings.current.downloadPathTemplate, equals('{Provider}/{ID}'));
+      expect(
+          fakeSettings.current.downloadPathTemplate, equals('{Provider}/{ID}'));
     });
   });
 }

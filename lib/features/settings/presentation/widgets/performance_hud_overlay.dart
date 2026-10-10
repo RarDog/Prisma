@@ -10,7 +10,8 @@ class PerformanceHudOverlay extends ConsumerStatefulWidget {
   const PerformanceHudOverlay({super.key});
 
   @override
-  ConsumerState<PerformanceHudOverlay> createState() => _PerformanceHudOverlayState();
+  ConsumerState<PerformanceHudOverlay> createState() =>
+      _PerformanceHudOverlayState();
 }
 
 class _PerformanceHudOverlayState extends ConsumerState<PerformanceHudOverlay> {
@@ -32,16 +33,19 @@ class _PerformanceHudOverlayState extends ConsumerState<PerformanceHudOverlay> {
     final screenSize = MediaQuery.sizeOf(context);
     final padding = MediaQuery.paddingOf(context);
 
-    final currentPos = _dragPosition ?? Offset(settings.debugHudX, settings.debugHudY);
+    final currentPos =
+        _dragPosition ?? Offset(settings.debugHudX, settings.debugHudY);
 
     // Keep within screen bounds
     final clampedX = currentPos.dx.clamp(
       padding.left + 8.0,
-      (screenSize.width - (_isCollapsed ? 180.0 : 250.0) - padding.right).clamp(padding.left + 8.0, screenSize.width),
+      (screenSize.width - (_isCollapsed ? 180.0 : 250.0) - padding.right)
+          .clamp(padding.left + 8.0, screenSize.width),
     );
     final clampedY = currentPos.dy.clamp(
       padding.top + 8.0,
-      (screenSize.height - (_isCollapsed ? 48.0 : 180.0) - padding.bottom).clamp(padding.top + 8.0, screenSize.height),
+      (screenSize.height - (_isCollapsed ? 48.0 : 180.0) - padding.bottom)
+          .clamp(padding.top + 8.0, screenSize.height),
     );
 
     final theme = Theme.of(context);
@@ -54,12 +58,15 @@ class _PerformanceHudOverlayState extends ConsumerState<PerformanceHudOverlay> {
       child: GestureDetector(
         onPanUpdate: (details) {
           setState(() {
-            _dragPosition = Offset(clampedX + details.delta.dx, clampedY + details.delta.dy);
+            _dragPosition = Offset(
+                clampedX + details.delta.dx, clampedY + details.delta.dy);
           });
         },
         onPanEnd: (_) {
           if (_dragPosition != null) {
-            ref.read(settingsControllerProvider.notifier).updateDebugHudSettings(
+            ref
+                .read(settingsControllerProvider.notifier)
+                .updateDebugHudSettings(
                   x: _dragPosition!.dx,
                   y: _dragPosition!.dy,
                 );
@@ -76,7 +83,8 @@ class _PerformanceHudOverlayState extends ConsumerState<PerformanceHudOverlay> {
                   minWidth: _isCollapsed ? 120 : 220,
                   maxWidth: _isCollapsed ? 200 : 270,
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: isDark
                       ? Colors.black.withValues(alpha: opacity * 0.85)
@@ -90,7 +98,8 @@ class _PerformanceHudOverlayState extends ConsumerState<PerformanceHudOverlay> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.12),
+                      color:
+                          Colors.black.withValues(alpha: isDark ? 0.35 : 0.12),
                       blurRadius: 16,
                       offset: const Offset(0, 4),
                     ),
@@ -226,7 +235,8 @@ class _PerformanceHudOverlayState extends ConsumerState<PerformanceHudOverlay> {
             label: 'RAM',
             color: const Color(0xFF8B5CF6),
             value: PerformanceMetrics.formatBytes(metrics.rssBytes),
-            detail: 'кэш: ${PerformanceMetrics.formatBytes(metrics.imageCacheBytes)} (${metrics.imageCacheCount})',
+            detail:
+                'кэш: ${PerformanceMetrics.formatBytes(metrics.imageCacheBytes)} (${metrics.imageCacheCount})',
           ),
         if (settings.debugHudShowCpu)
           _buildMetricRow(
@@ -234,15 +244,18 @@ class _PerformanceHudOverlayState extends ConsumerState<PerformanceHudOverlay> {
             label: 'CPU',
             color: const Color(0xFF3B82F6),
             value: '${metrics.cpuPercent.toStringAsFixed(1)} %',
-            detail: 'пик: ${PerformanceMetrics.formatBytes(metrics.maxRssBytes)}',
+            detail:
+                'пик: ${PerformanceMetrics.formatBytes(metrics.maxRssBytes)}',
           ),
         if (settings.debugHudShowNetwork)
           _buildMetricRow(
             icon: Icons.wifi_rounded,
             label: 'NET',
             color: const Color(0xFF10B981),
-            value: '↓ ${PerformanceMetrics.formatSpeed(metrics.downloadSpeedBytesPerSec)}',
-            detail: 'всего: ${PerformanceMetrics.formatBytes(metrics.totalDownloadedBytes)}',
+            value:
+                '↓ ${PerformanceMetrics.formatSpeed(metrics.downloadSpeedBytesPerSec)}',
+            detail:
+                'всего: ${PerformanceMetrics.formatBytes(metrics.totalDownloadedBytes)}',
           ),
         if (settings.debugHudShowFps)
           _buildMetricRow(

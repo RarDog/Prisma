@@ -3,7 +3,9 @@ import 'package:gel_rule_app/features/settings/domain/settings_service.dart';
 
 void main() {
   group('Rating persistence tests', () {
-    test('copyWith clears defaultRatingFilter and lastFeedRating when flags are true', () {
+    test(
+        'copyWith clears defaultRatingFilter and lastFeedRating when flags are true',
+        () {
       final initial = AppSettings.defaults.copyWith(
         defaultRatingFilter: 'safe',
         lastFeedRating: 'safe',
@@ -21,7 +23,9 @@ void main() {
       expect(updated.lastFeedRating, isNull);
     });
 
-    test('copyWith preserves existing rating filter when flags are false and value is omitted', () {
+    test(
+        'copyWith preserves existing rating filter when flags are false and value is omitted',
+        () {
       final initial = AppSettings.defaults.copyWith(
         defaultRatingFilter: 'safe',
         lastFeedRating: 'safe',

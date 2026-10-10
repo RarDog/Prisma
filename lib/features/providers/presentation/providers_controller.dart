@@ -68,6 +68,43 @@ class ProvidersController extends AsyncNotifier<List<ContentProviderConfig>> {
 final providerHealthProvider =
     StateProvider<Map<String, ProviderHealth>>((ref) => {});
 
+/// Health of every enabled provider, with the config alongside it so the UI
+/// can name a source without a second lookup.
+///
+/// [ProviderManager] already persists an `offline` record whenever a search
+/// fails, so this only has to read what is there — the point is that the feed
+/// and the Artists tab can see a broken source without the user having to
+/// scroll until something errors.
+final enabledProviderHealthProvider =
+    FutureProvider<List<ProviderHealthEntry>>((ref) async {
+  final manager = ref.watch(providerManagerProvider);
+  final configsResult = await manager.loadConfigs(enabledOnly: true);
+  final configs = configsResult is Success<List<ContentProviderConfig>>
+      ? configsResult.data
+      : const <ContentProviderConfig>[];
+  if (configs.isEmpty) return const [];
+
+  final repository = ref.watch(providerRepositoryProvider);
+  final entries = <ProviderHealthEntry>[];
+  for (final config in configs) {
+    final healthResult = await repository.getHealth(config.id);
+    if (healthResult is! Success<ProviderHealth?>) continue;
+    final health = healthResult.data;
+    if (health == null || health.status == ProviderStatus.unknown) continue;
+    entries.add(ProviderHealthEntry(config: config, health: health));
+  }
+  entries
+      .sort((a, b) => a.health.lastCheckedAt.compareTo(b.health.lastCheckedAt));
+  return entries;
+});
+
+class ProviderHealthEntry {
+  const ProviderHealthEntry({required this.config, required this.health});
+
+  final ContentProviderConfig config;
+  final ProviderHealth health;
+}
+
 final providerDiagnosticsProvider =
     FutureProvider<Map<String, ProviderDiagnostics>>((ref) async {
   final result = await ref.watch(providerRepositoryProvider).getDiagnostics();

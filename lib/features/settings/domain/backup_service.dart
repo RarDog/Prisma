@@ -74,8 +74,7 @@ class BackupService {
         }
 
         // 2. Favorites
-        final favoriteEntities =
-            await isar.favoriteEntitys.where().findAll();
+        final favoriteEntities = await isar.favoriteEntitys.where().findAll();
         final favoriteKeys = <String>{};
         for (final f in favoriteEntities) {
           favoriteKeys.add(f.favoriteKey);
@@ -255,11 +254,13 @@ class BackupService {
                     .toString();
                 final entity = FavoriteEntity()
                   ..favoriteKey = key
-                  ..favoriteId = (fav['id'] ?? fav['favoriteId'] ?? key).toString()
+                  ..favoriteId =
+                      (fav['id'] ?? fav['favoriteId'] ?? key).toString()
                   ..postId = (fav['postId'] ?? '').toString()
                   ..providerId = (fav['providerId'] ?? '').toString()
-                  ..savedAt = DateTime.tryParse(fav['savedAt']?.toString() ?? '') ??
-                      DateTime.now();
+                  ..savedAt =
+                      DateTime.tryParse(fav['savedAt']?.toString() ?? '') ??
+                          DateTime.now();
                 await isar.favoriteEntitys.putByFavoriteKey(entity);
               }
             }
@@ -270,8 +271,7 @@ class BackupService {
           if (postsList is List) {
             for (final item in postsList) {
               if (item is Map) {
-                final post =
-                    Post.fromJson(Map<String, dynamic>.from(item));
+                final post = Post.fromJson(Map<String, dynamic>.from(item));
                 await isar.cachedPostEntitys
                     .putByCacheKey(CachedPostEntity.fromModel(post));
               }
@@ -291,12 +291,12 @@ class BackupService {
                   ..name = (col['name'] ?? '').toString()
                   ..description = col['description']?.toString()
                   ..coverUrl = col['coverUrl']?.toString()
-                  ..createdAt = DateTime.tryParse(
-                          col['createdAt']?.toString() ?? '') ??
-                      DateTime.now()
-                  ..updatedAt = DateTime.tryParse(
-                          col['updatedAt']?.toString() ?? '') ??
-                      DateTime.now();
+                  ..createdAt =
+                      DateTime.tryParse(col['createdAt']?.toString() ?? '') ??
+                          DateTime.now()
+                  ..updatedAt =
+                      DateTime.tryParse(col['updatedAt']?.toString() ?? '') ??
+                          DateTime.now();
                 await isar.collectionEntitys.putByCollectionId(entity);
               }
             }
@@ -316,9 +316,9 @@ class BackupService {
                   ..collectionId = (cp['collectionId'] ?? '').toString()
                   ..postId = (cp['postId'] ?? '').toString()
                   ..providerId = (cp['providerId'] ?? '').toString()
-                  ..addedAt = DateTime.tryParse(
-                          cp['addedAt']?.toString() ?? '') ??
-                      DateTime.now();
+                  ..addedAt =
+                      DateTime.tryParse(cp['addedAt']?.toString() ?? '') ??
+                          DateTime.now();
                 await isar.collectionPostEntitys.putByLinkKey(entity);
               }
             }
@@ -330,18 +330,17 @@ class BackupService {
             for (final item in searchList) {
               if (item is Map) {
                 final sh = Map<String, dynamic>.from(item);
-                final histId =
-                    (sh['id'] ?? sh['historyId'] ?? '').toString();
+                final histId = (sh['id'] ?? sh['historyId'] ?? '').toString();
                 final entity = SearchHistoryEntity()
                   ..historyId = histId
                   ..query = (sh['query'] ?? '').toString()
-                  ..tags = List<String>.from(
-                      (sh['tags'] as List?) ?? const [])
-                  ..searchedAt = DateTime.tryParse(
-                          sh['searchedAt']?.toString() ?? '') ??
-                      DateTime.now()
-                  ..resultCount =
-                      (sh['resultCount'] as num?)?.toInt() ?? 0;
+                  ..tags = List<String>.from((sh['tags'] as List?) ?? const [])
+                  ..searchedAt =
+                      DateTime.tryParse(sh['searchedAt']?.toString() ?? '') ??
+                          DateTime.now()
+                  ..resultCount = (sh['resultCount'] as num?)?.toInt() ?? 0
+                  ..providerId = (sh['providerId'] ?? '').toString()
+                  ..providerName = (sh['providerName'] ?? '').toString();
                 await isar.searchHistoryEntitys.putByHistoryId(entity);
               }
             }
@@ -359,9 +358,13 @@ class BackupService {
                   ..title = (m['title'] ?? '').toString()
                   ..coverUrl = (m['coverUrl'] ?? '').toString()
                   ..status = (m['status'] ?? 'reading').toString()
-                  ..addedAt = DateTime.tryParse(m['addedAt']?.toString() ?? '') ?? DateTime.now()
-                  ..totalChaptersCount = (m['totalChaptersCount'] as num?)?.toInt() ?? 0
-                  ..newChaptersCount = (m['newChaptersCount'] as num?)?.toInt() ?? 0;
+                  ..addedAt =
+                      DateTime.tryParse(m['addedAt']?.toString() ?? '') ??
+                          DateTime.now()
+                  ..totalChaptersCount =
+                      (m['totalChaptersCount'] as num?)?.toInt() ?? 0
+                  ..newChaptersCount =
+                      (m['newChaptersCount'] as num?)?.toInt() ?? 0;
                 await isar.mangaLibraryEntryEntitys.putByMangaId(entity);
               }
             }
@@ -382,8 +385,11 @@ class BackupService {
                   ..chapterNumber = (p['chapterNumber'] ?? '').toString()
                   ..pageIndex = (p['pageIndex'] as num?)?.toInt() ?? 0
                   ..totalPages = (p['totalPages'] as num?)?.toInt() ?? 0
-                  ..readChapterIds = List<String>.from((p['readChapterIds'] as List?) ?? const [])
-                  ..updatedAt = DateTime.tryParse(p['updatedAt']?.toString() ?? '') ?? DateTime.now();
+                  ..readChapterIds = List<String>.from(
+                      (p['readChapterIds'] as List?) ?? const [])
+                  ..updatedAt =
+                      DateTime.tryParse(p['updatedAt']?.toString() ?? '') ??
+                          DateTime.now();
                 await isar.mangaReadingProgressEntitys.putByMangaId(entity);
               }
             }
@@ -395,16 +401,16 @@ class BackupService {
             for (final item in viewedList) {
               if (item is Map) {
                 final v = Map<String, dynamic>.from(item);
-                final key = (v['viewedKey'] ??
-                        '${v['providerId']}:${v['postId']}')
-                    .toString();
+                final key =
+                    (v['viewedKey'] ?? '${v['providerId']}:${v['postId']}')
+                        .toString();
                 final entity = ViewedPostEntity()
                   ..viewedKey = key
                   ..providerId = (v['providerId'] ?? '').toString()
                   ..postId = (v['postId'] ?? '').toString()
-                  ..viewedAt = DateTime.tryParse(
-                          v['viewedAt']?.toString() ?? '') ??
-                      DateTime.now();
+                  ..viewedAt =
+                      DateTime.tryParse(v['viewedAt']?.toString() ?? '') ??
+                          DateTime.now();
                 await isar.viewedPostEntitys.putByViewedKey(entity);
               }
             }
@@ -503,7 +509,8 @@ class BackupService {
           anySaved = true;
           lastPersistentBackupPath = file.path;
         } catch (e, st) {
-          AppLogger.log('BackupService: failed to write backup to $dirPath', e, st);
+          AppLogger.log(
+              'BackupService: failed to write backup to $dirPath', e, st);
         }
       }
 
@@ -516,7 +523,8 @@ class BackupService {
           anySaved = true;
           lastPersistentBackupPath = 'Downloads/Prisma/$backupFileName';
         } catch (e, st) {
-          AppLogger.log('BackupService: Android persistent backup failed', e, st);
+          AppLogger.log(
+              'BackupService: Android persistent backup failed', e, st);
         }
       }
 
@@ -526,7 +534,8 @@ class BackupService {
       }
       return anySaved;
     } catch (e, st) {
-      AppLogger.log('BackupService.saveAutoBackupToPersistentStorage error', e, st);
+      AppLogger.log(
+          'BackupService.saveAutoBackupToPersistentStorage error', e, st);
       return false;
     }
   }
@@ -545,7 +554,8 @@ class BackupService {
             return content;
           }
         } catch (e, st) {
-          AppLogger.log('BackupService: native readPersistentBackup error', e, st);
+          AppLogger.log(
+              'BackupService: native readPersistentBackup error', e, st);
         }
       }
 
@@ -566,8 +576,10 @@ class BackupService {
             for (final f in files) {
               fileModTimes[f.path] = await f.lastModified();
             }
-            files.sort((a, b) => (fileModTimes[b.path] ?? DateTime.fromMillisecondsSinceEpoch(0))
-                .compareTo(fileModTimes[a.path] ?? DateTime.fromMillisecondsSinceEpoch(0)));
+            files.sort((a, b) =>
+                (fileModTimes[b.path] ?? DateTime.fromMillisecondsSinceEpoch(0))
+                    .compareTo(fileModTimes[a.path] ??
+                        DateTime.fromMillisecondsSinceEpoch(0)));
             for (final f in files) {
               try {
                 final text = await f.readAsString();
@@ -576,12 +588,16 @@ class BackupService {
                   return text;
                 }
               } catch (e, st) {
-                AppLogger.log('BackupService: failed reading candidate file ${f.path}', e, st);
+                AppLogger.log(
+                    'BackupService: failed reading candidate file ${f.path}',
+                    e,
+                    st);
               }
             }
           }
         } catch (e, st) {
-          AppLogger.log('BackupService: candidateDir scan error for $dirPath', e, st);
+          AppLogger.log(
+              'BackupService: candidateDir scan error for $dirPath', e, st);
         }
       }
     } catch (e, st) {
@@ -601,7 +617,10 @@ class BackupService {
         final colCount = await isar.collectionEntitys.count();
         final mangaCount = await isar.mangaLibraryEntryEntitys.count();
         final viewedCount = await isar.viewedPostEntitys.count();
-        return favCount > 0 || colCount > 0 || mangaCount > 0 || viewedCount > 0;
+        return favCount > 0 ||
+            colCount > 0 ||
+            mangaCount > 0 ||
+            viewedCount > 0;
       });
 
       if (hasData is Success<bool> && hasData.data) {
@@ -614,7 +633,8 @@ class BackupService {
       if (backupJson != null && backupJson.trim().isNotEmpty) {
         final result = await restoreFromJson(backupJson);
         if (result is Success<AppSettings>) {
-          AppLogger.log('Prisma: Auto-restored user data from persistent storage!');
+          AppLogger.log(
+              'Prisma: Auto-restored user data from persistent storage!');
           return true;
         }
       }
@@ -656,7 +676,8 @@ class BackupService {
             return name.startsWith('prisma_backup') && name.endsWith('.json');
           }).toList();
           if (files.isNotEmpty) {
-            files.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+            files.sort(
+                (a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
             final file = files.first;
             final stat = file.statSync();
             return {
@@ -688,7 +709,8 @@ class BackupService {
         if (content != null && content.trim().isNotEmpty) {
           return {
             'exists': true,
-            'path': lastPersistentBackupPath ?? 'Downloads/Prisma/$backupFileName',
+            'path':
+                lastPersistentBackupPath ?? 'Downloads/Prisma/$backupFileName',
             'lastModified': null,
             'fileSize': content.length,
           };

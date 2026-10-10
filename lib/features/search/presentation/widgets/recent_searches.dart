@@ -6,13 +6,15 @@ import 'package:gel_rule_app/backend/backend.dart';
 class RecentSearches extends StatefulWidget {
   const RecentSearches({
     required this.items,
-    required this.onTap,
+    this.onTap,
+    this.onItemTap,
     this.onDelete,
     super.key,
   });
 
   final List<SearchHistory> items;
-  final ValueChanged<String> onTap;
+  final ValueChanged<String>? onTap;
+  final ValueChanged<SearchHistory>? onItemTap;
   final ValueChanged<String>? onDelete;
 
   @override
@@ -103,11 +105,15 @@ class _RecentSearchesState extends State<RecentSearches> {
                   borderRadius: BorderRadius.circular(16),
                   onTap: () {
                     HapticFeedback.selectionClick();
-                    widget.onTap(item.query);
+                    if (widget.onItemTap != null) {
+                      widget.onItemTap!(item);
+                    } else if (widget.onTap != null) {
+                      widget.onTap!(item.query);
+                    }
                   },
                   child: Container(
-                    padding:
-                        const EdgeInsets.only(left: 10, right: 6, top: 6, bottom: 6),
+                    padding: const EdgeInsets.only(
+                        left: 10, right: 6, top: 6, bottom: 6),
                     decoration: BoxDecoration(
                       color: Theme.of(context).brightness == Brightness.dark
                           ? theme.colorScheme.surfaceContainerHighest
@@ -115,16 +121,23 @@ class _RecentSearchesState extends State<RecentSearches> {
                           : Colors.white.withValues(alpha: 0.65),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white.withValues(alpha: 0.12)
-                            : theme.colorScheme.outlineVariant
-                                .withValues(alpha: 0.35),
+                        color: item.providerId.isNotEmpty
+                            ? _providerColor(item.providerId).withValues(
+                                alpha: Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? 0.35
+                                    : 0.25)
+                            : (Theme.of(context).brightness == Brightness.dark
+                                ? Colors.white.withValues(alpha: 0.12)
+                                : theme.colorScheme.outlineVariant
+                                    .withValues(alpha: 0.35)),
                         width: 1.0,
                       ),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(
-                              alpha: Theme.of(context).brightness == Brightness.dark
+                              alpha: Theme.of(context).brightness ==
+                                      Brightness.dark
                                   ? 0.15
                                   : 0.04),
                           blurRadius: 6,
@@ -138,7 +151,9 @@ class _RecentSearchesState extends State<RecentSearches> {
                         Icon(
                           Icons.history_rounded,
                           size: 15,
-                          color: theme.colorScheme.primary,
+                          color: item.providerId.isNotEmpty
+                              ? _providerColor(item.providerId)
+                              : theme.colorScheme.primary,
                         ),
                         const SizedBox(width: 6),
                         ConstrainedBox(
@@ -156,13 +171,39 @@ class _RecentSearchesState extends State<RecentSearches> {
                             ),
                           ),
                         ),
+                        if (item.providerId.isNotEmpty) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: _providerColor(item.providerId).withValues(
+                                  alpha: Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? 0.22
+                                      : 0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              item.providerName.isNotEmpty
+                                  ? item.providerName
+                                  : item.providerId,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: _providerColor(item.providerId),
+                              ),
+                            ),
+                          ),
+                        ],
                         if (item.resultCount > 0) ...[
                           const SizedBox(width: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: theme.colorScheme.primary.withValues(alpha: 0.14),
+                              color: theme.colorScheme.primary
+                                  .withValues(alpha: 0.14),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
@@ -229,5 +270,19 @@ class _RecentSearchesState extends State<RecentSearches> {
         ],
       ],
     );
+  }
+
+  static Color _providerColor(String pid) {
+    final lower = pid.toLowerCase();
+    if (lower.contains('gelbooru')) return const Color(0xFF006ffa);
+    if (lower.contains('danbooru')) return const Color(0xFFe45f34);
+    if (lower.contains('e621')) return const Color(0xFF00549e);
+    if (lower.contains('rule34')) return const Color(0xFF2e7d32);
+    if (lower.contains('safebooru')) return const Color(0xFF10b981);
+    if (lower.contains('realbooru')) return const Color(0xFF455a64);
+    if (lower.contains('mangalib') || lower.contains('manga')) {
+      return const Color(0xFFE53935);
+    }
+    return const Color(0xFF8B5CF6);
   }
 }

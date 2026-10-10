@@ -49,7 +49,10 @@ class ProviderFactory {
     if (config.apiType.toLowerCase() == 'e621') {
       final login = queryParameters['login'] ?? headers['login'];
       final apiKey = queryParameters['api_key'] ?? headers['api_key'];
-      if (login != null && apiKey != null && login.isNotEmpty && apiKey.isNotEmpty) {
+      if (login != null &&
+          apiKey != null &&
+          login.isNotEmpty &&
+          apiKey.isNotEmpty) {
         final basicAuth = base64Encode(utf8.encode('$login:$apiKey'));
         headers['Authorization'] = 'Basic $basicAuth';
         headers['User-Agent'] = AppHeaders.e621UserAgent(login);

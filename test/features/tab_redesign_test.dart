@@ -285,17 +285,10 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    // Verify Search Bar and Quick Operator Chips
-    expect(find.text('type:video'), findsOneWidget);
-    expect(find.text('rating:safe'), findsOneWidget);
-
-    // Verify Recent Searches chip
+    // Verify History Screen components
+    expect(find.text('История'), findsOneWidget);
     expect(find.text('genshin_impact'), findsOneWidget);
-
-    // Verify Popular Categories
-    expect(find.text('Тематика'), findsOneWidget);
-    expect(find.text('Персонажи и детали'), findsOneWidget);
-    expect(find.text('Провайдеры'), findsOneWidget);
+    expect(find.text('Недавний поиск'), findsOneWidget);
   });
 }
 

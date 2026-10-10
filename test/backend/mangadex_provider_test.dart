@@ -40,7 +40,10 @@ void main() {
           'altTitles': [
             {'ru': 'Тестовая Манга'},
           ],
-          'description': {'en': 'Awesome manga description', 'ru': 'Описание манги'},
+          'description': {
+            'en': 'Awesome manga description',
+            'ru': 'Описание манги'
+          },
           'contentRating': 'suggestive',
           'tags': [
             {
@@ -89,9 +92,18 @@ void main() {
       expect(post.providerId, equals('mangadex'));
       // Russian title preferred if available, or English
       expect(post.title, equals('Test Manga Title'));
-      expect(post.previewUrl, equals('https://uploads.mangadex.org/covers/1d35f256-be1e-4873-93c0-03bf25db5edd/cover123.jpg.256.jpg'));
-      expect(post.sampleUrl, equals('https://uploads.mangadex.org/covers/1d35f256-be1e-4873-93c0-03bf25db5edd/cover123.jpg.512.jpg'));
-      expect(post.fileUrl, equals('https://uploads.mangadex.org/covers/1d35f256-be1e-4873-93c0-03bf25db5edd/cover123.jpg'));
+      expect(
+          post.previewUrl,
+          equals(
+              'https://uploads.mangadex.org/covers/1d35f256-be1e-4873-93c0-03bf25db5edd/cover123.jpg.256.jpg'));
+      expect(
+          post.sampleUrl,
+          equals(
+              'https://uploads.mangadex.org/covers/1d35f256-be1e-4873-93c0-03bf25db5edd/cover123.jpg.512.jpg'));
+      expect(
+          post.fileUrl,
+          equals(
+              'https://uploads.mangadex.org/covers/1d35f256-be1e-4873-93c0-03bf25db5edd/cover123.jpg'));
       expect(post.tags, containsAll(['Action', 'Romance']));
       expect(post.tagGroups['artist'], equals(['Artist Master']));
       expect(post.tagGroups['author'], equals(['Author Sensei']));
@@ -112,7 +124,8 @@ void main() {
         id: 'm123',
         providerId: 'mangadex',
         providerName: 'MangaDex',
-        previewUrl: 'https://uploads.mangadex.org/covers/m123/cover.jpg.256.jpg',
+        previewUrl:
+            'https://uploads.mangadex.org/covers/m123/cover.jpg.256.jpg',
         sampleUrl: 'https://uploads.mangadex.org/covers/m123/cover.jpg.512.jpg',
         fileUrl: 'https://uploads.mangadex.org/covers/m123/cover.jpg',
         tags: const ['Manga'],

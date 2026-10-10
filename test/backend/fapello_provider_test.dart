@@ -322,7 +322,7 @@ void main() {
       expect(
         first.avatarUrl,
         'https://fapello.com/content/s/o/soyisabelasalar/1000/'
-            'soyisabelasalar_0014.jpg',
+        'soyisabelasalar_0014.jpg',
       );
       // A default placeholder avatar is kept; the UI falls back to initials.
       expect(
@@ -375,7 +375,8 @@ void main() {
     });
 
     test('skips providers that do not carry the requested service', () async {
-      dio.httpClientAdapter = _FakeAdapter((options) async => fail('no request'));
+      dio.httpClientAdapter =
+          _FakeAdapter((options) async => fail('no request'));
       final provider = _providerWith(dio);
 
       expect(await provider.listArtists(services: const ['patreon']), isEmpty);
@@ -459,17 +460,17 @@ void main() {
       expect(
         video.fileUrl,
         'https://cdn.fapello.com/content/m/i/mikatanaka869/1000/'
-            'mikatanaka869_0009.mp4',
+        'mikatanaka869_0009.mp4',
       );
       expect(
         video.sampleUrl,
         'https://fapello.com/content/m/i/mikatanaka869/1000/'
-            'mikatanaka869_0009.jpg',
+        'mikatanaka869_0009.jpg',
       );
       expect(
         video.previewUrl,
         'https://fapello.com/content/m/i/mikatanaka869/1000/'
-            'mikatanaka869_0009_300px.jpg',
+        'mikatanaka869_0009_300px.jpg',
       );
     });
 
@@ -491,7 +492,7 @@ void main() {
       expect(
         image.fileUrl,
         'https://fapello.com/content/m/i/mikatanaka869/1000/'
-            'mikatanaka869_0008.jpg',
+        'mikatanaka869_0008.jpg',
       );
       expect(image.sampleUrl, image.fileUrl);
       expect(image.rating, 'explicit');
@@ -538,7 +539,8 @@ void main() {
     });
 
     test('searchPosts stays empty because fapello is artist-only', () async {
-      dio.httpClientAdapter = _FakeAdapter((options) async => fail('no request'));
+      dio.httpClientAdapter =
+          _FakeAdapter((options) async => fail('no request'));
       final provider = _providerWith(dio);
       expect(
         await provider.searchPosts(tags: const ['solo'], page: 0),
@@ -547,7 +549,8 @@ void main() {
     });
 
     test('ignores media that belongs to a different model', () async {
-      dio.httpClientAdapter = _FakeAdapter((options) async => _html(_modelPage1));
+      dio.httpClientAdapter =
+          _FakeAdapter((options) async => _html(_modelPage1));
       final provider = _providerWith(dio);
       const query = ArtistWorkQuery(
         providerId: 'fapello',
@@ -592,7 +595,7 @@ void main() {
       expect(
         post.previewUrl,
         'https://fapello.com/content/t/h/thiessita/1000/'
-            'thiessita_0050_300px.jpg',
+        'thiessita_0050_300px.jpg',
       );
     });
 
@@ -610,7 +613,7 @@ void main() {
       expect(
         post.fileUrl,
         'https://cdn.fapello.com/content/m/i/mikatanaka869/1000/'
-            'mikatanaka869_0009.mp4',
+        'mikatanaka869_0009.mp4',
       );
       expect(post.score, 12);
       expect(post.tags, ['cameltoe-fetish']);
@@ -679,7 +682,8 @@ void main() {
     });
 
     test('ignores malformed post ids', () async {
-      dio.httpClientAdapter = _FakeAdapter((options) async => fail('no request'));
+      dio.httpClientAdapter =
+          _FakeAdapter((options) async => fail('no request'));
       final provider = _providerWith(dio);
       expect(await provider.getPost('thiessita'), isNull);
       expect(await provider.getPost(':50'), isNull);
@@ -718,7 +722,8 @@ void main() {
         'africangonwild',
         '102',
       );
-      expect(comments.map((c) => c.postId), ['africangonwild:102', 'africangonwild:102']);
+      expect(comments.map((c) => c.postId),
+          ['africangonwild:102', 'africangonwild:102']);
     });
   });
 
@@ -770,8 +775,8 @@ void main() {
     });
 
     test('checkHealth reports offline when the markup is unusable', () async {
-      dio.httpClientAdapter =
-          _FakeAdapter((options) async => _html('<html><body>nope</body></html>'));
+      dio.httpClientAdapter = _FakeAdapter(
+          (options) async => _html('<html><body>nope</body></html>'));
       final provider = _providerWith(dio);
 
       final health = await provider.checkHealth();

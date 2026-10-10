@@ -16,6 +16,7 @@ class AppStrings {
   String get post => ru ? 'Пост' : 'Post';
   String get close => ru ? 'Закрыть' : 'Close';
   String get retry => ru ? 'Повторить' : 'Retry';
+  String get cancel => ru ? 'Отмена' : 'Cancel';
   String get tags => ru ? 'Теги' : 'Tags';
   String get comments => ru ? 'Комментарии' : 'Comments';
   String get commentsUnavailable =>
@@ -101,4 +102,17 @@ class AppStrings {
   String get fullscreen => ru ? 'На весь экран' : 'Fullscreen';
   String get exitFullscreen =>
       ru ? 'Выйти из полноэкранного режима' : 'Exit fullscreen';
+  String get checkSources => ru ? 'Проверить источники' : 'Check sources';
+  String get sourcesUnavailableSingle =>
+      ru ? '1 источник недоступен' : '1 source unavailable';
+  String sourcesUnavailableCount(int count) =>
+      ru ? 'Недоступно источников: $count' : '$count sources unavailable';
+  String get sourcesUnavailableTitle => ru
+      ? 'Некоторые источники не отвечают'
+      : 'Some sources are not responding';
+  String get resumeQueue => ru ? 'Возобновить очередь' : 'Resume queue';
+  String get pauseQueue => ru ? 'Приостановить очередь' : 'Pause queue';
+  String get cancelActive => ru ? 'Отменить активные' : 'Cancel active';
+  String get clearFinished =>
+      ru ? 'Очистить завершенные' : 'Clear finished';
 }

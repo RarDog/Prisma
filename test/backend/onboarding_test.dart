@@ -61,7 +61,8 @@ void main() {
       );
     });
 
-    test('Brand new user without backup or API keys should see onboarding', () async {
+    test('Brand new user without backup or API keys should see onboarding',
+        () async {
       fakeSettings.current = AppSettings.defaults.copyWith(
         hasCompletedOnboarding: false,
       );
@@ -85,7 +86,8 @@ void main() {
       expect(shouldShow, isTrue);
     });
 
-    test('User who already completed onboarding should NOT see onboarding', () async {
+    test('User who already completed onboarding should NOT see onboarding',
+        () async {
       fakeSettings.current = AppSettings.defaults.copyWith(
         hasCompletedOnboarding: true,
       );
@@ -95,7 +97,9 @@ void main() {
       expect(shouldShow, isFalse);
     });
 
-    test('User with existing backup file should NOT see onboarding and auto-complete', () async {
+    test(
+        'User with existing backup file should NOT see onboarding and auto-complete',
+        () async {
       fakeSettings.current = AppSettings.defaults.copyWith(
         hasCompletedOnboarding: false,
       );
@@ -106,7 +110,9 @@ void main() {
       expect(fakeSettings.current.hasCompletedOnboarding, isTrue);
     });
 
-    test('User with at least one API key configured should NOT see onboarding and auto-complete', () async {
+    test(
+        'User with at least one API key configured should NOT see onboarding and auto-complete',
+        () async {
       fakeSettings.current = AppSettings.defaults.copyWith(
         hasCompletedOnboarding: false,
       );
@@ -134,7 +140,9 @@ void main() {
       expect(fakeSettings.current.hasCompletedOnboarding, isTrue);
     });
 
-    test('hasAnyProviderApiKey recognizes query.api_key, api_key, and Authorization', () {
+    test(
+        'hasAnyProviderApiKey recognizes query.api_key, api_key, and Authorization',
+        () {
       final p1 = ContentProviderConfig(
         id: '1',
         name: 'P1',

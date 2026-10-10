@@ -68,7 +68,8 @@ class _E621AuthDialogState extends State<E621AuthDialog> {
 
     if (login.isEmpty || apiKey.isEmpty) {
       setState(() {
-        _statusMessage = isRu ? 'Укажите логин и API ключ' : 'Enter username and API key';
+        _statusMessage =
+            isRu ? 'Укажите логин и API ключ' : 'Enter username and API key';
         _isSuccess = false;
       });
       return;
@@ -158,10 +159,9 @@ class _E621AuthDialogState extends State<E621AuthDialog> {
   }
 
   void _clearAuth() {
-    final updatedHeaders =
-        Map<String, String>.from(widget.config.customHeaders)
-          ..remove('query.login')
-          ..remove('query.api_key');
+    final updatedHeaders = Map<String, String>.from(widget.config.customHeaders)
+      ..remove('query.login')
+      ..remove('query.api_key');
 
     final updatedConfig = widget.config.copyWith(
       customHeaders: updatedHeaders,
@@ -230,7 +230,8 @@ class _E621AuthDialogState extends State<E621AuthDialog> {
                           borderRadius: BorderRadius.circular(14),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF0055AA).withValues(alpha: 0.35),
+                              color: const Color(0xFF0055AA)
+                                  .withValues(alpha: 0.35),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -288,7 +289,8 @@ class _E621AuthDialogState extends State<E621AuthDialog> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0055AA).withValues(alpha: isDark ? 0.15 : 0.08),
+                      color: const Color(0xFF0055AA)
+                          .withValues(alpha: isDark ? 0.15 : 0.08),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: const Color(0xFF0055AA).withValues(alpha: 0.25),

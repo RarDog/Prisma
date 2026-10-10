@@ -91,7 +91,8 @@ class PerformanceHttpOverrides extends HttpOverrides {
 
   @override
   HttpClient createHttpClient(SecurityContext? context) {
-    final client = fallback?.createHttpClient(context) ?? super.createHttpClient(context);
+    final client =
+        fallback?.createHttpClient(context) ?? super.createHttpClient(context);
     return _TrackingHttpClient(client);
   }
 }
@@ -126,23 +127,31 @@ class _TrackingHttpClient implements HttpClient {
   set userAgent(String? value) => _inner.userAgent = value;
 
   @override
-  void addCredentials(Uri url, String realm, HttpClientCredentials credentials) =>
+  void addCredentials(
+          Uri url, String realm, HttpClientCredentials credentials) =>
       _inner.addCredentials(url, realm, credentials);
 
   @override
-  void addProxyCredentials(String host, int port, String realm, HttpClientCredentials credentials) =>
+  void addProxyCredentials(String host, int port, String realm,
+          HttpClientCredentials credentials) =>
       _inner.addProxyCredentials(host, port, realm, credentials);
 
   @override
-  set authenticate(Future<bool> Function(Uri url, String realm, String? account)? f) =>
+  set authenticate(
+          Future<bool> Function(Uri url, String realm, String? account)? f) =>
       _inner.authenticate = f;
 
   @override
-  set authenticateProxy(Future<bool> Function(String host, int port, String realm, String? account)? f) =>
+  set authenticateProxy(
+          Future<bool> Function(
+                  String host, int port, String realm, String? account)?
+              f) =>
       _inner.authenticateProxy = f;
 
   @override
-  set badCertificateCallback(bool Function(X509Certificate cert, String host, int port)? callback) =>
+  set badCertificateCallback(
+          bool Function(X509Certificate cert, String host, int port)?
+              callback) =>
       _inner.badCertificateCallback = callback;
 
   @override
@@ -152,7 +161,8 @@ class _TrackingHttpClient implements HttpClient {
   void close({bool force = false}) => _inner.close(force: force);
 
   @override
-  Future<HttpClientRequest> open(String method, String host, int port, String path) async {
+  Future<HttpClientRequest> open(
+      String method, String host, int port, String path) async {
     final req = await _inner.open(method, host, port, path);
     return _TrackingHttpRequest(req);
   }
@@ -164,32 +174,41 @@ class _TrackingHttpClient implements HttpClient {
   }
 
   @override
-  Future<HttpClientRequest> get(String host, int port, String path) => open('GET', host, port, path);
+  Future<HttpClientRequest> get(String host, int port, String path) =>
+      open('GET', host, port, path);
   @override
   Future<HttpClientRequest> getUrl(Uri url) => openUrl('GET', url);
   @override
-  Future<HttpClientRequest> post(String host, int port, String path) => open('POST', host, port, path);
+  Future<HttpClientRequest> post(String host, int port, String path) =>
+      open('POST', host, port, path);
   @override
   Future<HttpClientRequest> postUrl(Uri url) => openUrl('POST', url);
   @override
-  Future<HttpClientRequest> put(String host, int port, String path) => open('PUT', host, port, path);
+  Future<HttpClientRequest> put(String host, int port, String path) =>
+      open('PUT', host, port, path);
   @override
   Future<HttpClientRequest> putUrl(Uri url) => openUrl('PUT', url);
   @override
-  Future<HttpClientRequest> delete(String host, int port, String path) => open('DELETE', host, port, path);
+  Future<HttpClientRequest> delete(String host, int port, String path) =>
+      open('DELETE', host, port, path);
   @override
   Future<HttpClientRequest> deleteUrl(Uri url) => openUrl('DELETE', url);
   @override
-  Future<HttpClientRequest> patch(String host, int port, String path) => open('PATCH', host, port, path);
+  Future<HttpClientRequest> patch(String host, int port, String path) =>
+      open('PATCH', host, port, path);
   @override
   Future<HttpClientRequest> patchUrl(Uri url) => openUrl('PATCH', url);
   @override
-  Future<HttpClientRequest> head(String host, int port, String path) => open('HEAD', host, port, path);
+  Future<HttpClientRequest> head(String host, int port, String path) =>
+      open('HEAD', host, port, path);
   @override
   Future<HttpClientRequest> headUrl(Uri url) => openUrl('HEAD', url);
 
   @override
-  set connectionFactory(Future<ConnectionTask<Socket>> Function(Uri url, String? proxyHost, int? proxyPort)? f) =>
+  set connectionFactory(
+          Future<ConnectionTask<Socket>> Function(
+                  Uri url, String? proxyHost, int? proxyPort)?
+              f) =>
       _inner.connectionFactory = f;
 
   @override
@@ -237,14 +256,16 @@ class _TrackingHttpRequest implements HttpClientRequest {
   @override
   List<Cookie> get cookies => _inner.cookies;
   @override
-  Future<HttpClientResponse> get done => _inner.done.then((res) => _TrackingHttpResponse(res));
+  Future<HttpClientResponse> get done =>
+      _inner.done.then((res) => _TrackingHttpResponse(res));
   @override
   String get method => _inner.method;
   @override
   Uri get uri => _inner.uri;
 
   @override
-  void abort([Object? exception, StackTrace? stackTrace]) => _inner.abort(exception, stackTrace);
+  void abort([Object? exception, StackTrace? stackTrace]) =>
+      _inner.abort(exception, stackTrace);
 
   @override
   void add(List<int> data) {
@@ -256,7 +277,8 @@ class _TrackingHttpRequest implements HttpClientRequest {
   Future flush() => _inner.flush();
 
   @override
-  void addError(Object error, [StackTrace? stackTrace]) => _inner.addError(error, stackTrace);
+  void addError(Object error, [StackTrace? stackTrace]) =>
+      _inner.addError(error, stackTrace);
 
   @override
   Future addStream(Stream<List<int>> stream) {
@@ -298,14 +320,16 @@ class _TrackingHttpRequest implements HttpClientRequest {
   }
 }
 
-class _TrackingHttpResponse extends Stream<List<int>> implements HttpClientResponse {
+class _TrackingHttpResponse extends Stream<List<int>>
+    implements HttpClientResponse {
   final HttpClientResponse _inner;
   _TrackingHttpResponse(this._inner);
 
   @override
   X509Certificate? get certificate => _inner.certificate;
   @override
-  HttpClientResponseCompressionState get compressionState => _inner.compressionState;
+  HttpClientResponseCompressionState get compressionState =>
+      _inner.compressionState;
   @override
   HttpConnectionInfo? get connectionInfo => _inner.connectionInfo;
   @override
@@ -323,8 +347,11 @@ class _TrackingHttpResponse extends Stream<List<int>> implements HttpClientRespo
   @override
   String get reasonPhrase => _inner.reasonPhrase;
   @override
-  Future<HttpClientResponse> redirect([String? method, Uri? url, bool? followLoops]) =>
-      _inner.redirect(method, url, followLoops).then((r) => _TrackingHttpResponse(r));
+  Future<HttpClientResponse> redirect(
+          [String? method, Uri? url, bool? followLoops]) =>
+      _inner
+          .redirect(method, url, followLoops)
+          .then((r) => _TrackingHttpResponse(r));
   @override
   List<RedirectInfo> get redirects => _inner.redirects;
   @override
@@ -371,7 +398,8 @@ class SmartMemoryManager with WidgetsBindingObserver {
     trimMemory(force: true, reason: 'OS low memory pressure');
   }
 
-  void checkAndTrim({required int currentRssBytes, required int imageCacheBytes}) {
+  void checkAndTrim(
+      {required int currentRssBytes, required int imageCacheBytes}) {
     final now = DateTime.now();
     if (now.difference(_lastTrimTime).inSeconds < 5) return;
 
@@ -379,10 +407,23 @@ class SmartMemoryManager with WidgetsBindingObserver {
     const int rssThreshold = 450 * 1024 * 1024;
     const int imageCacheThreshold = 120 * 1024 * 1024;
 
-    if (currentRssBytes > rssThreshold || imageCacheBytes > imageCacheThreshold) {
+    if (currentRssBytes > rssThreshold ||
+        imageCacheBytes > imageCacheThreshold) {
       trimMemory(force: false, reason: 'RAM/Cache watchdog limit exceeded');
       _lastTrimTime = now;
     }
+  }
+
+  static final List<void Function()> _trimCallbacks = [];
+
+  static void registerTrimCallback(void Function() callback) {
+    if (!_trimCallbacks.contains(callback)) {
+      _trimCallbacks.add(callback);
+    }
+  }
+
+  static void unregisterTrimCallback(void Function() callback) {
+    _trimCallbacks.remove(callback);
   }
 
   void trimMemory({bool force = false, String? reason}) {
@@ -391,6 +432,11 @@ class SmartMemoryManager with WidgetsBindingObserver {
       cache.clearLiveImages();
       if (force) {
         cache.clear();
+      }
+      for (final cb in List<void Function()>.from(_trimCallbacks)) {
+        try {
+          cb();
+        } catch (_) {}
       }
     } catch (e) {
       AppLogger.error('SmartMemoryManager: trimMemory failed', e);
@@ -444,7 +490,8 @@ class PerformanceMonitorService {
       };
       WidgetsBinding.instance.addTimingsCallback(_fpsCallback!);
     } catch (e) {
-      AppLogger.error('PerformanceMonitorService: FPS monitoring init failed', e);
+      AppLogger.error(
+          'PerformanceMonitorService: FPS monitoring init failed', e);
     }
   }
 
@@ -509,7 +556,8 @@ class PerformanceMonitorService {
       imageCacheBytes = PaintingBinding.instance.imageCache.currentSizeBytes;
       imageCacheCount = PaintingBinding.instance.imageCache.currentSize;
     } catch (e) {
-      AppLogger.error('PerformanceMonitorService: image cache metrics failed', e);
+      AppLogger.error(
+          'PerformanceMonitorService: image cache metrics failed', e);
     }
 
     SmartMemoryManager.instance.checkAndTrim(
@@ -534,13 +582,16 @@ class PerformanceMonitorService {
   }
 }
 
-final performanceMonitorServiceProvider = Provider<PerformanceMonitorService>((ref) {
+final performanceMonitorServiceProvider =
+    Provider<PerformanceMonitorService>((ref) {
   final service = PerformanceMonitorService();
   ref.onDispose(service.dispose);
   return service;
 });
 
-final performanceMetricsStreamProvider = StreamProvider.autoDispose<PerformanceMetrics>((ref) {
+final performanceMetricsStreamProvider =
+    StreamProvider.autoDispose<PerformanceMetrics>((ref) {
   final service = ref.watch(performanceMonitorServiceProvider);
-  return Stream.periodic(const Duration(seconds: 1), (_) => service.collectMetrics());
+  return Stream.periodic(
+      const Duration(seconds: 1), (_) => service.collectMetrics());
 });

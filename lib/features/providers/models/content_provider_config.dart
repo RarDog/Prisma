@@ -123,10 +123,10 @@ Set<TopPeriodFilter> resolveSupportedTopPeriods(
   for (final p in list.skip(1)) {
     common = common.intersection(p.supportedTopPeriods);
   }
-  if (list.any((p) => p.supportedTopPeriods.contains(TopPeriodFilter.allTime))) {
+  if (list
+      .any((p) => p.supportedTopPeriods.contains(TopPeriodFilter.allTime))) {
     common.add(TopPeriodFilter.allTime);
   }
   common.add(TopPeriodFilter.none);
   return common;
 }
-

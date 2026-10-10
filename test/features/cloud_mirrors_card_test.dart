@@ -5,7 +5,9 @@ import 'package:gel_rule_app/core/models/cloud_media_link.dart';
 import 'package:gel_rule_app/features/post/presentation/widgets/cloud_mirrors_card.dart';
 
 void main() {
-  testWidgets('CloudMirrorsCard renders mirrors, password banner, and commentary', (tester) async {
+  testWidgets(
+      'CloudMirrorsCard renders mirrors, password banner, and commentary',
+      (tester) async {
     const links = [
       CloudMediaLink(
         url: 'https://mega.nz/file/xyz123#abc',
@@ -69,10 +71,12 @@ void main() {
 
     // Verify commentary
     expect(find.text('Описание от автора'), findsOneWidget);
-    expect(find.text('Special Patreon bonus animation for all patrons.'), findsOneWidget);
+    expect(find.text('Special Patreon bonus animation for all patrons.'),
+        findsOneWidget);
   });
 
-  testWidgets('CloudMirrorsCard renders nothing if no links and no commentary', (tester) async {
+  testWidgets('CloudMirrorsCard renders nothing if no links and no commentary',
+      (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(

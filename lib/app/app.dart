@@ -20,8 +20,6 @@ class GelRuleApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final database = ref.watch(appDatabaseProvider);
-    final settings = ref.watch(appSettingsProvider);
-    final router = ref.watch(appRouterProvider);
 
     return database.when(
       loading: () => const MaterialApp(
@@ -36,6 +34,8 @@ class GelRuleApp extends ConsumerWidget {
         home: _StartupErrorScreen(error: error),
       ),
       data: (_) {
+        final settings = ref.watch(appSettingsProvider);
+        final router = ref.watch(appRouterProvider);
         final appSettings = settings.value ?? AppSettings.defaults;
         final amoled = appSettings.amoledMode;
         final useDynamic = appSettings.useDynamicColor;
@@ -82,7 +82,8 @@ class _AppOverlay extends ConsumerStatefulWidget {
   ConsumerState<_AppOverlay> createState() => _AppOverlayState();
 }
 
-class _AppOverlayState extends ConsumerState<_AppOverlay> with WidgetsBindingObserver {
+class _AppOverlayState extends ConsumerState<_AppOverlay>
+    with WidgetsBindingObserver {
   bool _checkedUpdates = false;
 
   @override
@@ -125,9 +126,12 @@ class _AppOverlayState extends ConsumerState<_AppOverlay> with WidgetsBindingObs
   }
 
   Future<void> _showUpdateDialog(AppUpdateInfo info) async {
-    final navContext =
-        ref.read(appRouterProvider).routerDelegate.navigatorKey.currentContext ??
-            context;
+    final navContext = ref
+            .read(appRouterProvider)
+            .routerDelegate
+            .navigatorKey
+            .currentContext ??
+        context;
     if (Navigator.maybeOf(navContext) == null) return;
     await showAppUpdateDialog(
       context: navContext,
@@ -237,8 +241,10 @@ class _DownloadPanel extends ConsumerWidget {
                   const Spacer(),
                   IconButton(
                     tooltip: paused
-                        ? (strings.ru ? 'Возобновить очередь' : 'Resume queue')
-                        : (strings.ru ? 'Приостановить очередь' : 'Pause queue'),
+                        ? strings.resumeQueue
+                        : (strings.ru
+                            ? 'Приостановить очередь'
+                            : 'Pause queue'),
                     onPressed:
                         paused ? manager.resumeQueue : manager.pauseQueue,
                     icon: Icon(paused
@@ -247,7 +253,8 @@ class _DownloadPanel extends ConsumerWidget {
                   ),
                   if (activeTasks.isNotEmpty)
                     IconButton(
-                      tooltip: strings.ru ? 'Отменить активные' : 'Cancel active',
+                      tooltip:
+                          strings.cancelActive,
                       onPressed: () {
                         for (final task in activeTasks) {
                           manager.cancel(task.id);
@@ -257,7 +264,9 @@ class _DownloadPanel extends ConsumerWidget {
                     ),
                   if (finishedTasks.isNotEmpty)
                     IconButton(
-                      tooltip: strings.ru ? 'Очистить завершенные' : 'Clear finished',
+                      tooltip: strings.ru
+                          ? 'Очистить завершенные'
+                          : 'Clear finished',
                       onPressed: manager.clearFinished,
                       icon: const Icon(Icons.clear_all_rounded),
                     ),
@@ -286,7 +295,7 @@ class _DownloadPanel extends ConsumerWidget {
                     if (task.status == DownloadTaskStatus.queued ||
                         task.status == DownloadTaskStatus.running)
                       IconButton(
-                        tooltip: strings.ru ? 'Отмена' : 'Cancel',
+                        tooltip: strings.cancel,
                         onPressed: () => ref
                             .read(downloadManagerServiceProvider)
                             .cancel(task.id),

@@ -163,16 +163,23 @@ class ProviderCard extends StatelessWidget {
                             ),
                             // Priority badge
                             _GlassPill(
-                              label: '${isRu ? 'Приоритет' : 'Priority'} ${config.priority}',
+                              label:
+                                  '${isRu ? 'Приоритет' : 'Priority'} ${config.priority}',
                               color: theme.colorScheme.primary,
                               isDark: isDark,
                             ),
                             if (config.apiType.toLowerCase() == 'e621')
                               _GlassPill(
-                                label: (config.customHeaders['query.login']?.isNotEmpty ?? false)
+                                label: (config.customHeaders['query.login']
+                                            ?.isNotEmpty ??
+                                        false)
                                     ? 'e621: ${config.customHeaders['query.login']}'
-                                    : (isRu ? 'e621: Гость (макс 2 тега)' : 'e621: Guest (max 2 tags)'),
-                                color: (config.customHeaders['query.login']?.isNotEmpty ?? false)
+                                    : (isRu
+                                        ? 'e621: Гость (макс 2 тега)'
+                                        : 'e621: Guest (max 2 tags)'),
+                                color: (config.customHeaders['query.login']
+                                            ?.isNotEmpty ??
+                                        false)
                                     ? const Color(0xFF10B981)
                                     : Colors.amber,
                                 isDark: isDark,
@@ -203,7 +210,8 @@ class ProviderCard extends StatelessWidget {
 
               // Row 2: Base URL glass chip
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: isDark
                       ? Colors.black.withValues(alpha: 0.20)
@@ -248,10 +256,12 @@ class ProviderCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  if (config.apiType.toLowerCase() == 'e621' && onSaveConfig != null) ...[
+                  if (config.apiType.toLowerCase() == 'e621' &&
+                      onSaveConfig != null) ...[
                     _GlassActionButton(
                       icon: Icons.vpn_key_rounded,
-                      label: (config.customHeaders['query.login']?.isNotEmpty ?? false)
+                      label: (config.customHeaders['query.login']?.isNotEmpty ??
+                              false)
                           ? (isRu ? 'Аккаунт' : 'Account')
                           : (isRu ? 'API Ключ' : 'API Key'),
                       color: const Color(0xFF0077EE),

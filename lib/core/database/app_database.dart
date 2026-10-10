@@ -265,6 +265,8 @@ class SearchHistoryEntity {
   late List<String> tags;
   late DateTime searchedAt;
   late int resultCount;
+  String providerId = '';
+  String providerName = '';
 
   SearchHistory toModel() => SearchHistory(
         id: historyId,
@@ -272,6 +274,8 @@ class SearchHistoryEntity {
         tags: tags,
         searchedAt: searchedAt,
         resultCount: resultCount,
+        providerId: providerId,
+        providerName: providerName,
       );
 }
 

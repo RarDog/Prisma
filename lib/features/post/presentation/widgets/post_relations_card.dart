@@ -75,7 +75,6 @@ class PostRelationsCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -83,7 +82,9 @@ class PostRelationsCard extends StatelessWidget {
               if (parentId != null)
                 _RelationPill(
                   icon: Icons.north_west_rounded,
-                  label: isRu ? 'Родительский арт #$parentId' : 'Parent #$parentId',
+                  label: isRu
+                      ? 'Родительский арт #$parentId'
+                      : 'Parent #$parentId',
                   color: const Color(0xFF0077EE),
                   onTap: () {
                     HapticFeedback.lightImpact();

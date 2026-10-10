@@ -321,7 +321,9 @@ class MangaDexProvider
           'limit': 1,
         },
       );
-      if (res.data is Map && res.data['data'] is List && (res.data['data'] as List).isNotEmpty) {
+      if (res.data is Map &&
+          res.data['data'] is List &&
+          (res.data['data'] as List).isNotEmpty) {
         final first = (res.data['data'] as List).first;
         if (first is Map && first['id'] != null) {
           final id = first['id'].toString();
@@ -368,7 +370,12 @@ class MangaDexProvider
         .where((t) => t.isNotEmpty && !t.startsWith('rating:'))
         .toList();
 
-    List<String> contentRatings = const ['safe', 'suggestive', 'erotica', 'pornographic'];
+    List<String> contentRatings = const [
+      'safe',
+      'suggestive',
+      'erotica',
+      'pornographic'
+    ];
     if (rating != null && rating.isNotEmpty && rating.toLowerCase() != 'all') {
       final r = rating.toLowerCase();
       if (r == 'safe' || r == 'g') {
@@ -412,7 +419,8 @@ class MangaDexProvider
           break;
       }
       if (since != null) {
-        queryParams['createdAtSince'] = since.toIso8601String().split('.').first;
+        queryParams['createdAtSince'] =
+            since.toIso8601String().split('.').first;
       }
     } else {
       queryParams['order[latestUploadedChapter]'] = 'desc';
@@ -424,7 +432,8 @@ class MangaDexProvider
       String remaining = cleanedTags.join(' ');
 
       // Check author:... or artist:...
-      final authorRegex = RegExp(r'(?:author|artist):(?:"([^"]+)"|(\S+))', caseSensitive: false);
+      final authorRegex = RegExp(r'(?:author|artist):(?:"([^"]+)"|(\S+))',
+          caseSensitive: false);
       for (final match in authorRegex.allMatches(remaining)) {
         final name = match.group(1) ?? match.group(2);
         if (name != null && name.isNotEmpty) {
@@ -435,7 +444,8 @@ class MangaDexProvider
       remaining = remaining.replaceAll(authorRegex, '').trim();
 
       // Check tag:...
-      final tagPrefixRegex = RegExp(r'tag:(?:"([^"]+)"|(\S+))', caseSensitive: false);
+      final tagPrefixRegex =
+          RegExp(r'tag:(?:"([^"]+)"|(\S+))', caseSensitive: false);
       for (final match in tagPrefixRegex.allMatches(remaining)) {
         final tagName = match.group(1) ?? match.group(2);
         if (tagName != null && tagName.isNotEmpty) {
@@ -450,7 +460,8 @@ class MangaDexProvider
         final sortedEntries = _kMangaDexTagIds.entries.toList()
           ..sort((a, b) => b.key.length.compareTo(a.key.length));
         for (final entry in sortedEntries) {
-          final pattern = RegExp('(^|\\s)${RegExp.escape(entry.key)}(\$|\\s)', caseSensitive: false);
+          final pattern = RegExp('(^|\\s)${RegExp.escape(entry.key)}(\$|\\s)',
+              caseSensitive: false);
           if (pattern.hasMatch(remaining)) {
             includedTagIds.add(entry.value);
             remaining = remaining.replaceAll(pattern, ' ').trim();
@@ -513,7 +524,8 @@ class MangaDexProvider
 
   /// Fetches chapters for a manga. If [language] is provided, filters by that language.
   @override
-  Future<List<MangaDexChapter>> fetchChapters(String mangaId, {String? language}) async {
+  Future<List<MangaDexChapter>> fetchChapters(String mangaId,
+      {String? language}) async {
     try {
       final List<MangaDexChapter> allChapters = [];
       int offset = 0;
@@ -525,7 +537,12 @@ class MangaDexProvider
           'limit': limit,
           'offset': offset,
           'order[chapter]': 'asc',
-          'contentRating[]': const ['safe', 'suggestive', 'erotica', 'pornographic'],
+          'contentRating[]': const [
+            'safe',
+            'suggestive',
+            'erotica',
+            'pornographic'
+          ],
           ..._queryParameters,
         };
         if (language != null && language.isNotEmpty) {
@@ -649,7 +666,12 @@ class MangaDexProvider
         queryParameters: {
           'ids[]': relatedIds.take(10).toList(),
           'includes[]': ['cover_art', 'author', 'artist'],
-          'contentRating[]': const ['safe', 'suggestive', 'erotica', 'pornographic'],
+          'contentRating[]': const [
+            'safe',
+            'suggestive',
+            'erotica',
+            'pornographic'
+          ],
           ..._queryParameters,
         },
       );
@@ -665,7 +687,8 @@ class MangaDexProvider
   }
 
   /// Fetches recommended or similar manga based on tags or genres
-  Future<List<Post>> fetchRecommendations(Post currentManga, {int limit = 12}) async {
+  Future<List<Post>> fetchRecommendations(Post currentManga,
+      {int limit = 12}) async {
     try {
       final tagIds = <String>[];
       for (final tag in currentManga.tags) {
@@ -679,7 +702,12 @@ class MangaDexProvider
       final queryParams = <String, dynamic>{
         'limit': limit + 2,
         'order[followedCount]': 'desc',
-        'contentRating[]': const ['safe', 'suggestive', 'erotica', 'pornographic'],
+        'contentRating[]': const [
+          'safe',
+          'suggestive',
+          'erotica',
+          'pornographic'
+        ],
         'includes[]': ['cover_art', 'author', 'artist'],
         ..._queryParameters,
       };
@@ -705,7 +733,8 @@ class MangaDexProvider
   }
 
   @override
-  Future<List<TagSuggestion>> suggestTags(String query, {int limit = 20}) async {
+  Future<List<TagSuggestion>> suggestTags(String query,
+      {int limit = 20}) async {
     final clean = query.trim().toLowerCase();
     if (clean.isEmpty) return const [];
 
@@ -769,7 +798,12 @@ class MangaDexProvider
         queryParameters: {
           'title': clean,
           'limit': 5,
-          'contentRating[]': const ['safe', 'suggestive', 'erotica', 'pornographic'],
+          'contentRating[]': const [
+            'safe',
+            'suggestive',
+            'erotica',
+            'pornographic'
+          ],
         },
       );
       if (mangaRes.data is Map && mangaRes.data['data'] is List) {
@@ -781,7 +815,8 @@ class MangaDexProvider
             final title = MangaDexMapper.extractTitle(titleMap, altTitles);
             if (title.isNotEmpty &&
                 title != 'Untitled' &&
-                !suggestions.any((s) => s.name.toLowerCase() == title.toLowerCase())) {
+                !suggestions
+                    .any((s) => s.name.toLowerCase() == title.toLowerCase())) {
               suggestions.add(TagSuggestion(
                 name: title,
                 category: TagCategory.copyright,

@@ -56,7 +56,8 @@ final appDatabaseProvider = FutureProvider<AppDatabase>((ref) async {
     final settingsService = SettingsService(dbService);
     final providerRepo = ProviderRepository(dbService);
     await providerRepo.ensureSeedProviders();
-    final backupService = BackupService(settingsService, dbService, providerRepo);
+    final backupService =
+        BackupService(settingsService, dbService, providerRepo);
     await backupService.autoRestoreIfNeeded();
 
     final onboardingService = OnboardingService(
@@ -284,5 +285,3 @@ final Provider<OnboardingService> onboardingServiceProvider =
     providerRepository: ref.watch(providerRepositoryProvider),
   );
 });
-
-

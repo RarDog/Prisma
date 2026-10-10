@@ -191,8 +191,8 @@ class MangaLibraryService {
             final entities = <MangaLibraryEntryEntity>[];
             for (final item in decoded) {
               if (item is Map) {
-                final m = MangaLibraryEntry.fromJson(
-                    Map<String, dynamic>.from(item));
+                final m =
+                    MangaLibraryEntry.fromJson(Map<String, dynamic>.from(item));
                 if (m.mangaId.isNotEmpty) {
                   entities.add(MangaLibraryEntryEntity()
                     ..mangaId = m.mangaId
@@ -252,9 +252,11 @@ class MangaLibraryService {
     });
   }
 
-  Future<List<MangaLibraryEntry>> getLibraryEntries({String? statusFilter}) async {
+  Future<List<MangaLibraryEntry>> getLibraryEntries(
+      {String? statusFilter}) async {
     await _checkMigration();
-    final result = await _databaseService.safeRead<List<MangaLibraryEntry>>((isar) async {
+    final result =
+        await _databaseService.safeRead<List<MangaLibraryEntry>>((isar) async {
       List<MangaLibraryEntryEntity> entities;
       if (statusFilter != null && statusFilter.isNotEmpty) {
         entities = await isar.mangaLibraryEntryEntitys
@@ -265,7 +267,8 @@ class MangaLibraryService {
         entities = await isar.mangaLibraryEntryEntitys.where().findAll();
       }
 
-      final progresses = await isar.mangaReadingProgressEntitys.where().findAll();
+      final progresses =
+          await isar.mangaReadingProgressEntitys.where().findAll();
       final progressMap = <String, MangaReadingProgress>{};
       for (final p in progresses) {
         progressMap[p.mangaId] = MangaReadingProgress(
@@ -305,12 +308,15 @@ class MangaLibraryService {
       return list;
     });
 
-    return result is Success<List<MangaLibraryEntry>> ? result.data : <MangaLibraryEntry>[];
+    return result is Success<List<MangaLibraryEntry>>
+        ? result.data
+        : <MangaLibraryEntry>[];
   }
 
   Future<List<MangaLibraryEntry>> getReadingHistory({int limit = 50}) async {
     await _checkMigration();
-    final result = await _databaseService.safeRead<List<MangaLibraryEntry>>((isar) async {
+    final result =
+        await _databaseService.safeRead<List<MangaLibraryEntry>>((isar) async {
       final progresses = await isar.mangaReadingProgressEntitys
           .where()
           .sortByUpdatedAtDesc()
@@ -347,12 +353,15 @@ class MangaLibraryService {
       }).toList();
     });
 
-    return result is Success<List<MangaLibraryEntry>> ? result.data : <MangaLibraryEntry>[];
+    return result is Success<List<MangaLibraryEntry>>
+        ? result.data
+        : <MangaLibraryEntry>[];
   }
 
   Future<MangaReadingProgress?> getProgress(String mangaId) async {
     await _checkMigration();
-    final result = await _databaseService.safeRead<MangaReadingProgress?>((isar) async {
+    final result =
+        await _databaseService.safeRead<MangaReadingProgress?>((isar) async {
       final p = await isar.mangaReadingProgressEntitys
           .filter()
           .mangaIdEqualTo(mangaId)
@@ -377,7 +386,8 @@ class MangaLibraryService {
 
   Future<MangaLibraryEntry?> getLibraryEntry(String mangaId) async {
     await _checkMigration();
-    final result = await _databaseService.safeRead<MangaLibraryEntry?>((isar) async {
+    final result =
+        await _databaseService.safeRead<MangaLibraryEntry?>((isar) async {
       final e = await isar.mangaLibraryEntryEntitys
           .filter()
           .mangaIdEqualTo(mangaId)
@@ -534,7 +544,8 @@ class MangaLibraryService {
           ..mangaId = mangaId
           ..providerId = providerId
           ..title = title.isNotEmpty ? title : (existing?.title ?? 'Manga')
-          ..coverUrl = coverUrl.isNotEmpty ? coverUrl : (existing?.coverUrl ?? '')
+          ..coverUrl =
+              coverUrl.isNotEmpty ? coverUrl : (existing?.coverUrl ?? '')
           ..status = status
           ..addedAt = existing?.addedAt ?? DateTime.now()
           ..totalChaptersCount = existing?.totalChaptersCount ?? 0

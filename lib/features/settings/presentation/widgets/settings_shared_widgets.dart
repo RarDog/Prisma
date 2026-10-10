@@ -631,7 +631,8 @@ class _SettingsCategoryCardState extends State<SettingsCategoryCard> {
                                 Flexible(
                                   child: Text(
                                     widget.title,
-                                    style: theme.textTheme.titleMedium?.copyWith(
+                                    style:
+                                        theme.textTheme.titleMedium?.copyWith(
                                       fontWeight: FontWeight.w700,
                                       letterSpacing: -0.2,
                                     ),
@@ -645,7 +646,8 @@ class _SettingsCategoryCardState extends State<SettingsCategoryCard> {
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 7, vertical: 2),
                                     decoration: BoxDecoration(
-                                      color: widget.color.withValues(alpha: 0.15),
+                                      color:
+                                          widget.color.withValues(alpha: 0.15),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
@@ -819,8 +821,8 @@ class SettingsFolderStructureTile extends StatelessWidget {
                     .withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: theme.colorScheme.outlineVariant
-                      .withValues(alpha: 0.35),
+                  color:
+                      theme.colorScheme.outlineVariant.withValues(alpha: 0.35),
                 ),
               ),
               child: Row(
@@ -869,7 +871,9 @@ class SettingsFolderStructureTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  isRu ? 'Структура папок скачивания' : 'Download path template',
+                  isRu
+                      ? 'Структура папок скачивания'
+                      : 'Download path template',
                   style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -901,9 +905,7 @@ class SettingsFolderStructureTile extends StatelessWidget {
                   ),
                   leading: const Icon(Icons.edit_note_rounded),
                   title: Text(
-                    isRu
-                        ? 'Пользовательский шаблон...'
-                        : 'Custom template...',
+                    isRu ? 'Пользовательский шаблон...' : 'Custom template...',
                   ),
                   onTap: () => Navigator.pop(ctx, '__custom__'),
                 ),
@@ -1033,8 +1035,7 @@ class ColorSwatches extends StatelessWidget {
                       width: 38,
                       height: 38,
                       child: selected == entry.$1
-                          ? const Icon(Icons.check_rounded,
-                              color: Colors.white)
+                          ? const Icon(Icons.check_rounded, color: Colors.white)
                           : null,
                     ),
                   ),
@@ -1274,4 +1275,3 @@ class _TagListEditorState extends State<TagListEditor> {
     widget.onChanged(merged);
   }
 }
-

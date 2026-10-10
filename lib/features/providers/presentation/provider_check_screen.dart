@@ -152,8 +152,7 @@ class _ProviderCheckScreenState extends ConsumerState<ProviderCheckScreen> {
             }
           }
 
-          final avgPing =
-              pingCount > 0 ? (pingSum / pingCount).round() : null;
+          final avgPing = pingCount > 0 ? (pingSum / pingCount).round() : null;
 
           return Align(
             alignment: Alignment.topCenter,
@@ -225,8 +224,8 @@ class _ProviderCheckScreenState extends ConsumerState<ProviderCheckScreen> {
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 8, vertical: 3),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF10B981).withValues(
-                                      alpha: isDark ? 0.16 : 0.10),
+                                  color: const Color(0xFF10B981)
+                                      .withValues(alpha: isDark ? 0.16 : 0.10),
                                   borderRadius: BorderRadius.circular(10),
                                   border: Border.all(
                                     color: const Color(0xFF10B981).withValues(
@@ -293,7 +292,9 @@ class _ProviderCheckScreenState extends ConsumerState<ProviderCheckScreen> {
                       ),
                       child: Center(
                         child: Text(
-                          isRu ? 'Нет источников для проверки' : 'No providers to check',
+                          isRu
+                              ? 'Нет источников для проверки'
+                              : 'No providers to check',
                           style: theme.textTheme.bodyMedium,
                         ),
                       ),
@@ -321,12 +322,14 @@ class _ProviderCheckScreenState extends ConsumerState<ProviderCheckScreen> {
     setState(() => _isCheckingAll = true);
     unawaited(HapticFeedback.mediumImpact());
     try {
-      final result =
-          await ref.read(providerCheckServiceProvider).checkAll();
+      final result = await ref.read(providerCheckServiceProvider).checkAll();
       if (result is Success<List<ProviderHealth>>) {
         ref.read(providerHealthProvider.notifier).state = {
           for (final item in result.data) item.providerId: item,
         };
+        // The feed/Artists banners read from Isar through their own provider,
+        // so they must be rebuilt after a manual check.
+        ref.invalidate(enabledProviderHealthProvider);
       }
     } finally {
       if (mounted) setState(() => _isCheckingAll = false);
@@ -341,6 +344,7 @@ class _ProviderCheckScreenState extends ConsumerState<ProviderCheckScreen> {
         ...ref.read(providerHealthProvider),
         providerId: result.data,
       };
+      ref.invalidate(enabledProviderHealthProvider);
     }
   }
 }

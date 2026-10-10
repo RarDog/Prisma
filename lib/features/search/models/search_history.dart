@@ -5,6 +5,8 @@ class SearchHistory {
     required this.tags,
     required this.searchedAt,
     required this.resultCount,
+    this.providerId = '',
+    this.providerName = '',
   });
 
   final String id;
@@ -12,6 +14,8 @@ class SearchHistory {
   final List<String> tags;
   final DateTime searchedAt;
   final int resultCount;
+  final String providerId;
+  final String providerName;
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -19,6 +23,8 @@ class SearchHistory {
         'tags': tags,
         'searchedAt': searchedAt.toIso8601String(),
         'resultCount': resultCount,
+        'providerId': providerId,
+        'providerName': providerName,
       };
 
   factory SearchHistory.fromJson(Map<String, dynamic> json) => SearchHistory(
@@ -28,5 +34,7 @@ class SearchHistory {
         searchedAt: DateTime.tryParse(json['searchedAt']?.toString() ?? '') ??
             DateTime.now(),
         resultCount: (json['resultCount'] as num?)?.toInt() ?? 0,
+        providerId: (json['providerId'] ?? '').toString(),
+        providerName: (json['providerName'] ?? '').toString(),
       );
 }

@@ -10,8 +10,7 @@ Future<void> showCollectionFormDialog(
   WidgetRef ref, {
   Collection? collection,
 }) async {
-  final settings =
-      ref.read(appSettingsProvider).value ?? AppSettings.defaults;
+  final settings = ref.read(appSettingsProvider).value ?? AppSettings.defaults;
   final isRu = settings.languageCode == 'ru';
   final nameController = TextEditingController(text: collection?.name);
   final descriptionController =
@@ -67,7 +66,8 @@ Future<void> showCollectionFormDialog(
               autofocus: collection == null,
               decoration: InputDecoration(
                 labelText: isRu ? 'Название' : 'Name',
-                hintText: isRu ? 'Например, Избранные обои' : 'e.g. Best Wallpapers',
+                hintText:
+                    isRu ? 'Например, Избранные обои' : 'e.g. Best Wallpapers',
                 prefixIcon: const Icon(Icons.bookmark_border_rounded),
                 filled: true,
                 border: OutlineInputBorder(
@@ -80,8 +80,12 @@ Future<void> showCollectionFormDialog(
               controller: descriptionController,
               maxLines: 2,
               decoration: InputDecoration(
-                labelText: isRu ? 'Описание (необязательно)' : 'Description (optional)',
-                hintText: isRu ? 'О чем эта подборка' : 'What is this collection about',
+                labelText: isRu
+                    ? 'Описание (необязательно)'
+                    : 'Description (optional)',
+                hintText: isRu
+                    ? 'О чем эта подборка'
+                    : 'What is this collection about',
                 prefixIcon: const Icon(Icons.description_outlined),
                 filled: true,
                 border: OutlineInputBorder(

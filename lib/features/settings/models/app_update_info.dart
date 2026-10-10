@@ -6,6 +6,7 @@ class AppUpdateInfo {
     required this.body,
     required this.htmlUrl,
     required this.publishedAt,
+    this.isPrerelease = false,
     this.apkUrl,
     this.apkArm64Url,
     this.apkArmv7Url,
@@ -24,14 +25,15 @@ class AppUpdateInfo {
   final String body;
   final String htmlUrl;
   final DateTime? publishedAt;
+  final bool isPrerelease;
 
   /// Generic APK (fat / universal build). Used as a fallback.
   final String? apkUrl;
 
   /// Per-ABI APKs produced by `flutter build apk --split-per-abi`.
-  final String? apkArm64Url;   // app-arm64-v8a-release.apk
-  final String? apkArmv7Url;   // app-armeabi-v7a-release.apk
-  final String? apkX86_64Url;  // app-x86_64-release.apk
+  final String? apkArm64Url; // app-arm64-v8a-release.apk
+  final String? apkArmv7Url; // app-armeabi-v7a-release.apk
+  final String? apkX86_64Url; // app-x86_64-release.apk
 
   final String? windowsInstallerUrl;
   final String? windowsZipUrl;

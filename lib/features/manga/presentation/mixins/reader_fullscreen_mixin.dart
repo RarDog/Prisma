@@ -4,7 +4,8 @@ import 'package:gel_rule_app/shared/widgets/app_shell.dart';
 
 /// Shared mixin for manga and novel reader screens managing fullscreen mode,
 /// system UI overlays (status/navigation bars), and shell bottom bar visibility.
-mixin ReaderFullscreenMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
+mixin ReaderFullscreenMixin<T extends ConsumerStatefulWidget>
+    on ConsumerState<T> {
   bool _isReaderFullscreen = false;
   ShellBottomBarVisibilityNotifier? _shellBottomBarNotifier;
   bool _hasReleasedBottomBarHide = false;

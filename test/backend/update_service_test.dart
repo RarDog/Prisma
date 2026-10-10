@@ -7,7 +7,8 @@ import 'package:gel_rule_app/core/database/database_service.dart';
 
 void main() {
   test('UpdateService parses GitHub release JSON correctly', () {
-    final service = UpdateService(Dio(), SettingsService(_MockDatabaseService()));
+    final service =
+        UpdateService(Dio(), SettingsService(_MockDatabaseService()));
 
     // Use reflection or constructor to test info
     final info = AppUpdateInfo(
@@ -17,23 +18,28 @@ void main() {
       body: 'Release notes',
       htmlUrl: 'https://github.com/RarDog/Prisma/releases/tag/v2.0.2',
       publishedAt: DateTime.parse('2026-09-03T18:00:00Z'),
-      apkUrl: 'https://github.com/RarDog/Prisma/releases/download/v2.0.2/Prisma.apk',
-      linuxTarGzUrl: 'https://github.com/RarDog/Prisma/releases/download/v2.0.2/linux.tar.gz',
+      apkUrl:
+          'https://github.com/RarDog/Prisma/releases/download/v2.0.2/Prisma.apk',
+      linuxTarGzUrl:
+          'https://github.com/RarDog/Prisma/releases/download/v2.0.2/linux.tar.gz',
     );
 
     expect(info.hasAssets, isTrue);
     expect(info.apkUrl, contains('apk'));
     expect(info.linuxTarGzUrl, contains('linux'));
     expect(
-      service.assetFileName(info, 'https://github.com/RarDog/Prisma/releases/download/v2.0.2/Prisma-v2.0.2.apk'),
+      service.assetFileName(info,
+          'https://github.com/RarDog/Prisma/releases/download/v2.0.2/Prisma-v2.0.2.apk'),
       'Prisma-v2.0.2.apk',
     );
     expect(
-      service.assetFileName(info, 'https://github.com/RarDog/Prisma/releases/download/v2.0.2/unknown-linux'),
+      service.assetFileName(info,
+          'https://github.com/RarDog/Prisma/releases/download/v2.0.2/unknown-linux'),
       'Prisma-v2.0.2-linux-x64.tar.gz',
     );
     expect(
-      service.assetFileName(info, 'https://github.com/RarDog/Prisma/releases/download/v2.0.2/Prisma-v2.0.2-linux-x86_64.AppImage'),
+      service.assetFileName(info,
+          'https://github.com/RarDog/Prisma/releases/download/v2.0.2/Prisma-v2.0.2-linux-x86_64.AppImage'),
       'Prisma-v2.0.2-linux-x86_64.AppImage',
     );
   });

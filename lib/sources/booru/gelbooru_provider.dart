@@ -87,8 +87,7 @@ class GelbooruProvider
       final label = (json['label'] ?? '').toString();
       final value = (json['value'] ?? '').toString();
       final match = labelRegExp.firstMatch(label);
-      final name =
-          (value.isNotEmpty ? value : (match?.group(1) ?? '')).trim();
+      final name = (value.isNotEmpty ? value : (match?.group(1) ?? '')).trim();
       if (name.isEmpty) continue;
       suggestions.add(
         TagSuggestion(
@@ -225,7 +224,8 @@ class GelbooruProvider
             return TagSuggestion(
               name: (json['name'] ?? '').toString(),
               category: tagCategoryFromString(
-                (json['type'] ?? json['tag_type'] ?? json['category']).toString(),
+                (json['type'] ?? json['tag_type'] ?? json['category'])
+                    .toString(),
               ),
               postCount: _int(json['count'] ?? json['post_count']),
               providerId: id,

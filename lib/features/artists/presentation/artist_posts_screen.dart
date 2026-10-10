@@ -18,8 +18,8 @@ import 'package:gel_rule_app/shared/widgets/post_masonry_grid.dart';
 import 'package:gel_rule_app/features/favorites/presentation/favorites_controller.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
 
-final artistPostsProvider =
-    FutureProvider.autoDispose.family<List<Post>, ArtistWorkQuery>((ref, query) async {
+final artistPostsProvider = FutureProvider.autoDispose
+    .family<List<Post>, ArtistWorkQuery>((ref, query) async {
   final providers =
       await ref.watch(providerManagerProvider).activeArtistProviders();
   if (providers is! Success<List<ArtistProvider>>) return const [];
@@ -94,8 +94,8 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
 
       final tagsRes =
           await provider.getArtistTags(widget.service, widget.artistId);
-      final annRes =
-          await provider.getArtistAnnouncements(widget.service, widget.artistId);
+      final annRes = await provider.getArtistAnnouncements(
+          widget.service, widget.artistId);
 
       if (!mounted) return;
       setState(() {
@@ -158,8 +158,9 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
           _hasMore = false;
         } else {
           final existingKeys = _posts.map((p) => p.cacheKey).toSet();
-          final uniqueNew =
-              newPosts.where((p) => !existingKeys.contains(p.cacheKey)).toList();
+          final uniqueNew = newPosts
+              .where((p) => !existingKeys.contains(p.cacheKey))
+              .toList();
           _posts.addAll(uniqueNew);
           _page++;
           if (newPosts.length < 10) {
@@ -244,7 +245,9 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          isRu ? 'Личные сообщения и анонсы' : 'Direct messages & announcements',
+                          isRu
+                              ? 'Личные сообщения и анонсы'
+                              : 'Direct messages & announcements',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             letterSpacing: -0.2,
@@ -299,7 +302,9 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            isRu ? 'Нет сообщений или рассылок' : 'No messages or announcements',
+                            isRu
+                                ? 'Нет сообщений или рассылок'
+                                : 'No messages or announcements',
                             style: theme.textTheme.titleSmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                               fontWeight: FontWeight.w600,
@@ -326,9 +331,8 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
                             CloudLinkExtractor.extractLinks(content: a.content);
                         final creatorLinks =
                             CreatorLink.extractLinks(a.content);
-                        final displayContent = cleanContent.isNotEmpty
-                            ? cleanContent
-                            : a.content;
+                        final displayContent =
+                            cleanContent.isNotEmpty ? cleanContent : a.content;
 
                         return Container(
                           decoration: BoxDecoration(
@@ -390,7 +394,9 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
                                   IconButton(
                                     icon: const Icon(Icons.copy_rounded,
                                         size: 17),
-                                    tooltip: isRu ? 'Скопировать текст' : 'Copy text',
+                                    tooltip: isRu
+                                        ? 'Скопировать текст'
+                                        : 'Copy text',
                                     visualDensity: VisualDensity.compact,
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints(),
@@ -423,7 +429,9 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
                                 const SizedBox(height: 12),
                                 CreatorLinkChips(
                                   links: creatorLinks,
-                                  title: isRu ? 'Ссылки из сообщения' : 'Links from message',
+                                  title: isRu
+                                      ? 'Ссылки из сообщения'
+                                      : 'Links from message',
                                 ),
                               ],
                               if (detectedCloudLinks.isNotEmpty) ...[
@@ -488,7 +496,8 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
           children: [
             FilterChip(
               selected: _selectedTypes.isEmpty,
-              label: Text(isRu ? 'Все (${_posts.length})' : 'All (${_posts.length})'),
+              label: Text(
+                  isRu ? 'Все (${_posts.length})' : 'All (${_posts.length})'),
               onSelected: (_) => setState(() => _selectedTypes.clear()),
             ),
             const SizedBox(width: 8),
@@ -497,8 +506,8 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
               avatar: Icon(Icons.photo_outlined,
                   size: 16,
                   color: _selectedTypes.contains('photo')
-                        ? scheme.onPrimaryContainer
-                        : scheme.onSurfaceVariant),
+                      ? scheme.onPrimaryContainer
+                      : scheme.onSurfaceVariant),
               label: Text(isRu ? 'Фото ($photoCount)' : 'Photo ($photoCount)'),
               onSelected: (selected) {
                 setState(() {
@@ -516,8 +525,8 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
               avatar: Icon(Icons.videocam_outlined,
                   size: 16,
                   color: _selectedTypes.contains('video')
-                        ? scheme.onPrimaryContainer
-                        : scheme.onSurfaceVariant),
+                      ? scheme.onPrimaryContainer
+                      : scheme.onSurfaceVariant),
               label: Text(isRu ? 'Видео ($videoCount)' : 'Video ($videoCount)'),
               onSelected: (selected) {
                 setState(() {
@@ -538,7 +547,8 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
                     color: _selectedTypes.contains('audio')
                         ? scheme.onPrimaryContainer
                         : scheme.onSurfaceVariant),
-                label: Text(isRu ? 'Аудио ($audioCount)' : 'Audio ($audioCount)'),
+                label:
+                    Text(isRu ? 'Аудио ($audioCount)' : 'Audio ($audioCount)'),
                 onSelected: (selected) {
                   setState(() {
                     if (selected) {
@@ -556,8 +566,8 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
               avatar: Icon(Icons.gif_rounded,
                   size: 20,
                   color: _selectedTypes.contains('gif')
-                        ? scheme.onPrimaryContainer
-                        : scheme.onSurfaceVariant),
+                      ? scheme.onPrimaryContainer
+                      : scheme.onSurfaceVariant),
               label: Text('GIF ($gifCount)'),
               onSelected: (selected) {
                 setState(() {
@@ -760,8 +770,7 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
                                     child: Column(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Icon(
-                                            Icons.filter_alt_off_rounded,
+                                        const Icon(Icons.filter_alt_off_rounded,
                                             size: 48),
                                         const SizedBox(height: 12),
                                         Text(
@@ -826,8 +835,7 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
                                           );
                                     }
                                     ref.invalidate(favoriteKeysProvider);
-                                    ref.invalidate(
-                                        favoritesControllerProvider);
+                                    ref.invalidate(favoritesControllerProvider);
                                   },
                                 ),
                         ),

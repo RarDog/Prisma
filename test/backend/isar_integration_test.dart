@@ -94,8 +94,7 @@ void main() {
       'ranobelib',
       'fapello',
     ]);
-    final pixiv =
-        providers.singleWhere((provider) => provider.id == 'pixiv');
+    final pixiv = providers.singleWhere((provider) => provider.id == 'pixiv');
     expect(pixiv.enabled, isTrue);
     expect(pixiv.apiType, 'pixiv');
     expect(pixiv.baseUrl, 'https://www.pixiv.net');
@@ -258,7 +257,8 @@ void main() {
     expect(exported.data, contains('"provider:post"'));
   });
 
-  test('settings importBlacklistFromE621 parses and deduplicates rules', () async {
+  test('settings importBlacklistFromE621 parses and deduplicates rules',
+      () async {
     final service = SettingsService(databaseService);
     await service.updateSettings(
       AppSettings.defaults.copyWith(
@@ -283,7 +283,8 @@ void main() {
     final settings = settingsResult.data;
 
     expect(settings.blacklistedTags, containsAll(['existing_tag', 'new_tag']));
-    expect(settings.smartBlacklistRules, containsAll(['score:<5', 'rating:explicit gore', 'scat watersports']));
+    expect(settings.smartBlacklistRules,
+        containsAll(['score:<5', 'rating:explicit gore', 'scat watersports']));
   });
 
   test('cache service prunes to max item count', () async {

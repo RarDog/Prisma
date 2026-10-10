@@ -234,7 +234,9 @@ void main() {
     expect(posts.single.rating, 'unknown');
   });
 
-  test('seed providers include Realbooru HTML Pawchive Fapello and exclude deprecated providers', () {
+  test(
+      'seed providers include Realbooru HTML Pawchive Fapello and exclude deprecated providers',
+      () {
     final pawchive = ProviderRepository.seedProviders()
         .where((provider) => provider.id == 'pawchive')
         .single;
@@ -281,7 +283,9 @@ void main() {
     );
   });
 
-  test('provider factory creates Realbooru provider from legacy realbooru api type', () {
+  test(
+      'provider factory creates Realbooru provider from legacy realbooru api type',
+      () {
     final now = DateTime(2026);
     final provider = ProviderFactory().create(ContentProviderConfig(
       id: 'realbooru',
@@ -337,7 +341,9 @@ void main() {
     }
   });
 
-  test('RealbooruHtmlProvider parses video post details, metadata and tag categories', () async {
+  test(
+      'RealbooruHtmlProvider parses video post details, metadata and tag categories',
+      () async {
     final dio = Dio();
     dio.httpClientAdapter = _FakeAdapter((options) async {
       const html = '''
@@ -369,8 +375,10 @@ void main() {
     final post = await provider.getPost('1007638');
     expect(post, isNotNull);
     expect(post!.fileType, 'video');
-    expect(post.fileUrl, 'https://realbooru.com/images/33/19/3319e66c3dac8d361a51d628037bfb8e.mp4');
-    expect(post.previewUrl, 'https://realbooru.com/thumbnails/33/19/thumbnail_3319e66c3dac8d361a51d628037bfb8e.jpg');
+    expect(post.fileUrl,
+        'https://realbooru.com/images/33/19/3319e66c3dac8d361a51d628037bfb8e.mp4');
+    expect(post.previewUrl,
+        'https://realbooru.com/thumbnails/33/19/thumbnail_3319e66c3dac8d361a51d628037bfb8e.jpg');
     expect(post.score, 42);
     expect(post.createdAt.year, 2026);
     expect(post.createdAt.month, 9);
@@ -455,7 +463,8 @@ void main() {
     expect(comments.last.body, 'Que perfeição de mulher hein');
   });
 
-  test('RealbooruHtmlProvider applies sort:score:desc on TopPeriodFilter', () async {
+  test('RealbooruHtmlProvider applies sort:score:desc on TopPeriodFilter',
+      () async {
     final dio = Dio();
     late String queryTags;
     dio.httpClientAdapter = _FakeAdapter((options) async {

@@ -60,7 +60,8 @@ class DesktopShortcutsDialog extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: scheme.primaryContainer.withValues(alpha: 0.7),
+                            color:
+                                scheme.primaryContainer.withValues(alpha: 0.7),
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: Icon(
@@ -109,16 +110,41 @@ class DesktopShortcutsDialog extends StatelessWidget {
                       children: [
                         _ShortcutSection(
                           icon: Icons.navigation_rounded,
-                          title: isRu ? 'Общие и навигация' : 'General & Navigation',
+                          title: isRu
+                              ? 'Общие и навигация'
+                              : 'General & Navigation',
                           items: [
-                            _ShortcutRow(const ['Ctrl', '1…8'], isRu ? 'Переключение между вкладками' : 'Switch tabs'),
-                            _ShortcutRow(const ['Ctrl', 'Tab'], isRu ? 'Следующая вкладка' : 'Next tab'),
-                            _ShortcutRow(const ['Ctrl', 'Shift', 'Tab'], isRu ? 'Предыдущая вкладка' : 'Previous tab'),
-                            _ShortcutRow(const ['Ctrl', 'F'], isRu ? 'Перейти к поиску / строка поиска' : 'Focus search bar'),
-                            _ShortcutRow(const ['Ctrl', 'R'], isRu ? 'Обновить ленту / страницу' : 'Refresh feed / page'),
-                            _ShortcutRow(const ['F5'], isRu ? 'Обновить страницу' : 'Refresh page'),
-                            _ShortcutRow(const ['Esc'], isRu ? 'Закрыть окно / назад / сбросить выбор' : 'Close dialog / back / cancel selection'),
-                            _ShortcutRow(const ['?'], isRu ? 'Открыть это окно горячих клавиш' : 'Show keyboard shortcuts'),
+                            _ShortcutRow(
+                                const ['Ctrl', '1…8'],
+                                isRu
+                                    ? 'Переключение между вкладками'
+                                    : 'Switch tabs'),
+                            _ShortcutRow(const ['Ctrl', 'Tab'],
+                                isRu ? 'Следующая вкладка' : 'Next tab'),
+                            _ShortcutRow(const ['Ctrl', 'Shift', 'Tab'],
+                                isRu ? 'Предыдущая вкладка' : 'Previous tab'),
+                            _ShortcutRow(
+                                const ['Ctrl', 'F'],
+                                isRu
+                                    ? 'Перейти к поиску / строка поиска'
+                                    : 'Focus search bar'),
+                            _ShortcutRow(
+                                const ['Ctrl', 'R'],
+                                isRu
+                                    ? 'Обновить ленту / страницу'
+                                    : 'Refresh feed / page'),
+                            _ShortcutRow(const ['F5'],
+                                isRu ? 'Обновить страницу' : 'Refresh page'),
+                            _ShortcutRow(
+                                const ['Esc'],
+                                isRu
+                                    ? 'Закрыть окно / назад / сбросить выбор'
+                                    : 'Close dialog / back / cancel selection'),
+                            _ShortcutRow(
+                                const ['?'],
+                                isRu
+                                    ? 'Открыть это окно горячих клавиш'
+                                    : 'Show keyboard shortcuts'),
                           ],
                         ),
                         const SizedBox(height: 20),
@@ -126,29 +152,95 @@ class DesktopShortcutsDialog extends StatelessWidget {
                           icon: Icons.smart_display_rounded,
                           title: isRu ? 'Видеоплеер' : 'Video Player',
                           items: [
-                            _ShortcutRow([isRu ? 'Пробел' : 'Space'], isRu ? 'Воспроизведение / Пауза' : 'Play / Pause'),
-                            _ShortcutRow(const ['←', '→'], isRu ? 'Перемотка на 5 секунд назад / вперед' : 'Seek 5s backward / forward'),
-                            _ShortcutRow(const ['Shift', '← / →'], isRu ? 'Перемотка на 15 секунд' : 'Seek 15s backward / forward'),
-                            _ShortcutRow(const ['↑', '↓'], isRu ? 'Регулировка громкости (±5%)' : 'Volume control (±5%)'),
-                            _ShortcutRow(const ['M'], isRu ? 'Включить / выключить звук' : 'Mute / unmute'),
-                            _ShortcutRow(const ['F'], isRu ? 'Полноэкранный режим (Full Screen)' : 'Toggle fullscreen'),
-                            _ShortcutRow(const ['L'], isRu ? 'Повтор видео (Loop on/off)' : 'Toggle video loop'),
-                            _ShortcutRow(const ['Esc'], isRu ? 'Выйти из полноэкранного режима' : 'Exit fullscreen'),
+                            _ShortcutRow(
+                                [isRu ? 'Пробел' : 'Space'],
+                                isRu
+                                    ? 'Воспроизведение / Пауза'
+                                    : 'Play / Pause'),
+                            _ShortcutRow(
+                                const ['←', '→'],
+                                isRu
+                                    ? 'Перемотка на 5 секунд назад / вперед'
+                                    : 'Seek 5s backward / forward'),
+                            _ShortcutRow(
+                                const ['Shift', '← / →'],
+                                isRu
+                                    ? 'Перемотка на 15 секунд'
+                                    : 'Seek 15s backward / forward'),
+                            _ShortcutRow(
+                                const ['↑', '↓'],
+                                isRu
+                                    ? 'Регулировка громкости (±5%)'
+                                    : 'Volume control (±5%)'),
+                            _ShortcutRow(
+                                const ['M'],
+                                isRu
+                                    ? 'Включить / выключить звук'
+                                    : 'Mute / unmute'),
+                            _ShortcutRow(
+                                const ['F'],
+                                isRu
+                                    ? 'Полноэкранный режим (Full Screen)'
+                                    : 'Toggle fullscreen'),
+                            _ShortcutRow(
+                                const ['L'],
+                                isRu
+                                    ? 'Повтор видео (Loop on/off)'
+                                    : 'Toggle video loop'),
+                            _ShortcutRow(
+                                const ['Esc'],
+                                isRu
+                                    ? 'Выйти из полноэкранного режима'
+                                    : 'Exit fullscreen'),
                           ],
                         ),
                         const SizedBox(height: 20),
                         _ShortcutSection(
                           icon: Icons.photo_library_rounded,
-                          title: isRu ? 'Фото и просмотр постов' : 'Photo & Post Viewer',
+                          title: isRu
+                              ? 'Фото и просмотр постов'
+                              : 'Photo & Post Viewer',
                           items: [
-                            _ShortcutRow(const ['←', '→'], isRu ? 'Предыдущее / следующее фото или пост' : 'Previous / next post'),
-                            _ShortcutRow(const ['+'], isRu ? 'Увеличить масштаб (Zoom In)' : 'Zoom in'),
-                            _ShortcutRow(const ['-'], isRu ? 'Уменьшить масштаб (Zoom Out)' : 'Zoom out'),
-                            _ShortcutRow(const ['0'], isRu ? 'Сбросить масштаб (100%)' : 'Reset zoom (100%)'),
-                            _ShortcutRow(const ['F'], isRu ? 'Подгонка по экрану / на весь экран' : 'Fit to screen / fullscreen'),
-                            _ShortcutRow(const ['D'], isRu ? 'Скачать текущее изображение' : 'Download current image'),
-                            _ShortcutRow(const ['Ctrl', 'S'], isRu ? 'Сохранить / Скачать файл' : 'Save / download file'),
-                            _ShortcutRow(const ['Esc'], isRu ? 'Сброс зума / назад' : 'Reset zoom / back'),
+                            _ShortcutRow(
+                                const ['←', '→'],
+                                isRu
+                                    ? 'Предыдущее / следующее фото или пост'
+                                    : 'Previous / next post'),
+                            _ShortcutRow(
+                                const ['+'],
+                                isRu
+                                    ? 'Увеличить масштаб (Zoom In)'
+                                    : 'Zoom in'),
+                            _ShortcutRow(
+                                const ['-'],
+                                isRu
+                                    ? 'Уменьшить масштаб (Zoom Out)'
+                                    : 'Zoom out'),
+                            _ShortcutRow(
+                                const ['0'],
+                                isRu
+                                    ? 'Сбросить масштаб (100%)'
+                                    : 'Reset zoom (100%)'),
+                            _ShortcutRow(
+                                const ['F'],
+                                isRu
+                                    ? 'Подгонка по экрану / на весь экран'
+                                    : 'Fit to screen / fullscreen'),
+                            _ShortcutRow(
+                                const ['D'],
+                                isRu
+                                    ? 'Скачать текущее изображение'
+                                    : 'Download current image'),
+                            _ShortcutRow(
+                                const ['Ctrl', 'S'],
+                                isRu
+                                    ? 'Сохранить / Скачать файл'
+                                    : 'Save / download file'),
+                            _ShortcutRow(
+                                const ['Esc'],
+                                isRu
+                                    ? 'Сброс зума / назад'
+                                    : 'Reset zoom / back'),
                           ],
                         ),
                         const SizedBox(height: 20),
@@ -156,8 +248,16 @@ class DesktopShortcutsDialog extends StatelessWidget {
                           icon: Icons.grid_view_rounded,
                           title: isRu ? 'Лента и посты' : 'Feed & Posts',
                           items: [
-                            _ShortcutRow(const ['R'], isRu ? 'Открыть случайный пост' : 'Open random post'),
-                            _ShortcutRow(const ['V'], isRu ? 'Включить/выключить режим выбора постов' : 'Toggle selection mode'),
+                            _ShortcutRow(
+                                const ['R'],
+                                isRu
+                                    ? 'Открыть случайный пост'
+                                    : 'Open random post'),
+                            _ShortcutRow(
+                                const ['V'],
+                                isRu
+                                    ? 'Включить/выключить режим выбора постов'
+                                    : 'Toggle selection mode'),
                           ],
                         ),
                       ],

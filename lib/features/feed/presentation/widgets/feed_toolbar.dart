@@ -78,7 +78,8 @@ class _FeedToolbarState extends State<FeedToolbar> {
     if (!listEquals(oldWidget.selectedTags, widget.selectedTags)) {
       _query = widget.selectedTags.join(' ');
     }
-    if (!listEquals(oldWidget.selectedProviderIds, widget.selectedProviderIds) ||
+    if (!listEquals(
+            oldWidget.selectedProviderIds, widget.selectedProviderIds) ||
         !listEquals(oldWidget.providers, widget.providers)) {
       final supported = _supportedPeriods;
       if (!supported.contains(widget.topPeriodFilter)) {
@@ -103,7 +104,8 @@ class _FeedToolbarState extends State<FeedToolbar> {
 
   Widget _buildDesktop(BuildContext context) {
     final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
-    final hasActiveFilters = widget.selectedProviderIds.isNotEmpty || widget.rating != null;
+    final hasActiveFilters =
+        widget.selectedProviderIds.isNotEmpty || widget.rating != null;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
@@ -173,7 +175,8 @@ class _FeedToolbarState extends State<FeedToolbar> {
                   for (final provider in widget.providers) ...[
                     _LiquidProviderPill(
                       label: provider.name,
-                      isSelected: widget.selectedProviderIds.contains(provider.id),
+                      isSelected:
+                          widget.selectedProviderIds.contains(provider.id),
                       icon: Icons.hub_rounded,
                       onTap: () => widget.onQuickProviderToggle(provider.id),
                     ),
@@ -215,7 +218,8 @@ class _FeedToolbarState extends State<FeedToolbar> {
 
   Widget _buildMobile(BuildContext context) {
     final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
-    final hasActiveFilters = widget.selectedProviderIds.isNotEmpty || widget.rating != null;
+    final hasActiveFilters =
+        widget.selectedProviderIds.isNotEmpty || widget.rating != null;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
@@ -312,7 +316,8 @@ class _FeedToolbarState extends State<FeedToolbar> {
                   for (final provider in widget.providers) ...[
                     _LiquidProviderPill(
                       label: provider.name,
-                      isSelected: widget.selectedProviderIds.contains(provider.id),
+                      isSelected:
+                          widget.selectedProviderIds.contains(provider.id),
                       icon: Icons.hub_rounded,
                       onTap: () => widget.onQuickProviderToggle(provider.id),
                     ),
@@ -337,7 +342,8 @@ class _ToolbarDivider extends StatelessWidget {
       width: 1,
       height: 20,
       margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
-      color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.4),
+      color:
+          Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.4),
     );
   }
 }
@@ -447,14 +453,16 @@ class _LiquidPeriodTabItem extends StatelessWidget {
             borderRadius: BorderRadius.circular(13),
             border: isSelected
                 ? Border.all(
-                    color: scheme.primary.withValues(alpha: isDark ? 0.45 : 0.3),
+                    color:
+                        scheme.primary.withValues(alpha: isDark ? 0.45 : 0.3),
                     width: 1,
                   )
                 : null,
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: scheme.primary.withValues(alpha: isDark ? 0.25 : 0.12),
+                      color: scheme.primary
+                          .withValues(alpha: isDark ? 0.25 : 0.12),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -538,7 +546,8 @@ class _LiquidProviderPill extends StatelessWidget {
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: scheme.secondary.withValues(alpha: isDark ? 0.2 : 0.08),
+                      color: scheme.secondary
+                          .withValues(alpha: isDark ? 0.2 : 0.08),
                       blurRadius: 6,
                     ),
                   ]
@@ -552,7 +561,9 @@ class _LiquidProviderPill extends StatelessWidget {
                   icon,
                   size: 14,
                   color: isSelected
-                      ? (isDark ? scheme.secondary : scheme.onSecondaryContainer)
+                      ? (isDark
+                          ? scheme.secondary
+                          : scheme.onSecondaryContainer)
                       : scheme.onSurfaceVariant.withValues(alpha: 0.8),
                 ),
                 const SizedBox(width: 5),
@@ -563,7 +574,9 @@ class _LiquidProviderPill extends StatelessWidget {
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                   color: isSelected
-                      ? (isDark ? scheme.secondary : scheme.onSecondaryContainer)
+                      ? (isDark
+                          ? scheme.secondary
+                          : scheme.onSecondaryContainer)
                       : scheme.onSurfaceVariant,
                 ),
               ),

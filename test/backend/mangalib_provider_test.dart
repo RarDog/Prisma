@@ -59,14 +59,17 @@ void main() {
         score: 10,
       );
 
-      expect(provider.postPageUrl(dummyPost), equals('https://mangalib.me/ru/12345--berserk'));
+      expect(provider.postPageUrl(dummyPost),
+          equals('https://mangalib.me/ru/12345--berserk'));
       final headers = provider.mediaHeaders(dummyPost);
       expect(headers['Referer'], equals('https://mangalib.me/'));
       expect(headers['User-Agent'], isNotEmpty);
       expect(headers['Accept'], contains('image/'));
     });
 
-    test('searchPosts parses catalog items with Russian name, genres, and covers', () async {
+    test(
+        'searchPosts parses catalog items with Russian name, genres, and covers',
+        () async {
       final dio = Dio();
       dio.interceptors.add(
         InterceptorsWrapper(
@@ -89,8 +92,10 @@ void main() {
                       'rus_name': 'Берсерк',
                       'eng_name': 'Berserk',
                       'cover': {
-                        'default': 'https://cover.cdnlibs.org/covers/berserk.jpg',
-                        'thumbnail': 'https://cover.cdnlibs.org/covers/thumb_berserk.jpg',
+                        'default':
+                            'https://cover.cdnlibs.org/covers/berserk.jpg',
+                        'thumbnail':
+                            'https://cover.cdnlibs.org/covers/thumb_berserk.jpg',
                       },
                       'genres': [
                         {'id': 1, 'name': 'Action'},
@@ -120,17 +125,22 @@ void main() {
       final post = posts.first;
       expect(post.id, equals('101--berserk'));
       expect(post.providerId, equals('mangalib'));
-      expect(post.fileUrl, equals('https://cover.cdnlibs.org/covers/berserk.jpg'));
-      expect(post.previewUrl, equals('https://cover.cdnlibs.org/covers/berserk.jpg'));
+      expect(
+          post.fileUrl, equals('https://cover.cdnlibs.org/covers/berserk.jpg'));
+      expect(post.previewUrl,
+          equals('https://cover.cdnlibs.org/covers/berserk.jpg'));
       expect(post.score, equals(10));
-      expect(post.tags, containsAll(['action', 'dark_fantasy', 'берсерк', 'berserk']));
+      expect(post.tags,
+          containsAll(['action', 'dark_fantasy', 'берсерк', 'berserk']));
       expect(post.tagGroups['title'], equals(['Берсерк']));
       expect(post.tagGroups['rus_title'], equals(['Берсерк']));
       expect(post.tagGroups['eng_title'], equals(['Berserk']));
-      expect(post.tagGroups['description'], equals(['Легендарная манга о Гатсе.']));
+      expect(post.tagGroups['description'],
+          equals(['Легендарная манга о Гатсе.']));
     });
 
-    test('searchPosts throws BadResponseException when request fails', () async {
+    test('searchPosts throws BadResponseException when request fails',
+        () async {
       final dio = Dio();
       dio.interceptors.add(
         InterceptorsWrapper(
@@ -209,7 +219,8 @@ void main() {
       expect(post, isNotNull);
       expect(post!.id, equals('101--berserk'));
       expect(post.tagGroups['title'], equals(['Берсерк']));
-      expect(post.tagGroups['description'], equals(['Подробное описание манги Берсерк.']));
+      expect(post.tagGroups['description'],
+          equals(['Подробное описание манги Берсерк.']));
       expect(post.tags, contains('horror'));
     });
 
@@ -271,7 +282,8 @@ void main() {
       expect(ch2.pageCount, equals(38));
     });
 
-    test('fetchChapterPages formats absolute and relative image URLs', () async {
+    test('fetchChapterPages formats absolute and relative image URLs',
+        () async {
       final dio = Dio();
       dio.interceptors.add(
         InterceptorsWrapper(
@@ -315,8 +327,14 @@ void main() {
       final pages = await provider.fetchChapterPages('test-manga:1:1');
       expect(pages, hasLength(3));
       expect(pages[0], equals('https://cdn.example.com/page1.jpg'));
-      expect(pages[1], equals('https://img3.cdnlibs.org/manga/test-manga/chapters/1-1/page2.jpg'));
-      expect(pages[2], equals('https://img3.cdnlibs.org/manga/test-manga/chapters/1-1/page3.jpg'));
+      expect(
+          pages[1],
+          equals(
+              'https://img3.cdnlibs.org/manga/test-manga/chapters/1-1/page2.jpg'));
+      expect(
+          pages[2],
+          equals(
+              'https://img3.cdnlibs.org/manga/test-manga/chapters/1-1/page3.jpg'));
     });
 
     test('suggestTags returns TagSuggestion list based on search', () async {
@@ -363,7 +381,8 @@ void main() {
       expect(empty, isEmpty);
     });
 
-    test('checkHealth returns online on 200 and offline on network failure', () async {
+    test('checkHealth returns online on 200 and offline on network failure',
+        () async {
       bool fail = false;
       final dio = Dio();
       dio.interceptors.add(

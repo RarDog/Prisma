@@ -19,8 +19,7 @@ class DownloadService {
   String resolveSubDir(Post post, String template) {
     if (template.isEmpty) return '';
     String artist = 'Unknown';
-    final artistGroup =
-        post.tagGroups['artist'] ?? post.tagGroups['creator'];
+    final artistGroup = post.tagGroups['artist'] ?? post.tagGroups['creator'];
     if (artistGroup != null && artistGroup.isNotEmpty) {
       artist = artistGroup.first;
     } else {
@@ -48,16 +47,14 @@ class DownloadService {
     }
 
     final resolved = cleanTemplate
-        .replaceAll(
-            '{Artist}', artist)
-        .replaceAll(
-            '{Provider}', post.providerName.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_'))
-        .replaceAll(
-            '{Service}', post.providerId.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_'))
+        .replaceAll('{Artist}', artist)
+        .replaceAll('{Provider}',
+            post.providerName.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_'))
+        .replaceAll('{Service}',
+            post.providerId.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_'))
         .replaceAll(
             '{Rating}', post.rating.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_'))
-        .replaceAll(
-            '{ID}', post.id.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_'))
+        .replaceAll('{ID}', post.id.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_'))
         .replaceAll('{Date}', dateStr);
 
     return resolved;

@@ -83,8 +83,7 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
   void didUpdateWidget(covariant TagInputSearchBar oldWidget) {
     super.didUpdateWidget(oldWidget);
     final next = widget.initialValue ?? '';
-    final externalChanged =
-        widget.initialValue != oldWidget.initialValue;
+    final externalChanged = widget.initialValue != oldWidget.initialValue;
     if (externalChanged && (!_focusNode.hasFocus || next != _query)) {
       final oldTagCount = _tags.length;
       _setFromQuery(next);
@@ -287,8 +286,7 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Icon(Icons.search_rounded,
-                        color: scheme.onSurfaceVariant),
+                    Icon(Icons.search_rounded, color: scheme.onSurfaceVariant),
                     const SizedBox(width: 8),
                     Expanded(
                       child: SizedBox(
@@ -320,8 +318,7 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
                                         focusNode: _focusNode,
                                         autocorrect: false,
                                         enableSuggestions: false,
-                                        textInputAction:
-                                            TextInputAction.search,
+                                        textInputAction: TextInputAction.search,
                                         onTap: () {
                                           SystemChannels.textInput
                                               .invokeMethod<void>(
@@ -382,9 +379,8 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
       label: Text(
         isAnd ? 'AND' : tag,
         style: TextStyle(
-          color: isAnd
-              ? scheme.onSecondaryContainer
-              : scheme.onPrimaryContainer,
+          color:
+              isAnd ? scheme.onSecondaryContainer : scheme.onPrimaryContainer,
           fontWeight: isAnd ? FontWeight.w900 : FontWeight.w700,
           letterSpacing: isAnd ? 0.8 : 0,
         ),
@@ -876,10 +872,9 @@ class _AppSearchBarState extends State<AppSearchBar> {
         hintText: widget.hintText,
         prefixIcon: const Icon(Icons.search_rounded),
         suffixIcon: IconButton(
-          tooltip:
-              Localizations.maybeLocaleOf(context)?.languageCode == 'ru'
-                  ? 'Очистить'
-                  : 'Clear',
+          tooltip: Localizations.maybeLocaleOf(context)?.languageCode == 'ru'
+              ? 'Очистить'
+              : 'Clear',
           icon: const Icon(Icons.close_rounded),
           onPressed: () {
             _debounce?.cancel();

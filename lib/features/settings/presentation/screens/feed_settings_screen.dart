@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:gel_rule_app/app/app_strings.dart';
+import 'package:gel_rule_app/app/app.dart';
 import 'package:gel_rule_app/app/motion.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
@@ -19,7 +19,7 @@ class FeedSettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings =
         ref.watch(settingsControllerProvider).value ?? AppSettings.defaults;
-    final strings = AppStrings(settings.languageCode);
+    final strings = ref.watch(appStringsProvider);
     final isRu = strings.ru;
     final theme = Theme.of(context);
     final isAndroid = Platform.isAndroid;
@@ -111,6 +111,22 @@ class FeedSettingsScreen extends ConsumerWidget {
                     onChanged: (val) =>
                         _update(ref, settings.copyWith(hideViewedPosts: val)),
                   ),
+                  const SettingsDivider(),
+                  SettingsSwitchTile(
+                    icon: Icons.cloud_off_rounded,
+                    iconColor: const Color(0xFFEF4444),
+                    title: isRu
+                        ? 'Предупреждение о сбоях источников'
+                        : 'Source health notification',
+                    subtitle: isRu
+                        ? 'Показывать плашку при недоступности включённых источников'
+                        : 'Show banner when enabled sources are unavailable',
+                    value: settings.showProviderHealthBanner,
+                    onChanged: (val) => _update(
+                      ref,
+                      settings.copyWith(showProviderHealthBanner: val),
+                    ),
+                  ),
                 ],
               ),
 
@@ -154,7 +170,9 @@ class FeedSettingsScreen extends ConsumerWidget {
               // Motion & Smoothness (Android)
               if (isAndroid)
                 SettingsCardGroup(
-                  title: isRu ? 'Плавность экрана и частота' : 'Screen Refresh Rate',
+                  title: isRu
+                      ? 'Плавность экрана и частота'
+                      : 'Screen Refresh Rate',
                   icon: Icons.speed_rounded,
                   accentColor: const Color(0xFFF59E0B),
                   children: [
@@ -184,14 +202,17 @@ class FeedSettingsScreen extends ConsumerWidget {
                                           ? 'Частота обновления экрана'
                                           : 'Animation refresh profile',
                                       style: theme.textTheme.bodyLarge
-                                          ?.copyWith(fontWeight: FontWeight.w600),
+                                          ?.copyWith(
+                                              fontWeight: FontWeight.w600),
                                     ),
                                     Text(
                                       isRu
                                           ? 'Оптимизация плавности скролла ленты'
                                           : 'Fluid 120-165 Hz scrolling optimization',
-                                      style: theme.textTheme.bodyMedium?.copyWith(
-                                        color: theme.colorScheme.onSurfaceVariant,
+                                      style:
+                                          theme.textTheme.bodyMedium?.copyWith(
+                                        color:
+                                            theme.colorScheme.onSurfaceVariant,
                                       ),
                                     ),
                                   ],

@@ -48,7 +48,8 @@ void main() {
 
       expect(postMatchesRequestedTags(post, ['touhou']), isTrue);
       expect(postMatchesRequestedTags(post, ['touhou', 'cirno']), isFalse);
-      expect(postMatchesRequestedTags(post, ['touhou', 'and', 'cirno']), isTrue);
+      expect(
+          postMatchesRequestedTags(post, ['touhou', 'and', 'cirno']), isTrue);
     });
 
     test('requested search tags can match tag prefixes', () {

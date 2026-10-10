@@ -103,7 +103,9 @@ void main() {
       expect(find.byType(PostMediaViewer), findsOneWidget);
     });
 
-    test('GIF posts prioritize original fileUrl for animated playback in details', () {
+    test(
+        'GIF posts prioritize original fileUrl for animated playback in details',
+        () {
       final gifPost = Post(
         id: '999',
         providerId: 'gelbooru',
@@ -125,7 +127,8 @@ void main() {
       expect(MediaUrlSelector.isGif(gifPost), isTrue);
     });
 
-    testWidgets('Offstage properly responds to isFullscreenViewerActiveProvider',
+    testWidgets(
+        'Offstage properly responds to isFullscreenViewerActiveProvider',
         (tester) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -169,7 +172,8 @@ void main() {
       expect(restoredOffstage.offstage, isFalse);
     });
 
-    testWidgets('AdaptiveScaffold actions render fullscreen icon next to close icon',
+    testWidgets(
+        'AdaptiveScaffold actions render fullscreen icon next to close icon',
         (tester) async {
       await tester.pumpWidget(
         MaterialApp(

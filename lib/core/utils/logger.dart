@@ -25,7 +25,11 @@ class AppLogger {
     log('ERROR: $message', error, stackTrace);
   }
 
-  void debug(String message, [Object? error, StackTrace? stackTrace]) {
+  static void warn(String message, [Object? error, StackTrace? stackTrace]) {
+    log('WARN: $message', error, stackTrace);
+  }
+
+  static void debug(String message, [Object? error, StackTrace? stackTrace]) {
     log(message, error, stackTrace);
   }
 }
