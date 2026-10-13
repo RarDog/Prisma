@@ -700,6 +700,16 @@ class _FullscreenVideoItemState extends State<_FullscreenVideoItem> {
   void _initPlayer() {
     _cancelSubscriptions();
     MediaKit.ensureInitialized();
+
+    final remembered = playbackMemory[widget.post.cacheKey];
+    if (remembered != null) {
+      _muted = remembered.muted;
+      _halfVolume = remembered.halfVolume;
+      _loopVideo = remembered.loopVideo;
+      _coverVideo = remembered.coverVideo;
+      _volume = remembered.volume;
+    }
+
     final p = Player();
     final enableHw = !_isSoftwareDecoding;
     final c = VideoController(
@@ -735,14 +745,22 @@ class _FullscreenVideoItemState extends State<_FullscreenVideoItem> {
     if (videoUrls.isNotEmpty) {
       final src = videoUrls.first;
       final isLocal = src.startsWith('/') || src.startsWith('file://');
+      final shouldPlay = widget.isActive && (remembered?.playing ?? true);
+      final seekTo = widget.initialPosition > Duration.zero
+          ? widget.initialPosition
+          : (remembered?.position ?? Duration.zero);
+
       p
           .open(
         Media(src, httpHeaders: isLocal ? null : widget.headers),
-        play: false,
+        play: shouldPlay,
       )
-          .then((_) {
-        if (widget.initialPosition > Duration.zero) {
-          p.seek(widget.initialPosition);
+          .then((_) async {
+        if (seekTo > Duration.zero) {
+          await p.seek(seekTo);
+        }
+        if (shouldPlay && !p.state.playing) {
+          await p.play();
         }
       }).catchError((err) {
         if (mounted) setState(() => _errorMessage = err.toString());

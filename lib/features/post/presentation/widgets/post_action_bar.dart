@@ -9,6 +9,7 @@ class PostActionBar extends StatelessWidget {
     required this.isFavorite,
     this.onOpenSource,
     this.onDownload,
+    this.onSaveAs,
     this.onDeleteLocalFile,
     this.onShare,
     this.downloaded = false,
@@ -26,6 +27,7 @@ class PostActionBar extends StatelessWidget {
   final VoidCallback? onOpenSource;
   final bool isFavorite;
   final VoidCallback? onDownload;
+  final VoidCallback? onSaveAs;
   final VoidCallback? onDeleteLocalFile;
   final VoidCallback? onShare;
   final VoidCallback? onSimilar;
@@ -81,6 +83,23 @@ class PostActionBar extends StatelessWidget {
                   onOpen();
                 },
               ),
+              // Save As (Desktop / Custom Location)
+              if (onSaveAs != null)
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: scheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.save_as_rounded, size: 20),
+                  ),
+                  title: Text(text.saveAs),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    onSaveAs!();
+                  },
+                ),
               // Open Source Page
               if (onOpenSource != null)
                 ListTile(
@@ -306,6 +325,7 @@ class PostActionLabels {
     this.similar = 'Similar',
     this.openOriginal = 'Open original',
     this.openSource = 'Open source/page',
+    this.saveAs = 'Save as...',
     this.copyLink = 'Copy link',
     this.download = 'Download',
     this.downloaded = 'Downloaded',
@@ -321,6 +341,7 @@ class PostActionLabels {
   final String similar;
   final String openOriginal;
   final String openSource;
+  final String saveAs;
   final String copyLink;
   final String download;
   final String downloaded;

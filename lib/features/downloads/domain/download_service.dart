@@ -91,6 +91,7 @@ class DownloadService {
   Future<String?> downloadPost(
     Post post, {
     String? folderTemplate,
+    String? customSavePath,
     CancelToken? cancelToken,
     void Function(int received, int total)? onProgress,
   }) async {
@@ -99,6 +100,32 @@ class DownloadService {
       throw StateError('No downloadable URL for this post.');
     }
     final fileName = _fileName(post, url);
+
+    if (customSavePath != null && customSavePath.isNotEmpty) {
+      final targetFile = File(customSavePath);
+      final parentDir = targetFile.parent;
+      if (!await parentDir.exists()) {
+        await parentDir.create(recursive: true);
+      }
+      try {
+        await _dio.download(
+          url,
+          customSavePath,
+          cancelToken: cancelToken,
+          onReceiveProgress: onProgress,
+          options: Options(headers: _headersFor(post)),
+        );
+        return customSavePath;
+      } catch (_) {
+        try {
+          if (await targetFile.exists()) {
+            await targetFile.delete();
+          }
+        } catch (_) {}
+        rethrow;
+      }
+    }
+
     final subDir = folderTemplate != null && folderTemplate.isNotEmpty
         ? resolveSubDir(post, folderTemplate)
         : null;

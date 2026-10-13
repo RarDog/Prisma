@@ -39,6 +39,7 @@ class PostCard extends ConsumerStatefulWidget {
     this.onToggleSelected,
     this.selectionMode = false,
     this.selected = false,
+    this.forceSquare = false,
     super.key,
   });
 
@@ -57,6 +58,7 @@ class PostCard extends ConsumerStatefulWidget {
   final VoidCallback? onToggleSelected;
   final bool selectionMode;
   final bool selected;
+  final bool forceSquare;
 
   @override
   ConsumerState<PostCard> createState() => _PostCardState();
@@ -157,10 +159,12 @@ class _PostCardState extends ConsumerState<PostCard>
             post.fileUrl.trim().isEmpty &&
             !isVideoPost &&
             !isAudioPost);
-    final aspect = post.width > 0 && post.height > 0
-        ? post.width / post.height
-        : _fallbackAspect(
-            isTextPost ? 'text' : (isAudioPost ? 'audio' : post.fileType));
+    final aspect = widget.forceSquare
+        ? 1.0
+        : (post.width > 0 && post.height > 0
+            ? post.width / post.height
+            : _fallbackAspect(
+                isTextPost ? 'text' : (isAudioPost ? 'audio' : post.fileType)));
     final mobile = MediaQuery.sizeOf(context).width < 700;
     final urls = _feedUrls(post, mobile: mobile);
     final imageUrl = urls.isEmpty ? post.previewUrl : urls.first;

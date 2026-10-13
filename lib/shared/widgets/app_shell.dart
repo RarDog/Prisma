@@ -7,11 +7,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:gel_rule_app/app/app.dart';
+import 'package:gel_rule_app/app/app_version.dart';
 import 'package:gel_rule_app/app/responsive.dart';
 import 'package:gel_rule_app/app/router.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/features/feed/presentation/feed_controller.dart';
+import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
 import 'app_destination.dart';
 import 'liquid_glass_bottom_bar.dart';
 import 'desktop_shortcuts_dialog.dart';
@@ -441,7 +443,7 @@ class _AppShellState extends ConsumerState<AppShell> {
   }
 }
 
-class _DesktopShell extends StatefulWidget {
+class _DesktopShell extends ConsumerStatefulWidget {
   const _DesktopShell({
     required this.child,
     required this.destinations,
@@ -457,10 +459,10 @@ class _DesktopShell extends StatefulWidget {
   final int? currentBranchIndex;
 
   @override
-  State<_DesktopShell> createState() => _DesktopShellState();
+  ConsumerState<_DesktopShell> createState() => _DesktopShellState();
 }
 
-class _DesktopShellState extends State<_DesktopShell>
+class _DesktopShellState extends ConsumerState<_DesktopShell>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _animation;
@@ -470,9 +472,13 @@ class _DesktopShellState extends State<_DesktopShell>
   @override
   void initState() {
     super.initState();
+    final initialPinned =
+        ref.read(appSettingsProvider).valueOrNull?.desktopSidebarPinned ?? false;
+    _pinned = initialPinned;
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 220),
+      value: initialPinned ? 1.0 : 0.0,
     );
     _animation = CurvedAnimation(
       parent: _controller,
@@ -499,14 +505,21 @@ class _DesktopShellState extends State<_DesktopShell>
   }
 
   void _togglePinned() {
+    final nextPinned = !_pinned;
     setState(() {
-      _pinned = !_pinned;
+      _pinned = nextPinned;
       if (_pinned) {
         _controller.forward();
       } else if (!_hovered) {
         _controller.reverse();
       }
     });
+
+    final currentSettings =
+        ref.read(settingsControllerProvider).valueOrNull ?? AppSettings.defaults;
+    ref.read(settingsControllerProvider.notifier).saveSettings(
+          currentSettings.copyWith(desktopSidebarPinned: nextPinned),
+        );
   }
 
   @override
@@ -649,7 +662,7 @@ class _DesktopShellState extends State<_DesktopShell>
                                                         ),
                                                       ),
                                                       child: Text(
-                                                        'v4.0.0',
+                                                        'v$appDisplayVersion',
                                                         style: TextStyle(
                                                           fontSize: 10,
                                                           fontWeight:

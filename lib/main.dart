@@ -3,11 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/app.dart';
+import 'core/motion/desktop_smooth_scroll_binding.dart';
 import 'core/performance/performance_monitor.dart';
 import 'core/utils/logger.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
+  DesktopSmoothScrollBinding.ensureInitialized();
   PerformanceMonitorService.init();
 
   // `MediaKit.ensureInitialized()` is deliberately NOT called here. It boots

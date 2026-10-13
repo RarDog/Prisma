@@ -1,5 +1,28 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.1.9',
+    title:
+        'Обновление: редизайн экрана «О приложении», исправление сетки постов и оптимизация',
+    titleEn:
+        'Update: Redesigned About Screen, Post Grid Fixes & Desktop Optimizations',
+    bullets: [
+      'Обновлённый экран «О приложении»: новый дизайн титульной карточки с неоновым свечением, статус версии приложения и быстрый доступ к диагностике.',
+      'Исправление квадратной сетки: устранены искажения пропорций и обрезка превью при переключении режима сетки на квадратный.',
+      'Удаление Resource Monitor: убран неиспользуемый монитор ресурсов для повышения производительности и очистки интерфейса.',
+      'Настройка чувствительности скролла: оптимизировано поведение сворачивания верхних панелей фильтров при прокрутке.',
+      'Полноэкранное видео на ПК: исправлен сбой отображения видео в полноэкранном режиме на десктопной платформе.',
+      'Плавный скролл на ПК: внедрена покадровая кинематическая интерполяция колеса мыши и эластичная физика прокрутки без резких скачков.',
+    ],
+    bulletsEn: [
+      'Redesigned About Screen: modern hero branding card with glow effects, application status indicator, and streamlined diagnostics.',
+      'Square Post Grid Fix: resolved aspect ratio distortions and image clipping when using the square grid layout mode.',
+      'Removed Resource Monitor: cleaned up obsolete debug overlay to improve overall performance and UI clarity.',
+      'Scroll Sensitivity: optimized collapse thresholds for search and filter headers during scrolling.',
+      'Desktop Fullscreen Video: fixed purple screen glitch when entering fullscreen video playback on desktop.',
+      'Desktop Smooth Scrolling: introduced frame-by-frame mouse wheel interpolation and elastic bouncing physics for silky desktop scrolling.',
+    ],
+  ),
+  PrismaChange(
     version: '4.1.8',
     title:
         'Обновление: складные панели, улучшение видеоплеера, беты и оптимизация сети',

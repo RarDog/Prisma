@@ -13,7 +13,6 @@ import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
 import 'package:gel_rule_app/features/settings/presentation/widgets/app_update_dialog.dart';
-import 'package:gel_rule_app/core/performance/performance_monitor.dart';
 import 'package:gel_rule_app/features/settings/presentation/widgets/settings_shared_widgets.dart';
 
 class AboutSettingsScreen extends ConsumerWidget {
@@ -464,101 +463,165 @@ class AboutSettingsScreen extends ConsumerWidget {
               120 + MediaQuery.paddingOf(context).bottom,
             ),
             children: [
-              // Hero Brand Card
+              // Premium Modern Hero Brand Card
               Container(
-                padding: const EdgeInsets.all(22),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: theme.colorScheme.outlineVariant
-                        .withValues(alpha: 0.35),
-                  ),
-                  gradient: LinearGradient(
-                    colors: [
-                      theme.colorScheme.surfaceContainerLow,
-                      theme.colorScheme.surfaceContainer,
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(22),
-                        boxShadow: [
-                          BoxShadow(
-                            color:
-                                const Color(0xFFE84D8A).withValues(alpha: 0.35),
-                            blurRadius: 20,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(22),
-                        child: Image.asset(
-                          'assets/icon/app_icon.png',
-                          width: 72,
-                          height: 72,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFFE84D8A), Color(0xFF8B5CF6)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(22),
-                            ),
-                            child: const Icon(
-                              Icons.palette_rounded,
-                              color: Colors.white,
-                              size: 40,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      'Prisma',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 4.5),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.secondaryContainer,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        'v$appDisplayVersion (build $appBuildNumber)',
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.onSecondaryContainer,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      isRu
-                          ? 'Быстрый и красивый Booru & Anime клиент'
-                          : 'Modern, fast & customizable booru client',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                      textAlign: TextAlign.center,
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF6366F1).withValues(alpha: theme.brightness == Brightness.dark ? 0.20 : 0.12),
+                      blurRadius: 28,
+                      offset: const Offset(0, 10),
+                      spreadRadius: -4,
                     ),
                   ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(28),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(
+                        color: theme.brightness == Brightness.dark
+                            ? Colors.white.withValues(alpha: 0.14)
+                            : theme.colorScheme.outlineVariant.withValues(alpha: 0.45),
+                        width: 1.2,
+                      ),
+                      gradient: LinearGradient(
+                        colors: theme.brightness == Brightness.dark
+                            ? [
+                                const Color(0xFF241938).withValues(alpha: 0.85),
+                                theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.65),
+                                const Color(0xFF181829).withValues(alpha: 0.90),
+                              ]
+                            : [
+                                Colors.white.withValues(alpha: 0.96),
+                                const Color(0xFFF3F0FF).withValues(alpha: 0.90),
+                                Colors.white.withValues(alpha: 0.92),
+                              ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        // App Icon with ambient neon glow
+                        Container(
+                          width: 84,
+                          height: 84,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(26),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFE84D8A).withValues(alpha: 0.45),
+                                blurRadius: 24,
+                                offset: const Offset(-4, 6),
+                              ),
+                              BoxShadow(
+                                color: const Color(0xFF6366F1).withValues(alpha: 0.45),
+                                blurRadius: 24,
+                                offset: const Offset(4, 6),
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(26),
+                            child: Image.asset(
+                              'assets/icon/app_icon.png',
+                              width: 84,
+                              height: 84,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                decoration: const BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [Color(0xFFE84D8A), Color(0xFF8B5CF6)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.palette_rounded,
+                                  color: Colors.white,
+                                  size: 44,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        // App Title
+                        Text(
+                          'Prisma',
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.6,
+                            height: 1.1,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Version badge & channel tag
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    const Color(0xFF6366F1).withValues(alpha: 0.18),
+                                    const Color(0xFFE84D8A).withValues(alpha: 0.18),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: const Color(0xFF6366F1).withValues(alpha: 0.35),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 7,
+                                    height: 7,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFF10B981),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 7),
+                                  Text(
+                                    'v$appDisplayVersion (build $appBuildNumber)',
+                                    style: theme.textTheme.labelMedium?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: -0.2,
+                                      color: theme.colorScheme.onSurface,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        // Description slogan
+                        Text(
+                          isRu
+                              ? 'Современный, быстрый и настраиваемый Booru клиент'
+                              : 'Modern, fast & customizable booru client',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
 
@@ -610,39 +673,82 @@ class AboutSettingsScreen extends ConsumerWidget {
 
               // Diagnostics & System
               SettingsCardGroup(
-                title: isRu ? 'Диагностика и система' : 'System & Diagnostics',
+                title: isRu ? 'Система и диагностика' : 'System & Diagnostics',
                 icon: Icons.hub_rounded,
                 accentColor: const Color(0xFF3B82F6),
                 children: [
+                  SettingsTile(
+                    title: isRu ? 'Каталог провайдеров' : 'Provider Directory',
+                    subtitle: isRu
+                        ? 'Статус подключения, настройка API и зеркал'
+                        : 'Connection status, API keys and mirrors',
+                    icon: Icons.hub_rounded,
+                    iconColor: const Color(0xFF3B82F6),
+                    onTap: () => context.go('/providers'),
+                  ),
+                  const SettingsDivider(),
+                  SettingsTile(
+                    title: isRu ? 'Диагностика сети' : 'Network Diagnostics',
+                    subtitle: isRu
+                        ? 'Проверка доступности и скорости источников'
+                        : 'Healthcheck, reachability and response times',
+                    icon: Icons.network_check_rounded,
+                    iconColor: const Color(0xFF10B981),
+                    onTap: () => context.go('/providers/check'),
+                  ),
+                  const SettingsDivider(),
                   Padding(
                     padding: const EdgeInsets.all(14),
-                    child: ActionGrid(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        ActionButton(
-                          icon: Icons.hub_rounded,
-                          label: isRu ? 'Провайдеры' : 'Providers',
-                          isPrimary: true,
-                          onPressed: () => context.go('/providers'),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: FilledButton.tonalIcon(
+                                onPressed: () => _copyDiagnostics(context, ref, isRu),
+                                icon: const Icon(Icons.bug_report_rounded, size: 18),
+                                label: Text(
+                                  isRu ? 'Отчет об ошибке' : 'Copy report',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                style: FilledButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () => _copyLogs(context, ref, isRu),
+                                icon: const Icon(Icons.receipt_long_rounded, size: 18),
+                                label: Text(
+                                  isRu ? 'Копировать логи' : 'Copy logs',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        ActionButton(
-                          icon: Icons.network_check_rounded,
-                          label: isRu ? 'Диагностика сети' : 'Diagnostics',
-                          isPrimary: true,
-                          onPressed: () => context.go('/providers/check'),
-                        ),
-                        ActionButton(
-                          icon: Icons.bug_report_rounded,
-                          label: isRu ? 'Копировать отчет' : 'Copy report',
-                          onPressed: () => _copyDiagnostics(context, ref, isRu),
-                        ),
-                        ActionButton(
-                          icon: Icons.receipt_long_rounded,
-                          label: isRu ? 'Копировать логи' : 'Copy logs',
-                          onPressed: () => _copyLogs(context, ref, isRu),
-                        ),
-                        ActionButton(
-                          icon: Icons.delete_sweep_rounded,
-                          label: isRu ? 'Очистить логи' : 'Clear logs',
+                        const SizedBox(height: 8),
+                        TextButton.icon(
                           onPressed: () {
                             ref
                                 .read(settingsControllerProvider.notifier)
@@ -655,6 +761,22 @@ class AboutSettingsScreen extends ConsumerWidget {
                               ),
                             );
                           },
+                          icon: Icon(
+                            Icons.delete_sweep_rounded,
+                            size: 18,
+                            color: theme.colorScheme.error,
+                          ),
+                          label: Text(
+                            isRu ? 'Очистить диагностические логи' : 'Clear diagnostic logs',
+                            style: TextStyle(
+                              color: theme.colorScheme.error,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                          ),
                         ),
                       ],
                     ),
@@ -662,351 +784,11 @@ class AboutSettingsScreen extends ConsumerWidget {
                 ],
               ),
 
-              const SizedBox(height: 20),
-
-              // Performance & Debug Monitor
-              _PerformanceDebugSection(isRu: isRu),
-
               const SizedBox(height: 32),
             ],
           ),
         ),
       ),
-    );
-  }
-}
-
-class _PerformanceDebugSection extends ConsumerWidget {
-  const _PerformanceDebugSection({required this.isRu});
-  final bool isRu;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final settingsAsync = ref.watch(settingsControllerProvider);
-    final settings = settingsAsync.value ?? AppSettings.defaults;
-    final metricsAsync = ref.watch(performanceMetricsStreamProvider);
-    final metrics = metricsAsync.value ?? const PerformanceMetrics();
-
-    return SettingsCardGroup(
-      title: isRu ? 'Мониторинг ресурсов и Debug' : 'Resource Monitor & Debug',
-      icon: Icons.speed_rounded,
-      accentColor: const Color(0xFF10B981),
-      children: [
-        // Live statistics block
-        Padding(
-          padding: const EdgeInsets.all(14),
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest
-                  .withValues(alpha: 0.35),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.25),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      isRu
-                          ? 'Текущее состояние процесса'
-                          : 'Live Process Stats',
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.2,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF10B981),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'LIVE',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: const Color(0xFF10B981),
-                              fontWeight: FontWeight.w900,
-                              fontSize: 9,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                _StatItem(
-                  icon: Icons.memory_rounded,
-                  label: isRu ? 'Память (RAM RSS)' : 'Memory (RAM RSS)',
-                  value: PerformanceMetrics.formatBytes(metrics.rssBytes),
-                  subValue: isRu
-                      ? 'пик: ${PerformanceMetrics.formatBytes(metrics.maxRssBytes)}'
-                      : 'peak: ${PerformanceMetrics.formatBytes(metrics.maxRssBytes)}',
-                  color: const Color(0xFF8B5CF6),
-                ),
-                const SizedBox(height: 8),
-                _StatItem(
-                  icon: Icons.image_rounded,
-                  label: isRu ? 'Кэш картинок в ОЗУ' : 'Image RAM Cache',
-                  value:
-                      PerformanceMetrics.formatBytes(metrics.imageCacheBytes),
-                  subValue: isRu
-                      ? '${metrics.imageCacheCount} объектов'
-                      : '${metrics.imageCacheCount} items',
-                  color: const Color(0xFFEC4899),
-                ),
-                const SizedBox(height: 8),
-                _StatItem(
-                  icon: Icons.speed_rounded,
-                  label: isRu ? 'Загрузка ЦП процессом' : 'Process CPU',
-                  value: '${metrics.cpuPercent.toStringAsFixed(1)} %',
-                  subValue: isRu ? 'все ядра' : 'all cores',
-                  color: const Color(0xFF3B82F6),
-                ),
-                const SizedBox(height: 8),
-                _StatItem(
-                  icon: Icons.wifi_rounded,
-                  label: isRu ? 'Сеть (скачивание)' : 'Network (Download)',
-                  value: PerformanceMetrics.formatSpeed(
-                      metrics.downloadSpeedBytesPerSec),
-                  subValue: isRu
-                      ? 'всего: ${PerformanceMetrics.formatBytes(metrics.totalDownloadedBytes)}'
-                      : 'total: ${PerformanceMetrics.formatBytes(metrics.totalDownloadedBytes)}',
-                  color: const Color(0xFF10B981),
-                ),
-                const SizedBox(height: 8),
-                _StatItem(
-                  icon: Icons.monitor_heart_rounded,
-                  label: isRu ? 'Частота кадров' : 'Frame Rate',
-                  value: '${metrics.fps} FPS',
-                  subValue: metrics.fps >= 58
-                      ? (isRu ? 'плавно' : 'smooth')
-                      : (isRu ? 'нагрузка' : 'heavy'),
-                  color: const Color(0xFFF59E0B),
-                ),
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: () {
-                    PaintingBinding.instance.imageCache.clear();
-                    PaintingBinding.instance.imageCache.clearLiveImages();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          isRu
-                              ? 'Кэш изображений в оперативной памяти очищен'
-                              : 'Image cache cleared from RAM',
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.cleaning_services_rounded, size: 16),
-                  label: Text(isRu
-                      ? 'Очистить кэш картинок в ОЗУ'
-                      : 'Clear RAM image cache'),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        const SettingsDivider(),
-
-        // Toggle HUD
-        SettingsSwitchTile(
-          title: isRu
-              ? 'Плавающее окно поверх экрана (HUD)'
-              : 'Floating On-Screen HUD',
-          subtitle: isRu
-              ? 'Отображает полупрозрачное окно с метриками поверх всех экранов'
-              : 'Shows a semi-transparent floating widget with live metrics across all screens',
-          icon: Icons.picture_in_picture_alt_rounded,
-          iconColor: const Color(0xFF10B981),
-          value: settings.debugHudEnabled,
-          onChanged: (val) {
-            ref
-                .read(settingsControllerProvider.notifier)
-                .updateDebugHudSettings(enabled: val);
-          },
-        ),
-
-        if (settings.debugHudEnabled) ...[
-          const SettingsDivider(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  isRu
-                      ? 'Отображаемые показатели в окне:'
-                      : 'Display metrics in HUD:',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    FilterChip(
-                      label: const Text('RAM (ОЗУ)'),
-                      selected: settings.debugHudShowRam,
-                      onSelected: (val) => ref
-                          .read(settingsControllerProvider.notifier)
-                          .updateDebugHudSettings(showRam: val),
-                    ),
-                    FilterChip(
-                      label: const Text('CPU (ЦП)'),
-                      selected: settings.debugHudShowCpu,
-                      onSelected: (val) => ref
-                          .read(settingsControllerProvider.notifier)
-                          .updateDebugHudSettings(showCpu: val),
-                    ),
-                    FilterChip(
-                      label: const Text('Network (Сеть)'),
-                      selected: settings.debugHudShowNetwork,
-                      onSelected: (val) => ref
-                          .read(settingsControllerProvider.notifier)
-                          .updateDebugHudSettings(showNetwork: val),
-                    ),
-                    FilterChip(
-                      label: const Text('FPS (Кадры)'),
-                      selected: settings.debugHudShowFps,
-                      onSelected: (val) => ref
-                          .read(settingsControllerProvider.notifier)
-                          .updateDebugHudSettings(showFps: val),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      isRu ? 'Непрозрачность окна:' : 'HUD Opacity:',
-                      style: theme.textTheme.bodySmall,
-                    ),
-                    Text(
-                      '${(settings.debugHudOpacity * 100).toInt()}%',
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-                Slider(
-                  value: settings.debugHudOpacity.clamp(0.2, 1.0),
-                  min: 0.2,
-                  max: 1.0,
-                  divisions: 8,
-                  onChanged: (val) => ref
-                      .read(settingsControllerProvider.notifier)
-                      .updateDebugHudSettings(opacity: val),
-                ),
-                TextButton.icon(
-                  onPressed: () {
-                    ref
-                        .read(settingsControllerProvider.notifier)
-                        .updateDebugHudSettings(
-                          x: 16.0,
-                          y: 90.0,
-                        );
-                  },
-                  icon: const Icon(Icons.refresh_rounded, size: 16),
-                  label: Text(
-                    isRu ? 'Сбросить позицию окна' : 'Reset window position',
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _StatItem extends StatelessWidget {
-  const _StatItem({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.subValue,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final String subValue;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(5),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, size: 14, color: color),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontSize: 11,
-                ),
-              ),
-              Text(
-                value,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 13,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-            ],
-          ),
-        ),
-        Text(
-          subValue,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-            fontSize: 11,
-            fontFeatures: const [FontFeature.tabularFigures()],
-          ),
-        ),
-      ],
     );
   }
 }

@@ -67,7 +67,7 @@ class PostMasonryGrid extends StatelessWidget {
         );
     final spacing = mobile ? 8.0 : 12.0;
 
-    Widget buildCard(Post post) {
+    Widget buildCard(Post post, {bool forceSquare = false}) {
       return RepaintBoundary(
         child: PostCard(
           post: post,
@@ -83,6 +83,7 @@ class PostMasonryGrid extends StatelessWidget {
           onHide: onHide == null ? null : () => onHide!(post),
           selectionMode: selectionMode,
           selected: selectedKeys.contains(post.cacheKey),
+          forceSquare: forceSquare,
           onToggleSelected:
               onToggleSelected == null ? null : () => onToggleSelected!(post),
           onAddToCollection:
@@ -105,16 +106,7 @@ class PostMasonryGrid extends StatelessWidget {
         itemCount: posts.length + (loading ? columns : 0),
         itemBuilder: (context, index) {
           if (index >= posts.length) return const LoadingSkeleton();
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: SizedBox.expand(
-              child: FittedBox(
-                fit: BoxFit.cover,
-                clipBehavior: Clip.hardEdge,
-                child: buildCard(posts[index]),
-              ),
-            ),
-          );
+          return buildCard(posts[index], forceSquare: true);
         },
       );
     }

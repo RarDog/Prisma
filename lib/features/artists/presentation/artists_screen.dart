@@ -104,6 +104,7 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
 
   bool _headerVisible = true;
   double _lastScrollOffset = 0;
+  double _scrollDeltaAccumulator = 0;
 
   @override
   void initState() {
@@ -121,14 +122,22 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
         _loadMore();
       }
 
-      // Responsive scroll: collapses on intentional downward scroll (28px),
-      // and immediately reveals on any gentle upward movement (6px) or when near top.
-      if (offset <= 80) {
+      if (offset <= 60) {
+        _scrollDeltaAccumulator = 0;
         if (!_headerVisible) setState(() => _headerVisible = true);
-      } else if (offset > _lastScrollOffset + 28) {
-        if (_headerVisible) setState(() => _headerVisible = false);
-      } else if (offset < _lastScrollOffset - 6) {
-        if (!_headerVisible) setState(() => _headerVisible = true);
+      } else {
+        final delta = offset - _lastScrollOffset;
+        if ((delta > 0 && _scrollDeltaAccumulator < 0) ||
+            (delta < 0 && _scrollDeltaAccumulator > 0)) {
+          _scrollDeltaAccumulator = 0;
+        }
+        _scrollDeltaAccumulator += delta;
+
+        if (_scrollDeltaAccumulator > 50) {
+          if (_headerVisible) setState(() => _headerVisible = false);
+        } else if (_scrollDeltaAccumulator < -14) {
+          if (!_headerVisible) setState(() => _headerVisible = true);
+        }
       }
       _lastScrollOffset = offset;
     });

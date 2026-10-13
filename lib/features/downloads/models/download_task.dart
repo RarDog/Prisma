@@ -18,6 +18,7 @@ class DownloadTask {
     this.sourceUrl,
     this.openAfterDownload = false,
     this.savedPath,
+    this.customSavePath,
     this.error,
   });
 
@@ -29,6 +30,7 @@ class DownloadTask {
   final DownloadTaskStatus status;
   final bool openAfterDownload;
   final String? savedPath;
+  final String? customSavePath;
   final String? error;
 
   DownloadTask copyWith({
@@ -46,6 +48,7 @@ class DownloadTask {
       status: status ?? this.status,
       openAfterDownload: openAfterDownload,
       savedPath: savedPath ?? this.savedPath,
+      customSavePath: customSavePath,
       error: error,
     );
   }

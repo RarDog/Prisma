@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:file_selector/file_selector.dart';
+import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -606,6 +608,9 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                         onDownload: settings.allowDownloads
                             ? () => _download(context, ref, post)
                             : null,
+                        onSaveAs: settings.allowDownloads
+                            ? () => _saveAs(context, ref, post)
+                            : null,
                         onDeleteLocalFile: () =>
                             _deleteLocalFile(context, ref, post),
                         onShare: () => _sharePost(context, ref, post),
@@ -989,6 +994,9 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                     onDownload: settings.allowDownloads
                         ? () => _download(context, ref, post)
                         : null,
+                    onSaveAs: settings.allowDownloads
+                        ? () => _saveAs(context, ref, post)
+                        : null,
                     onDeleteLocalFile: () =>
                         _deleteLocalFile(context, ref, post),
                     onShare: () => _sharePost(context, ref, post),
@@ -1125,6 +1133,49 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(strings.ru ? 'Скачивание началось' : 'Download started'),
+      ),
+    );
+    Future<void>.delayed(const Duration(seconds: 2), () {
+      ref.invalidate(downloadedMediaByKeyProvider(post.cacheKey));
+    });
+  }
+
+  Future<void> _saveAs(BuildContext context, WidgetRef ref, Post post) async {
+    if (!context.mounted) return;
+    final strings = ref.read(appStringsProvider);
+    final url = MediaUrlSelector.download(post) ?? post.fileUrl;
+    final parsed = Uri.tryParse(url);
+    final segment = parsed?.pathSegments.isEmpty ?? true ? '' : parsed!.pathSegments.last;
+    final extension = segment.contains('.')
+        ? p.extension(segment).replaceAll('.', '')
+        : (post.fileType.isNotEmpty ? post.fileType.toLowerCase() : 'jpg');
+    final suggested = segment.isNotEmpty
+        ? segment
+        : '${post.providerId}_${post.id}.$extension';
+
+    final location = await getSaveLocation(
+      suggestedName: suggested,
+      acceptedTypeGroups: [
+        XTypeGroup(
+          label: extension.toUpperCase(),
+          extensions: [extension],
+        ),
+      ],
+    );
+    if (location == null || !context.mounted) return;
+
+    await ref.read(downloadManagerServiceProvider).start(
+          post,
+          customSavePath: location.path,
+        );
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          strings.ru
+              ? 'Сохранение в ${p.basename(location.path)} началось'
+              : 'Saving to ${p.basename(location.path)} started',
+        ),
       ),
     );
     Future<void>.delayed(const Duration(seconds: 2), () {
@@ -1360,6 +1411,7 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
       collection: strings.collection,
       similar: strings.similar,
       openOriginal: strings.open,
+      saveAs: strings.ru ? 'Сохранить как...' : 'Save as...',
       copyLink: strings.ru ? 'Копировать ссылку' : 'Copy link',
       download: strings.download,
       deleteLocalFile: strings.deleteLocalFile,

@@ -8,7 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/features/settings/presentation/widgets/app_update_dialog.dart';
-import 'package:gel_rule_app/features/settings/presentation/widgets/performance_hud_overlay.dart';
+import 'package:gel_rule_app/core/motion/desktop_smooth_scroll_binding.dart';
 import 'app_strings.dart';
 import 'motion.dart';
 import 'router.dart';
@@ -63,6 +63,7 @@ class GelRuleApp extends ConsumerWidget {
                 dynamicColorScheme: useDynamic ? darkDynamic : null,
               ),
               themeMode: parseThemeMode(appSettings.themeMode),
+              scrollBehavior: const DesktopSmoothScrollBehavior(),
               routerConfig: router,
               builder: (context, child) => _AppOverlay(child: child),
             );
@@ -193,7 +194,6 @@ class _DownloadOverlay extends ConsumerWidget {
               child: _DownloadPanel(tasks: visible.take(3).toList()),
             ),
           ),
-        const PerformanceHudOverlay(),
       ],
     );
   }

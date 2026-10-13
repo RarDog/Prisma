@@ -82,6 +82,7 @@ class AppSettings {
     this.debugHudOpacity = 0.85,
     this.debugHudX = 16.0,
     this.debugHudY = 90.0,
+    this.desktopSidebarPinned = false,
   });
 
   final bool hasCompletedOnboarding;
@@ -100,6 +101,7 @@ class AppSettings {
   final double debugHudOpacity;
   final double debugHudX;
   final double debugHudY;
+  final bool desktopSidebarPinned;
   final String lastActiveLocation;
   final List<String> favoriteArtists;
   final List<String> pawchiveAccounts;
@@ -284,6 +286,7 @@ class AppSettings {
     double? debugHudOpacity,
     double? debugHudX,
     double? debugHudY,
+    bool? desktopSidebarPinned,
   }) {
     return AppSettings(
       lastActiveLocation: lastActiveLocation ?? this.lastActiveLocation,
@@ -370,6 +373,8 @@ class AppSettings {
       debugHudOpacity: debugHudOpacity ?? this.debugHudOpacity,
       debugHudX: debugHudX ?? this.debugHudX,
       debugHudY: debugHudY ?? this.debugHudY,
+      desktopSidebarPinned:
+          desktopSidebarPinned ?? this.desktopSidebarPinned,
     );
   }
 
@@ -443,6 +448,7 @@ class AppSettings {
         'debugHudOpacity': debugHudOpacity,
         'debugHudX': debugHudX,
         'debugHudY': debugHudY,
+        'desktopSidebarPinned': desktopSidebarPinned,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) => AppSettings(
@@ -599,6 +605,8 @@ class AppSettings {
             (json['debugHudX'] as num?)?.toDouble() ?? defaults.debugHudX,
         debugHudY:
             (json['debugHudY'] as num?)?.toDouble() ?? defaults.debugHudY,
+        desktopSidebarPinned: (json['desktopSidebarPinned'] as bool?) ??
+            defaults.desktopSidebarPinned,
       );
 
   List<PawchiveAccount> get parsedPawchiveAccounts {

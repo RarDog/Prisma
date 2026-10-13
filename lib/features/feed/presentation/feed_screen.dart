@@ -42,6 +42,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
   bool _showScrollToTop = false;
   bool _toolbarVisible = true;
   double _lastScrollOffset = 0;
+  double _scrollDeltaAccumulator = 0;
   String? _appliedInitialQuery;
   Timer? _scrollSaveDebounce;
   double _lastKnownScrollOffset = 0;
@@ -62,14 +63,28 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
         setState(() => _showScrollToTop = shouldShow);
       }
 
-      // Responsive scroll: collapses on intentional downward scroll (28px),
-      // and immediately reveals on any gentle upward movement (6px) or when near top.
-      if (offset <= 80) {
+      // Smooth responsive scroll:
+      // When near top (<= 60px), always keep toolbar fully expanded.
+      if (offset <= 60) {
+        _scrollDeltaAccumulator = 0;
         if (!_toolbarVisible) setState(() => _toolbarVisible = true);
-      } else if (offset > _lastScrollOffset + 28) {
-        if (_toolbarVisible) setState(() => _toolbarVisible = false);
-      } else if (offset < _lastScrollOffset - 6) {
-        if (!_toolbarVisible) setState(() => _toolbarVisible = true);
+      } else {
+        final delta = offset - _lastScrollOffset;
+        // Direction change resets accumulator for instant responsiveness
+        if ((delta > 0 && _scrollDeltaAccumulator < 0) ||
+            (delta < 0 && _scrollDeltaAccumulator > 0)) {
+          _scrollDeltaAccumulator = 0;
+        }
+        _scrollDeltaAccumulator += delta;
+
+        // Downward scroll: requires 50px of deliberate downward movement to collapse
+        if (_scrollDeltaAccumulator > 50) {
+          if (_toolbarVisible) setState(() => _toolbarVisible = false);
+        }
+        // Upward scroll: requires only 14px of upward movement to quickly reveal toolbar
+        else if (_scrollDeltaAccumulator < -14) {
+          if (!_toolbarVisible) setState(() => _toolbarVisible = true);
+        }
       }
       _lastScrollOffset = offset;
 

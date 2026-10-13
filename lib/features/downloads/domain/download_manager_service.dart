@@ -30,7 +30,7 @@ class DownloadManagerService {
   List<DownloadTask> get tasks => List.unmodifiable(_tasks.values);
   bool get queuePaused => _queuePaused;
 
-  Future<DownloadTask> start(Post post) async {
+  Future<DownloadTask> start(Post post, {String? customSavePath}) async {
     final id = '${post.cacheKey}:${DateTime.now().microsecondsSinceEpoch}';
     final task = DownloadTask(
       id: id,
@@ -38,6 +38,7 @@ class DownloadManagerService {
       fileName: _suggestedFileName(post),
       progress: 0,
       status: DownloadTaskStatus.queued,
+      customSavePath: customSavePath,
     );
     _set(task);
     _pumpQueue();
@@ -122,6 +123,7 @@ class DownloadManagerService {
           ? await _downloadService.downloadPost(
               task.post!,
               folderTemplate: folderTemplate,
+              customSavePath: task.customSavePath,
               cancelToken: cancelToken,
               onProgress: (received, total) {
                 _updateProgress(task.id, received, total);
