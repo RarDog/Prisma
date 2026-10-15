@@ -201,6 +201,21 @@ class ProviderRepository {
         createdAt: now,
         updatedAt: now,
       ),
+      ContentProviderConfig(
+        id: 'wallhaven',
+        name: 'Wallhaven',
+        baseUrl: 'https://wallhaven.cc',
+        apiType: 'wallhaven',
+        enabled: true,
+        priority: 13,
+        timeoutSeconds: 20,
+        customHeaders: {
+          'Referer': 'https://wallhaven.cc/',
+          'User-Agent': AppHeaders.defaultUserAgent,
+        },
+        createdAt: now,
+        updatedAt: now,
+      ),
     ];
   }
 
@@ -219,6 +234,7 @@ class ProviderRepository {
         'mangaupdates',
         'hitomi',
         'ehentai',
+        'arena',
       };
       for (final provider in existingProviders) {
         if (provider.providerId == 'cosbooru') {

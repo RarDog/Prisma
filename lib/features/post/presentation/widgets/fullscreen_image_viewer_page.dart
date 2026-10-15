@@ -402,8 +402,7 @@ class FullscreenImageViewerPageState
                               );
                             }
 
-                            final urls =
-                                FullscreenImageViewerPage._urlsForPost(
+                            final urls = FullscreenImageViewerPage._urlsForPost(
                               currentPost,
                               widget.qualityMode,
                               localFilePath: localPath,
@@ -667,6 +666,7 @@ class _FullscreenVideoItemState extends State<_FullscreenVideoItem> {
   bool _isLandscape = false;
   bool _isSoftwareDecoding = false;
   String? _errorMessage;
+  int _networkRetryCount = 0;
   StreamSubscription<String>? _errorSub;
   StreamSubscription<Duration>? _posSub;
 
@@ -690,6 +690,7 @@ class _FullscreenVideoItemState extends State<_FullscreenVideoItem> {
     super.didUpdateWidget(oldWidget);
     if (widget.isActive && !oldWidget.isActive) {
       if (_player == null) {
+        _networkRetryCount = 0;
         _initPlayer();
       }
     } else if (!widget.isActive && oldWidget.isActive) {
@@ -710,7 +711,11 @@ class _FullscreenVideoItemState extends State<_FullscreenVideoItem> {
       _volume = remembered.volume;
     }
 
-    final p = Player();
+    final p = Player(
+      configuration: const PlayerConfiguration(
+        bufferSize: 64 * 1024 * 1024,
+      ),
+    );
     final enableHw = !_isSoftwareDecoding;
     final c = VideoController(
       p,
@@ -725,11 +730,31 @@ class _FullscreenVideoItemState extends State<_FullscreenVideoItem> {
     p.setPlaylistMode(_loopVideo ? PlaylistMode.single : PlaylistMode.none);
 
     _errorSub = p.stream.error.listen((message) {
-      if (mounted) setState(() => _errorMessage = message);
+      if (!mounted) return;
+      if (_networkRetryCount < 2) {
+        _networkRetryCount++;
+        _cancelSubscriptions();
+        try {
+          p.pause();
+          p.stop();
+          p.dispose();
+        } catch (_) {}
+        Future.delayed(Duration(milliseconds: 400 * _networkRetryCount), () {
+          if (mounted) {
+            _initialized = false;
+            _initPlayer();
+          }
+        });
+        return;
+      }
+      setState(() => _errorMessage = message);
     });
 
     _posSub = p.stream.position.listen((pos) {
       if (!mounted) return;
+      if (pos > Duration.zero) {
+        _networkRetryCount = 0;
+      }
       playbackMemory[widget.post.cacheKey] = VideoPlaybackSnapshot(
         position: pos,
         playing: p.state.playing,
@@ -763,7 +788,24 @@ class _FullscreenVideoItemState extends State<_FullscreenVideoItem> {
           await p.play();
         }
       }).catchError((err) {
-        if (mounted) setState(() => _errorMessage = err.toString());
+        if (!mounted) return;
+        if (_networkRetryCount < 2) {
+          _networkRetryCount++;
+          _cancelSubscriptions();
+          try {
+            p.pause();
+            p.stop();
+            p.dispose();
+          } catch (_) {}
+          Future.delayed(Duration(milliseconds: 400 * _networkRetryCount), () {
+            if (mounted) {
+              _initialized = false;
+              _initPlayer();
+            }
+          });
+          return;
+        }
+        setState(() => _errorMessage = err.toString());
       });
     }
 
@@ -919,6 +961,7 @@ class _FullscreenVideoItemState extends State<_FullscreenVideoItem> {
         }
       },
       onRetry: () {
+        _networkRetryCount = 0;
         setState(() => _errorMessage = null);
         _player?.dispose();
         _initialized = false;
@@ -1087,16 +1130,17 @@ class _InteractiveFullscreenImageItemState
       final mq = MediaQuery.maybeOf(context);
       final dpr = mq?.devicePixelRatio ?? 1.5;
       final screenWidth = mq?.size.width ?? 1080;
-      final maxCacheWidth = (screenWidth * dpr).round().clamp(720, 2048);
+      final maxCacheWidth = (screenWidth * dpr * 2.0).round().clamp(1440, 4096);
       final isGif = MediaUrlSelector.isGif(widget.post) ||
           currentUrl.toLowerCase().contains('.gif') ||
           widget.post.fileType.toLowerCase() == 'gif';
+      final isHighRes = widget.post.width >= 2000;
 
       imageWidget = CachedNetworkImage(
         key: ValueKey(currentUrl),
         imageUrl: currentUrl,
         httpHeaders: widget.headers,
-        memCacheWidth: isGif ? null : maxCacheWidth,
+        memCacheWidth: (isGif || isHighRes) ? null : maxCacheWidth,
         fit: BoxFit.contain,
         placeholder: (context, url) => _buildPlaceholder(),
         errorWidget: (context, url, error) {

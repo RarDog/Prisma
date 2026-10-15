@@ -318,6 +318,9 @@ class DownloadService {
       if (lower.contains('realbooru'))
         'Referer':
             'https://realbooru.com/index.php?page=post&s=view&id=${post.id}',
+      if (lower.contains('wallhaven')) 'Referer': 'https://wallhaven.cc/',
+      if (lower.contains('arena') || lower.contains('are.na'))
+        'Referer': 'https://www.are.na/',
       if (lower.contains('paheal'))
         'Referer': 'https://rule34.paheal.net/post/view/${post.id}',
     };

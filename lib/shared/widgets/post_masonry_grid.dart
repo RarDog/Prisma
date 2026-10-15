@@ -97,6 +97,10 @@ class PostMasonryGrid extends StatelessWidget {
       return GridView.builder(
         controller: controller,
         padding: pad,
+        // ignore: deprecated_member_use
+        cacheExtent: 180.0,
+        addAutomaticKeepAlives: false,
+        addRepaintBoundaries: true,
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: columns,
           mainAxisSpacing: spacing,
@@ -116,6 +120,10 @@ class PostMasonryGrid extends StatelessWidget {
       return ListView.separated(
         controller: controller,
         padding: pad,
+        // ignore: deprecated_member_use
+        cacheExtent: 180.0,
+        addAutomaticKeepAlives: false,
+        addRepaintBoundaries: true,
         separatorBuilder: (_, __) => SizedBox(height: spacing),
         itemCount: posts.length + (loading ? 3 : 0),
         itemBuilder: (context, index) {
@@ -129,6 +137,9 @@ class PostMasonryGrid extends StatelessWidget {
     return MasonryGridView.count(
       controller: controller,
       padding: pad,
+      cacheExtent: 180.0,
+      addAutomaticKeepAlives: false,
+      addRepaintBoundaries: true,
       crossAxisCount: columns,
       mainAxisSpacing: spacing,
       crossAxisSpacing: spacing,

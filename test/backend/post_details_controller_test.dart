@@ -5,7 +5,6 @@ import 'package:gel_rule_app/core/cache/cache_service.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/features/post/presentation/post_details_controller.dart';
 
-
 Post _post(String id, {String providerId = 'gelbooru'}) => Post(
       id: id,
       providerId: providerId,
@@ -61,7 +60,9 @@ class _FakeProviderManager extends Fake implements ProviderManager {
       createdAt: post.createdAt,
       fileType: post.fileType,
       score: post.score,
-      tagGroups: const {'general': ['solo']},
+      tagGroups: const {
+        'general': ['solo']
+      },
     ));
   }
 }
@@ -95,8 +96,8 @@ void main() {
       overrides: [
         postRepositoryProvider.overrideWithValue(
             _FakePostRepository(cached: _post('cached', providerId: 'other'))),
-        providerManagerProvider.overrideWithValue(
-            _FakeProviderManager(remote: _post('remote'))),
+        providerManagerProvider
+            .overrideWithValue(_FakeProviderManager(remote: _post('remote'))),
         cacheServiceProvider.overrideWithValue(cache),
       ],
     );
@@ -140,7 +141,8 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         postRepositoryProvider.overrideWithValue(_FakePostRepository()),
-        providerManagerProvider.overrideWithValue(_FakeProviderManager(remote: null)),
+        providerManagerProvider
+            .overrideWithValue(_FakeProviderManager(remote: null)),
         cacheServiceProvider.overrideWithValue(_FakeCacheService()),
       ],
     );

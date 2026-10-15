@@ -104,7 +104,8 @@ class AppErrorBoundary extends StatefulWidget {
   });
 
   final Widget child;
-  final Widget Function(BuildContext context, Object error, VoidCallback? onRetry)?
+  final Widget Function(
+          BuildContext context, Object error, VoidCallback? onRetry)?
       fallbackBuilder;
   final VoidCallback? onRetry;
 

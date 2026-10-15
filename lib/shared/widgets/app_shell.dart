@@ -14,7 +14,9 @@ import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/features/feed/presentation/feed_controller.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
+import 'package:gel_rule_app/features/settings/presentation/settings_screen.dart';
 import 'app_destination.dart';
+import 'circular_reveal_page_route.dart';
 import 'liquid_glass_bottom_bar.dart';
 import 'desktop_shortcuts_dialog.dart';
 import 'keyboard_shortcut_utils.dart';
@@ -181,6 +183,7 @@ class _AppShellState extends ConsumerState<AppShell> {
             ? AppShell.locationForBranchIndex(
                 widget.navigationShell!.currentIndex)
             : '/');
+    if (loc.startsWith('/settings')) return;
     ref.read(settingsServiceProvider).saveLastActiveLocation(loc);
   }
 
@@ -191,9 +194,10 @@ class _AppShellState extends ConsumerState<AppShell> {
         !kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS);
     if (lastLocation.isNotEmpty &&
         lastLocation != '/' &&
+        !lastLocation.startsWith('/settings') &&
         (!isDesktopPlatform || !lastLocation.startsWith('/manga'))) {
       final idx = AppShell.branchIndexForLocation(lastLocation);
-      if (idx > 0 && widget.navigationShell != null) {
+      if (idx > 0 && idx < 8 && widget.navigationShell != null) {
         _restoredTab = true;
         widget.navigationShell!.goBranch(idx, initialLocation: false);
       }
@@ -235,7 +239,25 @@ class _AppShellState extends ConsumerState<AppShell> {
     _saveCurrentLocation(path);
   }
 
+  void _openSettingsWithReveal([Offset? center]) {
+    final media = MediaQuery.of(context);
+    final fallbackCenter = Offset(
+      media.size.width - 42.0,
+      media.size.height - media.padding.bottom - 46.0,
+    );
+    Navigator.of(context, rootNavigator: true).push(
+      CircularRevealPageRoute(
+        centerOffset: center ?? fallbackCenter,
+        builder: (_) => const SettingsScreen(),
+      ),
+    );
+  }
+
   void _onNavigate(String location) {
+    if (location == '/settings') {
+      _openSettingsWithReveal();
+      return;
+    }
     final targetIndex = AppShell.branchIndexForLocation(location);
     if (widget.navigationShell != null) {
       if (widget.navigationShell!.currentIndex == targetIndex) {
@@ -473,7 +495,8 @@ class _DesktopShellState extends ConsumerState<_DesktopShell>
   void initState() {
     super.initState();
     final initialPinned =
-        ref.read(appSettingsProvider).valueOrNull?.desktopSidebarPinned ?? false;
+        ref.read(appSettingsProvider).valueOrNull?.desktopSidebarPinned ??
+            false;
     _pinned = initialPinned;
     _controller = AnimationController(
       vsync: this,
@@ -515,8 +538,8 @@ class _DesktopShellState extends ConsumerState<_DesktopShell>
       }
     });
 
-    final currentSettings =
-        ref.read(settingsControllerProvider).valueOrNull ?? AppSettings.defaults;
+    final currentSettings = ref.read(settingsControllerProvider).valueOrNull ??
+        AppSettings.defaults;
     ref.read(settingsControllerProvider.notifier).saveSettings(
           currentSettings.copyWith(desktopSidebarPinned: nextPinned),
         );
@@ -1110,6 +1133,20 @@ class _MobileShellState extends ConsumerState<_MobileShell>
     super.dispose();
   }
 
+  void _openSettingsWithReveal([Offset? center]) {
+    final media = MediaQuery.of(context);
+    final fallbackCenter = Offset(
+      media.size.width - 42.0,
+      media.size.height - media.padding.bottom - 46.0,
+    );
+    Navigator.of(context, rootNavigator: true).push(
+      CircularRevealPageRoute(
+        centerOffset: center ?? fallbackCenter,
+        builder: (_) => const SettingsScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen<bool>(shellHideBottomBarProvider, (previous, hide) {
@@ -1164,7 +1201,7 @@ class _MobileShellState extends ConsumerState<_MobileShell>
         },
         child: widget.child,
       ),
-      floatingActionButton: (activeBranch == 8 || isKeyboardOpen)
+      floatingActionButton: isKeyboardOpen
           ? null
           : AnimatedBuilder(
               animation: _slideAnimation,
@@ -1184,7 +1221,7 @@ class _MobileShellState extends ConsumerState<_MobileShell>
                 padding: const EdgeInsets.only(bottom: 0, right: 2),
                 child: LiquidGlassSettingsButton(
                   ru: widget.ru,
-                  onTap: () => widget.onNavigate('/settings'),
+                  onTapWithCenter: (center) => _openSettingsWithReveal(center),
                 ),
               ),
             ),

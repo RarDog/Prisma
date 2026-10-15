@@ -93,6 +93,7 @@ void main() {
       'mangalib',
       'ranobelib',
       'fapello',
+      'wallhaven',
     ]);
     final pixiv = providers.singleWhere((provider) => provider.id == 'pixiv');
     expect(pixiv.enabled, isTrue);

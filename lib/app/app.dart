@@ -253,8 +253,7 @@ class _DownloadPanel extends ConsumerWidget {
                   ),
                   if (activeTasks.isNotEmpty)
                     IconButton(
-                      tooltip:
-                          strings.cancelActive,
+                      tooltip: strings.cancelActive,
                       onPressed: () {
                         for (final task in activeTasks) {
                           manager.cancel(task.id);

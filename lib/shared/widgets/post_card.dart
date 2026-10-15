@@ -148,6 +148,8 @@ class _PostCardState extends ConsumerState<PostCard>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final post = _resolvedPost ?? widget.post;
     final sensitive = _isSensitive(post.rating);
     final isAudioPost =
@@ -249,14 +251,25 @@ class _PostCardState extends ConsumerState<PostCard>
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.10),
-                width: 0.8,
+                color: widget.selected
+                    ? theme.colorScheme.primary
+                    : (_hovered && !mobile
+                        ? theme.colorScheme.primary.withValues(alpha: 0.55)
+                        : (isDark
+                            ? Colors.white.withValues(alpha: 0.12)
+                            : Colors.black.withValues(alpha: 0.08))),
+                width: widget.selected ? 2.0 : 0.8,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.20),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
+                  color: widget.selected
+                      ? theme.colorScheme.primary.withValues(alpha: 0.35)
+                      : (_hovered && !mobile
+                          ? theme.colorScheme.primary.withValues(alpha: 0.22)
+                          : Colors.black
+                              .withValues(alpha: isDark ? 0.32 : 0.08)),
+                  blurRadius: _hovered && !mobile ? 16 : 10,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
@@ -344,7 +357,7 @@ class _PostCardState extends ConsumerState<PostCard>
                       left: 0,
                       right: 0,
                       bottom: 0,
-                      height: 64,
+                      height: 74,
                       child: IgnorePointer(
                         child: DecoratedBox(
                           decoration: BoxDecoration(
@@ -352,9 +365,11 @@ class _PostCardState extends ConsumerState<PostCard>
                               begin: Alignment.bottomCenter,
                               end: Alignment.topCenter,
                               colors: [
-                                Colors.black.withValues(alpha: 0.72),
+                                Colors.black.withValues(alpha: 0.82),
+                                Colors.black.withValues(alpha: 0.40),
                                 Colors.transparent,
                               ],
+                              stops: const [0.0, 0.52, 1.0],
                             ),
                           ),
                         ),
@@ -734,7 +749,7 @@ class _FeedVideoPreviewState extends State<_FeedVideoPreview> {
               Media(widget.videoUrl, httpHeaders: widget.headers),
               play: true,
             )
-            .timeout(const Duration(seconds: 8));
+            .timeout(const Duration(seconds: 15));
       });
       if (!mounted || requestId != _requestId) return;
       setState(() => _ready = true);
@@ -836,14 +851,21 @@ class _ProviderBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.62),
+        color: Colors.black.withValues(alpha: 0.65),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.12),
+          color: Colors.white.withValues(alpha: 0.16),
           width: 0.7,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Text(
         name,
@@ -863,31 +885,53 @@ class _MediaBadge extends StatelessWidget {
 
   final String fileType;
 
+  Color _accentColor(String type) => switch (type) {
+        'video' => const Color(0xFFFBBF24), // amber
+        'gif' => const Color(0xFF38BDF8), // cyan
+        'audio' => const Color(0xFFA78BFA), // violet
+        'text' => const Color(0xFF34D399), // emerald
+        _ => Colors.white,
+      };
+
   @override
   Widget build(BuildContext context) {
     final type = _type(fileType);
+    final accent = _accentColor(type);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3.5),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.62),
+        color: Colors.black.withValues(alpha: 0.65),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.12),
+          color: accent.withValues(alpha: 0.35),
           width: 0.7,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: accent.withValues(alpha: 0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(_icon(type), size: 13, color: Colors.white),
-          const SizedBox(width: 3.5),
+          Icon(_icon(type), size: 13, color: accent),
+          const SizedBox(width: 4),
           Text(
             _label(type),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10.5,
               color: Colors.white,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.3,
+              shadows: [
+                Shadow(
+                  color: accent.withValues(alpha: 0.4),
+                  blurRadius: 4,
+                ),
+              ],
             ),
           ),
         ],
@@ -1332,14 +1376,21 @@ class _SeenBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3.5),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.62),
+        color: Colors.black.withValues(alpha: 0.65),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.12),
+          color: Colors.white.withValues(alpha: 0.16),
           width: 0.7,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: const Row(
         mainAxisSize: MainAxisSize.min,
@@ -1366,19 +1417,26 @@ class _DownloadedBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3.5),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.62),
+        color: Colors.black.withValues(alpha: 0.65),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.12),
+          color: const Color(0xFF10B981).withValues(alpha: 0.4),
           width: 0.7,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF10B981).withValues(alpha: 0.15),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: const Icon(
         Icons.download_done_rounded,
         size: 13,
-        color: Colors.white,
+        color: Color(0xFF34D399),
       ),
     );
   }

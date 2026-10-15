@@ -163,4 +163,3 @@ void main() {
     expect(find.text('1 source unavailable'), findsNothing);
   });
 }
-

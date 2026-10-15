@@ -373,8 +373,7 @@ class AppSettings {
       debugHudOpacity: debugHudOpacity ?? this.debugHudOpacity,
       debugHudX: debugHudX ?? this.debugHudX,
       debugHudY: debugHudY ?? this.debugHudY,
-      desktopSidebarPinned:
-          desktopSidebarPinned ?? this.desktopSidebarPinned,
+      desktopSidebarPinned: desktopSidebarPinned ?? this.desktopSidebarPinned,
     );
   }
 
@@ -568,9 +567,8 @@ class AppSettings {
             defaults.searchHistoryLimit,
         tagCacheLimit:
             (json['tagCacheLimit'] as num?)?.toInt() ?? defaults.tagCacheLimit,
-        showProviderHealthBanner:
-            (json['showProviderHealthBanner'] as bool?) ??
-                defaults.showProviderHealthBanner,
+        showProviderHealthBanner: (json['showProviderHealthBanner'] as bool?) ??
+            defaults.showProviderHealthBanner,
         lastActiveLocation: (json['lastActiveLocation'] as String?) ??
             defaults.lastActiveLocation,
         hasCompletedOnboarding:

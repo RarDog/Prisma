@@ -16,7 +16,6 @@ void main() {
       '6709--youkoso-jitsuryoku-shijou-shugi-no-kyoushitsu-e-novel',
       '17971--trash-of-the-counts-family-novel',
       '26690--omniscient-readers-viewpoint-novel',
-      '11407--solo-leveling',
     ];
 
     for (final nid in novelIds) {

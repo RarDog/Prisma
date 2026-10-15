@@ -19,6 +19,8 @@ import 'package:gel_rule_app/sources/booru/mangalib_provider.dart';
 import 'package:gel_rule_app/sources/booru/ranobelib_provider.dart';
 import 'package:gel_rule_app/sources/booru/pixiv_provider.dart';
 import 'package:gel_rule_app/sources/booru/safebooru_provider.dart';
+import 'package:gel_rule_app/sources/booru/wallhaven_provider.dart';
+import 'package:gel_rule_app/sources/booru/arena_provider.dart';
 
 class ProviderFactory {
   /// Upper bound on cached HTTP clients. Each client owns a socket pool, so
@@ -68,6 +70,17 @@ class ProviderFactory {
       headers.putIfAbsent(
         'User-Agent',
         () => AppHeaders.mangaDexUserAgent,
+      );
+    } else if (config.apiType.toLowerCase() == 'wallhaven') {
+      headers.putIfAbsent('Referer', () => 'https://wallhaven.cc/');
+      headers.putIfAbsent(
+        'User-Agent',
+        () => AppHeaders.defaultUserAgent,
+      );
+    } else if (config.apiType.toLowerCase() == 'arena') {
+      headers.putIfAbsent(
+        'User-Agent',
+        () => AppHeaders.defaultUserAgent,
       );
     }
 
@@ -158,6 +171,28 @@ class ProviderFactory {
           name: config.name,
           baseUrl: config.baseUrl,
           dioClient: client,
+        );
+      case 'wallhaven':
+        final apiKey = config.customHeaders['api_key'] ??
+            config.customHeaders['apikey'] ??
+            queryParameters['apikey'];
+        return WallhavenProvider(
+          id: config.id,
+          name: config.name,
+          baseUrl: config.baseUrl,
+          dioClient: client,
+          apiKey: apiKey,
+        );
+      case 'arena':
+      case 'are_na':
+        final token = config.customHeaders['token'] ??
+            config.customHeaders['Authorization'];
+        return ArenaProvider(
+          id: config.id,
+          name: config.name,
+          baseUrl: config.baseUrl,
+          dioClient: client,
+          token: token,
         );
       case 'danbooru':
         return DanbooruProvider(

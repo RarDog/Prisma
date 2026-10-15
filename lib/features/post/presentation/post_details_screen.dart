@@ -1,10 +1,8 @@
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
@@ -13,10 +11,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:gel_rule_app/app/app.dart';
 import 'package:gel_rule_app/app/app_navigator.dart';
 import 'package:gel_rule_app/app/app_strings.dart';
-import 'package:gel_rule_app/app/motion.dart';
 import 'package:gel_rule_app/app/responsive.dart';
 import 'package:gel_rule_app/backend/backend.dart';
-import 'package:gel_rule_app/core/performance/performance_monitor.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/shared/widgets/adaptive_scaffold.dart';
 import 'package:gel_rule_app/shared/widgets/empty_view.dart';
@@ -39,71 +35,17 @@ import 'package:gel_rule_app/sources/booru/e621_provider.dart';
 import 'widgets/comments_section.dart';
 import 'widgets/post_info_card.dart';
 
-final postNotesProvider = FutureProvider.autoDispose
-    .family<List<PostNote>, PostDetailsArgs>((ref, args) async {
-  final result = await ref
-      .watch(providerManagerProvider)
-      .getNotes(args.providerId, args.postId);
-  return result is Success<List<PostNote>> ? result.data : const [];
-});
+import 'post_details_providers.dart';
+import 'widgets/post_artist_posts_card.dart';
+import 'widgets/post_details_intents.dart';
+import 'widgets/post_media_carousel.dart';
+import 'widgets/post_translate_button.dart';
 
-final showPostNotesProvider = StateProvider.autoDispose
-    .family<bool, String>((ref, postCacheKey) => false);
-
-final postProviderInstanceProvider = FutureProvider.autoDispose
-    .family<ContentProvider?, String>((ref, providerId) async {
-  return ref.watch(providerManagerProvider).getProviderInstance(providerId);
-});
-
-class ArtistPostsArgs {
-  const ArtistPostsArgs({
-    required this.providerId,
-    required this.artistName,
-    required this.queryTag,
-  });
-
-  final String providerId;
-  final String artistName;
-  final String queryTag;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is ArtistPostsArgs &&
-          runtimeType == other.runtimeType &&
-          providerId == other.providerId &&
-          artistName == other.artistName &&
-          queryTag == other.queryTag;
-
-  @override
-  int get hashCode => Object.hash(providerId, artistName, queryTag);
-}
-
-/// Fetches up to 6 recent posts from the same artist.
-final artistPostsProvider = FutureProvider.autoDispose
-    .family<List<Post>, ArtistPostsArgs>((ref, args) async {
-  if (args.queryTag.isEmpty && args.artistName.isEmpty) return const [];
-  final result = await ref.watch(feedServiceProvider).refresh(
-    tags: [args.queryTag],
-    providerId: args.providerId,
-    limit: 12,
-  );
-  if (result is! Success<List<Post>>) {
-    // If querying with 'artist:xyz' failed on another provider, try plain name fallback
-    if (args.artistName.isNotEmpty && args.queryTag != args.artistName) {
-      final fallback = await ref.watch(feedServiceProvider).refresh(
-        tags: [args.artistName],
-        providerId: args.providerId,
-        limit: 12,
-      );
-      if (fallback is Success<List<Post>>) {
-        return fallback.data;
-      }
-    }
-    return const [];
-  }
-  return result.data;
-});
+export 'post_details_providers.dart';
+export 'widgets/post_artist_posts_card.dart';
+export 'widgets/post_details_intents.dart';
+export 'widgets/post_media_carousel.dart';
+export 'widgets/post_translate_button.dart';
 
 class PostDetailsScreen extends ConsumerStatefulWidget {
   const PostDetailsScreen({
@@ -290,57 +232,56 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
             return Shortcuts(
               shortcuts: {
                 LogicalKeySet(LogicalKeyboardKey.arrowLeft):
-                    const _PreviousPostIntent(),
+                    const PreviousPostIntent(),
                 LogicalKeySet(LogicalKeyboardKey.keyA):
-                    const _PreviousPostIntent(),
+                    const PreviousPostIntent(),
                 LogicalKeySet(LogicalKeyboardKey.arrowRight):
-                    const _NextPostIntent(),
-                LogicalKeySet(LogicalKeyboardKey.keyD): const _NextPostIntent(),
+                    const NextPostIntent(),
+                LogicalKeySet(LogicalKeyboardKey.keyD): const NextPostIntent(),
                 LogicalKeySet(LogicalKeyboardKey.keyF):
-                    const _ToggleFavoriteIntent(),
+                    const ToggleFavoriteIntent(),
                 LogicalKeySet(LogicalKeyboardKey.keyC):
-                    const _AddCollectionIntent(),
-                LogicalKeySet(LogicalKeyboardKey.keyS): const _DownloadIntent(),
+                    const AddCollectionIntent(),
+                LogicalKeySet(LogicalKeyboardKey.keyS): const DownloadIntent(),
                 LogicalKeySet(
                         LogicalKeyboardKey.control, LogicalKeyboardKey.keyS):
-                    const _DownloadIntent(),
-                LogicalKeySet(LogicalKeyboardKey.escape): const _CloseIntent(),
+                    const DownloadIntent(),
+                LogicalKeySet(LogicalKeyboardKey.escape): const CloseIntent(),
               },
               child: Actions(
                 actions: {
-                  _PreviousPostIntent: NonTextInputAction<_PreviousPostIntent>(
+                  PreviousPostIntent: NonTextInputAction<PreviousPostIntent>(
                     onInvoke: (_) {
                       if (previous != null) _openPost(context, previous);
                       return null;
                     },
                   ),
-                  _NextPostIntent: NonTextInputAction<_NextPostIntent>(
+                  NextPostIntent: NonTextInputAction<NextPostIntent>(
                     onInvoke: (_) {
                       if (next != null) _openPost(context, next);
                       return null;
                     },
                   ),
-                  _ToggleFavoriteIntent:
-                      NonTextInputAction<_ToggleFavoriteIntent>(
+                  ToggleFavoriteIntent:
+                      NonTextInputAction<ToggleFavoriteIntent>(
                     onInvoke: (_) {
                       _toggleFavorite(ref, post, favoriteKeys);
                       return null;
                     },
                   ),
-                  _AddCollectionIntent:
-                      NonTextInputAction<_AddCollectionIntent>(
+                  AddCollectionIntent: NonTextInputAction<AddCollectionIntent>(
                     onInvoke: (_) {
                       _addToCollection(context, ref, post);
                       return null;
                     },
                   ),
-                  _CloseIntent: NonTextInputAction<_CloseIntent>(
+                  CloseIntent: NonTextInputAction<CloseIntent>(
                     onInvoke: (_) {
                       _close(context);
                       return null;
                     },
                   ),
-                  _DownloadIntent: NonTextInputAction<_DownloadIntent>(
+                  DownloadIntent: NonTextInputAction<DownloadIntent>(
                     onInvoke: (_) {
                       if (settings.allowDownloads) {
                         _download(context, ref, post);
@@ -566,7 +507,7 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                               post.hasNotes)) ...[
                         const SizedBox(height: 10),
                         Center(
-                          child: _GoogleTranslateButton(
+                          child: GoogleTranslateButton(
                             hasNotes: notes.isNotEmpty,
                             isLoading: notesAsync.isLoading,
                             showNotes: showNotes,
@@ -583,7 +524,7 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                       ],
                       if (currentIndex >= 0) ...[
                         const SizedBox(height: 10),
-                        _NeighborStrip(
+                        NeighborStrip(
                           posts: feedPosts,
                           currentIndex: currentIndex,
                           onOpen: (post) => _openPost(context, post),
@@ -623,7 +564,19 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                         fileSizeBytes: fileSizeBytes,
                         e621Provider: e621Provider,
                       ),
-                      _ArtistPostsCard(post: post),
+                      ArtistPostsCard(
+                        post: post,
+                        onOpenPost: (p, filtered) => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => PostDetailsScreen(
+                              providerId: p.providerId,
+                              postId: p.id,
+                              initialPost: p,
+                              postsList: filtered,
+                            ),
+                          ),
+                        ),
+                      ),
                       if (post.hasRelations) ...[
                         const SizedBox(height: 16),
                         PostRelationsCard(
@@ -789,7 +742,7 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
     final availableWidth = (screenWidth - 16).clamp(100.0, double.infinity);
     final singleDynamicDim =
         ref.watch(postMediaDimensionsProvider(post.cacheKey));
-    final singleMediaHeight = _calculateMediaHeight(
+    final singleMediaHeight = calculateMediaHeight(
       post: post,
       availableWidth: availableWidth,
       screenHeight: screenHeight,
@@ -816,7 +769,7 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
         ),
         children: [
           if (posts != null && posts.length > 1)
-            _MobileMediaCarousel(
+            MobileMediaCarousel(
               key: const ValueKey('mobile_media_carousel'),
               posts: posts,
               initialIndex: currentIndex >= 0 ? currentIndex : 0,
@@ -962,7 +915,7 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                           post.hasNotes)) ...[
                     const SizedBox(height: 8),
                     Center(
-                      child: _GoogleTranslateButton(
+                      child: GoogleTranslateButton(
                         hasNotes: notes.isNotEmpty,
                         isLoading: notesAsync.isLoading,
                         showNotes: showNotes,
@@ -1009,7 +962,19 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                     fileSizeBytes: fileSizeBytes,
                     e621Provider: e621Provider,
                   ),
-                  _ArtistPostsCard(post: post),
+                  ArtistPostsCard(
+                    post: post,
+                    onOpenPost: (p, filtered) => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => PostDetailsScreen(
+                          providerId: p.providerId,
+                          postId: p.id,
+                          initialPost: p,
+                          postsList: filtered,
+                        ),
+                      ),
+                    ),
+                  ),
                   if (post.hasRelations) ...[
                     const SizedBox(height: 12),
                     PostRelationsCard(
@@ -1145,7 +1110,8 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
     final strings = ref.read(appStringsProvider);
     final url = MediaUrlSelector.download(post) ?? post.fileUrl;
     final parsed = Uri.tryParse(url);
-    final segment = parsed?.pathSegments.isEmpty ?? true ? '' : parsed!.pathSegments.last;
+    final segment =
+        parsed?.pathSegments.isEmpty ?? true ? '' : parsed!.pathSegments.last;
     final extension = segment.contains('.')
         ? p.extension(segment).replaceAll('.', '')
         : (post.fileType.isNotEmpty ? post.fileType.toLowerCase() : 'jpg');
@@ -1569,915 +1535,5 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
           snapshot.position.inMilliseconds,
         );
     ref.invalidate(appSettingsProvider);
-  }
-}
-
-double _calculateMediaHeight({
-  required Post post,
-  required double availableWidth,
-  required double screenHeight,
-  Size? dynamicDimensions,
-}) {
-  if (MediaUrlSelector.isAudio(post)) return 340.0;
-
-  final isVideo = MediaUrlSelector.isVideo(post);
-  const minHeight = 160.0;
-  final maxHeight = screenHeight * 0.72;
-
-  double? width = post.width > 0 ? post.width.toDouble() : null;
-  double? height = post.height > 0 ? post.height.toDouble() : null;
-
-  if (width == null || height == null) {
-    if (dynamicDimensions != null &&
-        dynamicDimensions.width > 0 &&
-        dynamicDimensions.height > 0) {
-      width = dynamicDimensions.width;
-      height = dynamicDimensions.height;
-    }
-  }
-
-  if (width != null && height != null && height > 0) {
-    final aspect = width / height;
-    final calculated = availableWidth / aspect;
-    return calculated.clamp(minHeight, maxHeight);
-  }
-
-  return isVideo ? screenHeight * 0.70 : screenHeight * 0.62;
-}
-
-class _MobileMediaCarousel extends ConsumerStatefulWidget {
-  const _MobileMediaCarousel({
-    required this.posts,
-    required this.initialIndex,
-    required this.activePost,
-    required this.settings,
-    required this.favoriteKeys,
-    required this.qualityMode,
-    required this.onPageChanged,
-    this.useLiveFeed = false,
-    this.onLoadMore,
-    this.onMediaGestureLockChanged,
-    this.onToggleFavorite,
-    this.onShowQuickActions,
-    this.onSaveVideoSnapshot,
-    this.onSaveVideoPreferences,
-    super.key,
-  });
-
-  final List<Post> posts;
-  final int initialIndex;
-  final Post activePost;
-  final AppSettings settings;
-  final Set<String> favoriteKeys;
-  final MediaQualityMode qualityMode;
-  final ValueChanged<int> onPageChanged;
-
-  /// True when this carousel belongs to the feed, so its fullscreen gallery
-  /// tracks the live feed list while `onLoadMore` keeps appending.
-  final bool useLiveFeed;
-  final VoidCallback? onLoadMore;
-  final ValueChanged<bool>? onMediaGestureLockChanged;
-  final void Function(WidgetRef ref, Post post)? onToggleFavorite;
-  final void Function(BuildContext context, WidgetRef ref, Post post)?
-      onShowQuickActions;
-  final void Function(WidgetRef ref, Post post, VideoPlaybackSnapshot snapshot)?
-      onSaveVideoSnapshot;
-  final void Function(WidgetRef ref, VideoPlaybackSnapshot snapshot)?
-      onSaveVideoPreferences;
-
-  @override
-  ConsumerState<_MobileMediaCarousel> createState() =>
-      _MobileMediaCarouselState();
-}
-
-class _MobileMediaCarouselState extends ConsumerState<_MobileMediaCarousel>
-    with AutomaticKeepAliveClientMixin {
-  late final PageController _controller;
-  late int _currentPage;
-  bool _mediaGestureLocked = false;
-  bool _isUserScrolling = false;
-
-  @override
-  bool get wantKeepAlive => true;
-
-  @override
-  void initState() {
-    super.initState();
-    _currentPage = widget.posts.isEmpty
-        ? 0
-        : widget.initialIndex.clamp(0, widget.posts.length - 1);
-    _controller = PageController(initialPage: _currentPage);
-    _controller.addListener(_handleScroll);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _prefetchAround(_currentPage);
-        if (widget.onLoadMore != null &&
-            _currentPage >= widget.posts.length - 8) {
-          widget.onLoadMore!();
-        }
-      }
-    });
-  }
-
-  void _handleScroll() {
-    if (!mounted) return;
-    setState(() {});
-  }
-
-  @override
-  void didUpdateWidget(covariant _MobileMediaCarousel oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.initialIndex != _currentPage &&
-        widget.initialIndex >= 0 &&
-        widget.initialIndex < widget.posts.length) {
-      _currentPage = widget.initialIndex;
-      if (!_isUserScrolling &&
-          _controller.hasClients &&
-          _controller.page?.round() != widget.initialIndex) {
-        _controller.jumpToPage(widget.initialIndex);
-      }
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _prefetchAround(widget.initialIndex);
-        }
-      });
-    }
-    if (widget.posts.length != oldWidget.posts.length) {
-      if (widget.onLoadMore != null &&
-          _currentPage >= widget.posts.length - 8) {
-        widget.onLoadMore!();
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.removeListener(_handleScroll);
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _setMediaGestureLocked(bool locked) {
-    if (_mediaGestureLocked == locked) return;
-    setState(() => _mediaGestureLocked = locked);
-    widget.onMediaGestureLockChanged?.call(locked);
-  }
-
-  void _prefetchAround(int index) {
-    for (final offset in [-1, 1]) {
-      final target = index + offset;
-      if (target < 0 || target >= widget.posts.length) continue;
-      final post = widget.posts[target];
-      final url = post.sampleUrl.isNotEmpty ? post.sampleUrl : post.previewUrl;
-      if (url.trim().isNotEmpty) {
-        precacheImage(
-          CachedNetworkImageProvider(url, headers: getPostMediaHeaders(post)),
-          context,
-        );
-      }
-    }
-  }
-
-  void _evictDistantPosts(int currentIndex) {
-    for (int i = 0; i < widget.posts.length; i++) {
-      if ((i - currentIndex).abs() >= 3) {
-        final p = widget.posts[i];
-        SmartMemoryManager.evictImageUrl(p.fileUrl);
-        SmartMemoryManager.evictImageUrl(p.sampleUrl);
-      }
-    }
-    PaintingBinding.instance.imageCache.clearLiveImages();
-  }
-
-  double _getHeightForIndex(
-    int index,
-    double availableWidth,
-    double screenHeight,
-  ) {
-    if (index < 0 || index >= widget.posts.length) {
-      return screenHeight * 0.62;
-    }
-    final post = (index == _currentPage &&
-            widget.posts[index].id == widget.activePost.id)
-        ? widget.activePost
-        : widget.posts[index];
-    final dynamicDim = ref.watch(postMediaDimensionsProvider(post.cacheKey));
-    return _calculateMediaHeight(
-      post: post,
-      availableWidth: availableWidth,
-      screenHeight: screenHeight,
-      dynamicDimensions: dynamicDim,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context);
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final screenHeight = MediaQuery.sizeOf(context).height;
-    final availableWidth = (screenWidth - 16).clamp(100.0, double.infinity);
-
-    final double page =
-        (_controller.hasClients && _controller.position.haveDimensions)
-            ? (_controller.page ?? _currentPage.toDouble())
-            : _currentPage.toDouble();
-
-    final clampedPage = widget.posts.isEmpty
-        ? 0.0
-        : page.clamp(0.0, (widget.posts.length - 1).toDouble());
-    final floorIndex = clampedPage.floor();
-    final ceilIndex = clampedPage.ceil();
-    final t = clampedPage - floorIndex;
-
-    final hFloor = _getHeightForIndex(floorIndex, availableWidth, screenHeight);
-    final hCeil = floorIndex == ceilIndex
-        ? hFloor
-        : _getHeightForIndex(ceilIndex, availableWidth, screenHeight);
-
-    final carouselHeight =
-        floorIndex == ceilIndex ? hFloor : (hFloor + (hCeil - hFloor) * t);
-
-    return AnimatedContainer(
-      duration:
-          _isUserScrolling ? Duration.zero : const Duration(milliseconds: 220),
-      curve: Curves.easeOutCubic,
-      height: carouselHeight,
-      width: double.infinity,
-      child: ScrollConfiguration(
-        behavior: ScrollConfiguration.of(context).copyWith(
-          dragDevices: {
-            PointerDeviceKind.touch,
-            PointerDeviceKind.mouse,
-            PointerDeviceKind.trackpad,
-            PointerDeviceKind.stylus,
-          },
-        ),
-        child: NotificationListener<ScrollNotification>(
-          onNotification: (notification) {
-            if (notification.metrics.axis == Axis.horizontal) {
-              if (notification is ScrollStartNotification) {
-                _isUserScrolling = true;
-              } else if (notification is ScrollEndNotification) {
-                _isUserScrolling = false;
-                if (mounted) setState(() {});
-              }
-            }
-            return false;
-          },
-          child: PageView.builder(
-            controller: _controller,
-            physics: _mediaGestureLocked
-                ? const NeverScrollableScrollPhysics()
-                : const PageScrollPhysics(),
-            itemCount: widget.posts.length,
-            onPageChanged: (index) {
-              setState(() {
-                _currentPage = index;
-              });
-              widget.onPageChanged(index);
-              _prefetchAround(index);
-              _evictDistantPosts(index);
-              if (widget.onLoadMore != null &&
-                  index >= widget.posts.length - 8) {
-                widget.onLoadMore!();
-              }
-            },
-            itemBuilder: (context, index) {
-              final postItem = widget.posts[index];
-              final distance = (index - _currentPage).abs();
-
-              // If post is 3 or more pages away from current view, render a tiny lightweight placeholder
-              // to prevent loading and decoding 30-40 MB full images in the background.
-              if (distance >= 3) {
-                return Center(
-                  child: postItem.previewUrl.isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: postItem.previewUrl,
-                          httpHeaders: getPostMediaHeaders(postItem),
-                          memCacheWidth: 240,
-                          fit: BoxFit.contain,
-                          placeholder: (_, __) => const SizedBox.shrink(),
-                          errorWidget: (_, __, ___) => const SizedBox.shrink(),
-                        )
-                      : const SizedBox.shrink(),
-                );
-              }
-
-              final isActivePage = index == _currentPage;
-              final targetPost =
-                  (isActivePage && postItem.id == widget.activePost.id)
-                      ? widget.activePost
-                      : postItem;
-
-              return _KeepAlivePostPage(
-                key: ValueKey(postItem.cacheKey),
-                keepAlive: distance <= 1,
-                child: Consumer(
-                  builder: (context, ref, _) {
-                    final notesAsync =
-                        ref.watch(postNotesProvider(PostDetailsArgs(
-                      providerId: targetPost.providerId,
-                      postId: targetPost.id,
-                    )));
-                    final notes = notesAsync.value ?? const [];
-                    final showNotes =
-                        ref.watch(showPostNotesProvider(targetPost.cacheKey));
-                    final localMedia = ref
-                        .watch(
-                            downloadedMediaByKeyProvider(targetPost.cacheKey))
-                        .value;
-                    final mediaHeaders =
-                        ref.watch(postMediaHeadersProvider(targetPost)).value ??
-                            const {};
-                    final itemIsVideo = MediaUrlSelector.isVideo(targetPost);
-                    final itemIsAudio = MediaUrlSelector.isAudio(targetPost);
-
-                    final mediaViewer = PostMediaViewer(
-                      key: ValueKey(targetPost.cacheKey),
-                      post: targetPost,
-                      useLiveFeed: widget.useLiveFeed,
-                      isActive: isActivePage,
-                      postsList: widget.posts,
-                      onLoadMore: widget.onLoadMore,
-                      onPostIndexChanged: (newIdx) {
-                        widget.onPageChanged(newIdx);
-                      },
-                      localFilePath: localMedia?.savedPath,
-                      qualityMode: widget.qualityMode,
-                      notes: notes,
-                      showNotes: showNotes,
-                      mediaHeaders: mediaHeaders,
-                      initialPosition: Duration(
-                        milliseconds: widget.settings
-                                .videoPlaybackPositions[targetPost.cacheKey] ??
-                            0,
-                      ),
-                      initialLoop: widget.settings.videoPlayerLoop,
-                      initialMuted: widget.settings.videoPlayerMuted,
-                      initialCoverVideo: widget.settings.videoPlayerCover,
-                      initialHalfVolume: widget.settings.videoPlayerHalfVolume,
-                      initialVolume: widget.settings.videoPlayerVolume,
-                      onVolumeChanged: (vol) => ref
-                          .read(settingsControllerProvider.notifier)
-                          .setVideoPlayerVolume(vol),
-                      onPlaybackSnapshot: (snapshot) => widget
-                          .onSaveVideoSnapshot
-                          ?.call(ref, targetPost, snapshot),
-                      onPlaybackPreferencesChanged: (snapshot) =>
-                          widget.onSaveVideoPreferences?.call(ref, snapshot),
-                      onMediaGestureLockChanged: (locked) =>
-                          _setMediaGestureLocked(locked),
-                    );
-
-                    final itemDim = ref.watch(
-                        postMediaDimensionsProvider(targetPost.cacheKey));
-                    final itemAspect =
-                        targetPost.width > 0 && targetPost.height > 0
-                            ? targetPost.width / targetPost.height
-                            : (itemDim != null && itemDim.height > 0
-                                ? itemDim.width / itemDim.height
-                                : (16 / 9));
-
-                    return GestureDetector(
-                      behavior: HitTestBehavior.deferToChild,
-                      onDoubleTap: itemIsVideo
-                          ? null
-                          : () =>
-                              widget.onToggleFavorite?.call(ref, targetPost),
-                      onLongPress: itemIsVideo
-                          ? null
-                          : () => widget.onShowQuickActions
-                              ?.call(context, ref, targetPost),
-                      child: (itemIsVideo || itemIsAudio)
-                          ? Center(
-                              child: AspectRatio(
-                                aspectRatio: itemIsAudio
-                                    ? 1.3
-                                    : itemAspect.clamp(0.2, 5.0),
-                                child: mediaViewer,
-                              ),
-                            )
-                          : SizedBox.expand(
-                              child: mediaViewer,
-                            ),
-                    );
-                  },
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _KeepAlivePostPage extends StatefulWidget {
-  const _KeepAlivePostPage({
-    required this.child,
-    this.keepAlive = true,
-    super.key,
-  });
-
-  final Widget child;
-  final bool keepAlive;
-
-  @override
-  State<_KeepAlivePostPage> createState() => _KeepAlivePostPageState();
-}
-
-class _KeepAlivePostPageState extends State<_KeepAlivePostPage>
-    with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => widget.keepAlive;
-
-  @override
-  void didUpdateWidget(covariant _KeepAlivePostPage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.keepAlive != widget.keepAlive) {
-      updateKeepAlive();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context);
-    return widget.child;
-  }
-}
-
-class _NeighborStrip extends StatelessWidget {
-  const _NeighborStrip({
-    required this.posts,
-    required this.currentIndex,
-    required this.onOpen,
-  });
-
-  final List<Post> posts;
-  final int currentIndex;
-  final ValueChanged<Post> onOpen;
-
-  @override
-  Widget build(BuildContext context) {
-    final start = (currentIndex - 3).clamp(0, posts.length);
-    final end = (currentIndex + 4).clamp(0, posts.length);
-    final visible = posts.sublist(start, end);
-    return SizedBox(
-      height: 72,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: visible.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          final post = visible[index];
-          final selected = post.cacheKey == posts[currentIndex].cacheKey;
-          return InkWell(
-            onTap: () => onOpen(post),
-            borderRadius: BorderRadius.circular(8),
-            child: AnimatedContainer(
-              duration: AppMotion.duration(context, 140),
-              width: 72,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: selected
-                      ? Theme.of(context).colorScheme.primary
-                      : Colors.transparent,
-                  width: 2,
-                ),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: CachedNetworkImage(
-                imageUrl: post.previewUrl.isNotEmpty
-                    ? post.previewUrl
-                    : post.sampleUrl,
-                httpHeaders: getPostMediaHeaders(post),
-                memCacheWidth: 160,
-                memCacheHeight: 160,
-                fit: BoxFit.cover,
-                errorWidget: (_, __, ___) =>
-                    const Center(child: Icon(Icons.broken_image_rounded)),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _PreviousPostIntent extends Intent {
-  const _PreviousPostIntent();
-}
-
-class _NextPostIntent extends Intent {
-  const _NextPostIntent();
-}
-
-class _ToggleFavoriteIntent extends Intent {
-  const _ToggleFavoriteIntent();
-}
-
-class _AddCollectionIntent extends Intent {
-  const _AddCollectionIntent();
-}
-
-class _CloseIntent extends Intent {
-  const _CloseIntent();
-}
-
-class _DownloadIntent extends Intent {
-  const _DownloadIntent();
-}
-
-// ---------------------------------------------------------------------------
-// Artist posts card
-// ---------------------------------------------------------------------------
-
-class _ArtistPostsCard extends ConsumerWidget {
-  const _ArtistPostsCard({required this.post});
-
-  final Post post;
-
-  static ({String name, String queryTag})? extractArtist(Post post) {
-    final rawArtists = post.tagGroups['artist'] ??
-        post.tags
-            .where((t) => t.startsWith('artist:') || t.startsWith('creator:'))
-            .map((t) =>
-                t.replaceFirst('artist:', '').replaceFirst('creator:', ''))
-            .toList();
-    if (rawArtists.isEmpty) return null;
-
-    const nonArtistTags = {
-      'conditional_dnp',
-      'avoid_posting',
-      'soundless',
-      'third_party_edit',
-      'unknown_artist',
-      'anonymous_artist',
-    };
-
-    final realArtists = rawArtists
-        .where((a) => !nonArtistTags.contains(a.toLowerCase()))
-        .toList();
-    final artistName =
-        realArtists.isNotEmpty ? realArtists.first : rawArtists.first;
-    if (nonArtistTags.contains(artistName.toLowerCase())) return null;
-
-    final isE621 = post.providerId == 'e621' || post.providerId == 'e926';
-    final queryTag = isE621 ? artistName : 'artist:$artistName';
-    return (name: artistName, queryTag: queryTag);
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final artistInfo = extractArtist(post);
-    if (artistInfo == null) return const SizedBox.shrink();
-
-    final artistPosts = ref.watch(
-      artistPostsProvider(
-        ArtistPostsArgs(
-          providerId: post.providerId,
-          artistName: artistInfo.name,
-          queryTag: artistInfo.queryTag,
-        ),
-      ),
-    );
-    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
-    final scheme = Theme.of(context).colorScheme;
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final artistName = artistInfo.name;
-
-    return artistPosts.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (posts) {
-        if (posts.isEmpty) return const SizedBox.shrink();
-        // exclude the current post, keep matching provider, take up to 6 photos
-        final filtered = posts
-            .where((p) => p.id != post.id && p.providerId == post.providerId)
-            .take(6)
-            .toList();
-        if (filtered.isEmpty) return const SizedBox.shrink();
-
-        return Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: Container(
-            decoration: BoxDecoration(
-              color: isDark
-                  ? scheme.surfaceContainerHigh.withValues(alpha: 0.70)
-                  : scheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.12)
-                    : scheme.outlineVariant.withValues(alpha: 0.40),
-                width: 1.1,
-              ),
-            ),
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.palette_rounded,
-                        size: 18, color: scheme.primary),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        isRu ? 'Ещё от $artistName' : 'More by $artistName',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    InkWell(
-                      onTap: () => context.push(
-                        '/search?q=${Uri.encodeComponent(artistInfo.queryTag)}',
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              isRu ? 'Все' : 'See all',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: scheme.primary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(width: 3),
-                            Icon(Icons.arrow_forward_ios_rounded,
-                                size: 11, color: scheme.primary),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  height: 110,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: filtered.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
-                    itemBuilder: (context, index) {
-                      final p = filtered[index];
-                      final isVideo = p.fileType.toLowerCase() == 'video' ||
-                          p.fileUrl.endsWith('.mp4') ||
-                          p.fileUrl.endsWith('.webm');
-                      return InkWell(
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => PostDetailsScreen(
-                              providerId: p.providerId,
-                              postId: p.id,
-                              initialPost: p,
-                              postsList: filtered,
-                            ),
-                          ),
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Stack(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: CachedNetworkImage(
-                                imageUrl: p.previewUrl.isNotEmpty
-                                    ? p.previewUrl
-                                    : p.sampleUrl,
-                                width: 110,
-                                height: 110,
-                                fit: BoxFit.cover,
-                                memCacheWidth: 220,
-                                memCacheHeight: 220,
-                                errorWidget: (_, __, ___) => Container(
-                                  width: 110,
-                                  height: 110,
-                                  color: scheme.surfaceContainerHigh,
-                                  child: Icon(Icons.broken_image_rounded,
-                                      color: scheme.onSurfaceVariant),
-                                ),
-                              ),
-                            ),
-                            if (isVideo)
-                              Positioned(
-                                right: 6,
-                                bottom: 6,
-                                child: Container(
-                                  padding: const EdgeInsets.all(3),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withValues(alpha: 0.65),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: const Icon(
-                                    Icons.play_arrow_rounded,
-                                    size: 14,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _GoogleTranslateButton extends StatelessWidget {
-  const _GoogleTranslateButton({
-    required this.hasNotes,
-    required this.isLoading,
-    required this.showNotes,
-    required this.notesCount,
-    required this.isRu,
-    required this.onToggle,
-  });
-
-  final bool hasNotes;
-  final bool isLoading;
-  final bool showNotes;
-  final int notesCount;
-  final bool isRu;
-  final VoidCallback onToggle;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    if (isLoading) {
-      return Container(
-        height: 32,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.06)
-              : Colors.black.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
-            width: 0.8,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 12,
-              height: 12,
-              child: CircularProgressIndicator(
-                strokeWidth: 1.6,
-                color:
-                    theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              isRu ? 'Проверка перевода...' : 'Checking translation...',
-              style: TextStyle(
-                fontSize: 12,
-                color:
-                    theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (!hasNotes) {
-      return Container(
-        height: 32,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.04)
-              : Colors.black.withValues(alpha: 0.03),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.25),
-            width: 0.8,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.g_translate,
-              size: 15,
-              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              isRu ? 'Нет перевода' : 'No translation',
-              style: TextStyle(
-                fontSize: 12,
-                color:
-                    theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final bgColor = showNotes
-        ? theme.colorScheme.primaryContainer
-        : (isDark
-            ? theme.colorScheme.surfaceContainerHigh
-            : theme.colorScheme.surfaceContainerHighest);
-    final fgColor = showNotes
-        ? theme.colorScheme.onPrimaryContainer
-        : theme.colorScheme.primary;
-    final borderColor = showNotes
-        ? theme.colorScheme.primary.withValues(alpha: 0.4)
-        : theme.colorScheme.primary.withValues(alpha: 0.3);
-
-    final text = showNotes
-        ? (isRu ? 'Убрать перевод' : 'Show original')
-        : (isRu ? 'Показать перевод' : 'Show translation');
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onToggle,
-        borderRadius: BorderRadius.circular(16),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          height: 32,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: borderColor, width: 0.9),
-            boxShadow: [
-              if (showNotes)
-                BoxShadow(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.15),
-                  blurRadius: 6,
-                  offset: const Offset(0, 1.5),
-                ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                showNotes ? Icons.translate_rounded : Icons.g_translate,
-                size: 16,
-                color: fgColor,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                text,
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: fgColor,
-                ),
-              ),
-              if (notesCount > 0 && !showNotes) ...[
-                const SizedBox(width: 5),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                  decoration: BoxDecoration(
-                    color: fgColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '$notesCount',
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.bold,
-                      color: fgColor,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }

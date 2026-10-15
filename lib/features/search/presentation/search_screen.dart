@@ -109,9 +109,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           final availableProviders = <String, String>{};
           for (final r in data.recent) {
             if (r.providerId.isNotEmpty) {
-              availableProviders[r.providerId] = r.providerName.isNotEmpty
-                  ? r.providerName
-                  : r.providerId;
+              availableProviders[r.providerId] =
+                  r.providerName.isNotEmpty ? r.providerName : r.providerId;
             }
           }
 
@@ -140,8 +139,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    isRu ? 'Поиск по истории' : 'Search history',
-                                    style: theme.textTheme.titleMedium?.copyWith(
+                                    isRu
+                                        ? 'Поиск по истории'
+                                        : 'Search history',
+                                    style:
+                                        theme.textTheme.titleMedium?.copyWith(
                                       fontWeight: FontWeight.w700,
                                       fontSize: 16,
                                       letterSpacing: -0.2,
@@ -195,8 +197,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                       onPressed: () {
                                         _searchBarController.clear();
                                         ref
-                                            .read(
-                                                searchControllerProvider.notifier)
+                                            .read(searchControllerProvider
+                                                .notifier)
                                             .updateQuery('');
                                       },
                                     )
@@ -219,14 +221,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                               children: [
                                 _ProviderFilterBadge(
                                   label: isRu ? 'Все источники' : 'All sources',
-                                  isSelected: data.selectedProviderFilter == null,
+                                  isSelected:
+                                      data.selectedProviderFilter == null,
                                   color: theme.colorScheme.primary,
                                   count: data.recent.length,
                                   onTap: () => ref
                                       .read(searchControllerProvider.notifier)
                                       .setProviderFilter(null),
                                 ),
-                                for (final entry in availableProviders.entries) ...[
+                                for (final entry
+                                    in availableProviders.entries) ...[
                                   const SizedBox(width: 8),
                                   _ProviderFilterBadge(
                                     label: entry.value,
@@ -237,10 +241,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                         .where((r) => r.providerId == entry.key)
                                         .length,
                                     onTap: () {
-                                      final next = data.selectedProviderFilter ==
-                                              entry.key
-                                          ? null
-                                          : entry.key;
+                                      final next =
+                                          data.selectedProviderFilter ==
+                                                  entry.key
+                                              ? null
+                                              : entry.key;
                                       ref
                                           .read(
                                               searchControllerProvider.notifier)
@@ -302,8 +307,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                       ),
                                       child: Text(
                                         '${filteredRecent.length}',
-                                        style:
-                                            theme.textTheme.labelSmall?.copyWith(
+                                        style: theme.textTheme.labelSmall
+                                            ?.copyWith(
                                           fontWeight: FontWeight.bold,
                                           color: const Color(0xFF8B5CF6),
                                         ),
@@ -320,7 +325,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 10, vertical: 4),
                                   minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
                                 ),
                                 onPressed: () {
                                   HapticFeedback.selectionClick();
@@ -405,6 +411,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     if (lower.contains('rule34')) return const Color(0xFF2e7d32);
     if (lower.contains('safebooru')) return const Color(0xFF10b981);
     if (lower.contains('realbooru')) return const Color(0xFF455a64);
+    if (lower.contains('wallhaven')) return const Color(0xFF10b981);
+    if (lower.contains('arena') || lower.contains('are.na')) {
+      return const Color(0xFF6366F1);
+    }
     if (lower.contains('mangalib') || lower.contains('manga')) {
       return const Color(0xFFE53935);
     }

@@ -368,6 +368,16 @@ class ProviderCard extends StatelessWidget {
           Icons.person_search_rounded,
           'Fapello HTML',
         ),
+      'wallhaven' => (
+          const Color(0xFF10B981),
+          Icons.wallpaper_rounded,
+          'Wallhaven API',
+        ),
+      'arena' || 'are_na' => (
+          const Color(0xFF6366F1),
+          Icons.dashboard_customize_rounded,
+          'Are.na API',
+        ),
       _ => (
           const Color(0xFF6366F1),
           Icons.hub_rounded,

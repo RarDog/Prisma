@@ -280,6 +280,10 @@ class _RecentSearchesState extends State<RecentSearches> {
     if (lower.contains('rule34')) return const Color(0xFF2e7d32);
     if (lower.contains('safebooru')) return const Color(0xFF10b981);
     if (lower.contains('realbooru')) return const Color(0xFF455a64);
+    if (lower.contains('wallhaven')) return const Color(0xFF10b981);
+    if (lower.contains('arena') || lower.contains('are.na')) {
+      return const Color(0xFF6366F1);
+    }
     if (lower.contains('mangalib') || lower.contains('manga')) {
       return const Color(0xFFE53935);
     }

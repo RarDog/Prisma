@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 
-
 ContentProviderConfig _config(String id, String apiType) =>
     ContentProviderConfig(
       id: id,
@@ -128,7 +127,8 @@ void main() {
     final service = ProviderCheckService(
       _FakeProviderRepository(),
       _FakeProviderFactory(const {'fapello': ProviderStatus.offline}),
-      ProviderManager(_FakeProviderRepository(), _FakeProviderFactory(const {})),
+      ProviderManager(
+          _FakeProviderRepository(), _FakeProviderFactory(const {})),
     );
 
     final result = await service.checkOne('fapello');
@@ -142,7 +142,8 @@ void main() {
     final service = ProviderCheckService(
       _FakeProviderRepository(),
       _FakeProviderFactory(const {}),
-      ProviderManager(_FakeProviderRepository(), _FakeProviderFactory(const {})),
+      ProviderManager(
+          _FakeProviderRepository(), _FakeProviderFactory(const {})),
     );
 
     final result = await service.checkOne('missing');
@@ -155,7 +156,8 @@ void main() {
       () async {
     // Exercises the real ProviderManager fan-out, including `_runLimited`.
     final repository = _FakeProviderRepository();
-    final factory = _FakeProviderFactory(const {'fapello': ProviderStatus.offline});
+    final factory =
+        _FakeProviderFactory(const {'fapello': ProviderStatus.offline});
     final service = ProviderCheckService(
       repository,
       factory,
@@ -167,7 +169,8 @@ void main() {
     expect(result, isA<Success<List<ProviderHealth>>>());
     final health = (result as Success<List<ProviderHealth>>).data;
     expect(health, hasLength(3));
-    expect(health.map((h) => h.providerId), unorderedEquals(['gelbooru', 'e621', 'fapello']));
+    expect(health.map((h) => h.providerId),
+        unorderedEquals(['gelbooru', 'e621', 'fapello']));
     expect(
       health.where((h) => h.isOnline).map((h) => h.providerId),
       unorderedEquals(['gelbooru', 'e621']),

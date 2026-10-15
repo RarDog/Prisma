@@ -1,5 +1,28 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.2.0-beta.1',
+    title:
+        'Пре-релиз: обновление раздела «Любимое», исправления Wallhaven и анимация настроек',
+    titleEn:
+        'Pre-release: Favorites tab improvements, Wallhaven fixes & settings animation',
+    bullets: [
+      'Вкладка «Любимое»: стеклянные вкладки навигации («Все», «Офлайн», «Авторы», «e621») вместо сжатого сегментного переключателя.',
+      'Фильтры контента: обновлены кнопки «Все», «Видео», «Фото» со счетчиками постов и добавлен фильтр по источнику (провайдеру).',
+      'Офлайн-раздел: добавлена кнопка быстрой очистки скачанных файлов с устройства и стеклянные чипы сортировки по дате, размеру и автору.',
+      'Настройки: исправлена пропавшая иконка шестеренки во всех темах и добавлена плавная анимация раскрытия экрана настроек из кнопки.',
+      'Wallhaven: исправлена загрузка оригинальных изображений в высоком разрешении при открытии постов.',
+      'Оптимизация: модульная декомпозиция тяжелых экранов просмотра медиа, деталей постов, ридера манги и списка авторов.',
+    ],
+    bulletsEn: [
+      'Favorites Tab: touch-friendly glass navigation pills ("All", "Offline", "Artists", "e621") replacing the cramped segmented button.',
+      'Media Filters: updated "All", "Videos", "Images" capsules with post counters and added source/provider filter dropdown.',
+      'Offline Section: added one-tap cached media cleanup dialog without deleting favorites, plus date/size/artist sort capsules.',
+      'Settings: fixed invisible gear icon across themes and added smooth circular reveal transition from the button.',
+      'Wallhaven: fixed full-resolution image loading when opening posts.',
+      'Architecture: modular decomposition of heavy media viewer, post details, manga reader, and artists screens.',
+    ],
+  ),
+  PrismaChange(
     version: '4.1.9',
     title:
         'Обновление: редизайн экрана «О приложении», исправление сетки постов и оптимизация',

@@ -211,7 +211,8 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
             final screenW = screenSize.width;
             final maxAllowedWidth = math.max(180.0, screenW - 24.0);
             final safeFieldWidth = fieldWidth.clamp(180.0, maxAllowedWidth);
-            final targetWidth = screenW < 600 ? maxAllowedWidth : safeFieldWidth;
+            final targetWidth =
+                screenW < 600 ? maxAllowedWidth : safeFieldWidth;
             final dropdownWidth = targetWidth
                 .clamp(
                   math.min(safeFieldWidth, maxAllowedWidth),

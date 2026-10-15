@@ -794,6 +794,8 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
     return CustomScrollView(
       key: const PageStorageKey<String>('manga_catalog_scroll_view'),
       controller: _scrollController,
+      // ignore: deprecated_member_use
+      cacheExtent: 180.0,
       slivers: [
         SliverToBoxAdapter(
           child: Padding(
@@ -1084,12 +1086,16 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
                   final post = _mangaList[index];
-                  return MangaCard(
-                    post: post,
-                    onTap: () => _openManga(post),
+                  return RepaintBoundary(
+                    child: MangaCard(
+                      post: post,
+                      onTap: () => _openManga(post),
+                    ),
                   );
                 },
                 childCount: _mangaList.length,
+                addAutomaticKeepAlives: false,
+                addRepaintBoundaries: true,
               ),
             ),
           ),
@@ -1117,6 +1123,8 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
                 _libraryFilter == 'all' ? null : _libraryFilter));
 
     return CustomScrollView(
+      // ignore: deprecated_member_use
+      cacheExtent: 180.0,
       slivers: [
         SliverToBoxAdapter(
           child: Padding(
@@ -1266,13 +1274,17 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
                     final entry = entries[index];
-                    return MangaLibraryCard(
-                      entry: entry,
-                      onTap: () => _openLibraryEntry(entry),
-                      onLongPress: () => _showLibraryEntryOptions(entry),
+                    return RepaintBoundary(
+                      child: MangaLibraryCard(
+                        entry: entry,
+                        onTap: () => _openLibraryEntry(entry),
+                        onLongPress: () => _showLibraryEntryOptions(entry),
+                      ),
                     );
                   },
                   childCount: entries.length,
+                  addAutomaticKeepAlives: false,
+                  addRepaintBoundaries: true,
                 ),
               ),
             );

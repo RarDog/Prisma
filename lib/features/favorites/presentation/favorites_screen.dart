@@ -34,6 +34,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
   int _tabIndex = 0;
   String? _selectedArtist;
   FavoriteMediaType _mediaFilter = FavoriteMediaType.all;
+  String? _selectedProvider;
   OfflineSortOption _offlineSort = OfflineSortOption.dateAddedDesc;
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
@@ -60,6 +61,11 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
       result = result.where(_isVideoPost).toList();
     } else if (_mediaFilter == FavoriteMediaType.image) {
       result = result.where((p) => !_isVideoPost(p)).toList();
+    }
+
+    if (_selectedProvider != null && _selectedProvider!.isNotEmpty) {
+      result =
+          result.where((p) => p.providerName == _selectedProvider).toList();
     }
 
     if (_searchQuery.isNotEmpty) {
@@ -102,6 +108,15 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
             t.status == DownloadTaskStatus.running ||
             t.status == DownloadTaskStatus.queued)
         .toList();
+
+    final targetPostsForFilters = _tabIndex == 1 ? offlinePosts : allPosts;
+    final videoCount = targetPostsForFilters.where(_isVideoPost).length;
+    final imageCount = targetPostsForFilters.length - videoCount;
+    final availableProviders = targetPostsForFilters
+        .map((p) => p.providerName.isNotEmpty ? p.providerName : p.providerId)
+        .toSet()
+        .toList()
+      ..sort();
 
     return AdaptiveScaffold(
       title: isRu ? 'Избранное' : 'Favorites',
@@ -272,168 +287,33 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                 ),
 
               // Navigation Tabs with Liquid Glass container
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(22),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(
-                          alpha: Theme.of(context).brightness == Brightness.dark
-                              ? 0.20
-                              : 0.04,
-                        ),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(22),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(22),
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? Theme.of(context)
-                                  .colorScheme
-                                  .surfaceContainerHigh
-                                  .withValues(alpha: 0.50)
-                              : Colors.white.withValues(alpha: 0.72),
-                          border: Border.all(
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                    ? Colors.white.withValues(alpha: 0.12)
-                                    : Colors.white.withValues(alpha: 0.85),
-                            width: 1.1,
-                          ),
-                        ),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: SegmentedButton<int>(
-                            showSelectedIcon: false,
-                            style: ButtonStyle(
-                              visualDensity: VisualDensity.compact,
-                              shape: WidgetStatePropertyAll(
-                                RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                              ),
-                            ),
-                            segments: [
-                              ButtonSegment(
-                                value: 0,
-                                icon: const Icon(Icons.favorite_rounded,
-                                    size: 18),
-                                label: Text(
-                                  '${isRu ? 'Все' : 'All'} (${allPosts.length})',
-                                  style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              ButtonSegment(
-                                value: 1,
-                                icon: const Icon(Icons.offline_pin_rounded,
-                                    size: 18),
-                                label: Text(
-                                  '${isRu ? 'Офлайн' : 'Offline'} (${offlinePosts.length})',
-                                  style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              ButtonSegment(
-                                value: 2,
-                                icon:
-                                    const Icon(Icons.groups_rounded, size: 18),
-                                label: Text(
-                                  '${isRu ? 'Авторы' : 'Artists'} (${artistGroups.length})',
-                                  style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              const ButtonSegment(
-                                value: 3,
-                                icon: Icon(Icons.hub_rounded,
-                                    size: 18, color: Color(0xFF0077EE)),
-                                label: Text(
-                                  'e621',
-                                  style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                            selected: {_tabIndex},
-                            onSelectionChanged: (value) {
-                              HapticFeedback.selectionClick();
-                              setState(() {
-                                _tabIndex = value.first;
-                                _selectedArtist = null;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+              _FavoritesGlassTabBar(
+                selectedIndex: _tabIndex,
+                allCount: allPosts.length,
+                offlineCount: offlinePosts.length,
+                artistsCount: artistGroups.length,
+                isRu: isRu,
+                onTabSelected: (index) {
+                  setState(() {
+                    _tabIndex = index;
+                    _selectedArtist = null;
+                  });
+                },
               ),
 
-              // Media Type Filter Chips (for Tab 0 and Tab 1)
+              // Media Type & Source Filter Bar (for Tab 0 and Tab 1)
               if (_tabIndex != 2 && _tabIndex != 3)
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  child: Row(
-                    children: [
-                      FilterChip(
-                        label: Text(isRu ? 'Все' : 'All'),
-                        selected: _mediaFilter == FavoriteMediaType.all,
-                        onSelected: (_) {
-                          HapticFeedback.selectionClick();
-                          setState(
-                            () => _mediaFilter = FavoriteMediaType.all,
-                          );
-                        },
-                        visualDensity: VisualDensity.compact,
-                      ),
-                      const SizedBox(width: 8),
-                      FilterChip(
-                        avatar: const Icon(Icons.videocam_rounded, size: 16),
-                        label: Text(isRu ? 'Видео' : 'Videos'),
-                        selected: _mediaFilter == FavoriteMediaType.video,
-                        onSelected: (_) {
-                          HapticFeedback.selectionClick();
-                          setState(
-                            () => _mediaFilter = FavoriteMediaType.video,
-                          );
-                        },
-                        visualDensity: VisualDensity.compact,
-                      ),
-                      const SizedBox(width: 8),
-                      FilterChip(
-                        avatar: const Icon(Icons.image_rounded, size: 16),
-                        label: Text(isRu ? 'Фото' : 'Images'),
-                        selected: _mediaFilter == FavoriteMediaType.image,
-                        onSelected: (_) {
-                          HapticFeedback.selectionClick();
-                          setState(
-                            () => _mediaFilter = FavoriteMediaType.image,
-                          );
-                        },
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    ],
-                  ),
+                _FavoritesFilterBar(
+                  currentFilter: _mediaFilter,
+                  onFilterChanged: (filter) =>
+                      setState(() => _mediaFilter = filter),
+                  videoCount: videoCount,
+                  imageCount: imageCount,
+                  selectedProvider: _selectedProvider,
+                  availableProviders: availableProviders,
+                  onProviderChanged: (prov) =>
+                      setState(() => _selectedProvider = prov),
+                  isRu: isRu,
                 ),
 
               const SizedBox(height: 4),
@@ -568,6 +448,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
           diskSizeBytes: diskSizeBytes,
           activeTasks: activeTasks,
           pendingPosts: pendingPosts,
+          offlinePosts: offlinePosts,
           isRu: isRu,
         ),
         Expanded(
@@ -630,6 +511,41 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     );
   }
 
+  Future<void> _confirmClearOfflineMedia({
+    required List<Post> offlinePosts,
+    required int diskSizeBytes,
+    required bool isRu,
+  }) async {
+    final sizeFormatted = DownloadedMediaService.formatBytes(diskSizeBytes);
+    final confirm = await showConfirmDialog(
+      context,
+      title: isRu ? 'Очистить офлайн-файлы?' : 'Clear offline files?',
+      message: isRu
+          ? 'Удалить сохраненные файлы ($sizeFormatted) с устройства?\nПосты останутся в избранном, но для их просмотра потребуется интернет.'
+          : 'Remove downloaded files ($sizeFormatted) from device storage?\nPosts will remain in favorites, but require internet connection to view.',
+      confirmText: isRu ? 'Очистить файлы' : 'Clear files',
+      cancelText: isRu ? 'Отмена' : 'Cancel',
+    );
+
+    if (confirm && mounted) {
+      final downloadedService = ref.read(downloadedMediaServiceProvider);
+      for (final post in offlinePosts) {
+        await downloadedService.deleteLocalFile(post.cacheKey);
+      }
+      ref.invalidate(downloadedMediaByKeysProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isRu ? 'Офлайн-файлы очищены' : 'Offline files cleared',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildOfflineSyncHeader({
     required int downloadedCount,
     required int totalCount,
@@ -637,6 +553,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     required int diskSizeBytes,
     required List<DownloadTask> activeTasks,
     required List<Post> pendingPosts,
+    required List<Post> offlinePosts,
     required bool isRu,
   }) {
     final scheme = Theme.of(context).colorScheme;
@@ -711,42 +628,95 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                   ],
                 ),
               ),
-              if (pendingCount > 0)
-                FilledButton.tonalIcon(
-                  onPressed: () async {
-                    unawaited(HapticFeedback.mediumImpact());
-                    final dm = ref.read(downloadManagerServiceProvider);
-                    for (final p in pendingPosts) {
-                      await dm.start(p);
-                    }
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          isRu
-                              ? 'В очередь загрузки добавлено: $pendingCount'
-                              : 'Queued $pendingCount downloads',
-                        ),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.download_rounded, size: 16),
-                  label: Text(
-                    isRu
-                        ? 'Скачать всё ($pendingCount)'
-                        : 'Download ($pendingCount)',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
+              if (offlinePosts.isNotEmpty) ...[
+                IconButton(
+                  tooltip:
+                      isRu ? 'Очистить офлайн-файлы' : 'Clear offline files',
+                  style: IconButton.styleFrom(
                     visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.all(6),
+                  ),
+                  icon: Icon(
+                    Icons.delete_outline_rounded,
+                    size: 20,
+                    color: scheme.error.withValues(alpha: 0.85),
+                  ),
+                  onPressed: () => _confirmClearOfflineMedia(
+                    offlinePosts: offlinePosts,
+                    diskSizeBytes: diskSizeBytes,
+                    isRu: isRu,
+                  ),
+                ),
+                const SizedBox(width: 4),
+              ],
+              if (pendingCount > 0)
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    gradient: LinearGradient(
+                      colors: [
+                        scheme.primary,
+                        scheme.primary.withValues(alpha: 0.85),
+                      ],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: scheme.primary.withValues(alpha: 0.35),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () async {
+                        unawaited(HapticFeedback.mediumImpact());
+                        final dm = ref.read(downloadManagerServiceProvider);
+                        for (final p in pendingPosts) {
+                          await dm.start(p);
+                        }
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              isRu
+                                  ? 'В очередь загрузки добавлено: $pendingCount'
+                                  : 'Queued $pendingCount downloads',
+                            ),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 7,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.download_rounded,
+                              size: 15,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              isRu
+                                  ? 'Скачать всё ($pendingCount)'
+                                  : 'Download ($pendingCount)',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 )
               else
@@ -824,40 +794,40 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                       ),
                 ),
                 const SizedBox(width: 8),
-                ChoiceChip(
-                  label: Text(isRu ? 'По дате' : 'Date'),
-                  selected: _offlineSort == OfflineSortOption.dateAddedDesc,
-                  onSelected: (_) {
+                _SortCapsule(
+                  label: isRu ? 'По дате' : 'Date',
+                  icon: Icons.access_time_rounded,
+                  isSelected: _offlineSort == OfflineSortOption.dateAddedDesc,
+                  onTap: () {
                     HapticFeedback.selectionClick();
                     setState(
                       () => _offlineSort = OfflineSortOption.dateAddedDesc,
                     );
                   },
-                  visualDensity: VisualDensity.compact,
                 ),
                 const SizedBox(width: 6),
-                ChoiceChip(
-                  label: Text(isRu ? 'По размеру' : 'Size'),
-                  selected: _offlineSort == OfflineSortOption.sizeDesc,
-                  onSelected: (_) {
+                _SortCapsule(
+                  label: isRu ? 'По размеру' : 'Size',
+                  icon: Icons.pie_chart_outline_rounded,
+                  isSelected: _offlineSort == OfflineSortOption.sizeDesc,
+                  onTap: () {
                     HapticFeedback.selectionClick();
                     setState(
                       () => _offlineSort = OfflineSortOption.sizeDesc,
                     );
                   },
-                  visualDensity: VisualDensity.compact,
                 ),
                 const SizedBox(width: 6),
-                ChoiceChip(
-                  label: Text(isRu ? 'По автору' : 'Artist'),
-                  selected: _offlineSort == OfflineSortOption.artist,
-                  onSelected: (_) {
+                _SortCapsule(
+                  label: isRu ? 'По автору' : 'Artist',
+                  icon: Icons.person_rounded,
+                  isSelected: _offlineSort == OfflineSortOption.artist,
+                  onTap: () {
                     HapticFeedback.selectionClick();
                     setState(
                       () => _offlineSort = OfflineSortOption.artist,
                     );
                   },
-                  visualDensity: VisualDensity.compact,
                 ),
               ],
             ),
@@ -994,6 +964,10 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     }
 
     return ListView.separated(
+      // ignore: deprecated_member_use
+      cacheExtent: 140.0,
+      addAutomaticKeepAlives: false,
+      addRepaintBoundaries: true,
       // Extended bottom padding so the last artist cards scroll comfortably above the floating dock
       padding: EdgeInsets.fromLTRB(
           16, 8, 16, 140 + MediaQuery.paddingOf(context).bottom),
@@ -1008,12 +982,14 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
             .take(3)
             .toList();
 
-        return _ArtistCard(
-          artistName: entry.key,
-          postsCount: artistPosts.length,
-          previewUrls: previewUrls,
-          isRu: isRu,
-          onTap: () => setState(() => _selectedArtist = entry.key),
+        return RepaintBoundary(
+          child: _ArtistCard(
+            artistName: entry.key,
+            postsCount: artistPosts.length,
+            previewUrls: previewUrls,
+            isRu: isRu,
+            onTap: () => setState(() => _selectedArtist = entry.key),
+          ),
         );
       },
     );
@@ -1359,4 +1335,598 @@ Map<String, List<Post>> favoriteArtistAlbums(List<Post> posts) {
     groups.entries.toList()
       ..sort((a, b) => a.key.toLowerCase().compareTo(b.key.toLowerCase())),
   );
+}
+
+class _FavoritesGlassTabBar extends StatelessWidget {
+  const _FavoritesGlassTabBar({
+    required this.selectedIndex,
+    required this.allCount,
+    required this.offlineCount,
+    required this.artistsCount,
+    required this.isRu,
+    required this.onTabSelected,
+  });
+
+  final int selectedIndex;
+  final int allCount;
+  final int offlineCount;
+  final int artistsCount;
+  final bool isRu;
+  final ValueChanged<int> onTabSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(
+                alpha: isDark ? 0.22 : 0.04,
+              ),
+              blurRadius: 12,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                color: isDark
+                    ? theme.colorScheme.surfaceContainerHigh
+                        .withValues(alpha: 0.50)
+                    : Colors.white.withValues(alpha: 0.76),
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.12)
+                      : Colors.white.withValues(alpha: 0.85),
+                  width: 1.1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _FavoritesTabPill(
+                      index: 0,
+                      icon: Icons.favorite_rounded,
+                      label: '${isRu ? 'Все' : 'All'} ($allCount)',
+                      isSelected: selectedIndex == 0,
+                      onTap: () => onTabSelected(0),
+                    ),
+                  ),
+                  const SizedBox(width: 3),
+                  Expanded(
+                    child: _FavoritesTabPill(
+                      index: 1,
+                      icon: Icons.offline_pin_rounded,
+                      label: '${isRu ? 'Офлайн' : 'Offline'} ($offlineCount)',
+                      isSelected: selectedIndex == 1,
+                      onTap: () => onTabSelected(1),
+                    ),
+                  ),
+                  const SizedBox(width: 3),
+                  Expanded(
+                    child: _FavoritesTabPill(
+                      index: 2,
+                      icon: Icons.groups_rounded,
+                      label: '${isRu ? 'Авторы' : 'Artists'} ($artistsCount)',
+                      isSelected: selectedIndex == 2,
+                      onTap: () => onTabSelected(2),
+                    ),
+                  ),
+                  const SizedBox(width: 3),
+                  Expanded(
+                    child: _FavoritesTabPill(
+                      index: 3,
+                      icon: Icons.hub_rounded,
+                      iconColor: const Color(0xFF0077EE),
+                      label: 'e621',
+                      isSelected: selectedIndex == 3,
+                      onTap: () => onTabSelected(3),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FavoritesTabPill extends StatelessWidget {
+  const _FavoritesTabPill({
+    required this.index,
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+    this.iconColor,
+  });
+
+  final int index;
+  final IconData icon;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final Color? iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOutCubic,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: isSelected
+            ? LinearGradient(
+                colors: [
+                  scheme.primary,
+                  scheme.primary.withValues(alpha: 0.88),
+                ],
+              )
+            : null,
+        color: isSelected ? null : Colors.transparent,
+        boxShadow: isSelected
+            ? [
+                BoxShadow(
+                  color: scheme.primary.withValues(alpha: 0.32),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap();
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 15,
+                  color: isSelected
+                      ? Colors.white
+                      : (iconColor ?? scheme.onSurfaceVariant),
+                ),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.w600,
+                      color:
+                          isSelected ? Colors.white : scheme.onSurfaceVariant,
+                      letterSpacing: -0.2,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FavoritesFilterBar extends StatelessWidget {
+  const _FavoritesFilterBar({
+    required this.currentFilter,
+    required this.onFilterChanged,
+    required this.videoCount,
+    required this.imageCount,
+    required this.selectedProvider,
+    required this.availableProviders,
+    required this.onProviderChanged,
+    required this.isRu,
+  });
+
+  final FavoriteMediaType currentFilter;
+  final ValueChanged<FavoriteMediaType> onFilterChanged;
+  final int videoCount;
+  final int imageCount;
+  final String? selectedProvider;
+  final List<String> availableProviders;
+  final ValueChanged<String?> onProviderChanged;
+  final bool isRu;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            _FilterCapsule(
+              label: isRu ? 'Все' : 'All',
+              isSelected: currentFilter == FavoriteMediaType.all,
+              onTap: () => onFilterChanged(FavoriteMediaType.all),
+            ),
+            const SizedBox(width: 8),
+            _FilterCapsule(
+              icon: Icons.videocam_rounded,
+              label: isRu ? 'Видео' : 'Videos',
+              count: videoCount,
+              isSelected: currentFilter == FavoriteMediaType.video,
+              onTap: () => onFilterChanged(FavoriteMediaType.video),
+            ),
+            const SizedBox(width: 8),
+            _FilterCapsule(
+              icon: Icons.image_rounded,
+              label: isRu ? 'Фото' : 'Images',
+              count: imageCount,
+              isSelected: currentFilter == FavoriteMediaType.image,
+              onTap: () => onFilterChanged(FavoriteMediaType.image),
+            ),
+            if (availableProviders.length > 1) ...[
+              const SizedBox(width: 8),
+              _ProviderFilterMenu(
+                selectedProvider: selectedProvider,
+                availableProviders: availableProviders,
+                onProviderChanged: onProviderChanged,
+                isRu: isRu,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FilterCapsule extends StatelessWidget {
+  const _FilterCapsule({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+    this.icon,
+    this.count,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final IconData? icon;
+  final int? count;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: isSelected
+            ? scheme.primary
+            : (isDark
+                ? scheme.surfaceContainerHigh.withValues(alpha: 0.50)
+                : scheme.surfaceContainerHighest.withValues(alpha: 0.55)),
+        border: Border.all(
+          color: isSelected
+              ? scheme.primary
+              : (isDark
+                  ? Colors.white.withValues(alpha: 0.10)
+                  : Colors.black.withValues(alpha: 0.06)),
+          width: 1,
+        ),
+        boxShadow: isSelected
+            ? [
+                BoxShadow(
+                  color: scheme.primary.withValues(alpha: 0.28),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap();
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (icon != null) ...[
+                  Icon(
+                    icon,
+                    size: 15,
+                    color: isSelected ? Colors.white : scheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 5),
+                ],
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                    color: isSelected ? Colors.white : scheme.onSurfaceVariant,
+                  ),
+                ),
+                if (count != null) ...[
+                  const SizedBox(width: 5),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 5,
+                      vertical: 1.5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? Colors.white.withValues(alpha: 0.22)
+                          : scheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '$count',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color:
+                            isSelected ? Colors.white : scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProviderFilterMenu extends StatelessWidget {
+  const _ProviderFilterMenu({
+    required this.selectedProvider,
+    required this.availableProviders,
+    required this.onProviderChanged,
+    required this.isRu,
+  });
+
+  final String? selectedProvider;
+  final List<String> availableProviders;
+  final ValueChanged<String?> onProviderChanged;
+  final bool isRu;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final hasFilter = selectedProvider != null;
+
+    return PopupMenuButton<String?>(
+      initialValue: selectedProvider,
+      tooltip: isRu ? 'Фильтр по источнику' : 'Filter by source',
+      onSelected: (val) {
+        HapticFeedback.selectionClick();
+        onProviderChanged(val);
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem<String?>(
+          value: null,
+          child: Row(
+            children: [
+              Icon(
+                Icons.clear_all_rounded,
+                size: 18,
+                color: !hasFilter ? scheme.primary : null,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isRu ? 'Все источники' : 'All sources',
+                style: TextStyle(
+                  fontWeight: !hasFilter ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        ...availableProviders.map(
+          (prov) => PopupMenuItem<String?>(
+            value: prov,
+            child: Row(
+              children: [
+                Icon(
+                  Icons.public_rounded,
+                  size: 18,
+                  color: selectedProvider == prov ? scheme.primary : null,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  prov,
+                  style: TextStyle(
+                    fontWeight: selectedProvider == prov
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: hasFilter
+              ? scheme.secondaryContainer
+              : (isDark
+                  ? scheme.surfaceContainerHigh.withValues(alpha: 0.50)
+                  : scheme.surfaceContainerHighest.withValues(alpha: 0.55)),
+          border: Border.all(
+            color: hasFilter
+                ? scheme.secondary
+                : (isDark
+                    ? Colors.white.withValues(alpha: 0.10)
+                    : Colors.black.withValues(alpha: 0.06)),
+            width: 1,
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              hasFilter ? Icons.tune_rounded : Icons.filter_list_rounded,
+              size: 14,
+              color: hasFilter
+                  ? scheme.onSecondaryContainer
+                  : scheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 5),
+            Text(
+              hasFilter ? selectedProvider! : (isRu ? 'Источник' : 'Source'),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: hasFilter ? FontWeight.bold : FontWeight.w600,
+                color: hasFilter
+                    ? scheme.onSecondaryContainer
+                    : scheme.onSurfaceVariant,
+              ),
+            ),
+            if (hasFilter) ...[
+              const SizedBox(width: 4),
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  onProviderChanged(null);
+                },
+                child: Icon(
+                  Icons.close_rounded,
+                  size: 14,
+                  color: scheme.onSecondaryContainer,
+                ),
+              ),
+            ] else ...[
+              const SizedBox(width: 2),
+              Icon(
+                Icons.arrow_drop_down_rounded,
+                size: 16,
+                color: scheme.onSurfaceVariant,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SortCapsule extends StatelessWidget {
+  const _SortCapsule({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: isSelected
+            ? scheme.primary
+            : (isDark
+                ? scheme.surfaceContainerHigh.withValues(alpha: 0.50)
+                : scheme.surfaceContainerHighest.withValues(alpha: 0.55)),
+        border: Border.all(
+          color: isSelected
+              ? scheme.primary
+              : (isDark
+                  ? Colors.white.withValues(alpha: 0.10)
+                  : Colors.black.withValues(alpha: 0.06)),
+          width: 1,
+        ),
+        boxShadow: isSelected
+            ? [
+                BoxShadow(
+                  color: scheme.primary.withValues(alpha: 0.28),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 14,
+                  color: isSelected ? Colors.white : scheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    color: isSelected ? Colors.white : scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

@@ -7,6 +7,7 @@ import 'package:gel_rule_app/app/app.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/features/manga/domain/manga_library_providers.dart';
+import 'package:gel_rule_app/features/settings/presentation/cache_manager_screen.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
 import 'package:gel_rule_app/features/settings/presentation/widgets/settings_shared_widgets.dart';
 import 'package:gel_rule_app/features/viewed/presentation/viewed_controller.dart';
@@ -402,7 +403,14 @@ class StorageSettingsScreen extends ConsumerWidget {
                         ? 'Просмотр размера картинок, видео и быстрое освобождение памяти'
                         : 'Detailed cache analytics and smart cleanup tools',
                     trailing: const Icon(Icons.chevron_right_rounded, size: 20),
-                    onTap: () => context.go('/settings/cache'),
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const CacheManagerScreen(),
+                        ),
+                      );
+                    },
                   ),
                   const SettingsDivider(),
                   SettingsTile(

@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import 'package:gel_rule_app/features/manga/domain/manga_library_service.dart';
+import 'package:gel_rule_app/features/post/presentation/widgets/post_media_viewer.dart';
 
 class MangaLibraryCard extends StatelessWidget {
   const MangaLibraryCard({
@@ -40,21 +41,36 @@ class MangaLibraryCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final prog = entry.progress;
+    final headers = getMediaUrlHeaders(
+      providerId: entry.providerId,
+      url: entry.coverUrl,
+    );
 
     return GestureDetector(
       onTap: onTap,
       onLongPress: onLongPress,
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(6),
+            bottomLeft: Radius.circular(6),
+            topRight: Radius.circular(16),
+            bottomRight: Radius.circular(16),
+          ),
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.10)
+                : Colors.black.withValues(alpha: 0.08),
+            width: 0.8,
+          ),
           color: isDark
               ? Colors.white.withValues(alpha: 0.05)
               : Colors.black.withValues(alpha: 0.03),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.08),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.09),
+              blurRadius: 12,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
@@ -70,11 +86,19 @@ class MangaLibraryCard extends StatelessWidget {
                   entry.coverUrl.isNotEmpty
                       ? CachedNetworkImage(
                           imageUrl: entry.coverUrl,
+                          httpHeaders: headers,
                           fit: BoxFit.cover,
-                          placeholder: (_, __) =>
-                              Container(color: Colors.white10),
+                          placeholder: (_, __) => Container(
+                            color: isDark ? Colors.grey[900] : Colors.grey[200],
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Color(0xFFFF6740),
+                              ),
+                            ),
+                          ),
                           errorWidget: (_, __, ___) => Container(
-                            color: Colors.white10,
+                            color: isDark ? Colors.grey[900] : Colors.grey[200],
                             child: const Icon(
                               Icons.broken_image_rounded,
                               color: Colors.white38,
@@ -82,12 +106,36 @@ class MangaLibraryCard extends StatelessWidget {
                           ),
                         )
                       : Container(
-                          color: Colors.white10,
+                          color: isDark ? Colors.grey[900] : Colors.grey[200],
                           child: const Icon(
                             Icons.auto_stories_rounded,
                             color: Colors.white38,
                           ),
                         ),
+
+                  // 3D Book Spine Shadow & Fold Highlight
+                  Positioned(
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: 14,
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [
+                              Colors.black.withValues(alpha: 0.50),
+                              Colors.white.withValues(alpha: 0.15),
+                              Colors.transparent,
+                            ],
+                            stops: const [0.0, 0.28, 1.0],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
 
                   // Status badge at top right
                   Positioned(
@@ -95,21 +143,53 @@ class MangaLibraryCard extends StatelessWidget {
                     right: 8,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
-                        vertical: 3,
+                        horizontal: 8,
+                        vertical: 3.5,
                       ),
                       decoration: BoxDecoration(
-                        color:
-                            _statusColor(entry.status).withValues(alpha: 0.90),
+                        color: Colors.black.withValues(alpha: 0.72),
                         borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        _statusLabel(entry.status, isRu),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+                        border: Border.all(
+                          color:
+                              _statusColor(entry.status).withValues(alpha: 0.5),
+                          width: 0.8,
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _statusColor(entry.status)
+                                .withValues(alpha: 0.2),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: _statusColor(entry.status),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: _statusColor(entry.status),
+                                  blurRadius: 4,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            _statusLabel(entry.status, isRu),
+                            style: TextStyle(
+                              color: _statusColor(entry.status),
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),

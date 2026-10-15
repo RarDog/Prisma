@@ -32,15 +32,26 @@ class MangaCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(6),
+            bottomLeft: Radius.circular(6),
+            topRight: Radius.circular(16),
+            bottomRight: Radius.circular(16),
+          ),
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.10)
+                : Colors.black.withValues(alpha: 0.08),
+            width: 0.8,
+          ),
           color: isDark
               ? Colors.white.withValues(alpha: 0.05)
               : Colors.black.withValues(alpha: 0.03),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.08),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.09),
+              blurRadius: 12,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
@@ -71,6 +82,52 @@ class MangaCard extends StatelessWidget {
                     errorWidget: (_, __, ___) => Container(
                       color: isDark ? Colors.grey[900] : Colors.grey[200],
                       child: const Icon(Icons.broken_image_rounded, size: 32),
+                    ),
+                  ),
+
+                  // 3D Book Spine Shadow & Fold Highlight
+                  Positioned(
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: 14,
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [
+                              Colors.black.withValues(alpha: 0.50),
+                              Colors.white.withValues(alpha: 0.15),
+                              Colors.transparent,
+                            ],
+                            stops: const [0.0, 0.28, 1.0],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Bottom Scrim Gradient for Title and Details
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    height: 52,
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                            colors: [
+                              Colors.black.withValues(alpha: 0.70),
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   ),
 

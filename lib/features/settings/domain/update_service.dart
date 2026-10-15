@@ -507,7 +507,8 @@ rm -f "\$0"
 
   static String _versionFromTag(String tag) {
     // Preserve full version including prerelease, e.g. "1.2.3-beta.1"
-    final clean = tag.trim().replaceFirst(RegExp(r'^v', caseSensitive: false), '');
+    final clean =
+        tag.trim().replaceFirst(RegExp(r'^v', caseSensitive: false), '');
     return clean;
   }
 
@@ -547,7 +548,8 @@ class _ParsedVersion implements Comparable<_ParsedVersion> {
   final int preNumber; // e.g. 1 in beta.1
 
   static _ParsedVersion parse(String value) {
-    final clean = value.trim().replaceFirst(RegExp(r'^v', caseSensitive: false), '');
+    final clean =
+        value.trim().replaceFirst(RegExp(r'^v', caseSensitive: false), '');
     final match = RegExp(
       r'^(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:[-._]?(alpha|beta|rc|dev|preview)[-._]?(\d+)?)?',
       caseSensitive: false,

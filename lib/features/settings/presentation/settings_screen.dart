@@ -25,8 +25,16 @@ class SettingsScreen extends ConsumerWidget {
     final settingsAsync = ref.watch(settingsControllerProvider);
     final strings = ref.watch(appStringsProvider);
 
+    final canPop = Navigator.of(context).canPop();
     return AdaptiveScaffold(
       title: strings.settings,
+      leading: canPop
+          ? IconButton(
+              icon: const Icon(Icons.arrow_back_rounded),
+              tooltip: strings.close,
+              onPressed: () => Navigator.of(context).maybePop(),
+            )
+          : null,
       body: settingsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => ErrorView(message: error.toString()),

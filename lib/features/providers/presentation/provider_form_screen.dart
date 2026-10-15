@@ -353,6 +353,10 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
                           child: Text('Realbooru HTML'),
                         ),
                         DropdownMenuItem(
+                          value: 'wallhaven',
+                          child: Text('Wallhaven API (Wallpapers & Art)'),
+                        ),
+                        DropdownMenuItem(
                           value: 'custom',
                           child: Text('Custom REST API'),
                         ),

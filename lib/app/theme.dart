@@ -58,6 +58,7 @@ ThemeData buildTheme(
     appBarTheme: AppBarTheme(
       centerTitle: false,
       elevation: 0,
+      scrolledUnderElevation: 0,
       backgroundColor: appBarBg,
       foregroundColor: scheme.onSurface,
     ),

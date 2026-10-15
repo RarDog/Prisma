@@ -57,8 +57,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
         ref.read(feedControllerProvider.notifier).loadNextPage();
       }
       _lastKnownScrollOffset = offset;
-      final shouldShow =
-          _scrollController.hasClients && offset > 1200;
+      final shouldShow = _scrollController.hasClients && offset > 1200;
       if (shouldShow != _showScrollToTop) {
         setState(() => _showScrollToTop = shouldShow);
       }

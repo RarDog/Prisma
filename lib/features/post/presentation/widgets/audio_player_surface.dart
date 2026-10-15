@@ -6,7 +6,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 
 class AudioSurface extends StatefulWidget {
-  const AudioSurface({super.key, 
+  const AudioSurface({
+    super.key,
     required this.player,
     required this.post,
     required this.muted,
@@ -468,4 +469,3 @@ class AudioSurfaceState extends State<AudioSurface>
     );
   }
 }
-

@@ -40,8 +40,11 @@ class DesktopSmoothScrollBinding extends WidgetsFlutterBinding {
     }
 
     // Only intercept discrete mouse wheel scrolls on desktop platforms.
-    final isDesktop = Platform.isLinux || Platform.isWindows || Platform.isMacOS;
-    if (isDesktop && event is PointerScrollEvent && event.kind == PointerDeviceKind.mouse) {
+    final isDesktop =
+        Platform.isLinux || Platform.isWindows || Platform.isMacOS;
+    if (isDesktop &&
+        event is PointerScrollEvent &&
+        event.kind == PointerDeviceKind.mouse) {
       _lastScrollEvent = event;
       _accumulatedDelta += event.scrollDelta;
 
@@ -84,8 +87,9 @@ class DesktopSmoothScrollBinding extends WidgetsFlutterBinding {
       return;
     }
 
-    final double dt = ((timeStamp - lastTime).inMicroseconds / Duration.microsecondsPerSecond)
-        .clamp(0.001, 0.05);
+    final double dt =
+        ((timeStamp - lastTime).inMicroseconds / Duration.microsecondsPerSecond)
+            .clamp(0.001, 0.05);
 
     final event = _lastScrollEvent;
     if (event == null || _accumulatedDelta.distance < _kMinDeltaThreshold) {
@@ -121,7 +125,8 @@ class DesktopSmoothScrollBinding extends WidgetsFlutterBinding {
       super.handlePointerEvent(
         PointerScrollEvent(
           viewId: origin.viewId,
-          timeStamp: Duration(microseconds: DateTime.now().microsecondsSinceEpoch),
+          timeStamp:
+              Duration(microseconds: DateTime.now().microsecondsSinceEpoch),
           kind: PointerDeviceKind.mouse,
           device: origin.device,
           position: _currentPointerPosition,
@@ -159,4 +164,3 @@ class DesktopSmoothScrollBehavior extends MaterialScrollBehavior {
     return super.getScrollPhysics(context);
   }
 }
-

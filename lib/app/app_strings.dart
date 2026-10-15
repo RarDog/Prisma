@@ -113,6 +113,5 @@ class AppStrings {
   String get resumeQueue => ru ? 'Возобновить очередь' : 'Resume queue';
   String get pauseQueue => ru ? 'Приостановить очередь' : 'Pause queue';
   String get cancelActive => ru ? 'Отменить активные' : 'Cancel active';
-  String get clearFinished =>
-      ru ? 'Очистить завершенные' : 'Clear finished';
+  String get clearFinished => ru ? 'Очистить завершенные' : 'Clear finished';
 }

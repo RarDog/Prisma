@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -5,7 +6,8 @@ import 'package:flutter/services.dart';
 import 'app_destination.dart';
 
 class LiquidGlassBottomBar extends StatefulWidget {
-  const LiquidGlassBottomBar({super.key, 
+  const LiquidGlassBottomBar({
+    super.key,
     required this.selectedIndex,
     required this.onDestinationSelected,
     required this.items,
@@ -38,7 +40,7 @@ class LiquidGlassBottomBarState extends State<LiquidGlassBottomBar>
     _toIndex = widget.selectedIndex;
     _pillController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 320),
+      duration: const Duration(milliseconds: 350),
     );
     _leadAnimation = CurvedAnimation(
       parent: _pillController,
@@ -46,7 +48,7 @@ class LiquidGlassBottomBarState extends State<LiquidGlassBottomBar>
     );
     _trailAnimation = CurvedAnimation(
       parent: _pillController,
-      curve: const Interval(0.14, 1.0, curve: Curves.easeOutBack),
+      curve: const Interval(0.12, 1.0, curve: Curves.easeOutBack),
     );
   }
 
@@ -70,9 +72,14 @@ class LiquidGlassBottomBarState extends State<LiquidGlassBottomBar>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final isAmoled = isDark &&
+        (theme.scaffoldBackgroundColor == const Color(0xFF000000) ||
+            theme.colorScheme.surface == const Color(0xFF000000));
     final scheme = theme.colorScheme;
     final count = widget.items.length;
     if (count == 0) return const SizedBox.shrink();
+
+    final blurSigma = isAmoled ? 24.0 : 20.0;
 
     return SafeArea(
       top: false,
@@ -92,14 +99,18 @@ class LiquidGlassBottomBarState extends State<LiquidGlassBottomBar>
                 borderRadius: BorderRadius.circular(28),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.38 : 0.09),
-                    blurRadius: 22,
+                    color: Colors.black.withValues(
+                      alpha: isAmoled ? 0.55 : (isDark ? 0.38 : 0.09),
+                    ),
+                    blurRadius: isAmoled ? 28 : 22,
                     offset: const Offset(0, 8),
-                    spreadRadius: -2,
+                    spreadRadius: isAmoled ? 0 : -2,
                   ),
                   if (isDark)
                     BoxShadow(
-                      color: scheme.primary.withValues(alpha: 0.07),
+                      color: scheme.primary.withValues(
+                        alpha: isAmoled ? 0.12 : 0.07,
+                      ),
                       blurRadius: 18,
                       offset: const Offset(0, 2),
                     ),
@@ -108,35 +119,102 @@ class LiquidGlassBottomBarState extends State<LiquidGlassBottomBar>
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(28),
                 child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                  filter:
+                      ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
                   child: Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(28),
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        colors: isDark
+                        colors: isAmoled
                             ? [
-                                scheme.surfaceContainerHigh
-                                    .withValues(alpha: 0.70),
-                                scheme.surface.withValues(alpha: 0.82),
+                                const Color(0xFF141414).withValues(alpha: 0.85),
+                                const Color(0xFF000000).withValues(alpha: 0.90),
                               ]
-                            : [
-                                Colors.white.withValues(alpha: 0.84),
-                                Colors.white.withValues(alpha: 0.68),
-                              ],
+                            : isDark
+                                ? [
+                                    scheme.surfaceContainerHigh
+                                        .withValues(alpha: 0.70),
+                                    scheme.surface.withValues(alpha: 0.82),
+                                  ]
+                                : [
+                                    Colors.white.withValues(alpha: 0.86),
+                                    Colors.white.withValues(alpha: 0.68),
+                                  ],
                       ),
                       border: Border.all(
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.16)
-                            : Colors.white.withValues(alpha: 0.75),
+                        color: isAmoled
+                            ? Colors.white.withValues(alpha: 0.20)
+                            : isDark
+                                ? Colors.white.withValues(alpha: 0.16)
+                                : Colors.white.withValues(alpha: 0.78),
                         width: 1.2,
                       ),
                     ),
                     child: Stack(
                       alignment: Alignment.centerLeft,
                       children: [
-                        // Animated liquid-stretching pill indicator
+                        // Specular Bevel Highlight on top edge
+                        Positioned(
+                          top: 0,
+                          left: 28,
+                          right: 28,
+                          height: 1.2,
+                          child: IgnorePointer(
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.white.withValues(alpha: 0.0),
+                                    Colors.white.withValues(
+                                      alpha: isDark ? 0.42 : 0.85,
+                                    ),
+                                    Colors.white.withValues(alpha: 0.0),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Ambient Glass Underglow behind active tab
+                        AnimatedBuilder(
+                          animation: _pillController,
+                          builder: (context, _) {
+                            final safeFrom = _fromIndex.clamp(0, count - 1);
+                            final safeTo = _toIndex.clamp(0, count - 1);
+                            final currentCenterX = lerpDouble(
+                              safeFrom * itemWidth + itemWidth / 2,
+                              safeTo * itemWidth + itemWidth / 2,
+                              _leadAnimation.value,
+                            )!;
+
+                            return Positioned(
+                              left: currentCenterX - itemWidth * 0.6,
+                              top: 2,
+                              width: itemWidth * 1.2,
+                              height: 58,
+                              child: IgnorePointer(
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: RadialGradient(
+                                      colors: [
+                                        scheme.primary.withValues(
+                                          alpha: isDark ? 0.24 : 0.14,
+                                        ),
+                                        scheme.primary.withValues(alpha: 0.0),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+
+                        // Animated liquid-stretching & squishing pill indicator
                         AnimatedBuilder(
                           animation: _pillController,
                           builder: (context, _) {
@@ -182,12 +260,20 @@ class LiquidGlassBottomBarState extends State<LiquidGlassBottomBar>
                               width = (right - left).clamp(pillWidth, barWidth);
                             }
 
+                            // Liquid Squish factor (conservation of fluid volume)
+                            final progress = _pillController.value;
+                            final squish = _pillController.isAnimating
+                                ? math.sin(progress * math.pi) * 2.8
+                                : 0.0;
+                            final pillH = 33.0 - squish;
+                            final pillTop = 6.5 + (squish / 2);
+
                             return Positioned(
                               left: left,
-                              top: 6.5,
+                              top: pillTop,
                               child: Container(
                                 width: width,
-                                height: 33,
+                                height: pillH,
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(16.5),
                                   gradient: LinearGradient(
@@ -196,9 +282,9 @@ class LiquidGlassBottomBarState extends State<LiquidGlassBottomBar>
                                     colors: isDark
                                         ? [
                                             scheme.primary
-                                                .withValues(alpha: 0.36),
+                                                .withValues(alpha: 0.40),
                                             scheme.primaryContainer
-                                                .withValues(alpha: 0.72),
+                                                .withValues(alpha: 0.76),
                                           ]
                                         : [
                                             scheme.primaryContainer
@@ -209,25 +295,25 @@ class LiquidGlassBottomBarState extends State<LiquidGlassBottomBar>
                                   ),
                                   border: Border.all(
                                     color: isDark
-                                        ? Colors.white.withValues(alpha: 0.30)
+                                        ? Colors.white.withValues(alpha: 0.32)
                                         : scheme.primary
-                                            .withValues(alpha: 0.26),
+                                            .withValues(alpha: 0.28),
                                     width: 1.1,
                                   ),
                                   boxShadow: [
                                     BoxShadow(
                                       color: scheme.primary.withValues(
-                                        alpha: isDark ? 0.30 : 0.16,
+                                        alpha: isDark ? 0.32 : 0.16,
                                       ),
-                                      blurRadius: 12,
+                                      blurRadius: 14,
                                       offset: const Offset(0, 3),
                                       spreadRadius: -1,
                                     ),
                                     if (isDark)
                                       BoxShadow(
                                         color: scheme.primary
-                                            .withValues(alpha: 0.14),
-                                        blurRadius: 18,
+                                            .withValues(alpha: 0.16),
+                                        blurRadius: 20,
                                         spreadRadius: 1,
                                       ),
                                   ],
@@ -249,7 +335,7 @@ class LiquidGlassBottomBarState extends State<LiquidGlassBottomBar>
                                               colors: [
                                                 Colors.white.withValues(
                                                     alpha:
-                                                        isDark ? 0.20 : 0.38),
+                                                        isDark ? 0.22 : 0.40),
                                                 Colors.white
                                                     .withValues(alpha: 0.0),
                                               ],
@@ -283,7 +369,7 @@ class LiquidGlassBottomBarState extends State<LiquidGlassBottomBar>
                                   onTapCancel: () =>
                                       setState(() => _pressedIndex = null),
                                   onTap: () {
-                                    HapticFeedback.lightImpact();
+                                    HapticFeedback.selectionClick();
                                     widget.onDestinationSelected(i);
                                   },
                                 ),
@@ -330,7 +416,7 @@ class _LiquidNavItem extends StatelessWidget {
     final scheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
-    final targetScale = isPressed ? 0.88 : (isSelected ? 1.04 : 1.0);
+    final targetScale = isPressed ? 0.88 : (isSelected ? 1.08 : 1.0);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -341,7 +427,7 @@ class _LiquidNavItem extends StatelessWidget {
       child: Center(
         child: AnimatedScale(
           scale: targetScale,
-          duration: const Duration(milliseconds: 180),
+          duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutBack,
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -351,9 +437,9 @@ class _LiquidNavItem extends StatelessWidget {
                 height: 31,
                 child: Center(
                   child: AnimatedSlide(
-                    offset: isSelected ? const Offset(0, -0.04) : Offset.zero,
-                    duration: const Duration(milliseconds: 240),
-                    curve: Curves.easeOutCubic,
+                    offset: isSelected ? const Offset(0, -0.06) : Offset.zero,
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOutBack,
                     child: AnimatedSwitcher(
                       duration: const Duration(milliseconds: 220),
                       switchInCurve: Curves.easeOutBack,
@@ -361,7 +447,7 @@ class _LiquidNavItem extends StatelessWidget {
                       transitionBuilder: (child, anim) => FadeTransition(
                         opacity: anim,
                         child: ScaleTransition(
-                          scale: Tween<double>(begin: 0.82, end: 1.0)
+                          scale: Tween<double>(begin: 0.80, end: 1.0)
                               .animate(anim),
                           child: child,
                         ),
@@ -371,7 +457,7 @@ class _LiquidNavItem extends StatelessWidget {
                             ? destination.effectiveSelectedIcon
                             : destination.icon,
                         key: ValueKey('${destination.id}_$isSelected'),
-                        size: isSelected ? 21.5 : 19.5,
+                        size: isSelected ? 22.0 : 19.5,
                         color: isSelected
                             ? scheme.onPrimaryContainer
                             : (isDark
@@ -392,7 +478,7 @@ class _LiquidNavItem extends StatelessWidget {
                   fontSize: 9.5,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                   color: isSelected
-                      ? (isDark ? scheme.primary : scheme.onSurface)
+                      ? (isDark ? scheme.primary : scheme.primary)
                       : scheme.onSurfaceVariant.withValues(alpha: 0.72),
                   letterSpacing: isSelected ? -0.1 : -0.3,
                 ),
@@ -409,28 +495,50 @@ class _LiquidNavItem extends StatelessWidget {
 }
 
 class LiquidGlassSettingsButton extends StatefulWidget {
-  const LiquidGlassSettingsButton({super.key, 
+  const LiquidGlassSettingsButton({
+    super.key,
     required this.ru,
-    required this.onTap,
+    this.onTap,
+    this.onTapWithCenter,
   });
 
   final bool ru;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final void Function(Offset center)? onTapWithCenter;
 
   @override
   State<LiquidGlassSettingsButton> createState() =>
       _LiquidGlassSettingsButtonState();
 }
 
-class _LiquidGlassSettingsButtonState
-    extends State<LiquidGlassSettingsButton> {
+class _LiquidGlassSettingsButtonState extends State<LiquidGlassSettingsButton> {
   bool _pressed = false;
+
+  void _handleTap() {
+    HapticFeedback.lightImpact();
+
+    final box = context.findRenderObject() as RenderBox?;
+    final origin = box?.localToGlobal(Offset.zero) ?? Offset.zero;
+    final size = box?.size ?? const Size(52, 52);
+    final center =
+        Offset(origin.dx + size.width / 2, origin.dy + size.height / 2);
+
+    if (widget.onTapWithCenter != null) {
+      widget.onTapWithCenter!(center);
+    } else {
+      widget.onTap?.call();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final isAmoled = isDark &&
+        (theme.scaffoldBackgroundColor == const Color(0xFF000000) ||
+            theme.colorScheme.surface == const Color(0xFF000000));
     final scheme = theme.colorScheme;
+    final blurSigma = isAmoled ? 28.0 : 24.0;
 
     return Tooltip(
       message: widget.ru ? 'Настройки' : 'Settings',
@@ -439,71 +547,115 @@ class _LiquidGlassSettingsButtonState
         onTapDown: (_) => setState(() => _pressed = true),
         onTapUp: (_) => setState(() => _pressed = false),
         onTapCancel: () => setState(() => _pressed = false),
-        onTap: () {
-          HapticFeedback.mediumImpact();
-          widget.onTap();
-        },
+        onTap: _handleTap,
         child: AnimatedScale(
           scale: _pressed ? 0.88 : 1.0,
-          duration: const Duration(milliseconds: 160),
-          curve: Curves.easeOutCubic,
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutBack,
           child: Container(
-            width: 48,
-            height: 48,
+            width: 52,
+            height: 52,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.38 : 0.12),
-                  blurRadius: 18,
-                  offset: const Offset(0, 6),
-                  spreadRadius: -1,
+                  color: Colors.black.withValues(
+                    alpha: isAmoled ? 0.60 : (isDark ? 0.40 : 0.14),
+                  ),
+                  blurRadius: isAmoled ? 26 : 20,
+                  offset: const Offset(0, 7),
+                  spreadRadius: isAmoled ? 0 : -1,
                 ),
                 BoxShadow(
-                  color: scheme.primary.withValues(alpha: isDark ? 0.20 : 0.12),
-                  blurRadius: 12,
-                  offset: const Offset(0, 2),
+                  color: scheme.primary.withValues(
+                    alpha: isDark ? 0.35 : 0.22,
+                  ),
+                  blurRadius: 16,
+                  offset: const Offset(0, 3),
+                  spreadRadius: 1,
                 ),
               ],
             ),
             child: ClipOval(
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
                 child: Container(
+                  width: 52,
+                  height: 52,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       center: const Alignment(-0.3, -0.4),
-                      radius: 1.1,
-                      colors: isDark
+                      radius: 1.15,
+                      colors: isAmoled
                           ? [
-                              scheme.surfaceContainerHigh
-                                  .withValues(alpha: 0.85),
-                              scheme.surface.withValues(alpha: 0.75),
+                              const Color(0xFF282828).withValues(alpha: 0.96),
+                              const Color(0xFF161616).withValues(alpha: 0.92),
+                              const Color(0xFF080808).withValues(alpha: 0.88),
                             ]
-                          : [
-                              Colors.white.withValues(alpha: 0.92),
-                              Colors.white.withValues(alpha: 0.70),
-                            ],
+                          : isDark
+                              ? [
+                                  scheme.primaryContainer
+                                      .withValues(alpha: 0.40),
+                                  scheme.surfaceContainerHigh
+                                      .withValues(alpha: 0.88),
+                                  scheme.surface.withValues(alpha: 0.80),
+                                ]
+                              : [
+                                  Colors.white.withValues(alpha: 0.98),
+                                  Colors.white.withValues(alpha: 0.86),
+                                  Colors.white.withValues(alpha: 0.72),
+                                ],
+                      stops: const [0.0, 0.55, 1.0],
                     ),
                     border: Border.all(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.24)
-                          : Colors.white.withValues(alpha: 0.85),
-                      width: 1.4,
+                      color: isAmoled
+                          ? Colors.white.withValues(alpha: 0.28)
+                          : isDark
+                              ? scheme.primary.withValues(alpha: 0.38)
+                              : Colors.white.withValues(alpha: 0.90),
+                      width: 1.5,
                     ),
                   ),
-                  child: Center(
-                    child: AnimatedRotation(
-                      turns: _pressed ? 0.125 : 0.0,
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeOutBack,
-                      child: Icon(
-                        Icons.settings_rounded,
-                        size: 23,
-                        color: scheme.primary,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Specular top-light crescent
+                      Positioned(
+                        top: 2.5,
+                        left: 9,
+                        right: 9,
+                        height: 2.0,
+                        child: IgnorePointer(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(1.0),
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.white.withValues(alpha: 0.0),
+                                  Colors.white.withValues(
+                                    alpha: isDark ? 0.55 : 0.95,
+                                  ),
+                                  Colors.white.withValues(alpha: 0.0),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                      Center(
+                        child: AnimatedRotation(
+                          turns: _pressed ? 0.25 : 0.0,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOutBack,
+                          child: Icon(
+                            Icons.settings_rounded,
+                            size: 24,
+                            color: isDark ? Colors.white : scheme.primary,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -514,4 +666,3 @@ class _LiquidGlassSettingsButtonState
     );
   }
 }
-

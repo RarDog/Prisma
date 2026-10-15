@@ -469,7 +469,10 @@ class AboutSettingsScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(28),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF6366F1).withValues(alpha: theme.brightness == Brightness.dark ? 0.20 : 0.12),
+                      color: const Color(0xFF6366F1).withValues(
+                          alpha: theme.brightness == Brightness.dark
+                              ? 0.20
+                              : 0.12),
                       blurRadius: 28,
                       offset: const Offset(0, 10),
                       spreadRadius: -4,
@@ -479,20 +482,23 @@ class AboutSettingsScreen extends ConsumerWidget {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(28),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 28),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(28),
                       border: Border.all(
                         color: theme.brightness == Brightness.dark
                             ? Colors.white.withValues(alpha: 0.14)
-                            : theme.colorScheme.outlineVariant.withValues(alpha: 0.45),
+                            : theme.colorScheme.outlineVariant
+                                .withValues(alpha: 0.45),
                         width: 1.2,
                       ),
                       gradient: LinearGradient(
                         colors: theme.brightness == Brightness.dark
                             ? [
                                 const Color(0xFF241938).withValues(alpha: 0.85),
-                                theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.65),
+                                theme.colorScheme.surfaceContainerHigh
+                                    .withValues(alpha: 0.65),
                                 const Color(0xFF181829).withValues(alpha: 0.90),
                               ]
                             : [
@@ -514,12 +520,14 @@ class AboutSettingsScreen extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(26),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFFE84D8A).withValues(alpha: 0.45),
+                                color: const Color(0xFFE84D8A)
+                                    .withValues(alpha: 0.45),
                                 blurRadius: 24,
                                 offset: const Offset(-4, 6),
                               ),
                               BoxShadow(
-                                color: const Color(0xFF6366F1).withValues(alpha: 0.45),
+                                color: const Color(0xFF6366F1)
+                                    .withValues(alpha: 0.45),
                                 blurRadius: 24,
                                 offset: const Offset(4, 6),
                               ),
@@ -535,7 +543,10 @@ class AboutSettingsScreen extends ConsumerWidget {
                               errorBuilder: (_, __, ___) => Container(
                                 decoration: const BoxDecoration(
                                   gradient: LinearGradient(
-                                    colors: [Color(0xFFE84D8A), Color(0xFF8B5CF6)],
+                                    colors: [
+                                      Color(0xFFE84D8A),
+                                      Color(0xFF8B5CF6)
+                                    ],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
@@ -572,13 +583,16 @@ class AboutSettingsScreen extends ConsumerWidget {
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: [
-                                    const Color(0xFF6366F1).withValues(alpha: 0.18),
-                                    const Color(0xFFE84D8A).withValues(alpha: 0.18),
+                                    const Color(0xFF6366F1)
+                                        .withValues(alpha: 0.18),
+                                    const Color(0xFFE84D8A)
+                                        .withValues(alpha: 0.18),
                                   ],
                                 ),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
-                                  color: const Color(0xFF6366F1).withValues(alpha: 0.35),
+                                  color: const Color(0xFF6366F1)
+                                      .withValues(alpha: 0.35),
                                   width: 1,
                                 ),
                               ),
@@ -596,7 +610,8 @@ class AboutSettingsScreen extends ConsumerWidget {
                                   const SizedBox(width: 7),
                                   Text(
                                     'v$appDisplayVersion (build $appBuildNumber)',
-                                    style: theme.textTheme.labelMedium?.copyWith(
+                                    style:
+                                        theme.textTheme.labelMedium?.copyWith(
                                       fontWeight: FontWeight.w800,
                                       letterSpacing: -0.2,
                                       color: theme.colorScheme.onSurface,
@@ -706,8 +721,10 @@ class AboutSettingsScreen extends ConsumerWidget {
                           children: [
                             Expanded(
                               child: FilledButton.tonalIcon(
-                                onPressed: () => _copyDiagnostics(context, ref, isRu),
-                                icon: const Icon(Icons.bug_report_rounded, size: 18),
+                                onPressed: () =>
+                                    _copyDiagnostics(context, ref, isRu),
+                                icon: const Icon(Icons.bug_report_rounded,
+                                    size: 18),
                                 label: Text(
                                   isRu ? 'Отчет об ошибке' : 'Copy report',
                                   maxLines: 1,
@@ -728,7 +745,8 @@ class AboutSettingsScreen extends ConsumerWidget {
                             Expanded(
                               child: OutlinedButton.icon(
                                 onPressed: () => _copyLogs(context, ref, isRu),
-                                icon: const Icon(Icons.receipt_long_rounded, size: 18),
+                                icon: const Icon(Icons.receipt_long_rounded,
+                                    size: 18),
                                 label: Text(
                                   isRu ? 'Копировать логи' : 'Copy logs',
                                   maxLines: 1,
@@ -767,7 +785,9 @@ class AboutSettingsScreen extends ConsumerWidget {
                             color: theme.colorScheme.error,
                           ),
                           label: Text(
-                            isRu ? 'Очистить диагностические логи' : 'Clear diagnostic logs',
+                            isRu
+                                ? 'Очистить диагностические логи'
+                                : 'Clear diagnostic logs',
                             style: TextStyle(
                               color: theme.colorScheme.error,
                               fontSize: 13,
