@@ -85,304 +85,318 @@ class LiquidGlassBottomBarState extends State<LiquidGlassBottomBar>
       top: false,
       left: false,
       right: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final barWidth = constraints.maxWidth;
-            final itemWidth = barWidth / count;
-            final pillWidth = (itemWidth - 6).clamp(36.0, 64.0);
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        heightFactor: 1.0,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 620),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final barWidth = constraints.maxWidth;
+                final itemWidth = barWidth / count;
+                final pillWidth = (itemWidth - 6).clamp(36.0, 64.0);
 
-            return Container(
-              height: 64,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(
-                      alpha: isAmoled ? 0.55 : (isDark ? 0.38 : 0.09),
-                    ),
-                    blurRadius: isAmoled ? 28 : 22,
-                    offset: const Offset(0, 8),
-                    spreadRadius: isAmoled ? 0 : -2,
+                return Container(
+                  height: 64,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(
+                          alpha: isAmoled ? 0.55 : (isDark ? 0.38 : 0.09),
+                        ),
+                        blurRadius: isAmoled ? 28 : 22,
+                        offset: const Offset(0, 8),
+                        spreadRadius: isAmoled ? 0 : -2,
+                      ),
+                      if (isDark)
+                        BoxShadow(
+                          color: scheme.primary.withValues(
+                            alpha: isAmoled ? 0.12 : 0.07,
+                          ),
+                          blurRadius: 18,
+                          offset: const Offset(0, 2),
+                        ),
+                    ],
                   ),
-                  if (isDark)
-                    BoxShadow(
-                      color: scheme.primary.withValues(
-                        alpha: isAmoled ? 0.12 : 0.07,
-                      ),
-                      blurRadius: 18,
-                      offset: const Offset(0, 2),
-                    ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(28),
-                child: BackdropFilter(
-                  filter:
-                      ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(28),
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: isAmoled
-                            ? [
-                                const Color(0xFF141414).withValues(alpha: 0.85),
-                                const Color(0xFF000000).withValues(alpha: 0.90),
-                              ]
-                            : isDark
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(28),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(
+                          sigmaX: blurSigma, sigmaY: blurSigma),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(28),
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: isAmoled
                                 ? [
-                                    scheme.surfaceContainerHigh
-                                        .withValues(alpha: 0.70),
-                                    scheme.surface.withValues(alpha: 0.82),
+                                    const Color(0xFF141414)
+                                        .withValues(alpha: 0.85),
+                                    const Color(0xFF000000)
+                                        .withValues(alpha: 0.90),
                                   ]
-                                : [
-                                    Colors.white.withValues(alpha: 0.86),
-                                    Colors.white.withValues(alpha: 0.68),
-                                  ],
-                      ),
-                      border: Border.all(
-                        color: isAmoled
-                            ? Colors.white.withValues(alpha: 0.20)
-                            : isDark
-                                ? Colors.white.withValues(alpha: 0.16)
-                                : Colors.white.withValues(alpha: 0.78),
-                        width: 1.2,
-                      ),
-                    ),
-                    child: Stack(
-                      alignment: Alignment.centerLeft,
-                      children: [
-                        // Specular Bevel Highlight on top edge
-                        Positioned(
-                          top: 0,
-                          left: 28,
-                          right: 28,
-                          height: 1.2,
-                          child: IgnorePointer(
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Colors.white.withValues(alpha: 0.0),
-                                    Colors.white.withValues(
-                                      alpha: isDark ? 0.42 : 0.85,
-                                    ),
-                                    Colors.white.withValues(alpha: 0.0),
-                                  ],
-                                ),
-                              ),
-                            ),
+                                : isDark
+                                    ? [
+                                        scheme.surfaceContainerHigh
+                                            .withValues(alpha: 0.70),
+                                        scheme.surface.withValues(alpha: 0.82),
+                                      ]
+                                    : [
+                                        Colors.white.withValues(alpha: 0.86),
+                                        Colors.white.withValues(alpha: 0.68),
+                                      ],
+                          ),
+                          border: Border.all(
+                            color: isAmoled
+                                ? Colors.white.withValues(alpha: 0.20)
+                                : isDark
+                                    ? Colors.white.withValues(alpha: 0.16)
+                                    : Colors.white.withValues(alpha: 0.78),
+                            width: 1.2,
                           ),
                         ),
-
-                        // Ambient Glass Underglow behind active tab
-                        AnimatedBuilder(
-                          animation: _pillController,
-                          builder: (context, _) {
-                            final safeFrom = _fromIndex.clamp(0, count - 1);
-                            final safeTo = _toIndex.clamp(0, count - 1);
-                            final currentCenterX = lerpDouble(
-                              safeFrom * itemWidth + itemWidth / 2,
-                              safeTo * itemWidth + itemWidth / 2,
-                              _leadAnimation.value,
-                            )!;
-
-                            return Positioned(
-                              left: currentCenterX - itemWidth * 0.6,
-                              top: 2,
-                              width: itemWidth * 1.2,
-                              height: 58,
+                        child: Stack(
+                          alignment: Alignment.centerLeft,
+                          children: [
+                            // Specular Bevel Highlight on top edge
+                            Positioned(
+                              top: 0,
+                              left: 28,
+                              right: 28,
+                              height: 1.2,
                               child: IgnorePointer(
                                 child: DecoratedBox(
                                   decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    gradient: RadialGradient(
+                                    gradient: LinearGradient(
                                       colors: [
-                                        scheme.primary.withValues(
-                                          alpha: isDark ? 0.24 : 0.14,
+                                        Colors.white.withValues(alpha: 0.0),
+                                        Colors.white.withValues(
+                                          alpha: isDark ? 0.42 : 0.85,
                                         ),
-                                        scheme.primary.withValues(alpha: 0.0),
+                                        Colors.white.withValues(alpha: 0.0),
                                       ],
                                     ),
                                   ),
                                 ),
                               ),
-                            );
-                          },
-                        ),
+                            ),
 
-                        // Animated liquid-stretching & squishing pill indicator
-                        AnimatedBuilder(
-                          animation: _pillController,
-                          builder: (context, _) {
-                            final safeFrom = _fromIndex.clamp(0, count - 1);
-                            final safeTo = _toIndex.clamp(0, count - 1);
-                            final xFrom = safeFrom * itemWidth +
-                                (itemWidth - pillWidth) / 2;
-                            final xTo = safeTo * itemWidth +
-                                (itemWidth - pillWidth) / 2;
+                            // Ambient Glass Underglow behind active tab
+                            AnimatedBuilder(
+                              animation: _pillController,
+                              builder: (context, _) {
+                                final safeFrom = _fromIndex.clamp(0, count - 1);
+                                final safeTo = _toIndex.clamp(0, count - 1);
+                                final currentCenterX = lerpDouble(
+                                  safeFrom * itemWidth + itemWidth / 2,
+                                  safeTo * itemWidth + itemWidth / 2,
+                                  _leadAnimation.value,
+                                )!;
 
-                            double left;
-                            double width;
-
-                            if (safeFrom == safeTo ||
-                                !_pillController.isAnimating) {
-                              left = xTo;
-                              width = pillWidth;
-                            } else if (xTo >= xFrom) {
-                              // Moving right: right edge leads, left edge trails
-                              final right = lerpDouble(
-                                xFrom + pillWidth,
-                                xTo + pillWidth,
-                                _leadAnimation.value,
-                              )!;
-                              left = lerpDouble(
-                                xFrom,
-                                xTo,
-                                _trailAnimation.value,
-                              )!;
-                              width = (right - left).clamp(pillWidth, barWidth);
-                            } else {
-                              // Moving left: left edge leads, right edge trails
-                              left = lerpDouble(
-                                xFrom,
-                                xTo,
-                                _leadAnimation.value,
-                              )!;
-                              final right = lerpDouble(
-                                xFrom + pillWidth,
-                                xTo + pillWidth,
-                                _trailAnimation.value,
-                              )!;
-                              width = (right - left).clamp(pillWidth, barWidth);
-                            }
-
-                            // Liquid Squish factor (conservation of fluid volume)
-                            final progress = _pillController.value;
-                            final squish = _pillController.isAnimating
-                                ? math.sin(progress * math.pi) * 2.8
-                                : 0.0;
-                            final pillH = 33.0 - squish;
-                            final pillTop = 6.5 + (squish / 2);
-
-                            return Positioned(
-                              left: left,
-                              top: pillTop,
-                              child: Container(
-                                width: width,
-                                height: pillH,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(16.5),
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: isDark
-                                        ? [
-                                            scheme.primary
-                                                .withValues(alpha: 0.40),
-                                            scheme.primaryContainer
-                                                .withValues(alpha: 0.76),
-                                          ]
-                                        : [
-                                            scheme.primaryContainer
-                                                .withValues(alpha: 0.96),
-                                            scheme.primaryContainer
-                                                .withValues(alpha: 0.74),
-                                          ],
-                                  ),
-                                  border: Border.all(
-                                    color: isDark
-                                        ? Colors.white.withValues(alpha: 0.32)
-                                        : scheme.primary
-                                            .withValues(alpha: 0.28),
-                                    width: 1.1,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: scheme.primary.withValues(
-                                        alpha: isDark ? 0.32 : 0.16,
-                                      ),
-                                      blurRadius: 14,
-                                      offset: const Offset(0, 3),
-                                      spreadRadius: -1,
-                                    ),
-                                    if (isDark)
-                                      BoxShadow(
-                                        color: scheme.primary
-                                            .withValues(alpha: 0.16),
-                                        blurRadius: 20,
-                                        spreadRadius: 1,
-                                      ),
-                                  ],
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(16.5),
-                                  child: Stack(
-                                    children: [
-                                      Positioned(
-                                        top: 0,
-                                        left: 0,
-                                        right: 0,
-                                        height: 12,
-                                        child: DecoratedBox(
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              begin: Alignment.topCenter,
-                                              end: Alignment.bottomCenter,
-                                              colors: [
-                                                Colors.white.withValues(
-                                                    alpha:
-                                                        isDark ? 0.22 : 0.40),
-                                                Colors.white
-                                                    .withValues(alpha: 0.0),
-                                              ],
+                                return Positioned(
+                                  left: currentCenterX - itemWidth * 0.6,
+                                  top: 2,
+                                  width: itemWidth * 1.2,
+                                  height: 58,
+                                  child: IgnorePointer(
+                                    child: DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        gradient: RadialGradient(
+                                          colors: [
+                                            scheme.primary.withValues(
+                                              alpha: isDark ? 0.24 : 0.14,
                                             ),
-                                          ),
+                                            scheme.primary
+                                                .withValues(alpha: 0.0),
+                                          ],
                                         ),
                                       ),
-                                    ],
+                                    ),
                                   ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                                );
+                              },
+                            ),
 
-                        // Navigation item buttons
-                        Row(
-                          children: [
-                            for (var i = 0; i < count; i++)
-                              Expanded(
-                                child: _LiquidNavItem(
-                                  destination: widget.items[i],
-                                  label:
-                                      widget.items[i].mobileLabelFor(widget.ru),
-                                  isSelected: widget.selectedIndex == i,
-                                  isPressed: _pressedIndex == i,
-                                  onTapDown: () =>
-                                      setState(() => _pressedIndex = i),
-                                  onTapUp: () =>
-                                      setState(() => _pressedIndex = null),
-                                  onTapCancel: () =>
-                                      setState(() => _pressedIndex = null),
-                                  onTap: () {
-                                    HapticFeedback.selectionClick();
-                                    widget.onDestinationSelected(i);
-                                  },
-                                ),
-                              ),
+                            // Animated liquid-stretching & squishing pill indicator
+                            AnimatedBuilder(
+                              animation: _pillController,
+                              builder: (context, _) {
+                                final safeFrom = _fromIndex.clamp(0, count - 1);
+                                final safeTo = _toIndex.clamp(0, count - 1);
+                                final xFrom = safeFrom * itemWidth +
+                                    (itemWidth - pillWidth) / 2;
+                                final xTo = safeTo * itemWidth +
+                                    (itemWidth - pillWidth) / 2;
+
+                                double left;
+                                double width;
+
+                                if (safeFrom == safeTo ||
+                                    !_pillController.isAnimating) {
+                                  left = xTo;
+                                  width = pillWidth;
+                                } else if (xTo >= xFrom) {
+                                  // Moving right: right edge leads, left edge trails
+                                  final right = lerpDouble(
+                                    xFrom + pillWidth,
+                                    xTo + pillWidth,
+                                    _leadAnimation.value,
+                                  )!;
+                                  left = lerpDouble(
+                                    xFrom,
+                                    xTo,
+                                    _trailAnimation.value,
+                                  )!;
+                                  width =
+                                      (right - left).clamp(pillWidth, barWidth);
+                                } else {
+                                  // Moving left: left edge leads, right edge trails
+                                  left = lerpDouble(
+                                    xFrom,
+                                    xTo,
+                                    _leadAnimation.value,
+                                  )!;
+                                  final right = lerpDouble(
+                                    xFrom + pillWidth,
+                                    xTo + pillWidth,
+                                    _trailAnimation.value,
+                                  )!;
+                                  width =
+                                      (right - left).clamp(pillWidth, barWidth);
+                                }
+
+                                // Liquid Squish factor (conservation of fluid volume)
+                                final progress = _pillController.value;
+                                final squish = _pillController.isAnimating
+                                    ? math.sin(progress * math.pi) * 2.8
+                                    : 0.0;
+                                final pillH = 33.0 - squish;
+                                final pillTop = 6.5 + (squish / 2);
+
+                                return Positioned(
+                                  left: left,
+                                  top: pillTop,
+                                  child: Container(
+                                    width: width,
+                                    height: pillH,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(16.5),
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: isDark
+                                            ? [
+                                                scheme.primary
+                                                    .withValues(alpha: 0.40),
+                                                scheme.primaryContainer
+                                                    .withValues(alpha: 0.76),
+                                              ]
+                                            : [
+                                                scheme.primaryContainer
+                                                    .withValues(alpha: 0.96),
+                                                scheme.primaryContainer
+                                                    .withValues(alpha: 0.74),
+                                              ],
+                                      ),
+                                      border: Border.all(
+                                        color: isDark
+                                            ? Colors.white
+                                                .withValues(alpha: 0.32)
+                                            : scheme.primary
+                                                .withValues(alpha: 0.28),
+                                        width: 1.1,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: scheme.primary.withValues(
+                                            alpha: isDark ? 0.32 : 0.16,
+                                          ),
+                                          blurRadius: 14,
+                                          offset: const Offset(0, 3),
+                                          spreadRadius: -1,
+                                        ),
+                                        if (isDark)
+                                          BoxShadow(
+                                            color: scheme.primary
+                                                .withValues(alpha: 0.16),
+                                            blurRadius: 20,
+                                            spreadRadius: 1,
+                                          ),
+                                      ],
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(16.5),
+                                      child: Stack(
+                                        children: [
+                                          Positioned(
+                                            top: 0,
+                                            left: 0,
+                                            right: 0,
+                                            height: 12,
+                                            child: DecoratedBox(
+                                              decoration: BoxDecoration(
+                                                gradient: LinearGradient(
+                                                  begin: Alignment.topCenter,
+                                                  end: Alignment.bottomCenter,
+                                                  colors: [
+                                                    Colors.white.withValues(
+                                                        alpha: isDark
+                                                            ? 0.22
+                                                            : 0.40),
+                                                    Colors.white
+                                                        .withValues(alpha: 0.0),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+
+                            // Navigation item buttons
+                            Row(
+                              children: [
+                                for (var i = 0; i < count; i++)
+                                  Expanded(
+                                    child: _LiquidNavItem(
+                                      destination: widget.items[i],
+                                      label: widget.items[i]
+                                          .mobileLabelFor(widget.ru),
+                                      isSelected: widget.selectedIndex == i,
+                                      isPressed: _pressedIndex == i,
+                                      onTapDown: () =>
+                                          setState(() => _pressedIndex = i),
+                                      onTapUp: () =>
+                                          setState(() => _pressedIndex = null),
+                                      onTapCancel: () =>
+                                          setState(() => _pressedIndex = null),
+                                      onTap: () {
+                                        HapticFeedback.selectionClick();
+                                        widget.onDestinationSelected(i);
+                                      },
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
-              ),
-            );
-          },
+                );
+              },
+            ),
+          ),
         ),
       ),
     );

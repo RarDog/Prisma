@@ -3,7 +3,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' hide appBuildNumber;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:gel_rule_app/app/app.dart';
@@ -11,6 +10,8 @@ import 'package:gel_rule_app/app/app_version.dart';
 import 'package:gel_rule_app/app/changelog.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:gel_rule_app/features/providers/presentation/provider_check_screen.dart';
+import 'package:gel_rule_app/features/providers/presentation/providers_screen.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
 import 'package:gel_rule_app/features/settings/presentation/widgets/app_update_dialog.dart';
 import 'package:gel_rule_app/features/settings/presentation/widgets/settings_shared_widgets.dart';
@@ -699,7 +700,11 @@ class AboutSettingsScreen extends ConsumerWidget {
                         : 'Connection status, API keys and mirrors',
                     icon: Icons.hub_rounded,
                     iconColor: const Color(0xFF3B82F6),
-                    onTap: () => context.go('/providers'),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const ProvidersScreen(),
+                      ),
+                    ),
                   ),
                   const SettingsDivider(),
                   SettingsTile(
@@ -709,7 +714,11 @@ class AboutSettingsScreen extends ConsumerWidget {
                         : 'Healthcheck, reachability and response times',
                     icon: Icons.network_check_rounded,
                     iconColor: const Color(0xFF10B981),
-                    onTap: () => context.go('/providers/check'),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const ProviderCheckScreen(),
+                      ),
+                    ),
                   ),
                   const SettingsDivider(),
                   Padding(

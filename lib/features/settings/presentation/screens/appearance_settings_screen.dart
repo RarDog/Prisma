@@ -21,6 +21,7 @@ class AppearanceSettingsScreen extends ConsumerWidget {
     final strings = ref.watch(appStringsProvider);
     final isRu = strings.ru;
     final isAndroid = Platform.isAndroid;
+    final isDesktop = !Platform.isAndroid && !Platform.isIOS;
 
     return Scaffold(
       appBar: AppBar(
@@ -108,12 +109,54 @@ class AppearanceSettingsScreen extends ConsumerWidget {
                 ],
               ),
 
-              // Navigation Tabs Visibility
+              // Navigation Tabs Visibility & Position
               SettingsCardGroup(
                 title: isRu ? 'Панель навигации' : 'Navigation Bar',
                 icon: Icons.tab_rounded,
                 accentColor: const Color(0xFF3B82F6),
                 children: [
+                  if (isDesktop) ...[
+                    SettingsSegmentedTile<String>(
+                      icon: Icons.dock_rounded,
+                      iconColor: const Color(0xFF3B82F6),
+                      title: isRu
+                          ? 'Положение панели на ПК'
+                          : 'Desktop Navigation Position',
+                      subtitle: isRu
+                          ? 'Слева, справа или снизу (как на телефоне)'
+                          : 'Left sidebar, right sidebar, or bottom dock',
+                      segments: [
+                        ButtonSegment<String>(
+                          value: 'left',
+                          icon: const Icon(Icons.align_horizontal_left_rounded,
+                              size: 18),
+                          label: Text(isRu ? 'Слева' : 'Left'),
+                        ),
+                        ButtonSegment<String>(
+                          value: 'right',
+                          icon: const Icon(Icons.align_horizontal_right_rounded,
+                              size: 18),
+                          label: Text(isRu ? 'Справа' : 'Right'),
+                        ),
+                        ButtonSegment<String>(
+                          value: 'bottom',
+                          icon: const Icon(Icons.vertical_align_bottom_rounded,
+                              size: 18),
+                          label: Text(isRu ? 'Снизу' : 'Bottom'),
+                        ),
+                      ],
+                      selected: {settings.desktopNavPosition},
+                      onSelectionChanged: (val) {
+                        if (val.isNotEmpty) {
+                          _update(
+                            ref,
+                            settings.copyWith(desktopNavPosition: val.first),
+                          );
+                        }
+                      },
+                    ),
+                    const SettingsDivider(),
+                  ],
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,

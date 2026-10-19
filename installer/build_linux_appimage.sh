@@ -2,6 +2,8 @@
 set -e
 
 export APPIMAGE_EXTRACT_AND_RUN=1
+export LC_ALL=C.UTF-8
+export LANG=C.UTF-8
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -133,9 +135,13 @@ src.save(f"{bundle_dir}/prisma.png")
 print("Icons generated successfully for all resolutions.")
 PYEOF
 
-# Build AppImage
 echo "Generating AppImage with ${APPIMAGETOOL}..."
-ARCH=x86_64 "${APPIMAGETOOL}" -n "${APP_DIR}" "${OUTPUT_APPIMAGE}"
+EXTRA_APPIMAGE_ARGS=()
+if [ -f "build/tools/runtime-x86_64" ]; then
+  EXTRA_APPIMAGE_ARGS+=(--runtime-file "build/tools/runtime-x86_64")
+fi
+
+ARCH=x86_64 "${APPIMAGETOOL}" -n "${EXTRA_APPIMAGE_ARGS[@]}" "build/AppDir" "build/${APPIMAGE_NAME}"
 
 echo "AppImage created successfully: ${OUTPUT_APPIMAGE}"
 ls -lh "${OUTPUT_APPIMAGE}"

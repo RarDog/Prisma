@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gel_rule_app/app/app.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
+import 'package:gel_rule_app/features/settings/presentation/screens/appearance_settings_screen.dart';
 import 'package:gel_rule_app/features/settings/presentation/screens/filters_settings_screen.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_screen.dart';
 
@@ -121,6 +122,52 @@ void main() {
     // Verify whitelist section & chips
     expect(find.text('Whitelist тегов'), findsWidgets);
     expect(find.text('favorite_art'), findsOneWidget);
+  });
+
+  testWidgets(
+      'AppearanceSettingsScreen renders desktop navigation position options',
+      (tester) async {
+    final settings = AppSettings.defaults.copyWith(
+      languageCode: 'ru',
+      desktopNavPosition: 'left',
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          settingsControllerProvider.overrideWith(
+            () => _FakeSettingsController(settings),
+          ),
+          appSettingsProvider.overrideWith((ref) => settings),
+        ],
+        child: const MaterialApp(
+          home: AppearanceSettingsScreen(),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Положение панели на ПК'), findsOneWidget);
+    expect(find.text('Слева'), findsOneWidget);
+    expect(find.text('Справа'), findsOneWidget);
+    expect(find.text('Снизу'), findsOneWidget);
+  });
+
+  test('AppSettings desktopNavPosition defaults and serialization', () {
+    expect(AppSettings.defaults.desktopNavPosition, 'left');
+
+    final updated = AppSettings.defaults.copyWith(desktopNavPosition: 'right');
+    expect(updated.desktopNavPosition, 'right');
+
+    final json = updated.toJson();
+    expect(json['desktopNavPosition'], 'right');
+
+    final decoded = AppSettings.fromJson(json);
+    expect(decoded.desktopNavPosition, 'right');
+
+    final bottom = AppSettings.defaults.copyWith(desktopNavPosition: 'bottom');
+    expect(AppSettings.fromJson(bottom.toJson()).desktopNavPosition, 'bottom');
   });
 }
 

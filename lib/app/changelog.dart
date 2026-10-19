@@ -1,5 +1,30 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.2.0',
+    title:
+        'Релиз: кастомизация навигации на ПК, редизайн источников и вкладки «Любимое», исправления и оптимизация',
+    titleEn:
+        'Release: Desktop navigation customization, redesigned Providers & Favorites, fixes & architecture',
+    bullets: [
+      'Навигация на ПК: выбор расположения панели навигации (слева, справа или снизу) в настройках внешнего вида.',
+      'Редизайн источников: современный стеклянный интерфейс, быстрый поиск, фильтрация по категориям («Все», «Включенные», «Booru», «Арт/Медиа») и адаптивная сетка.',
+      'Вкладка «Любимое»: адаптивные стеклянные вкладки навигации, обновленные фильтры контента со счетчиками и быстрая очистка кэшированных файлов.',
+      'Исправление навигации: устранен баг на смартфонах, когда экраны источников, проверки и добавления открывались за окном настроек.',
+      'Настройки: восстановлена видимость кнопки настроек во всех темах и добавлена плавная круговая анимация раскрытия.',
+      'Wallhaven: исправлена загрузка оригинальных изображений в полном разрешении.',
+      'Архитектурная оптимизация: модульная декомпозиция тяжелых экранов для снижения потребления памяти и повышения плавности интерфейса.',
+    ],
+    bulletsEn: [
+      'Desktop Navigation: customizable navigation position (left, right, or bottom) in appearance settings.',
+      'Redesigned Providers Tab: modern liquid glass styling, instant search filter, category pills ("All", "Enabled", "Booru", "Art/Media"), and responsive grid layout.',
+      'Favorites Tab: liquid glass navigation tabs, upgraded content filters with post counters, and one-tap offline cache cleanup.',
+      'Mobile Navigation Fix: resolved issue where provider management, check, and edit screens opened underneath the modal settings sheet.',
+      'Settings: restored gear icon visibility across all themes and added smooth circular reveal transition.',
+      'Wallhaven: fixed full-resolution image loading when viewing posts.',
+      'Architecture: modular decomposition of heavy media viewers and screens for reduced memory overhead and improved responsiveness.',
+    ],
+  ),
+  PrismaChange(
     version: '4.2.0-beta.1',
     title:
         'Пре-релиз: обновление раздела «Любимое», исправления Wallhaven и анимация настроек',

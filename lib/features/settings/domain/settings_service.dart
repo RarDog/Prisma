@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:isar/isar.dart';
 
@@ -83,6 +84,7 @@ class AppSettings {
     this.debugHudX = 16.0,
     this.debugHudY = 90.0,
     this.desktopSidebarPinned = false,
+    this.desktopNavPosition = 'left',
   });
 
   final bool hasCompletedOnboarding;
@@ -102,6 +104,7 @@ class AppSettings {
   final double debugHudX;
   final double debugHudY;
   final bool desktopSidebarPinned;
+  final String desktopNavPosition;
   final String lastActiveLocation;
   final List<String> favoriteArtists;
   final List<String> pawchiveAccounts;
@@ -212,6 +215,7 @@ class AppSettings {
     mangaReadingMode: 'pagedRtl',
     mangaVolumeNavigation: true,
     mangaInvertVolumeKeys: false,
+    desktopNavPosition: 'left',
   );
 
   AppSettings copyWith({
@@ -287,6 +291,7 @@ class AppSettings {
     double? debugHudX,
     double? debugHudY,
     bool? desktopSidebarPinned,
+    String? desktopNavPosition,
   }) {
     return AppSettings(
       lastActiveLocation: lastActiveLocation ?? this.lastActiveLocation,
@@ -374,6 +379,7 @@ class AppSettings {
       debugHudX: debugHudX ?? this.debugHudX,
       debugHudY: debugHudY ?? this.debugHudY,
       desktopSidebarPinned: desktopSidebarPinned ?? this.desktopSidebarPinned,
+      desktopNavPosition: desktopNavPosition ?? this.desktopNavPosition,
     );
   }
 
@@ -448,6 +454,8 @@ class AppSettings {
         'debugHudX': debugHudX,
         'debugHudY': debugHudY,
         'desktopSidebarPinned': desktopSidebarPinned,
+        if (!Platform.isAndroid && !Platform.isIOS)
+          'desktopNavPosition': desktopNavPosition,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) => AppSettings(
@@ -605,6 +613,8 @@ class AppSettings {
             (json['debugHudY'] as num?)?.toDouble() ?? defaults.debugHudY,
         desktopSidebarPinned: (json['desktopSidebarPinned'] as bool?) ??
             defaults.desktopSidebarPinned,
+        desktopNavPosition: (json['desktopNavPosition'] as String?) ??
+            defaults.desktopNavPosition,
       );
 
   List<PawchiveAccount> get parsedPawchiveAccounts {

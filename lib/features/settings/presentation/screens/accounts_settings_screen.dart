@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import 'package:gel_rule_app/app/app.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/features/artists/presentation/widgets/pawchive_accounts_sheet.dart';
+import 'package:gel_rule_app/features/providers/presentation/providers_screen.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
 import 'package:gel_rule_app/features/settings/presentation/widgets/settings_shared_widgets.dart';
 
@@ -104,7 +104,11 @@ class AccountsSettingsScreen extends ConsumerWidget {
                         ? 'Настройка API-ключей, логинов для e621, Danbooru, Gelbooru'
                         : 'Configure API keys, logins for e621, Danbooru, Gelbooru',
                     trailing: const Icon(Icons.chevron_right_rounded, size: 20),
-                    onTap: () => context.go('/providers'),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const ProvidersScreen(),
+                      ),
+                    ),
                   ),
                 ],
               ),
