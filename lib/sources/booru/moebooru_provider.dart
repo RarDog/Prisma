@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'package:gel_rule_app/core/http/dio_client.dart';
 import 'package:gel_rule_app/sources/mappers/moebooru_mapper.dart';
 import 'package:gel_rule_app/core/models/post.dart';
@@ -14,7 +15,8 @@ class MoebooruProvider
         ContentProvider,
         TagSuggestionProvider,
         CommentProvider,
-        PostPageProvider {
+        PostPageProvider,
+        MediaHeadersProvider {
   MoebooruProvider({
     required this.id,
     required this.name,
@@ -36,11 +38,23 @@ class MoebooruProvider
   @override
   Set<TopPeriodFilter> get supportedTopPeriods => const {
         TopPeriodFilter.none,
+        TopPeriodFilter.day,
+        TopPeriodFilter.week,
+        TopPeriodFilter.month,
+        TopPeriodFilter.year,
         TopPeriodFilter.allTime,
       };
 
   @override
   String postPageUrl(Post post) => '$baseUrl/post/show/${post.id}';
+
+  @override
+  Map<String, String> mediaHeaders(Post post) {
+    return {
+      'User-Agent': AppHeaders.defaultUserAgent,
+      'Referer': baseUrl.endsWith('/') ? baseUrl : '$baseUrl/',
+    };
+  }
 
   @override
   Future<List<Post>> searchPosts({
@@ -50,16 +64,44 @@ class MoebooruProvider
     String? rating,
     TopPeriodFilter topPeriod = TopPeriodFilter.none,
   }) async {
+    final hasTags = tags.isNotEmpty || (rating != null && rating.isNotEmpty);
+
+    // If topPeriod is day/week/month/year and no tags are provided, use popular_recent endpoint
+    if (!hasTags &&
+        topPeriod != TopPeriodFilter.none &&
+        topPeriod != TopPeriodFilter.allTime) {
+      final periodParam = switch (topPeriod) {
+        TopPeriodFilter.day => '1d',
+        TopPeriodFilter.week => '1w',
+        TopPeriodFilter.month => '1m',
+        TopPeriodFilter.year => '1y',
+        _ => '1d',
+      };
+      final response = await _dio.get<dynamic>(
+        '/post/popular_recent.json',
+        queryParameters: {
+          'period': periodParam,
+          ..._queryParameters,
+        },
+      );
+      return MoebooruMapper.postsFromResponse(
+        response.data,
+        providerId: id,
+        providerName: name,
+      );
+    }
+
+    final queryTags = [
+      ...tags,
+      if (rating != null && rating.isNotEmpty) 'rating:$rating',
+      ..._topTags(topPeriod),
+    ];
     final response = await _dio.get<dynamic>(
       '/post.json',
       queryParameters: {
         'page': page + 1,
         'limit': limit.clamp(1, 100),
-        'tags': [
-          ...tags,
-          if (rating != null && rating.isNotEmpty) 'rating:$rating',
-          ..._topTags(topPeriod),
-        ].join(' '),
+        if (queryTags.isNotEmpty) 'tags': queryTags.join(' '),
         ..._queryParameters,
       },
     );
@@ -114,11 +156,12 @@ class MoebooruProvider
   @override
   Future<List<TagSuggestion>> suggestTags(String query,
       {int limit = 20}) async {
-    if (query.trim().isEmpty) return const [];
+    final cleanQuery = query.trim();
+    if (cleanQuery.isEmpty) return const [];
     final response = await _dio.get<dynamic>(
       '/tag.json',
       queryParameters: {
-        'name_pattern': '${query.trim()}*',
+        'name': '$cleanQuery*',
         'limit': limit.clamp(1, 50),
         'order': 'count',
         ..._queryParameters,
@@ -178,7 +221,12 @@ class MoebooruProvider
 
   List<String> _topTags(TopPeriodFilter period) {
     return switch (period) {
-      TopPeriodFilter.allTime => const ['order:score'],
+      TopPeriodFilter.allTime ||
+      TopPeriodFilter.day ||
+      TopPeriodFilter.week ||
+      TopPeriodFilter.month ||
+      TopPeriodFilter.year =>
+        const ['order:score'],
       _ => const [],
     };
   }

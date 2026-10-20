@@ -594,6 +594,27 @@ class ProviderManager {
     }
   }
 
+  Future<Result<List<Post>>> getPostPages(Post post) async {
+    final providersResult = await activeProviders();
+    if (providersResult is Error<List<ContentProvider>>) {
+      return Error(providersResult.failure);
+    }
+    final providers = (providersResult as Success<List<ContentProvider>>).data;
+    final matches =
+        providers.where((provider) => provider.id == post.providerId);
+    if (matches.isEmpty) {
+      return Success([post]);
+    }
+    final provider = matches.first;
+    if (provider is! MultiPageProvider) return Success([post]);
+    try {
+      final pages = await (provider as MultiPageProvider).getPostPages(post);
+      return Success(pages);
+    } catch (_) {
+      return Success([post]);
+    }
+  }
+
   Future<Result<List<PostNote>>> getNotes(
     String providerId,
     String postId,

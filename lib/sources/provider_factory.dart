@@ -82,6 +82,18 @@ class ProviderFactory {
         'User-Agent',
         () => AppHeaders.defaultUserAgent,
       );
+    } else if (config.apiType.toLowerCase() == 'danbooru') {
+      headers.putIfAbsent('Referer', () => 'https://danbooru.donmai.us/');
+      headers['User-Agent'] = AppHeaders.defaultUserAgent;
+    } else if (config.apiType.toLowerCase() == 'moebooru') {
+      final ref = config.baseUrl.endsWith('/')
+          ? config.baseUrl
+          : '${config.baseUrl}/';
+      headers.putIfAbsent('Referer', () => ref);
+      headers.putIfAbsent(
+        'User-Agent',
+        () => AppHeaders.defaultUserAgent,
+      );
     }
 
     final clientKey =

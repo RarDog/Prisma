@@ -3,7 +3,8 @@ import 'package:gel_rule_app/core/models/post.dart';
 enum MediaQualityMode {
   auto,
   dataSaver,
-  highQuality;
+  highQuality,
+  original;
 
   static MediaQualityMode fromName(String value) {
     return MediaQualityMode.values.firstWhere(
@@ -17,6 +18,7 @@ enum MediaQualityMode {
       MediaQualityMode.auto => 'Auto',
       MediaQualityMode.dataSaver => 'Data saver',
       MediaQualityMode.highQuality => 'High quality',
+      MediaQualityMode.original => 'Original',
     };
   }
 }
@@ -40,6 +42,8 @@ class MediaUrlSelector {
       MediaQualityMode.dataSaver => _compact([post.previewUrl, post.sampleUrl]),
       MediaQualityMode.highQuality =>
         _compact([post.sampleUrl, post.previewUrl]),
+      MediaQualityMode.original =>
+        _compact([post.fileUrl, post.sampleUrl, post.previewUrl]),
       MediaQualityMode.auto => mobile
           ? _compact([post.previewUrl, post.sampleUrl])
           : _compact([post.sampleUrl, post.previewUrl]),
@@ -78,6 +82,8 @@ class MediaUrlSelector {
       MediaQualityMode.dataSaver =>
         _compact([post.sampleUrl, post.previewUrl, post.fileUrl]),
       MediaQualityMode.highQuality =>
+        _compact([post.fileUrl, post.sampleUrl, post.previewUrl]),
+      MediaQualityMode.original =>
         _compact([post.fileUrl, post.sampleUrl, post.previewUrl]),
       MediaQualityMode.auto =>
         _compact([post.sampleUrl, post.fileUrl, post.previewUrl]),

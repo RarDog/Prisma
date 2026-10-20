@@ -22,10 +22,54 @@ class DanbooruMapper {
     required String providerId,
     required String providerName,
   }) {
-    final fileUrl = _string(json['file_url'] ?? json['large_file_url']);
-    final sampleUrl =
+    String fileUrl = _string(json['file_url'] ?? json['large_file_url']);
+    String sampleUrl =
         _string(json['large_file_url'] ?? json['sample_file_url'] ?? fileUrl);
-    final previewUrl = _string(json['preview_file_url'] ?? sampleUrl);
+    String previewUrl = _string(json['preview_file_url'] ?? sampleUrl);
+
+    if (json['media_asset'] is Map) {
+      final mediaAsset = Map<String, dynamic>.from(json['media_asset']);
+      final variants = mediaAsset['variants'];
+      if (variants is List) {
+        for (final v in variants) {
+          if (v is! Map) continue;
+          final type = v['type']?.toString();
+          final url = v['url']?.toString() ?? '';
+          if (url.isEmpty) continue;
+          if (type == 'original' && fileUrl.isEmpty) {
+            fileUrl = url;
+          } else if ((type == 'sample' || type == '720x720') &&
+              sampleUrl.isEmpty) {
+            sampleUrl = url;
+          } else if ((type == '360x360' || type == '180x180') &&
+              previewUrl.isEmpty) {
+            previewUrl = url;
+          }
+        }
+      }
+    }
+    if (fileUrl.isEmpty) fileUrl = sampleUrl;
+    if (sampleUrl.isEmpty) sampleUrl = fileUrl;
+    if (previewUrl.isEmpty) previewUrl = sampleUrl;
+
+    DateTime createdAt;
+    final rawCreated = json['created_at'];
+    if (rawCreated is num) {
+      final ts = rawCreated.toInt();
+      createdAt = DateTime.fromMillisecondsSinceEpoch(
+          ts > 10000000000 ? ts : ts * 1000);
+    } else {
+      final parsed = DateTime.tryParse(_string(rawCreated));
+      if (parsed != null) {
+        createdAt = parsed;
+      } else {
+        final ts = int.tryParse(_string(rawCreated));
+        createdAt = ts != null
+            ? DateTime.fromMillisecondsSinceEpoch(
+                ts > 10000000000 ? ts : ts * 1000)
+            : DateTime.now();
+      }
+    }
     final tagGroups = _tagGroups(json);
     final tags = tagGroups.isEmpty
         ? _tags(json['tag_string'] ?? json['tags'])
@@ -42,8 +86,7 @@ class DanbooruMapper {
       width: _int(json['image_width'] ?? json['width']),
       height: _int(json['image_height'] ?? json['height']),
       source: _nullableString(json['source']),
-      createdAt:
-          DateTime.tryParse(_string(json['created_at'])) ?? DateTime.now(),
+      createdAt: createdAt,
       fileType: _fileType(fileUrl, json['file_ext']),
       score: _int(json['score']),
       tagGroups: tagGroups.isEmpty ? {'general': tags} : tagGroups,

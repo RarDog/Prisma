@@ -247,7 +247,12 @@ class _PostCardState extends ConsumerState<PostCard>
           scale: _pressed ? 0.978 : (_hovered && !mobile ? 1.015 : 1.0),
           duration: const Duration(milliseconds: 140),
           curve: Curves.easeOutCubic,
-          child: Container(
+          child: _wrapWithMultiPageStack(
+            context,
+            theme,
+            isDark,
+            post,
+            Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
@@ -309,6 +314,25 @@ class _PostCardState extends ConsumerState<PostCard>
                           final cacheWidth = (constraints.maxWidth * dpr)
                               .round()
                               .clamp(280, 960);
+                          final memCacheWidth = switch (widget.mediaQualityMode) {
+                            MediaQualityMode.original =>
+                              (constraints.maxWidth * dpr * 2)
+                                  .round()
+                                  .clamp(480, 2560),
+                            MediaQualityMode.highQuality =>
+                              (constraints.maxWidth * dpr * 1.5)
+                                  .round()
+                                  .clamp(360, 1440),
+                            _ => cacheWidth,
+                          };
+                          final maxDiskWidth = switch (widget.mediaQualityMode) {
+                            MediaQualityMode.original => null,
+                            MediaQualityMode.highQuality =>
+                              (constraints.maxWidth * dpr * 2)
+                                  .round()
+                                  .clamp(720, 1920),
+                            _ => cacheWidth,
+                          };
                           final headers = _headersFor(post);
                           final videoUrls = MediaUrlSelector.video(post);
                           if (!mobile &&
@@ -327,8 +351,8 @@ class _PostCardState extends ConsumerState<PostCard>
                           return CachedNetworkImage(
                             imageUrl: imageUrl,
                             httpHeaders: headers,
-                            memCacheWidth: cacheWidth,
-                            maxWidthDiskCache: cacheWidth,
+                            memCacheWidth: memCacheWidth,
+                            maxWidthDiskCache: maxDiskWidth,
                             fit: BoxFit.cover,
                             placeholder: (context, url) =>
                                 const LoadingSkeleton(),
@@ -381,7 +405,8 @@ class _PostCardState extends ConsumerState<PostCard>
                       top: 8,
                       child: _ProviderBadge(name: post.providerName),
                     ),
-                    if (post.fileType.toLowerCase().contains('video') ||
+                    if (post.isMultiPage ||
+                        post.fileType.toLowerCase().contains('video') ||
                         post.fileType.toLowerCase().contains('webm') ||
                         post.fileType.toLowerCase().contains('mp4') ||
                         post.fileType.toLowerCase().contains('gif') ||
@@ -391,12 +416,35 @@ class _PostCardState extends ConsumerState<PostCard>
                       Positioned(
                         right: 8,
                         top: 8,
-                        child: _MediaBadge(
-                          fileType: isAudioPost
-                              ? 'audio'
-                              : (isTextPost
-                                  ? 'text'
-                                  : (isVideoPost ? 'video' : post.fileType)),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (post.isMultiPage)
+                              _PageCountBadge(count: post.pageCount),
+                            if (post.isMultiPage &&
+                                (post.fileType.toLowerCase().contains('video') ||
+                                    post.fileType.toLowerCase().contains('webm') ||
+                                    post.fileType.toLowerCase().contains('mp4') ||
+                                    post.fileType.toLowerCase().contains('gif') ||
+                                    isVideoPost ||
+                                    isAudioPost ||
+                                    isTextPost))
+                              const SizedBox(width: 4),
+                            if (post.fileType.toLowerCase().contains('video') ||
+                                post.fileType.toLowerCase().contains('webm') ||
+                                post.fileType.toLowerCase().contains('mp4') ||
+                                post.fileType.toLowerCase().contains('gif') ||
+                                isVideoPost ||
+                                isAudioPost ||
+                                isTextPost)
+                              _MediaBadge(
+                                fileType: isAudioPost
+                                    ? 'audio'
+                                    : (isTextPost
+                                        ? 'text'
+                                        : (isVideoPost ? 'video' : post.fileType)),
+                              ),
+                          ],
                         ),
                       ),
                     Positioned(
@@ -551,6 +599,88 @@ class _PostCardState extends ConsumerState<PostCard>
             ),
           ),
         ),
+      ),
+    ),
+  );
+}
+
+  Widget _wrapWithMultiPageStack(
+    BuildContext context,
+    ThemeData theme,
+    bool isDark,
+    Post post,
+    Widget cardChild,
+  ) {
+    if (!post.isMultiPage) return cardChild;
+
+    final sheetColor =
+        isDark ? const Color(0xFF1E2024) : const Color(0xFFF1F3F5);
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.16)
+        : Colors.black.withValues(alpha: 0.12);
+    final count = post.pageCount;
+    final showThirdSheet = count >= 3;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        top: showThirdSheet ? 5.0 : 3.5,
+        right: showThirdSheet ? 5.0 : 3.5,
+      ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Third sheet (bottom-most, visible if 3+ pages)
+          if (showThirdSheet)
+            Positioned.fill(
+              child: Transform.translate(
+                offset: const Offset(5.0, -5.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: sheetColor.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: borderColor.withValues(alpha: 0.7),
+                      width: 0.8,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black
+                            .withValues(alpha: isDark ? 0.25 : 0.06),
+                        blurRadius: 4,
+                        offset: const Offset(1, -1),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          // Second sheet (middle, visible if 2+ pages)
+          Positioned.fill(
+            child: Transform.translate(
+              offset: const Offset(2.5, -2.5),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: sheetColor,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: borderColor,
+                    width: 0.8,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color:
+                          Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
+                      blurRadius: 5,
+                      offset: const Offset(1, -1),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Foreground card
+          cardChild,
+        ],
       ),
     );
   }
@@ -875,6 +1005,56 @@ class _ProviderBadge extends StatelessWidget {
           fontWeight: FontWeight.w700,
           letterSpacing: 0.2,
         ),
+      ),
+    );
+  }
+}
+
+class _PageCountBadge extends StatelessWidget {
+  const _PageCountBadge({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3.5),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.68),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.3),
+          width: 0.7,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.photo_library_rounded,
+            size: 11,
+            color: Colors.white,
+          ),
+          const SizedBox(width: 3.5),
+          Text(
+            '$count',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.2,
+              height: 1.1,
+            ),
+          ),
+        ],
       ),
     );
   }

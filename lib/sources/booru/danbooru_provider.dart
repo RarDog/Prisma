@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'package:gel_rule_app/core/http/dio_client.dart';
 import 'package:gel_rule_app/sources/mappers/danbooru_mapper.dart';
 import 'package:gel_rule_app/core/models/post.dart';
@@ -14,7 +15,8 @@ class DanbooruProvider
         ContentProvider,
         CommentProvider,
         PostPageProvider,
-        TagSuggestionProvider {
+        TagSuggestionProvider,
+        MediaHeadersProvider {
   DanbooruProvider({
     required this.id,
     required this.name,
@@ -45,6 +47,14 @@ class DanbooruProvider
 
   @override
   String postPageUrl(Post post) => '$baseUrl/posts/${post.id}';
+
+  @override
+  Map<String, String> mediaHeaders(Post post) {
+    return {
+      'User-Agent': AppHeaders.defaultUserAgent,
+      'Referer': baseUrl.endsWith('/') ? baseUrl : '$baseUrl/',
+    };
+  }
 
   @override
   Future<List<Post>> searchPosts({

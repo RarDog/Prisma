@@ -83,6 +83,10 @@ Map<String, String> getMediaUrlHeaders({
     defaultReferer = 'https://www.are.na/';
   } else if (pid.contains('danbooru') || u.contains('donmai.us')) {
     defaultReferer = 'https://danbooru.donmai.us/';
+  } else if (pid.contains('yande.re') || u.contains('yande.re')) {
+    defaultReferer = 'https://yande.re/';
+  } else if (pid.contains('konachan') || u.contains('konachan')) {
+    defaultReferer = 'https://konachan.net/';
   } else if (pid.contains('e621') ||
       pid.contains('e926') ||
       u.contains('e621.net')) {
@@ -118,8 +122,13 @@ Map<String, String> getMediaUrlHeaders({
     }
   }
 
+  final isDanbooru = pid.contains('danbooru') || u.contains('donmai.us');
+  final userAgent = isDanbooru
+      ? AppHeaders.defaultUserAgent
+      : AppHeaders.desktopChromeUserAgent;
+
   return {
-    'User-Agent': AppHeaders.desktopChromeUserAgent,
+    'User-Agent': userAgent,
     'Accept': isVideo
         ? 'video/webm,video/mp4,video/*;q=0.9,*/*;q=0.8'
         : 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
@@ -227,10 +236,16 @@ class PostMediaViewer extends ConsumerStatefulWidget {
     this.onPostIndexChanged,
     this.onLoadMore,
     this.isActive = true,
+    this.pageIndex,
+    this.pageCount,
+    this.onPageChanged,
     super.key,
   });
 
   final Post post;
+  final int? pageIndex;
+  final int? pageCount;
+  final ValueChanged<int>? onPageChanged;
   final String? localFilePath;
   final bool fullscreen;
   final List<PostNote> notes;
@@ -308,7 +323,10 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
   @override
   void didUpdateWidget(covariant PostMediaViewer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.post.cacheKey != widget.post.cacheKey) {
+    if (oldWidget.post.cacheKey != widget.post.cacheKey ||
+        oldWidget.pageIndex != widget.pageIndex ||
+        oldWidget.post.fileUrl != widget.post.fileUrl ||
+        oldWidget.post.sampleUrl != widget.post.sampleUrl) {
       _disposeVideo();
       _imageIndex = 0;
       _videoIndex = 0;
@@ -556,6 +574,7 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
           url.toLowerCase().contains('.gif') ||
           widget.post.fileType.toLowerCase() == 'gif';
       final isHighRes = widget.qualityMode == MediaQualityMode.highQuality ||
+          widget.qualityMode == MediaQualityMode.original ||
           widget.post.width >= 2560;
       image = CachedNetworkImage(
         key: ValueKey(url),
@@ -575,6 +594,10 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
         },
       );
     }
+    final pageIndex = widget.pageIndex ?? 0;
+    final pageCount = widget.pageCount ?? 0;
+    final hasMultiPages = pageCount > 1;
+
     final child = Stack(
       alignment: Alignment.center,
       children: [
@@ -593,41 +616,57 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
             ],
           ),
         ),
-        if (_imageUrls.length > 1)
+        if (hasMultiPages)
           Positioned(
             bottom: 14,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.65),
+                color: Colors.black.withValues(alpha: 0.70),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: Colors.white24, width: 0.8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.35),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (_imageIndex > 0)
+                  if (pageIndex > 0)
                     GestureDetector(
-                      onTap: () => setState(() => _imageIndex--),
-                      child: const Icon(Icons.chevron_left_rounded,
-                          size: 20, color: Colors.white),
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => widget.onPageChanged?.call(pageIndex - 1),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 2),
+                        child: Icon(Icons.chevron_left_rounded,
+                            size: 20, color: Colors.white),
+                      ),
                     ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Text(
-                      '${_imageIndex + 1} / ${_imageUrls.length}',
+                      '${pageIndex + 1} / $pageCount',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
+                        letterSpacing: 0.2,
                       ),
                     ),
                   ),
-                  if (_imageIndex < _imageUrls.length - 1)
+                  if (pageIndex < pageCount - 1)
                     GestureDetector(
-                      onTap: () => setState(() => _imageIndex++),
-                      child: const Icon(Icons.chevron_right_rounded,
-                          size: 20, color: Colors.white),
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => widget.onPageChanged?.call(pageIndex + 1),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 2),
+                        child: Icon(Icons.chevron_right_rounded,
+                            size: 20, color: Colors.white),
+                      ),
                     ),
                 ],
               ),
@@ -639,7 +678,7 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
     final shortcutsMap = <ShortcutActivator, Intent>{
       LogicalKeySet(LogicalKeyboardKey.keyF): const FullscreenImageIntent(),
     };
-    if (_imageUrls.length > 1) {
+    if (hasMultiPages) {
       shortcutsMap[LogicalKeySet(LogicalKeyboardKey.arrowLeft)] =
           const PrevImageIntent();
       shortcutsMap[LogicalKeySet(LogicalKeyboardKey.keyA)] =
@@ -658,19 +697,19 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
         },
       ),
     };
-    if (_imageUrls.length > 1) {
+    if (hasMultiPages) {
       actionsMap[PrevImageIntent] = CallbackAction<PrevImageIntent>(
         onInvoke: (_) {
-          if (_imageIndex > 0) {
-            setState(() => _imageIndex--);
+          if (pageIndex > 0) {
+            widget.onPageChanged?.call(pageIndex - 1);
           }
           return null;
         },
       );
       actionsMap[NextImageIntent] = CallbackAction<NextImageIntent>(
         onInvoke: (_) {
-          if (_imageIndex < _imageUrls.length - 1) {
-            setState(() => _imageIndex++);
+          if (pageIndex < pageCount - 1) {
+            widget.onPageChanged?.call(pageIndex + 1);
           }
           return null;
         },

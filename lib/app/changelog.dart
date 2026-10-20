@@ -1,5 +1,24 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.2.1-beta.1',
+    title:
+        'Пре-релиз: настраиваемое качество картинок в ленте, возвращение Konachan и Yande.re, исправления Danbooru и свайпера сетов',
+    titleEn:
+        'Pre-release: Customizable feed image quality, return of Konachan & Yande.re, Danbooru 403 fix & post set swiper fixes',
+    bullets: [
+      'Качество картинок в ленте: добавлены режимы «Авто», «Превью», «Sample» и «Оригинал» в настройках ленты.',
+      'Возвращение Konachan и Yande.re: современные провайдеры на базе Moebooru с автодополнением тегов, комментариями, фильтрами периодов и оригинальными заголовками.',
+      'Починка Danbooru: устранены ошибки 403 Forbidden на CDN-серверах и добавлен фоллбэк на доступные медиа-варианты.',
+      'Многостраничные сеты и манга: компактный индикатор страниц со стрелками переключения вариантов под превью поста, а также исправление переходов между постами с вариациями.',
+    ],
+    bulletsEn: [
+      'Feed Image Quality: customizable resolution modes ("Auto", "Data saver", "Sample", and "Original") directly in Feed Settings.',
+      'Return of Konachan & Yande.re: modernized Moebooru engine featuring tag suggestions, comments, top periods, and clean CDN referer headers.',
+      'Danbooru Fix: resolved 403 Forbidden Cloudflare issues on media CDNs and added robust fallback to media asset variants.',
+      'Multi-page Post Sets & Manga: compact bottom-bar page navigation with arrow steppers and fixed state retention when switching between posts with variants.',
+    ],
+  ),
+  PrismaChange(
     version: '4.2.0',
     title:
         'Релиз: кастомизация навигации на ПК, редизайн источников и вкладки «Любимое», исправления и оптимизация',

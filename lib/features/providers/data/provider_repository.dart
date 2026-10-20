@@ -216,6 +216,36 @@ class ProviderRepository {
         createdAt: now,
         updatedAt: now,
       ),
+      ContentProviderConfig(
+        id: 'yandere',
+        name: 'Yande.re',
+        baseUrl: 'https://yande.re',
+        apiType: 'moebooru',
+        enabled: true,
+        priority: 14,
+        timeoutSeconds: 25,
+        customHeaders: {
+          'Referer': 'https://yande.re/',
+          'User-Agent': AppHeaders.defaultUserAgent,
+        },
+        createdAt: now,
+        updatedAt: now,
+      ),
+      ContentProviderConfig(
+        id: 'konachan',
+        name: 'Konachan',
+        baseUrl: 'https://konachan.net',
+        apiType: 'moebooru',
+        enabled: true,
+        priority: 15,
+        timeoutSeconds: 25,
+        customHeaders: {
+          'Referer': 'https://konachan.net/',
+          'User-Agent': AppHeaders.defaultUserAgent,
+        },
+        createdAt: now,
+        updatedAt: now,
+      ),
     ];
   }
 
@@ -224,8 +254,6 @@ class ProviderRepository {
       final existingProviders =
           await isar.providerConfigEntitys.where().findAll();
       const removedIds = {
-        'konachan',
-        'yandere',
         'xbooru',
         'paheal',
         'kemono',

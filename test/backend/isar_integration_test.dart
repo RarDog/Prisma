@@ -94,6 +94,8 @@ void main() {
       'ranobelib',
       'fapello',
       'wallhaven',
+      'yandere',
+      'konachan',
     ]);
     final pixiv = providers.singleWhere((provider) => provider.id == 'pixiv');
     expect(pixiv.enabled, isTrue);
@@ -114,8 +116,16 @@ void main() {
     expect(safebooru.enabled, isTrue);
     expect(safebooru.apiType, 'safebooru');
     expect(safebooru.baseUrl, 'https://safebooru.org');
-    expect(providers.where((provider) => provider.id == 'konachan'), isEmpty);
-    expect(providers.where((provider) => provider.id == 'yandere'), isEmpty);
+    final yandere =
+        providers.singleWhere((provider) => provider.id == 'yandere');
+    expect(yandere.enabled, isTrue);
+    expect(yandere.apiType, 'moebooru');
+    expect(yandere.baseUrl, 'https://yande.re');
+    final konachan =
+        providers.singleWhere((provider) => provider.id == 'konachan');
+    expect(konachan.enabled, isTrue);
+    expect(konachan.apiType, 'moebooru');
+    expect(konachan.baseUrl, 'https://konachan.net');
     expect(providers.where((provider) => provider.id == 'xbooru'), isEmpty);
     expect(providers.where((provider) => provider.id == 'paheal'), isEmpty);
     expect(providers.where((provider) => provider.id == 'kemono'), isEmpty);

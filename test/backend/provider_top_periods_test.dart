@@ -24,7 +24,6 @@ void main() {
       final rule34 = makeConfig('rule34', 'rule34');
       final safebooru = makeConfig('safebooru', 'safebooru');
       final realbooru = makeConfig('realbooru', 'realbooru_html');
-      final moebooru = makeConfig('moebooru', 'moebooru');
 
       expect(gelbooru.supportedTopPeriods, {
         TopPeriodFilter.none,
@@ -42,16 +41,13 @@ void main() {
         TopPeriodFilter.none,
         TopPeriodFilter.allTime,
       });
-      expect(moebooru.supportedTopPeriods, {
-        TopPeriodFilter.none,
-        TopPeriodFilter.allTime,
-      });
     });
 
-    test('Danbooru, e621 and MangaDex support all periods', () {
+    test('Danbooru, e621, MangaDex and Moebooru support all periods', () {
       final danbooru = makeConfig('danbooru', 'danbooru');
       final e621 = makeConfig('e621', 'e621');
       final mangadex = makeConfig('mangadex', 'mangadex');
+      final moebooru = makeConfig('moebooru', 'moebooru');
 
       final allPeriods = {
         TopPeriodFilter.none,
@@ -65,6 +61,7 @@ void main() {
       expect(danbooru.supportedTopPeriods, allPeriods);
       expect(e621.supportedTopPeriods, allPeriods);
       expect(mangadex.supportedTopPeriods, allPeriods);
+      expect(moebooru.supportedTopPeriods, allPeriods);
     });
 
     test('Pixiv supports ranking periods (none, day, week, month)', () {

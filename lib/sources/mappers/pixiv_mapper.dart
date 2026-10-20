@@ -71,8 +71,7 @@ class PixivMapper {
         'general': tags,
         if (artist.isNotEmpty) 'artist': [artist],
         if (title.isNotEmpty) 'copyright': [title],
-        if (pageCount > 1)
-          'children': List.generate(pageCount - 1, (i) => '${id}_p${i + 1}'),
+        if (pageCount > 1) 'page_count': [pageCount.toString()],
       };
 
       DateTime createdAt;
@@ -192,8 +191,7 @@ class PixivMapper {
         if (artist.isNotEmpty) 'artist': [artist],
         if (title.isNotEmpty) 'copyright': [title],
         if (description.isNotEmpty) 'description': [description],
-        if (pageCount > 1)
-          'children': List.generate(pageCount - 1, (i) => '${id}_p${i + 1}'),
+        if (pageCount > 1) 'page_count': [pageCount.toString()],
       };
 
       final createDateStr = item['createDate']?.toString();
@@ -288,8 +286,7 @@ class PixivMapper {
       if (artist.isNotEmpty) 'artist': [artist],
       if (title.isNotEmpty) 'copyright': [title],
       if (description.isNotEmpty) 'description': [description],
-      if (pageCount > 1)
-        'children': List.generate(pageCount - 1, (i) => '${id}_p${i + 1}'),
+      if (pageCount > 1) 'page_count': [pageCount.toString()],
     };
 
     return Post(
@@ -335,12 +332,16 @@ class PixivMapper {
     final height =
         int.tryParse('${pageData['height'] ?? 0}') ?? parentPost.height;
 
+    final baseId = parentPost.id.split('_p').first;
+    final postId = pageIndex == 0 ? baseId : '${baseId}_p$pageIndex';
+
     final tagGroups = Map<String, List<String>>.from(parentPost.tagGroups)
-      ..['parent_id'] = [parentPost.id]
-      ..remove('children');
+      ..['page_index'] = [pageIndex.toString()]
+      ..remove('children')
+      ..remove('parent_id');
 
     return Post(
-      id: '${parentPost.id}_p$pageIndex',
+      id: postId,
       providerId: parentPost.providerId,
       providerName: parentPost.providerName,
       previewUrl: previewUrl,

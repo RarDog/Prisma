@@ -17,9 +17,15 @@ final postDetailsControllerProvider =
         post.tagGroups.isEmpty;
   }
 
+  bool needsPixivEnrichment(Post post) {
+    if (post.providerId != 'pixiv') return false;
+    return post.fileUrl.contains('img-master') ||
+        post.fileUrl.contains('square1200');
+  }
+
   Future<Post?> enrich(Post? post) async {
     if (post == null) return null;
-    if (needsRealbooruDetails(post)) {
+    if (needsRealbooruDetails(post) || needsPixivEnrichment(post)) {
       final remote = await providerManager.getPost(post.providerId, post.id);
       if (remote is Success<Post?> && remote.data != null) {
         await cacheService.cachePosts([remote.data!]);

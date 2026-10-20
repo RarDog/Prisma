@@ -60,6 +60,9 @@ class MobileMediaCarousel extends ConsumerStatefulWidget {
     this.onShowQuickActions,
     this.onSaveVideoSnapshot,
     this.onSaveVideoPreferences,
+    this.pages,
+    this.pageIndex,
+    this.onSetPageChanged,
     super.key,
   });
 
@@ -70,6 +73,9 @@ class MobileMediaCarousel extends ConsumerStatefulWidget {
   final Set<String> favoriteKeys;
   final MediaQualityMode qualityMode;
   final ValueChanged<int> onPageChanged;
+  final List<Post>? pages;
+  final int? pageIndex;
+  final ValueChanged<int>? onSetPageChanged;
 
   /// True when this carousel belongs to the feed, so its fullscreen gallery
   /// tracks the live feed list while `onLoadMore` keeps appending.
@@ -196,8 +202,9 @@ class _MobileMediaCarouselState extends ConsumerState<MobileMediaCarousel>
     if (index < 0 || index >= widget.posts.length) {
       return screenHeight * 0.62;
     }
-    final post = (index == _currentPage &&
-            widget.posts[index].id == widget.activePost.id)
+    final isMatching = widget.posts[index].id == widget.activePost.id ||
+        widget.posts[index].id == widget.activePost.id.split('_p').first;
+    final post = (index == _currentPage && isMatching)
         ? widget.activePost
         : widget.posts[index];
     final dynamicDim = ref.watch(postMediaDimensionsProvider(post.cacheKey));
@@ -303,10 +310,11 @@ class _MobileMediaCarouselState extends ConsumerState<MobileMediaCarousel>
               }
 
               final isActivePage = index == _currentPage;
-              final targetPost =
-                  (isActivePage && postItem.id == widget.activePost.id)
-                      ? widget.activePost
-                      : postItem;
+              final isMatchingPost = postItem.id == widget.activePost.id ||
+                  postItem.id == widget.activePost.id.split('_p').first;
+              final targetPost = (isActivePage && isMatchingPost)
+                  ? widget.activePost
+                  : postItem;
 
               return KeepAlivePostPage(
                 key: ValueKey(postItem.cacheKey),
@@ -331,9 +339,15 @@ class _MobileMediaCarouselState extends ConsumerState<MobileMediaCarousel>
                     final itemIsVideo = MediaUrlSelector.isVideo(targetPost);
                     final itemIsAudio = MediaUrlSelector.isAudio(targetPost);
 
+                    final isMultiSet = isActivePage &&
+                        widget.pages != null &&
+                        widget.pages!.length > 1;
                     final mediaViewer = PostMediaViewer(
-                      key: ValueKey(targetPost.cacheKey),
+                      key: ValueKey('${targetPost.cacheKey}_${isMultiSet ? widget.pageIndex : 0}'),
                       post: targetPost,
+                      pageIndex: isMultiSet ? widget.pageIndex : null,
+                      pageCount: isMultiSet ? widget.pages!.length : null,
+                      onPageChanged: isMultiSet ? widget.onSetPageChanged : null,
                       useLiveFeed: widget.useLiveFeed,
                       isActive: isActivePage,
                       postsList: widget.posts,

@@ -94,7 +94,8 @@ void main() {
       expect(post.tags, contains('Original'));
       expect(post.tagGroups['artist'], equals(['TestArtist']));
       expect(post.tagGroups['copyright'], equals(['Test Artwork']));
-      expect(post.childrenIds, equals(['149899308_p1', '149899308_p2']));
+      expect(post.pageCount, equals(3));
+      expect(post.isMultiPage, isTrue);
       expect(post.fileUrl, contains('/img-master/'));
       expect(post.fileUrl, isNot(contains('/c/')));
     });
@@ -282,6 +283,83 @@ void main() {
       );
       final provider = factory.create(config) as PixivProvider;
       expect(provider.isAuthenticated, isTrue);
+    });
+
+    test('PixivProvider implements MultiPageProvider', () {
+      final client = DioClient(baseUrl: 'https://www.pixiv.net');
+      final provider = PixivProvider(
+        id: 'pixiv',
+        name: 'Pixiv',
+        baseUrl: 'https://www.pixiv.net',
+        dioClient: client,
+      );
+      expect(provider, isA<MultiPageProvider>());
+    });
+
+    test('PixivMapper.postFromPageResponse builds child posts with original quality', () {
+      final parentPost = Post(
+        id: '999888',
+        providerId: 'pixiv',
+        providerName: 'Pixiv',
+        previewUrl: 'https://i.pximg.net/thumb.jpg',
+        sampleUrl: 'https://i.pximg.net/master.jpg',
+        fileUrl: 'https://i.pximg.net/master.jpg',
+        tags: const ['scenery', 'night'],
+        rating: 's',
+        width: 1920,
+        height: 1080,
+        createdAt: DateTime(2026, 1, 1),
+        fileType: 'jpg',
+        score: 50,
+        tagGroups: {
+          'general': ['scenery', 'night'],
+          'artist': ['SkyPainter'],
+          'page_count': ['3'],
+          'children': ['999888_p1', '999888_p2'],
+        },
+      );
+
+      final pageData0 = {
+        'urls': {
+          'original': 'https://i.pximg.net/img-original/img/2026/999888_p0.png',
+          'regular': 'https://i.pximg.net/img-master/img/2026/999888_p0_master1200.jpg',
+          'small': 'https://i.pximg.net/img-master/img/2026/999888_p0_small.jpg',
+        },
+        'width': 3840,
+        'height': 2160,
+      };
+
+      final page0 = PixivMapper.postFromPageResponse(
+        pageData: pageData0,
+        parentPost: parentPost,
+        pageIndex: 0,
+      );
+
+      expect(page0, isNotNull);
+      expect(page0!.id, equals('999888'));
+      expect(page0.fileUrl, equals('https://i.pximg.net/img-original/img/2026/999888_p0.png'));
+      expect(page0.fileType, equals('png'));
+      expect(page0.tagGroups['page_index'], equals(['0']));
+
+      final pageData1 = {
+        'urls': {
+          'original': 'https://i.pximg.net/img-original/img/2026/999888_p1.jpg',
+          'regular': 'https://i.pximg.net/img-master/img/2026/999888_p1_master1200.jpg',
+        },
+        'width': 1920,
+        'height': 1080,
+      };
+
+      final page1 = PixivMapper.postFromPageResponse(
+        pageData: pageData1,
+        parentPost: parentPost,
+        pageIndex: 1,
+      );
+
+      expect(page1, isNotNull);
+      expect(page1!.id, equals('999888_p1'));
+      expect(page1.fileUrl, equals('https://i.pximg.net/img-original/img/2026/999888_p1.jpg'));
+      expect(page1.tagGroups['page_index'], equals(['1']));
     });
   });
 }

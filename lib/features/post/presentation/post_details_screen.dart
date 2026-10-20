@@ -39,6 +39,7 @@ import 'post_details_providers.dart';
 import 'widgets/post_artist_posts_card.dart';
 import 'widgets/post_details_intents.dart';
 import 'widgets/post_media_carousel.dart';
+import 'widgets/post_multi_page_strip.dart';
 import 'widgets/post_translate_button.dart';
 
 export 'post_details_providers.dart';
@@ -71,6 +72,7 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
   late String _activeProviderId;
   late String _activePostId;
   Post? _activePost;
+  int _selectedPageIndex = 0;
   bool _mediaGestureLocked = false;
 
   void _setMediaGestureLocked(bool locked) {
@@ -84,6 +86,13 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
     _activeProviderId = widget.providerId;
     _activePostId = widget.postId;
     _activePost = widget.initialPost;
+    final initialId = widget.initialPost?.id ?? widget.postId;
+    if (initialId.contains('_p')) {
+      final parts = initialId.split('_p');
+      _selectedPageIndex = int.tryParse(parts.last) ?? 0;
+    } else {
+      _selectedPageIndex = 0;
+    }
   }
 
   @override
@@ -94,6 +103,13 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
       _activeProviderId = widget.providerId;
       _activePostId = widget.postId;
       _activePost = widget.initialPost;
+      final newId = widget.initialPost?.id ?? widget.postId;
+      if (newId.contains('_p')) {
+        final parts = newId.split('_p');
+        _selectedPageIndex = int.tryParse(parts.last) ?? 0;
+      } else {
+        _selectedPageIndex = 0;
+      }
     }
   }
 
@@ -157,14 +173,23 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
               return const EmptyView(title: 'Post not found');
             }
             final post = effectivePost;
+            final pagesAsync = ref.watch(postPagesProvider(post));
+            final pages = pagesAsync.value ?? [post];
+            final isMultiPage = pages.length > 1;
+            final currentPostIndex =
+                _selectedPageIndex.clamp(0, pages.length - 1);
+            final targetPost = isMultiPage ? pages[currentPostIndex] : post;
+
             WidgetsBinding.instance.addPostFrameCallback((_) {
               ref.read(viewedHistoryServiceProvider).markViewed(post);
               ref.invalidate(viewedKeysProvider);
               ref.invalidate(viewedControllerProvider);
             });
+            final basePostId = post.id.split('_p').first;
             final currentIndex = feedPosts.indexWhere(
               (item) =>
-                  item.providerId == post.providerId && item.id == post.id,
+                  item.providerId == post.providerId &&
+                  (item.id == post.id || item.id == basePostId),
             );
             final previous =
                 currentIndex > 0 ? feedPosts[currentIndex - 1] : null;
@@ -174,8 +199,9 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                     : null;
             final qualityMode =
                 MediaQualityMode.fromName(settings.mediaQualityMode);
-            final localMedia =
-                ref.watch(downloadedMediaByKeyProvider(post.cacheKey)).value;
+            final localMedia = ref
+                .watch(downloadedMediaByKeyProvider(targetPost.cacheKey))
+                .value;
             final fileSizeBytes = localMedia != null
                 ? DownloadedMediaService.getFileSizeSync(localMedia)
                 : null;
@@ -184,29 +210,30 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                 (tasks) =>
                     tasks.value?.any(
                       (t) =>
-                          (t.post?.cacheKey == post.cacheKey ||
-                              t.id == post.cacheKey) &&
+                          (t.post?.cacheKey == targetPost.cacheKey ||
+                              t.id == targetPost.cacheKey) &&
                           (t.status == DownloadTaskStatus.running ||
                               t.status == DownloadTaskStatus.queued),
                     ) ??
                     false,
               ),
             );
-            final notesAsync = ref.watch(postNotesProvider(
-                PostDetailsArgs(providerId: post.providerId, postId: post.id)));
+            final notesAsync = ref.watch(postNotesProvider(PostDetailsArgs(
+                providerId: targetPost.providerId, postId: targetPost.id)));
             final notes = notesAsync.value ?? const [];
-            final showNotes = ref.watch(showPostNotesProvider(post.cacheKey));
-            final isTextOnly = post.fileType == 'text' ||
-                (post.previewUrl.isEmpty &&
-                    post.sampleUrl.isEmpty &&
-                    post.fileUrl.isEmpty &&
-                    !MediaUrlSelector.isVideo(post) &&
-                    !MediaUrlSelector.isAudio(post));
+            final showNotes =
+                ref.watch(showPostNotesProvider(targetPost.cacheKey));
+            final isTextOnly = targetPost.fileType == 'text' ||
+                (targetPost.previewUrl.isEmpty &&
+                    targetPost.sampleUrl.isEmpty &&
+                    targetPost.fileUrl.isEmpty &&
+                    !MediaUrlSelector.isVideo(targetPost) &&
+                    !MediaUrlSelector.isAudio(targetPost));
             final shouldShowCloudCard = isTextOnly
-                ? post.cloudLinks.isNotEmpty
-                : (post.cloudLinks.isNotEmpty ||
-                    (post.commentary != null &&
-                        post.commentary!.trim().isNotEmpty));
+                ? targetPost.cloudLinks.isNotEmpty
+                : (targetPost.cloudLinks.isNotEmpty ||
+                    (targetPost.commentary != null &&
+                        targetPost.commentary!.trim().isNotEmpty));
 
             final providerInstance =
                 ref.watch(postProviderInstanceProvider(post.providerId)).value;
@@ -217,7 +244,7 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
               return _buildMobileDetails(
                 context,
                 ref,
-                post,
+                targetPost,
                 settings,
                 favoriteKeys,
                 qualityMode,
@@ -227,6 +254,8 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                 feedPosts,
                 (newIndex) => _handlePagerPageChanged(newIndex, feedPosts),
                 true,
+                pages,
+                currentPostIndex,
               );
             }
             return Shortcuts(
@@ -307,39 +336,50 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                           ),
                           Expanded(
                             child: Center(
-                              child: (MediaUrlSelector.isVideo(post) ||
-                                      MediaUrlSelector.isAudio(post))
+                              child: (MediaUrlSelector.isVideo(targetPost) ||
+                                      MediaUrlSelector.isAudio(targetPost))
                                   ? ConstrainedBox(
                                       constraints: BoxConstraints(
                                         maxHeight:
-                                            MediaUrlSelector.isAudio(post)
+                                            MediaUrlSelector.isAudio(targetPost)
                                                 ? 360
                                                 : 760,
-                                        maxWidth: MediaUrlSelector.isAudio(post)
+                                        maxWidth: MediaUrlSelector.isAudio(targetPost)
                                             ? 620
                                             : double.infinity,
                                       ),
                                       child: AspectRatio(
                                         aspectRatio:
-                                            MediaUrlSelector.isAudio(post)
+                                            MediaUrlSelector.isAudio(targetPost)
                                                 ? 1.4
-                                                : ((post.width > 0 &&
-                                                        post.height > 0)
-                                                    ? (post.width / post.height)
+                                                : ((targetPost.width > 0 &&
+                                                        targetPost.height > 0)
+                                                    ? (targetPost.width / targetPost.height)
                                                         .clamp(0.45, 2.4)
                                                     : (16 / 9)),
                                         child: PostMediaViewer(
-                                          key: ValueKey(post.cacheKey),
-                                          post: post,
-                                          useLiveFeed: widget.fromFeed,
-                                          postsList: feedPosts,
-                                          onLoadMore: widget.fromFeed
+                                          key: ValueKey('${targetPost.cacheKey}_$currentPostIndex'),
+                                          post: targetPost,
+                                          pageIndex: isMultiPage ? currentPostIndex : null,
+                                          pageCount: isMultiPage ? pages.length : null,
+                                          onPageChanged: isMultiPage
+                                              ? (newIdx) => setState(() => _selectedPageIndex = newIdx)
+                                              : null,
+                                          useLiveFeed: isMultiPage ? false : widget.fromFeed,
+                                          postsList: isMultiPage ? pages : feedPosts,
+                                          onLoadMore: (!isMultiPage && widget.fromFeed)
                                               ? () => ref
                                                   .read(feedControllerProvider
                                                       .notifier)
                                                   .loadNextPage()
                                               : null,
                                           onPostIndexChanged: (index) {
+                                            if (isMultiPage) {
+                                              if (index >= 0 && index < pages.length) {
+                                                setState(() => _selectedPageIndex = index);
+                                              }
+                                              return;
+                                            }
                                             final currentPosts = widget.fromFeed
                                                 ? (ref
                                                         .read(
@@ -365,13 +405,13 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                                           mediaHeaders: ref
                                                   .watch(
                                                       postMediaHeadersProvider(
-                                                          post))
+                                                          targetPost))
                                                   .value ??
                                               const {},
                                           initialPosition: Duration(
                                             milliseconds:
                                                 settings.videoPlaybackPositions[
-                                                        post.cacheKey] ??
+                                                        targetPost.cacheKey] ??
                                                     0,
                                           ),
                                           initialLoop: settings.videoPlayerLoop,
@@ -389,7 +429,7 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                                               .setVideoPlayerVolume(vol),
                                           onPlaybackSnapshot: (snapshot) =>
                                               _saveVideoSnapshot(
-                                                  ref, post, snapshot),
+                                                  ref, targetPost, snapshot),
                                           onPlaybackPreferencesChanged:
                                               (snapshot) =>
                                                   _saveVideoPreferences(
@@ -402,36 +442,47 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                                         maxHeight: 760,
                                       ),
                                       child: AspectRatio(
-                                        aspectRatio: (post.width > 0 &&
-                                                post.height > 0)
-                                            ? (post.width / post.height)
+                                        aspectRatio: (targetPost.width > 0 &&
+                                                targetPost.height > 0)
+                                            ? (targetPost.width / targetPost.height)
                                                 .clamp(0.2, 5.0)
                                             : (ref.watch(postMediaDimensionsProvider(
-                                                            post.cacheKey)) !=
+                                                            targetPost.cacheKey)) !=
                                                         null &&
                                                     ref
                                                             .watch(postMediaDimensionsProvider(
-                                                                post.cacheKey))!
+                                                                targetPost.cacheKey))!
                                                             .height >
                                                         0
-                                                ? (ref.watch(postMediaDimensionsProvider(post.cacheKey))!.width /
+                                                ? (ref.watch(postMediaDimensionsProvider(targetPost.cacheKey))!.width /
                                                         ref
-                                                            .watch(postMediaDimensionsProvider(post.cacheKey))!
+                                                            .watch(postMediaDimensionsProvider(targetPost.cacheKey))!
                                                             .height)
                                                     .clamp(0.2, 5.0)
                                                 : (16 / 9)),
                                         child: PostMediaViewer(
-                                          key: ValueKey(post.cacheKey),
-                                          post: post,
-                                          useLiveFeed: widget.fromFeed,
-                                          postsList: feedPosts,
-                                          onLoadMore: widget.fromFeed
+                                          key: ValueKey('${targetPost.cacheKey}_$currentPostIndex'),
+                                          post: targetPost,
+                                          pageIndex: isMultiPage ? currentPostIndex : null,
+                                          pageCount: isMultiPage ? pages.length : null,
+                                          onPageChanged: isMultiPage
+                                              ? (newIdx) => setState(() => _selectedPageIndex = newIdx)
+                                              : null,
+                                          useLiveFeed: isMultiPage ? false : widget.fromFeed,
+                                          postsList: isMultiPage ? pages : feedPosts,
+                                          onLoadMore: (!isMultiPage && widget.fromFeed)
                                               ? () => ref
                                                   .read(feedControllerProvider
                                                       .notifier)
                                                   .loadNextPage()
                                               : null,
                                           onPostIndexChanged: (index) {
+                                            if (isMultiPage) {
+                                              if (index >= 0 && index < pages.length) {
+                                                setState(() => _selectedPageIndex = index);
+                                              }
+                                              return;
+                                            }
                                             final currentPosts = widget.fromFeed
                                                 ? (ref
                                                         .read(
@@ -457,13 +508,13 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                                           mediaHeaders: ref
                                                   .watch(
                                                       postMediaHeadersProvider(
-                                                          post))
+                                                          targetPost))
                                                   .value ??
                                               const {},
                                           initialPosition: Duration(
                                             milliseconds:
                                                 settings.videoPlaybackPositions[
-                                                        post.cacheKey] ??
+                                                        targetPost.cacheKey] ??
                                                     0,
                                           ),
                                           initialLoop: settings.videoPlayerLoop,
@@ -481,7 +532,7 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                                               .setVideoPlayerVolume(vol),
                                           onPlaybackSnapshot: (snapshot) =>
                                               _saveVideoSnapshot(
-                                                  ref, post, snapshot),
+                                                  ref, targetPost, snapshot),
                                           onPlaybackPreferencesChanged:
                                               (snapshot) =>
                                                   _saveVideoPreferences(
@@ -522,6 +573,19 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                           ),
                         ),
                       ],
+                      if (pages.length > 1) ...[
+                        const SizedBox(height: 10),
+                        PostMultiPageStrip(
+                          pages: pages,
+                          currentIndex: currentPostIndex,
+                          onPageSelected: (idx) {
+                            setState(() => _selectedPageIndex = idx);
+                          },
+                          onDownloadAll: settings.allowDownloads
+                              ? () => _downloadAllPages(context, ref, pages)
+                              : null,
+                        ),
+                      ],
                       if (currentIndex >= 0) ...[
                         const SizedBox(height: 10),
                         NeighborStrip(
@@ -540,21 +604,21 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                             _toggleFavorite(ref, post, favoriteKeys),
                         onCollection: () =>
                             _addToCollection(context, ref, post),
-                        onOpen: () => launchUrl(Uri.parse(post.fileUrl)),
+                        onOpen: () => launchUrl(Uri.parse(targetPost.fileUrl)),
                         onOpenSource: () => _openSourcePage(ref, post),
                         onCopy: () => Clipboard.setData(
-                            ClipboardData(text: post.fileUrl)),
+                            ClipboardData(text: targetPost.fileUrl)),
                         onSimilar: () => _openSimilar(context, ref, post),
                         onHide: () => _hidePost(context, ref, post),
                         onDownload: settings.allowDownloads
-                            ? () => _download(context, ref, post)
+                            ? () => _download(context, ref, targetPost)
                             : null,
                         onSaveAs: settings.allowDownloads
-                            ? () => _saveAs(context, ref, post)
+                            ? () => _saveAs(context, ref, targetPost)
                             : null,
                         onDeleteLocalFile: () =>
-                            _deleteLocalFile(context, ref, post),
-                        onShare: () => _sharePost(context, ref, post),
+                            _deleteLocalFile(context, ref, targetPost),
+                        onShare: () => _sharePost(context, ref, targetPost),
                       ),
                       const SizedBox(height: 16),
                       PostInfoCard(
@@ -689,6 +753,8 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
     List<Post>? feedPosts,
     ValueChanged<int>? onPostIndexChanged,
     bool isActive = true,
+    List<Post>? pages,
+    int currentPageIndex = 0,
   ]) {
     final isVideo = MediaUrlSelector.isVideo(post);
     final isAudio = MediaUrlSelector.isAudio(post);
@@ -731,9 +797,12 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
         providerInstance is E621Provider ? providerInstance : null;
     final posts = feedPosts;
     final hasMultiplePosts = posts != null && posts.length > 1;
+    final basePostId = post.id.split('_p').first;
     final currentIndex = (posts != null && hasMultiplePosts)
         ? posts.indexWhere(
-            (item) => item.providerId == post.providerId && item.id == post.id,
+            (item) =>
+                item.providerId == post.providerId &&
+                (item.id == post.id || item.id == basePostId),
           )
         : 0;
 
@@ -789,6 +858,10 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                   _showMobileQuickActions(ctx, r, p, favoriteKeys),
               onSaveVideoSnapshot: (r, p, s) => _saveVideoSnapshot(r, p, s),
               onSaveVideoPreferences: (r, s) => _saveVideoPreferences(r, s),
+              pages: pages,
+              pageIndex: currentPageIndex,
+              onSetPageChanged: (idx) =>
+                  setState(() => _selectedPageIndex = idx),
             )
           else
             GestureDetector(
@@ -810,11 +883,25 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                           aspectRatio:
                               isAudio ? 1.3 : singleMediaAspect.clamp(0.2, 5.0),
                           child: PostMediaViewer(
-                            key: ValueKey(post.cacheKey),
+                            key: ValueKey('${post.cacheKey}_$currentPageIndex'),
                             post: post,
-                            useLiveFeed: widget.fromFeed,
+                            pageIndex: (pages != null && pages.length > 1)
+                                ? currentPageIndex
+                                : null,
+                            pageCount: (pages != null && pages.length > 1)
+                                ? pages.length
+                                : null,
+                            onPageChanged: (pages != null && pages.length > 1)
+                                ? (idx) =>
+                                    setState(() => _selectedPageIndex = idx)
+                                : null,
+                            useLiveFeed: (pages != null && pages.length > 1)
+                                ? false
+                                : widget.fromFeed,
                             isActive: isActive,
-                            postsList: feedPosts,
+                            postsList: (pages != null && pages.length > 1)
+                                ? pages
+                                : feedPosts,
                             onLoadMore: widget.fromFeed
                                 ? () => ref
                                     .read(feedControllerProvider.notifier)
@@ -857,11 +944,25 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                       width: double.infinity,
                       height: singleMediaHeight,
                       child: PostMediaViewer(
-                        key: ValueKey(post.cacheKey),
+                        key: ValueKey('${post.cacheKey}_$currentPageIndex'),
                         post: post,
-                        useLiveFeed: widget.fromFeed,
+                        pageIndex: (pages != null && pages.length > 1)
+                            ? currentPageIndex
+                            : null,
+                        pageCount: (pages != null && pages.length > 1)
+                            ? pages.length
+                            : null,
+                        onPageChanged: (pages != null && pages.length > 1)
+                            ? (idx) =>
+                                setState(() => _selectedPageIndex = idx)
+                            : null,
+                        useLiveFeed: (pages != null && pages.length > 1)
+                            ? false
+                            : widget.fromFeed,
                         isActive: isActive,
-                        postsList: feedPosts,
+                        postsList: (pages != null && pages.length > 1)
+                            ? pages
+                            : feedPosts,
                         onLoadMore: widget.fromFeed
                             ? () => ref
                                 .read(feedControllerProvider.notifier)
@@ -929,6 +1030,19 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                         },
                       ),
                     ),
+                  ],
+                  if (pages != null && pages.length > 1) ...[
+                    PostMultiPageStrip(
+                      pages: pages,
+                      currentIndex: currentPageIndex,
+                      onPageSelected: (idx) {
+                        setState(() => _selectedPageIndex = idx);
+                      },
+                      onDownloadAll: settings.allowDownloads
+                          ? () => _downloadAllPages(context, ref, pages)
+                          : null,
+                    ),
+                    const SizedBox(height: 8),
                   ],
                   const SizedBox(height: 12),
                   PostActionBar(
@@ -1105,6 +1219,28 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
     });
   }
 
+  Future<void> _downloadAllPages(
+    BuildContext context,
+    WidgetRef ref,
+    List<Post> pages,
+  ) async {
+    final downloadManager = ref.read(downloadManagerServiceProvider);
+    for (final page in pages) {
+      await downloadManager.start(page);
+    }
+    if (!context.mounted) return;
+    final strings = ref.read(appStringsProvider);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          strings.ru
+              ? 'Начато скачивание всех страниц (${pages.length})'
+              : 'Started downloading all pages (${pages.length})',
+        ),
+      ),
+    );
+  }
+
   Future<void> _saveAs(BuildContext context, WidgetRef ref, Post post) async {
     if (!context.mounted) return;
     final strings = ref.read(appStringsProvider);
@@ -1242,6 +1378,26 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                 _download(context, ref, post);
               },
             ),
+            Builder(
+              builder: (ctx) {
+                final pages = ref.read(postPagesProvider(post)).value ?? [post];
+                if (pages.length <= 1) return const SizedBox.shrink();
+                final isRu =
+                    Localizations.maybeLocaleOf(ctx)?.languageCode == 'ru';
+                return ListTile(
+                  leading: const Icon(Icons.download_for_offline_rounded),
+                  title: Text(
+                    isRu
+                        ? 'Скачать все страницы (${pages.length})'
+                        : 'Download all pages (${pages.length})',
+                  ),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    _downloadAllPages(context, ref, pages);
+                  },
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -1342,6 +1498,7 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
         builder: (ctx) => PostDetailsScreen(
           providerId: providerId,
           postId: targetId,
+          fromFeed: false,
         ),
       ),
     );
@@ -1409,6 +1566,9 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
       _activeProviderId = post.providerId;
       _activePostId = post.id;
       _activePost = post;
+      _selectedPageIndex = post.id.contains('_p')
+          ? (int.tryParse(post.id.split('_p').last) ?? 0)
+          : 0;
     });
     ref.read(viewedHistoryServiceProvider).markViewed(post);
     ref.invalidate(viewedKeysProvider);
@@ -1424,6 +1584,7 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
           _activeProviderId = newPost.providerId;
           _activePostId = newPost.id;
           _activePost = newPost;
+          _selectedPageIndex = 0;
         });
         ref.read(viewedHistoryServiceProvider).markViewed(newPost);
         ref.invalidate(viewedKeysProvider);
@@ -1437,8 +1598,16 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
     Post? post,
     List<Post> feedPosts,
   ) async {
-    final targetPost = post ?? _activePost;
-    if (targetPost == null) return;
+    final rootPost = post ?? _activePost;
+    if (rootPost == null) return;
+
+    final pages = ref.read(postPagesProvider(rootPost)).value ?? [rootPost];
+    final isMulti = pages.length > 1;
+    final currentIdx = _selectedPageIndex.clamp(0, pages.length - 1);
+    final targetPost = isMulti ? pages[currentIdx] : rootPost;
+    final targetList =
+        isMulti ? pages : (feedPosts.isNotEmpty ? feedPosts : [rootPost]);
+
     final settings =
         ref.read(appSettingsProvider).value ?? AppSettings.defaults;
     final qualityMode = MediaQualityMode.fromName(settings.mediaQualityMode);
@@ -1457,19 +1626,25 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
       context: context,
       ref: ref,
       post: targetPost,
-      postsList: feedPosts.isNotEmpty ? feedPosts : [targetPost],
+      postsList: targetList,
       qualityMode: qualityMode,
       notes: notes,
       showNotes: showNotes,
       localFilePath: localMedia?.savedPath,
-      useLiveFeed: widget.fromFeed,
+      useLiveFeed: isMulti ? false : widget.fromFeed,
       onPostChanged: (index) {
-        if (index >= 0 && index < feedPosts.length) {
-          final newPost = feedPosts[index];
-          _openPost(context, newPost);
+        if (isMulti) {
+          if (index >= 0 && index < pages.length) {
+            setState(() => _selectedPageIndex = index);
+          }
+        } else {
+          if (index >= 0 && index < feedPosts.length) {
+            final newPost = feedPosts[index];
+            _openPost(context, newPost);
+          }
         }
       },
-      onLoadMore: widget.fromFeed
+      onLoadMore: (!isMulti && widget.fromFeed)
           ? () => ref.read(feedControllerProvider.notifier).loadNextPage()
           : null,
     );

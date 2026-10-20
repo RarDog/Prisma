@@ -71,10 +71,22 @@ class Post {
 
   List<String> get childrenIds => tagGroups['children'] ?? const [];
 
+  int get pageCount {
+    final explicitCount = tagGroups['page_count']?.firstOrNull;
+    if (explicitCount != null) {
+      final parsed = int.tryParse(explicitCount);
+      if (parsed != null && parsed > 1) return parsed;
+    }
+    return childrenIds.isNotEmpty ? childrenIds.length + 1 : 1;
+  }
+
+  bool get isMultiPage => pageCount > 1;
+
   List<String> get poolIds => tagGroups['pools'] ?? const [];
 
   bool get hasRelations =>
-      (parentId != null && parentId!.isNotEmpty) || childrenIds.isNotEmpty;
+      (parentId != null && parentId!.isNotEmpty) ||
+      (childrenIds.isNotEmpty && providerId != 'pixiv');
 
   bool get hasPools => poolIds.isNotEmpty;
 
@@ -191,6 +203,17 @@ class Post {
             ) ??
             const {},
       );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Post &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          providerId == other.providerId;
+
+  @override
+  int get hashCode => id.hashCode ^ providerId.hashCode;
 }
 
 class PostNavigationContext {

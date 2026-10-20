@@ -85,7 +85,7 @@ class ContentProviderConfig {
 extension ContentProviderConfigTopPeriod on ContentProviderConfig {
   Set<TopPeriodFilter> get supportedTopPeriods {
     return switch (apiType.toLowerCase()) {
-      'danbooru' || 'e621' || 'mangadex' => const {
+      'danbooru' || 'e621' || 'mangadex' || 'moebooru' => const {
           TopPeriodFilter.none,
           TopPeriodFilter.day,
           TopPeriodFilter.week,

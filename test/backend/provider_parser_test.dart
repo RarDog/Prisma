@@ -171,21 +171,73 @@ void main() {
     expect(posts.single.tagGroups['general'], ['blue', 'sky']);
   });
 
-  test('parses Moebooru response through Danbooru-compatible mapper', () {
+  test('parses Danbooru response with media_asset variants fallback', () {
+    final posts = DanbooruMapper.postsFromResponse(
+      [
+        {
+          'id': 12345,
+          'media_asset': {
+            'variants': [
+              {
+                'type': '180x180',
+                'url': 'https://cdn.donmai.us/180x180/preview.jpg',
+              },
+              {
+                'type': 'sample',
+                'url': 'https://cdn.donmai.us/sample/sample.jpg',
+              },
+              {
+                'type': 'original',
+                'url': 'https://cdn.donmai.us/original/original.jpg',
+              },
+            ]
+          },
+          'tag_string_general': 'blue_sky landscape',
+        }
+      ],
+      providerId: 'danbooru',
+      providerName: 'Danbooru',
+    );
+
+    expect(posts.single.previewUrl, 'https://cdn.donmai.us/180x180/preview.jpg');
+    expect(posts.single.sampleUrl, 'https://cdn.donmai.us/sample/sample.jpg');
+    expect(posts.single.fileUrl, 'https://cdn.donmai.us/original/original.jpg');
+  });
+
+  test('parses Moebooru response for yande.re and konachan', () {
     final posts = MoebooruMapper.postsFromResponse(
       [
         {
-          'id': 50,
-          'file_url': 'https://example.test/moe.png',
-          'tag_string': 'konachan_test',
+          'id': 1270940,
+          'tags': 'pantyhose skirt_lift sora01o',
+          'created_at': 1792481906,
+          'source': 'https://www.pixiv.net/en/artworks/147279437',
+          'score': 2,
+          'file_size': 4722386,
+          'file_ext': 'jpg',
+          'file_url': 'https://files.yande.re/image/full.jpg',
+          'preview_url': 'https://assets.yande.re/data/preview/thumb.jpg',
+          'sample_url': 'https://files.yande.re/sample/sample.jpg',
+          'rating': 's',
+          'width': 2894,
+          'height': 4093,
+          'parent_id': 123,
+          'has_children': true,
         }
       ],
-      providerId: 'konachan',
-      providerName: 'Konachan',
+      providerId: 'yandere',
+      providerName: 'Yande.re',
     );
 
-    expect(posts.single.providerId, 'konachan');
-    expect(posts.single.tags, ['konachan_test']);
+    expect(posts.single.providerId, 'yandere');
+    expect(posts.single.id, '1270940');
+    expect(posts.single.tags, contains('pantyhose'));
+    expect(posts.single.fileUrl, 'https://files.yande.re/image/full.jpg');
+    expect(posts.single.sampleUrl, 'https://files.yande.re/sample/sample.jpg');
+    expect(posts.single.previewUrl, 'https://assets.yande.re/data/preview/thumb.jpg');
+    expect(posts.single.parentId, '123');
+    expect(posts.single.createdAt.year, greaterThan(2020));
+    expect(posts.single.hasRelations, isTrue);
   });
 
   test('parses e621 response and tag groups', () {

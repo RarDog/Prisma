@@ -17,7 +17,8 @@ class PixivProvider
         PostPageProvider,
         MediaHeadersProvider,
         TagSuggestionProvider,
-        CommentProvider {
+        CommentProvider,
+        MultiPageProvider {
   PixivProvider({
     required this.id,
     required this.name,
@@ -81,10 +82,24 @@ class PixivProvider
     String? rating,
     TopPeriodFilter topPeriod = TopPeriodFilter.none,
   }) async {
-    final cleanedTags = tags
-        .map((t) => t.trim())
-        .where((t) => t.isNotEmpty && !t.startsWith('rating:'))
-        .toList();
+    String? artworkType;
+    String? explicitMode;
+
+    final cleanedTags = <String>[];
+    for (final raw in tags) {
+      final t = raw.trim();
+      if (t.isEmpty) continue;
+      final lower = t.toLowerCase();
+      if (lower.startsWith('type:')) {
+        artworkType = lower.substring('type:'.length);
+      } else if (lower.startsWith('content:')) {
+        artworkType = lower.substring('content:'.length);
+      } else if (lower.startsWith('mode:')) {
+        explicitMode = lower.substring('mode:'.length);
+      } else if (!lower.startsWith('rating:')) {
+        cleanedTags.add(t);
+      }
+    }
 
     final isExplicit = rating == 'e' ||
         rating == 'explicit' ||
@@ -95,13 +110,18 @@ class PixivProvider
 
     try {
       if (cleanedTags.isEmpty) {
-        // If authenticated — use following feed, otherwise public ranking
-        if (isAuthenticated) {
+        // If authenticated and no explicit ranking mode — use following feed
+        if (isAuthenticated && explicitMode == null && topPeriod == TopPeriodFilter.none) {
           return await _fetchFollowFeed(page: targetPage);
         }
 
         String mode;
-        if (isExplicit) {
+        if (explicitMode != null) {
+          mode = explicitMode;
+          if (isExplicit && !mode.endsWith('_r18') && mode != 'r18g') {
+            mode = '${mode}_r18';
+          }
+        } else if (isExplicit) {
           mode = switch (topPeriod) {
             TopPeriodFilter.week => 'weekly_r18',
             _ => 'daily_r18',
@@ -114,12 +134,20 @@ class PixivProvider
           };
         }
 
+        final contentParam = switch (artworkType) {
+          'manga' => 'manga',
+          'illust' || 'illustrations' => 'illust',
+          'ugoira' => 'ugoira',
+          _ => null,
+        };
+
         final response = await _dio.get<dynamic>(
           '/ranking.php',
           queryParameters: {
             'format': 'json',
             'mode': mode,
             'p': targetPage,
+            if (contentParam != null) 'content': contentParam,
             ..._queryParameters,
           },
           options: _authOptions,
@@ -142,9 +170,15 @@ class PixivProvider
         mode = 'safe';
       }
 
+      final searchCategory = switch (artworkType) {
+        'manga' => 'manga',
+        'illust' || 'illustrations' => 'illustrations',
+        _ => 'artworks',
+      };
+
       final query = cleanedTags.join(' ');
       final response = await _dio.get<dynamic>(
-        '/ajax/search/artworks/${Uri.encodeComponent(query)}',
+        '/ajax/search/$searchCategory/${Uri.encodeComponent(query)}',
         queryParameters: {
           'p': targetPage,
           'mode': mode,
@@ -164,6 +198,35 @@ class PixivProvider
     } on DioException catch (e) {
       _handleDioError(e);
     }
+  }
+
+  @override
+  Future<List<Post>> getPostPages(Post post) async {
+    final baseId = post.id.split('_p').first;
+    try {
+      final response = await _dio.get<dynamic>(
+        '/ajax/illust/$baseId/pages',
+        queryParameters: {'lang': 'en', ..._queryParameters},
+        options: _authOptions,
+      );
+      _checkResponse(response);
+      if (response.data is Map && response.data['body'] is List) {
+        final pagesList = response.data['body'] as List;
+        final results = <Post>[];
+        for (var i = 0; i < pagesList.length; i++) {
+          final p = PixivMapper.postFromPageResponse(
+            pageData: pagesList[i],
+            parentPost: post,
+            pageIndex: i,
+          );
+          if (p != null) {
+            results.add(p);
+          }
+        }
+        if (results.isNotEmpty) return results;
+      }
+    } catch (_) {}
+    return [post];
   }
 
   /// Fetches "Following" feed for authenticated users

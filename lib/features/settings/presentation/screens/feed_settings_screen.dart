@@ -132,17 +132,37 @@ class FeedSettingsScreen extends ConsumerWidget {
 
               // Media Quality in Grid
               SettingsCardGroup(
-                title: strings.mediaQuality,
+                title: isRu
+                    ? 'Качество картинок в ленте'
+                    : 'Feed Image Quality',
                 icon: Icons.high_quality_rounded,
                 accentColor: const Color(0xFF06B6D4),
                 children: [
                   SettingsSegmentedTile<String>(
                     icon: Icons.image_rounded,
                     iconColor: const Color(0xFF06B6D4),
-                    title: strings.mediaQuality,
+                    title: isRu ? 'Качество картинок' : 'Image Quality',
                     subtitle: isRu
-                        ? 'Разрешение загружаемых картинок в сетке'
-                        : 'Resolution profile for feed thumbnails',
+                        ? switch (MediaQualityMode.fromName(settings.mediaQualityMode)) {
+                            MediaQualityMode.auto =>
+                              'Авто (Превью на мобильных, Sample на ПК)',
+                            MediaQualityMode.dataSaver =>
+                              'Экономия трафика (миниатюры)',
+                            MediaQualityMode.highQuality =>
+                              'Высокое качество (Sample / сбалансированное)',
+                            MediaQualityMode.original =>
+                              'Оригиналы картинок (полный размер)',
+                          }
+                        : switch (MediaQualityMode.fromName(settings.mediaQualityMode)) {
+                            MediaQualityMode.auto =>
+                              'Auto (Thumbnails on mobile, Sample on PC)',
+                            MediaQualityMode.dataSaver =>
+                              'Data saver (Thumbnails)',
+                            MediaQualityMode.highQuality =>
+                              'High quality (Sample / balanced)',
+                            MediaQualityMode.original =>
+                              'Original files (Full resolution)',
+                          },
                     segments: [
                       for (final mode in MediaQualityMode.values)
                         ButtonSegment(
@@ -151,10 +171,16 @@ class FeedSettingsScreen extends ConsumerWidget {
                             isRu
                                 ? switch (mode) {
                                     MediaQualityMode.auto => 'Авто',
-                                    MediaQualityMode.dataSaver => 'Экономия',
-                                    MediaQualityMode.highQuality => 'HQ',
+                                    MediaQualityMode.dataSaver => 'Превью',
+                                    MediaQualityMode.highQuality => 'Sample',
+                                    MediaQualityMode.original => 'Оригинал',
                                   }
-                                : mode.label,
+                                : switch (mode) {
+                                    MediaQualityMode.auto => 'Auto',
+                                    MediaQualityMode.dataSaver => 'Preview',
+                                    MediaQualityMode.highQuality => 'Sample',
+                                    MediaQualityMode.original => 'Original',
+                                  },
                           ),
                         ),
                     ],
@@ -164,6 +190,38 @@ class FeedSettingsScreen extends ConsumerWidget {
                       settings.copyWith(mediaQualityMode: set.first),
                     ),
                   ),
+                  if (settings.mediaQualityMode ==
+                      MediaQualityMode.original.name) ...[
+                    const SettingsDivider(),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.warning_amber_rounded,
+                            size: 20,
+                            color: theme.colorScheme.error,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              isRu
+                                  ? 'Режим «Оригинал» загружает полноразмерные файлы прямо в ленте. Это увеличивает расход мобильного интернета и потребление памяти.'
+                                  : '"Original" mode downloads full-resolution files directly in the feed. This increases data usage and RAM consumption.',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.error,
+                                height: 1.3,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
 

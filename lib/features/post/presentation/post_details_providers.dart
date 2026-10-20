@@ -19,3 +19,12 @@ final postProviderInstanceProvider = FutureProvider.autoDispose
     .family<ContentProvider?, String>((ref, providerId) async {
   return ref.watch(providerManagerProvider).getProviderInstance(providerId);
 });
+
+final postPagesProvider = FutureProvider.autoDispose
+    .family<List<Post>, Post>((ref, post) async {
+  if (!post.isMultiPage) return [post];
+  final result = await ref.watch(providerManagerProvider).getPostPages(post);
+  return result is Success<List<Post>> && result.data.isNotEmpty
+      ? result.data
+      : [post];
+});

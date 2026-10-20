@@ -108,3 +108,7 @@ abstract class NovelChapterProvider {
   Future<dynamic> fetchChapters(String novelId);
   Future<String> fetchChapterContent(String chapterId);
 }
+
+abstract class MultiPageProvider {
+  Future<List<Post>> getPostPages(Post post);
+}

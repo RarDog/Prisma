@@ -24,8 +24,17 @@ class DioImageFallback extends StatefulWidget {
 }
 
 class DioImageFallbackState extends State<DioImageFallback> {
-  late final Future<Uint8List> _bytes = _load();
+  late Future<Uint8List> _bytes = _load();
   bool _reportedFailure = false;
+
+  @override
+  void didUpdateWidget(covariant DioImageFallback oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.imageUrl != widget.imageUrl) {
+      _reportedFailure = false;
+      _bytes = _load();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
