@@ -32,11 +32,25 @@ class MediaUrlSelector {
     bool mobile = false,
   }) {
     if (_isVideo(post)) {
-      return _compact([
-        if (!_looksLikeVideoUrl(post.previewUrl)) post.previewUrl,
-        if (!_looksLikeVideoUrl(post.sampleUrl)) post.sampleUrl,
-        post.previewUrl,
-      ]);
+      final nonVideoPreview =
+          !_looksLikeVideoUrl(post.previewUrl) ? post.previewUrl : '';
+      final nonVideoSample =
+          !_looksLikeVideoUrl(post.sampleUrl) ? post.sampleUrl : '';
+      return switch (mode) {
+        MediaQualityMode.highQuality || MediaQualityMode.original => _compact([
+            nonVideoSample,
+            nonVideoPreview,
+            post.previewUrl,
+          ]),
+        MediaQualityMode.dataSaver => _compact([
+            nonVideoPreview,
+            nonVideoSample,
+            post.previewUrl,
+          ]),
+        MediaQualityMode.auto => mobile
+            ? _compact([nonVideoPreview, nonVideoSample, post.previewUrl])
+            : _compact([nonVideoSample, nonVideoPreview, post.previewUrl]),
+      };
     }
     return switch (mode) {
       MediaQualityMode.dataSaver => _compact([post.previewUrl, post.sampleUrl]),

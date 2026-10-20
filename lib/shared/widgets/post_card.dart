@@ -705,14 +705,6 @@ class _PostCardState extends ConsumerState<PostCard>
   }
 
   List<String> _feedUrls(Post post, {required bool mobile}) {
-    if (MediaUrlSelector.isVideo(post)) {
-      return [
-        if (!MediaUrlSelector.looksLikeVideoUrl(post.previewUrl))
-          post.previewUrl,
-        if (!MediaUrlSelector.looksLikeVideoUrl(post.sampleUrl)) post.sampleUrl,
-        post.previewUrl,
-      ].where((url) => url.trim().isNotEmpty).toSet().toList(growable: false);
-    }
     if (post.providerId == 'realbooru' || post.providerId == 'paheal') {
       return [
         post.sampleUrl,

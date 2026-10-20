@@ -22,10 +22,39 @@ class DanbooruMapper {
     required String providerId,
     required String providerName,
   }) {
-    String fileUrl = _string(json['file_url'] ?? json['large_file_url']);
-    String sampleUrl =
-        _string(json['large_file_url'] ?? json['sample_file_url'] ?? fileUrl);
-    String previewUrl = _string(json['preview_file_url'] ?? sampleUrl);
+    final rawExt = _string(
+      json['file_ext'] ??
+          (json['media_asset'] is Map
+              ? json['media_asset']['file_ext']
+              : null),
+    ).toLowerCase();
+
+    final hash = _string(
+      json['md5'] ??
+          (json['media_asset'] is Map
+              ? (json['media_asset']['pixel_hash'] ??
+                  json['media_asset']['md5'])
+              : null),
+    );
+
+    String? cdnOriginal;
+    String? cdn720;
+    String? cdn360;
+    String? cdn180;
+    if (hash.length >= 4) {
+      final prefix = '${hash.substring(0, 2)}/${hash.substring(2, 4)}';
+      final ext = rawExt.isNotEmpty ? rawExt : 'jpg';
+      cdnOriginal = 'https://cdn.donmai.us/original/$prefix/$hash.$ext';
+      cdn720 = 'https://cdn.donmai.us/720x720/$prefix/$hash.webp';
+      cdn360 = 'https://cdn.donmai.us/360x360/$prefix/$hash.jpg';
+      cdn180 = 'https://cdn.donmai.us/180x180/$prefix/$hash.jpg';
+    }
+
+    String? variantOriginal;
+    String? variantSample;
+    String? variant720;
+    String? variant360;
+    String? variant180;
 
     if (json['media_asset'] is Map) {
       final mediaAsset = Map<String, dynamic>.from(json['media_asset']);
@@ -36,21 +65,104 @@ class DanbooruMapper {
           final type = v['type']?.toString();
           final url = v['url']?.toString() ?? '';
           if (url.isEmpty) continue;
-          if (type == 'original' && fileUrl.isEmpty) {
-            fileUrl = url;
-          } else if ((type == 'sample' || type == '720x720') &&
-              sampleUrl.isEmpty) {
-            sampleUrl = url;
-          } else if ((type == '360x360' || type == '180x180') &&
-              previewUrl.isEmpty) {
-            previewUrl = url;
+          switch (type) {
+            case 'original':
+              variantOriginal = url;
+              break;
+            case 'sample':
+              variantSample = url;
+              break;
+            case '720x720':
+              variant720 = url;
+              break;
+            case '360x360':
+              variant360 = url;
+              break;
+            case '180x180':
+              variant180 = url;
+              break;
           }
         }
       }
     }
-    if (fileUrl.isEmpty) fileUrl = sampleUrl;
-    if (sampleUrl.isEmpty) sampleUrl = fileUrl;
-    if (previewUrl.isEmpty) previewUrl = sampleUrl;
+
+    final rawFileUrl = _string(json['file_url']);
+    final rawLargeUrl = _string(json['large_file_url']);
+    final rawPreviewUrl = _string(json['preview_file_url']);
+
+    final isVideo = rawExt == 'mp4' ||
+        rawExt == 'webm' ||
+        rawExt == 'mov' ||
+        rawExt == 'mkv' ||
+        _looksLikeVideo(rawFileUrl) ||
+        _looksLikeVideo(rawLargeUrl) ||
+        (variantOriginal != null && _looksLikeVideo(variantOriginal));
+
+    String fileUrl;
+    String sampleUrl;
+    String previewUrl;
+
+    if (isVideo) {
+      fileUrl = variantOriginal ??
+          (rawFileUrl.isNotEmpty ? rawFileUrl : null) ??
+          (rawLargeUrl.isNotEmpty ? rawLargeUrl : null) ??
+          cdnOriginal ??
+          '';
+
+      final nonVideoPreview =
+          rawPreviewUrl.isNotEmpty && !_looksLikeVideo(rawPreviewUrl)
+              ? rawPreviewUrl
+              : null;
+      final nonVideoLarge =
+          rawLargeUrl.isNotEmpty && !_looksLikeVideo(rawLargeUrl)
+              ? rawLargeUrl
+              : null;
+
+      previewUrl = variant180 ??
+          cdn180 ??
+          variant360 ??
+          cdn360 ??
+          nonVideoPreview ??
+          variant720 ??
+          cdn720 ??
+          '';
+
+      sampleUrl = variant720 ??
+          cdn720 ??
+          variant360 ??
+          cdn360 ??
+          nonVideoLarge ??
+          previewUrl;
+
+      if (previewUrl.isEmpty) previewUrl = sampleUrl;
+    } else {
+      fileUrl = variantOriginal ??
+          (rawFileUrl.isNotEmpty ? rawFileUrl : null) ??
+          (rawLargeUrl.isNotEmpty ? rawLargeUrl : null) ??
+          cdnOriginal ??
+          '';
+
+      sampleUrl = variantSample ??
+          variant720 ??
+          (rawLargeUrl.isNotEmpty ? rawLargeUrl : null) ??
+          cdn720 ??
+          (json['sample_file_url'] != null &&
+                  _string(json['sample_file_url']).isNotEmpty
+              ? _string(json['sample_file_url'])
+              : null) ??
+          fileUrl;
+
+      previewUrl = variant180 ??
+          cdn180 ??
+          variant360 ??
+          cdn360 ??
+          (rawPreviewUrl.isNotEmpty ? rawPreviewUrl : null) ??
+          sampleUrl;
+
+      if (fileUrl.isEmpty) fileUrl = sampleUrl;
+      if (sampleUrl.isEmpty) sampleUrl = fileUrl;
+      if (previewUrl.isEmpty) previewUrl = sampleUrl;
+    }
 
     DateTime createdAt;
     final rawCreated = json['created_at'];
@@ -87,7 +199,7 @@ class DanbooruMapper {
       height: _int(json['image_height'] ?? json['height']),
       source: _nullableString(json['source']),
       createdAt: createdAt,
-      fileType: _fileType(fileUrl, json['file_ext']),
+      fileType: isVideo ? 'video' : _fileType(fileUrl, rawExt),
       score: _int(json['score']),
       tagGroups: tagGroups.isEmpty ? {'general': tags} : tagGroups,
     );
@@ -118,17 +230,36 @@ class DanbooruMapper {
     return text == null || text.isEmpty ? null : text;
   }
 
+  static bool _looksLikeVideo(String url) {
+    if (url.isEmpty) return false;
+    final lower = url.toLowerCase().split('?').first;
+    return lower.endsWith('.webm') ||
+        lower.endsWith('.mp4') ||
+        lower.endsWith('.mov') ||
+        lower.endsWith('.mkv');
+  }
+
   static String _fileType(String url, dynamic fileExt) {
     final lower = url.toLowerCase().split('?').first;
     final ext = _string(fileExt).toLowerCase();
     if (lower.endsWith('.webm') ||
         lower.endsWith('.mp4') ||
+        lower.endsWith('.mov') ||
+        lower.endsWith('.mkv') ||
         ext == 'webm' ||
-        ext == 'mp4') {
+        ext == 'mp4' ||
+        ext == 'mov' ||
+        ext == 'mkv') {
       return 'video';
     }
     if (lower.endsWith('.gif') || ext == 'gif') return 'gif';
-    if (lower.isEmpty) return 'unknown';
+    if (lower.endsWith('.zip') ||
+        lower.endsWith('.rar') ||
+        ext == 'zip' ||
+        ext == 'rar') {
+      return 'archive';
+    }
+    if (lower.isEmpty && ext.isEmpty) return 'unknown';
     return 'image';
   }
 
