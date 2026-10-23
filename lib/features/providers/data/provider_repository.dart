@@ -246,6 +246,36 @@ class ProviderRepository {
         createdAt: now,
         updatedAt: now,
       ),
+      ContentProviderConfig(
+        id: 'tbib',
+        name: 'TBIB',
+        baseUrl: 'https://tbib.org',
+        apiType: 'tbib',
+        enabled: true,
+        priority: 16,
+        timeoutSeconds: 20,
+        customHeaders: {
+          'Referer': 'https://tbib.org/',
+          'User-Agent': AppHeaders.defaultUserAgent,
+        },
+        createdAt: now,
+        updatedAt: now,
+      ),
+      ContentProviderConfig(
+        id: 'rule34_us',
+        name: 'Rule34.us',
+        baseUrl: 'https://rule34.us',
+        apiType: 'rule34_us',
+        enabled: true,
+        priority: 17,
+        timeoutSeconds: 20,
+        customHeaders: {
+          'Referer': 'https://rule34.us/',
+          'User-Agent': AppHeaders.desktopChromeUserAgent,
+        },
+        createdAt: now,
+        updatedAt: now,
+      ),
     ];
   }
 
@@ -366,6 +396,13 @@ class ProviderRepository {
           .providerIdEqualTo(providerId)
           .findFirst();
       return entity?.toModel();
+    });
+  }
+
+  Future<Result<List<ProviderHealth>>> getAllHealth() {
+    return _databaseService.safeRead((isar) async {
+      final entities = await isar.providerHealthEntitys.where().findAll();
+      return entities.map((e) => e.toModel()).toList();
     });
   }
 

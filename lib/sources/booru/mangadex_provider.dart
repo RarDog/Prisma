@@ -834,22 +834,30 @@ class MangaDexProvider
 
   @override
   Future<ProviderHealth> checkHealth() async {
-    final startedAt = DateTime.now();
+    final sw = Stopwatch()..start();
     try {
-      final response = await _dio.get<dynamic>('/ping');
+      final response = await _dio.get<dynamic>(
+        '/ping',
+        options: Options(
+          receiveTimeout: const Duration(seconds: 6),
+          sendTimeout: const Duration(seconds: 5),
+        ),
+      );
+      sw.stop();
       final isOk = response.statusCode == 200;
       return ProviderHealth(
         providerId: id,
         status: isOk ? ProviderStatus.online : ProviderStatus.offline,
-        pingMs: DateTime.now().difference(startedAt).inMilliseconds,
+        pingMs: isOk ? sw.elapsedMilliseconds : 0,
         lastCheckedAt: DateTime.now(),
         apiVersion: 'mangadex-api-v5',
       );
     } catch (error) {
+      sw.stop();
       return ProviderHealth(
         providerId: id,
         status: ProviderStatus.offline,
-        pingMs: DateTime.now().difference(startedAt).inMilliseconds,
+        pingMs: 0,
         lastCheckedAt: DateTime.now(),
         errorMessage: error.toString(),
         apiVersion: 'mangadex-api-v5',

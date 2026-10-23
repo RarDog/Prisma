@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:gel_rule_app/core/http/app_headers.dart';
 
@@ -78,6 +80,14 @@ class GelbooruProvider
     dynamic data, {
     required int limit,
   }) {
+    if (data is String) {
+      final trimmed = data.trim();
+      if (trimmed.startsWith('[')) {
+        try {
+          data = jsonDecode(trimmed);
+        } catch (_) {}
+      }
+    }
     if (data is! List) return const [];
     final labelRegExp = RegExp(r'^(.*?)\s*\((\d+)\)$');
     final suggestions = <TagSuggestion>[];
@@ -137,6 +147,7 @@ class GelbooruProvider
         response.data,
         providerId: id,
         providerName: name,
+        baseUrl: baseUrl,
       );
     } on DioException catch (e) {
       _handleDioError(e);
@@ -155,6 +166,7 @@ class GelbooruProvider
         response.data,
         providerId: this.id,
         providerName: name,
+        baseUrl: baseUrl,
       );
       return posts.isEmpty ? null : posts.first;
     } on DioException catch (e) {
@@ -164,24 +176,67 @@ class GelbooruProvider
 
   @override
   Future<ProviderHealth> checkHealth() async {
-    final startedAt = DateTime.now();
+    final sw = Stopwatch()..start();
     try {
       await _dio.get<dynamic>(
         '/index.php',
         queryParameters: dapiQuery('post', params: {'limit': 1}),
+        options: Options(
+          receiveTimeout: const Duration(seconds: 6),
+          sendTimeout: const Duration(seconds: 5),
+        ),
       );
+      sw.stop();
       return ProviderHealth(
         providerId: id,
         status: ProviderStatus.online,
-        pingMs: DateTime.now().difference(startedAt).inMilliseconds,
+        pingMs: sw.elapsedMilliseconds,
         lastCheckedAt: DateTime.now(),
         apiVersion: 'gelbooru-compatible',
       );
-    } catch (error) {
+    } on DioException catch (dioErr) {
+      sw.stop();
+      if (dioErr.response?.statusCode == 401) {
+        try {
+          final ping = await _dio.get<dynamic>(
+            '/index.php',
+            queryParameters: {'page': 'post', 's': 'list'},
+            options: Options(
+              responseType: ResponseType.plain,
+              receiveTimeout: const Duration(seconds: 6),
+              sendTimeout: const Duration(seconds: 5),
+            ),
+          );
+          if ((ping.statusCode ?? 500) < 400) {
+            final hasKey = _queryParameters.containsKey('api_key') ||
+                _queryParameters.containsKey('user_id');
+            return ProviderHealth(
+              providerId: id,
+              status: hasKey ? ProviderStatus.offline : ProviderStatus.online,
+              pingMs: hasKey ? 0 : sw.elapsedMilliseconds,
+              lastCheckedAt: DateTime.now(),
+              errorMessage: hasKey
+                  ? 'Неверный API-ключ или User ID'
+                  : 'Требуется API-ключ в настройках',
+              apiVersion: 'gelbooru-auth-required',
+            );
+          }
+        } catch (_) {}
+      }
       return ProviderHealth(
         providerId: id,
         status: ProviderStatus.offline,
-        pingMs: DateTime.now().difference(startedAt).inMilliseconds,
+        pingMs: 0,
+        lastCheckedAt: DateTime.now(),
+        errorMessage: dioErr.message ?? dioErr.toString(),
+        apiVersion: 'gelbooru-compatible',
+      );
+    } catch (error) {
+      sw.stop();
+      return ProviderHealth(
+        providerId: id,
+        status: ProviderStatus.offline,
+        pingMs: 0,
         lastCheckedAt: DateTime.now(),
         errorMessage: error.toString(),
         apiVersion: 'gelbooru-compatible',

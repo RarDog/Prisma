@@ -31,6 +31,19 @@ class MediaUrlSelector {
     MediaQualityMode mode = MediaQualityMode.auto,
     bool mobile = false,
   }) {
+    if (post.providerId == 'realbooru') {
+      if (_isVideo(post)) {
+        return _compact([post.previewUrl]);
+      }
+      return switch (mode) {
+        MediaQualityMode.original || MediaQualityMode.highQuality =>
+          _compact([post.sampleUrl, post.previewUrl]),
+        _ => _compact([post.previewUrl, post.sampleUrl]),
+      };
+    }
+    if (post.providerId == 'paheal' && !_isVideo(post)) {
+      return _compact([post.sampleUrl, post.fileUrl, post.previewUrl]);
+    }
     if (_isVideo(post)) {
       final nonVideoPreview =
           !_looksLikeVideoUrl(post.previewUrl) ? post.previewUrl : '';
@@ -92,7 +105,7 @@ class MediaUrlSelector {
         _ => _compact([post.fileUrl, post.sampleUrl, post.previewUrl]),
       };
     }
-    return switch (mode) {
+    final defaultList = switch (mode) {
       MediaQualityMode.dataSaver =>
         _compact([post.sampleUrl, post.previewUrl, post.fileUrl]),
       MediaQualityMode.highQuality =>
@@ -102,6 +115,29 @@ class MediaUrlSelector {
       MediaQualityMode.auto =>
         _compact([post.sampleUrl, post.fileUrl, post.previewUrl]),
     };
+    if (post.providerId == 'realbooru' && !_isVideo(post) && !_isGif(post)) {
+      final base = post.fileUrl;
+      final alternatives = <String>[];
+      if (base.contains('/images/')) {
+        if (base.endsWith('.jpeg')) {
+          alternatives.add(base.replaceFirst(RegExp(r'\.jpeg$'), '.jpg'));
+          alternatives.add(base.replaceFirst(RegExp(r'\.jpeg$'), '.png'));
+        } else if (base.endsWith('.png')) {
+          alternatives.add(base.replaceFirst(RegExp(r'\.png$'), '.jpeg'));
+          alternatives.add(base.replaceFirst(RegExp(r'\.png$'), '.jpg'));
+        } else if (base.endsWith('.jpg')) {
+          alternatives.add(base.replaceFirst(RegExp(r'\.jpg$'), '.jpeg'));
+          alternatives.add(base.replaceFirst(RegExp(r'\.jpg$'), '.png'));
+        }
+      }
+      final highRes = defaultList.where((u) => u != post.previewUrl);
+      return _compact([
+        ...highRes,
+        ...alternatives,
+        post.previewUrl,
+      ]);
+    }
+    return defaultList;
   }
 
   static String? download(Post post) {

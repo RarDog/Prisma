@@ -205,32 +205,35 @@ class FapelloProvider
 
   @override
   Future<ProviderHealth> checkHealth() async {
-    final startedAt = DateTime.now();
+    final sw = Stopwatch()..start();
     try {
       final html = await _getHtml('/top-likes/');
+      sw.stop();
       final healthy = html.isNotEmpty && _modelCardPattern.hasMatch(html);
       return ProviderHealth(
         providerId: id,
         status: healthy ? ProviderStatus.online : ProviderStatus.offline,
-        pingMs: DateTime.now().difference(startedAt).inMilliseconds,
+        pingMs: healthy ? sw.elapsedMilliseconds : 0,
         lastCheckedAt: DateTime.now(),
         apiVersion: 'fapello-html',
         errorMessage: healthy ? null : 'No model cards found in HTML response',
       );
     } on AppException catch (error) {
+      sw.stop();
       return ProviderHealth(
         providerId: id,
         status: ProviderStatus.offline,
-        pingMs: DateTime.now().difference(startedAt).inMilliseconds,
+        pingMs: 0,
         lastCheckedAt: DateTime.now(),
         errorMessage: error.message,
         apiVersion: 'fapello-html',
       );
     } catch (error) {
+      sw.stop();
       return ProviderHealth(
         providerId: id,
         status: ProviderStatus.offline,
-        pingMs: DateTime.now().difference(startedAt).inMilliseconds,
+        pingMs: 0,
         lastCheckedAt: DateTime.now(),
         errorMessage: error.toString(),
         apiVersion: 'fapello-html',

@@ -372,6 +372,16 @@ class _ProviderCardState extends State<ProviderCard> {
           Icons.shield_rounded,
           'Safebooru',
         ),
+      'tbib' => (
+          const Color(0xFF2563EB),
+          Icons.collections_bookmark_rounded,
+          'TBIB',
+        ),
+      'rule34_us' || 'rule34us' => (
+          const Color(0xFFE11D48),
+          Icons.electric_bolt_rounded,
+          'Rule34.us HTML',
+        ),
       'paheal' => (
           const Color(0xFFEA580C),
           Icons.filter_hdr_rounded,

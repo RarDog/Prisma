@@ -1,11 +1,31 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.2.1-beta.3',
+    title:
+        'Пре-релиз: предзагрузка ленты, буферизация видео, новый провайдер TBIB и исправление пинга',
+    titleEn:
+        'Pre-release: Feed prefetching, video buffering optimizations, TBIB provider & ping overhaul',
+    bullets: [
+      'Предзагрузка ленты и буферизация видео: ускорен старт воспроизведения видео и предзагрузка контента следующего экрана.',
+      'Новый источник TBIB: интеграция The Big ImageBoard с поддержкой DAPI JSON и автокомплитом тегов.',
+      'Исправление диагностики и пинга: честный замер сетевой задержки без тяжёлого парсинга HTML, живое обновление при проверке всех источников и статус «Офлайн» при сбоях.',
+      'Обновление стека сборки: переход на Gradle 9.1.0, обновлены зависимости сборки под Android.',
+    ],
+    bulletsEn: [
+      'Feed prefetching & video buffering: accelerated video start and instant preloading of upcoming items in feed.',
+      'New TBIB Provider: full integration of The Big ImageBoard with DAPI JSON and autocomplete.',
+      'Provider Health & Ping Overhaul: true network latency measurement without parsing heavy HTML, real-time status streaming in batch check, and clear Offline state on errors.',
+      'Build Toolchain Upgrade: updated to Gradle 9.1.0 and modernized Android build dependencies.',
+    ],
+  ),
+  PrismaChange(
     version: '4.2.1-beta.2',
     title:
         'Пре-релиз: настраиваемое качество картинок в ленте, исправление видео Danbooru, возвращение Konachan и Yande.re, исправления свайпера сетов',
     titleEn:
         'Pre-release: Customizable feed image quality, Danbooru video & 403 fixes, return of Konachan & Yande.re, post set swiper fixes',
     bullets: [
+      'Новые источники: добавлены Rule34.us (HTML скрапер с поддержкой видео, тегов и фильтрации топа) и TBIB (The Big ImageBoard с DAPI JSON и автокомплитом).',
       'Качество картинок в ленте: добавлены режимы «Авто», «Превью», «Sample» и «Оригинал» в настройках ленты.',
       'Исправление видео Danbooru: устранен сбой, из-за которого видеопосты открывались как текстовые статьи без плеера и постеров, реализована генерация прямых CDN-ссылок по хэшу.',
       'Возвращение Konachan и Yande.re: современные провайдеры на базе Moebooru с автодополнением тегов, комментариями, фильтрами периодов и оригинальными заголовками.',
@@ -13,6 +33,7 @@ const prismaChangelog = [
       'Многостраничные сеты и манга: компактный индикатор страниц со стрелками переключения вариантов под превью поста, а также исправление переходов между постами с вариациями.',
     ],
     bulletsEn: [
+      'New Providers: added Rule34.us (high-speed HTML scraping, video playback, autocomplete, top sorting) and TBIB (The Big ImageBoard with DAPI JSON).',
       'Feed Image Quality: customizable resolution modes ("Auto", "Data saver", "Sample", and "Original") directly in Feed Settings.',
       'Danbooru Video Fix: resolved issue where video posts rendered as text articles without thumbnails or video playback, restored CDN direct URL reconstruction for posts without explicit URLs.',
       'Return of Konachan & Yande.re: modernized Moebooru engine featuring tag suggestions, comments, top periods, and clean CDN referer headers.',

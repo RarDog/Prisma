@@ -408,7 +408,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     if (lower.contains('gelbooru')) return const Color(0xFF006ffa);
     if (lower.contains('danbooru')) return const Color(0xFFe45f34);
     if (lower.contains('e621')) return const Color(0xFF00549e);
+    if (lower.contains('rule34_us') || lower.contains('rule34us')) {
+      return const Color(0xFFE11D48);
+    }
     if (lower.contains('rule34')) return const Color(0xFF2e7d32);
+    if (lower.contains('tbib')) return const Color(0xFF2563EB);
     if (lower.contains('safebooru')) return const Color(0xFF10b981);
     if (lower.contains('realbooru')) return const Color(0xFF455a64);
     if (lower.contains('wallhaven')) return const Color(0xFF10b981);

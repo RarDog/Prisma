@@ -20,7 +20,11 @@ class HistoryTagItem {
     if (pid.contains('gelbooru')) return const Color(0xFF006ffa);
     if (pid.contains('danbooru')) return const Color(0xFFe45f34);
     if (pid.contains('e621')) return const Color(0xFF00549e);
+    if (pid.contains('rule34_us') || pid.contains('rule34us')) {
+      return const Color(0xFFE11D48);
+    }
     if (pid.contains('rule34')) return const Color(0xFFaae5a4);
+    if (pid.contains('tbib')) return const Color(0xFF2563EB);
     if (pid.contains('safebooru')) return const Color(0xFF2e7d32);
     if (pid.contains('realbooru')) return const Color(0xFF455a64);
     if (pid.contains('wallhaven')) return const Color(0xFF10B981);

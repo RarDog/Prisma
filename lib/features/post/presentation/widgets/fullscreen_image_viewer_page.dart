@@ -711,9 +711,10 @@ class _FullscreenVideoItemState extends State<_FullscreenVideoItem> {
       _volume = remembered.volume;
     }
 
+    final isMobile = Platform.isAndroid || Platform.isIOS;
     final p = Player(
-      configuration: const PlayerConfiguration(
-        bufferSize: 64 * 1024 * 1024,
+      configuration: PlayerConfiguration(
+        bufferSize: isMobile ? 32 * 1024 * 1024 : 64 * 1024 * 1024,
       ),
     );
     final enableHw = !_isSoftwareDecoding;

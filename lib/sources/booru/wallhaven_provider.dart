@@ -265,28 +265,34 @@ class WallhavenProvider
 
   @override
   Future<ProviderHealth> checkHealth() async {
-    final startedAt = DateTime.now();
+    final sw = Stopwatch()..start();
     try {
       final response = await dioClient.dio.get<Map<String, dynamic>>(
         '/api/v1/search',
         queryParameters: {'page': 1, 'categories': '100', 'purity': '100'},
+        options: Options(
+          receiveTimeout: const Duration(seconds: 6),
+          sendTimeout: const Duration(seconds: 5),
+        ),
       );
+      sw.stop();
       return ProviderHealth(
         providerId: id,
         status: response.statusCode == 200
             ? ProviderStatus.online
             : ProviderStatus.offline,
-        pingMs: DateTime.now().difference(startedAt).inMilliseconds,
+        pingMs: response.statusCode == 200 ? sw.elapsedMilliseconds : 0,
         lastCheckedAt: DateTime.now(),
         apiVersion: 'wallhaven-v1',
         errorMessage:
             response.statusCode == 200 ? null : 'Status ${response.statusCode}',
       );
     } catch (e) {
+      sw.stop();
       return ProviderHealth(
         providerId: id,
         status: ProviderStatus.offline,
-        pingMs: DateTime.now().difference(startedAt).inMilliseconds,
+        pingMs: 0,
         lastCheckedAt: DateTime.now(),
         errorMessage: e.toString(),
       );

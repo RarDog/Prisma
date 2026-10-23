@@ -63,22 +63,33 @@ class Rule34PahealProvider implements ContentProvider, PostPageProvider {
 
   @override
   Future<ProviderHealth> checkHealth() async {
-    final startedAt = DateTime.now();
+    final sw = Stopwatch()..start();
     try {
-      final posts = await searchPosts(tags: const [], page: 0, limit: 1);
+      final response = await _dio.get<String>(
+        '/post/list/1',
+        options: Options(
+          responseType: ResponseType.plain,
+          receiveTimeout: const Duration(seconds: 6),
+          sendTimeout: const Duration(seconds: 5),
+        ),
+      );
+      sw.stop();
+      final isOk = (response.statusCode ?? 500) < 400 &&
+          (response.data?.contains('shm-thumb') ?? false);
       return ProviderHealth(
         providerId: id,
-        status: posts.isEmpty ? ProviderStatus.offline : ProviderStatus.online,
-        pingMs: DateTime.now().difference(startedAt).inMilliseconds,
+        status: isOk ? ProviderStatus.online : ProviderStatus.offline,
+        pingMs: isOk ? sw.elapsedMilliseconds : 0,
         lastCheckedAt: DateTime.now(),
         apiVersion: 'paheal-html',
-        errorMessage: posts.isEmpty ? 'No posts found in HTML response' : null,
+        errorMessage: isOk ? null : 'No posts found in HTML response',
       );
     } catch (error) {
+      sw.stop();
       return ProviderHealth(
         providerId: id,
         status: ProviderStatus.offline,
-        pingMs: DateTime.now().difference(startedAt).inMilliseconds,
+        pingMs: 0,
         lastCheckedAt: DateTime.now(),
         errorMessage: error.toString(),
         apiVersion: 'paheal-html',

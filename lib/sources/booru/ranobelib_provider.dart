@@ -528,30 +528,35 @@ class RanobeLibProvider
 
   @override
   Future<ProviderHealth> checkHealth() async {
-    final startedAt = DateTime.now();
+    final sw = Stopwatch()..start();
     try {
       final res = await _dio.get<dynamic>(
-        '$baseUrl/api/manga?site_id[]=3&page=1&limit=1',
+        '/manga',
+        queryParameters: {'site_id[]': 3, 'page': 1, 'limit': 1},
         options: Options(
-          headers: AppHeaders.browserHeaders(
-            referer: 'https://ranobelib.me/',
-          ),
+          headers: _headers,
+          receiveTimeout: const Duration(seconds: 6),
+          sendTimeout: const Duration(seconds: 5),
         ),
       );
+      sw.stop();
       final ok = res.statusCode == 200;
       return ProviderHealth(
         providerId: id,
         status: ok ? ProviderStatus.online : ProviderStatus.offline,
-        pingMs: DateTime.now().difference(startedAt).inMilliseconds,
+        pingMs: ok ? sw.elapsedMilliseconds : 0,
         lastCheckedAt: DateTime.now(),
+        apiVersion: 'ranobelib-api',
       );
     } catch (e) {
+      sw.stop();
       return ProviderHealth(
         providerId: id,
         status: ProviderStatus.offline,
-        pingMs: DateTime.now().difference(startedAt).inMilliseconds,
+        pingMs: 0,
         lastCheckedAt: DateTime.now(),
         errorMessage: e.toString(),
+        apiVersion: 'ranobelib-api',
       );
     }
   }

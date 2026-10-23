@@ -14,6 +14,8 @@ import 'package:gel_rule_app/sources/booru/pawchive_provider.dart';
 import 'package:gel_rule_app/sources/booru/realbooru_html_provider.dart';
 import 'package:gel_rule_app/sources/booru/rule34_provider.dart';
 import 'package:gel_rule_app/sources/booru/rule34_paheal_provider.dart';
+import 'package:gel_rule_app/sources/booru/rule34_us_provider.dart';
+import 'package:gel_rule_app/sources/booru/tbib_provider.dart';
 import 'package:gel_rule_app/sources/booru/mangadex_provider.dart';
 import 'package:gel_rule_app/sources/booru/mangalib_provider.dart';
 import 'package:gel_rule_app/sources/booru/ranobelib_provider.dart';
@@ -93,6 +95,19 @@ class ProviderFactory {
       headers.putIfAbsent(
         'User-Agent',
         () => AppHeaders.defaultUserAgent,
+      );
+    } else if (config.apiType.toLowerCase() == 'tbib') {
+      headers.putIfAbsent('Referer', () => 'https://tbib.org/');
+      headers.putIfAbsent(
+        'User-Agent',
+        () => AppHeaders.defaultUserAgent,
+      );
+    } else if (config.apiType.toLowerCase() == 'rule34_us' ||
+        config.apiType.toLowerCase() == 'rule34us') {
+      headers.putIfAbsent('Referer', () => 'https://rule34.us/');
+      headers.putIfAbsent(
+        'User-Agent',
+        () => AppHeaders.desktopChromeUserAgent,
       );
     }
 
@@ -183,6 +198,23 @@ class ProviderFactory {
           name: config.name,
           baseUrl: config.baseUrl,
           dioClient: client,
+        );
+      case 'tbib':
+        return TbibProvider(
+          id: config.id,
+          name: config.name,
+          baseUrl: config.baseUrl,
+          dioClient: client,
+          queryParameters: queryParameters,
+        );
+      case 'rule34_us':
+      case 'rule34us':
+        return Rule34UsProvider(
+          id: config.id,
+          name: config.name,
+          baseUrl: config.baseUrl,
+          dioClient: client,
+          queryParameters: queryParameters,
         );
       case 'wallhaven':
         final apiKey = config.customHeaders['api_key'] ??

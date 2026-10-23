@@ -264,6 +264,7 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
     'content',
     'links',
     'external_links',
+    'is_detailed',
   };
 
   Map<String, List<String>> _groups(Post post) {

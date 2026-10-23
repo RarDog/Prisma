@@ -191,6 +191,26 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
                       ),
                       const SizedBox(width: 8),
                       _PresetChip(
+                        name: 'TBIB',
+                        color: const Color(0xFF2563EB),
+                        onTap: () => _applyPreset(
+                          name: 'TBIB',
+                          baseUrl: 'https://tbib.org',
+                          apiType: 'tbib',
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _PresetChip(
+                        name: 'Rule34.us',
+                        color: const Color(0xFFE11D48),
+                        onTap: () => _applyPreset(
+                          name: 'Rule34.us',
+                          baseUrl: 'https://rule34.us',
+                          apiType: 'rule34_us',
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _PresetChip(
                         name: 'Danbooru',
                         color: const Color(0xFF3B82F6),
                         onTap: () => _applyPreset(
@@ -351,6 +371,14 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
                         DropdownMenuItem(
                           value: 'realbooru_html',
                           child: Text('Realbooru HTML'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'rule34_us',
+                          child: Text('Rule34.us HTML'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'tbib',
+                          child: Text('TBIB (The Big ImageBoard)'),
                         ),
                         DropdownMenuItem(
                           value: 'wallhaven',

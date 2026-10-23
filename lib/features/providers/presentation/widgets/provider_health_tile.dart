@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/features/providers/presentation/provider_form_screen.dart';
 import 'package:gel_rule_app/shared/widgets/provider_status_badge.dart';
 
 class ProviderHealthTile extends StatefulWidget {
@@ -10,6 +11,7 @@ class ProviderHealthTile extends StatefulWidget {
     required this.health,
     required this.diagnostics,
     required this.onCheck,
+    this.isChecking = false,
     super.key,
   });
 
@@ -17,6 +19,7 @@ class ProviderHealthTile extends StatefulWidget {
   final ProviderHealth? health;
   final ProviderDiagnostics? diagnostics;
   final VoidCallback onCheck;
+  final bool isChecking;
 
   @override
   State<ProviderHealthTile> createState() => _ProviderHealthTileState();
@@ -50,9 +53,12 @@ class _ProviderHealthTileState extends State<ProviderHealthTile> {
       ProviderStatus.unknown => const Color(0xFF94A3B8),
     };
 
-    final hasError =
-        diagnostics?.lastErrorMessage != null || health?.errorMessage != null;
-    final errorMessage = diagnostics?.lastErrorMessage ?? health?.errorMessage;
+    final isOnline = status == ProviderStatus.online;
+    final hasError = isOnline
+        ? (health?.errorMessage?.isNotEmpty ?? false)
+        : (health?.errorMessage != null || diagnostics?.lastErrorMessage != null);
+    final rawErrorMessage = health?.errorMessage ?? (isOnline ? null : diagnostics?.lastErrorMessage);
+    final errorMessage = _friendlyErrorMessage(rawErrorMessage, isRu);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -142,16 +148,16 @@ class _ProviderHealthTileState extends State<ProviderHealthTile> {
                               crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
                                 // Ping chip if available
-                                if (health != null)
+                                if (widget.isChecking)
                                   Container(
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 7, vertical: 2.5),
                                     decoration: BoxDecoration(
-                                      color: statusColor.withValues(
+                                      color: theme.colorScheme.primary.withValues(
                                           alpha: isDark ? 0.16 : 0.10),
                                       borderRadius: BorderRadius.circular(8),
                                       border: Border.all(
-                                        color: statusColor.withValues(
+                                        color: theme.colorScheme.primary.withValues(
                                             alpha: isDark ? 0.38 : 0.25),
                                         width: 1,
                                       ),
@@ -159,60 +165,105 @@ class _ProviderHealthTileState extends State<ProviderHealthTile> {
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Icon(
-                                          Icons.bolt_rounded,
-                                          size: 12,
-                                          color: statusColor,
+                                        SizedBox(
+                                          width: 10,
+                                          height: 10,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 1.5,
+                                            color: theme.colorScheme.primary,
+                                          ),
                                         ),
-                                        const SizedBox(width: 3),
+                                        const SizedBox(width: 5),
                                         Text(
-                                          '${health.pingMs} ms',
+                                          isRu ? 'Проверка...' : 'Checking...',
                                           style: TextStyle(
                                             fontSize: 11,
-                                            fontWeight: FontWeight.w700,
+                                            fontWeight: FontWeight.w600,
+                                            color: theme.colorScheme.primary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                else ...[
+                                  if (health != null)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 7, vertical: 2.5),
+                                      decoration: BoxDecoration(
+                                        color: statusColor.withValues(
+                                            alpha: isDark ? 0.16 : 0.10),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: statusColor.withValues(
+                                              alpha: isDark ? 0.38 : 0.25),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            isOnline
+                                                ? Icons.bolt_rounded
+                                                : Icons.cloud_off_rounded,
+                                            size: 12,
                                             color: statusColor,
-                                            fontFamily: 'monospace',
+                                          ),
+                                          const SizedBox(width: 3),
+                                          Text(
+                                            isOnline
+                                                ? '${health.pingMs} ms'
+                                                : (isRu ? 'Офлайн' : 'Offline'),
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w700,
+                                              color: statusColor,
+                                              fontFamily: isOnline
+                                                  ? 'monospace'
+                                                  : null,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+
+                                  // Quality Hint Chip
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 7, vertical: 2.5),
+                                    decoration: BoxDecoration(
+                                      color: hint.color(context).withValues(
+                                          alpha: isDark ? 0.14 : 0.08),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: hint.color(context).withValues(
+                                            alpha: isDark ? 0.32 : 0.20),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          hint.icon,
+                                          size: 12,
+                                          color: hint.color(context),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          hint.label,
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: hint.color(context),
+                                            letterSpacing: -0.1,
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-
-                                // Quality Hint Chip
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 7, vertical: 2.5),
-                                  decoration: BoxDecoration(
-                                    color: hint.color(context).withValues(
-                                        alpha: isDark ? 0.14 : 0.08),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: hint.color(context).withValues(
-                                          alpha: isDark ? 0.32 : 0.20),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        hint.icon,
-                                        size: 12,
-                                        color: hint.color(context),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        hint.label,
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w600,
-                                          color: hint.color(context),
-                                          letterSpacing: -0.1,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                                ],
                               ],
                             ),
                           ],
@@ -221,11 +272,15 @@ class _ProviderHealthTileState extends State<ProviderHealthTile> {
 
                       // Check Button
                       IconButton(
-                        tooltip: isRu ? 'Проверить' : 'Check',
-                        onPressed: () {
-                          HapticFeedback.lightImpact();
-                          widget.onCheck();
-                        },
+                        tooltip: widget.isChecking
+                            ? (isRu ? 'Идет проверка...' : 'Checking...')
+                            : (isRu ? 'Проверить' : 'Check'),
+                        onPressed: widget.isChecking
+                            ? null
+                            : () {
+                                HapticFeedback.lightImpact();
+                                widget.onCheck();
+                              },
                         icon: Container(
                           width: 34,
                           height: 34,
@@ -239,11 +294,20 @@ class _ProviderHealthTileState extends State<ProviderHealthTile> {
                             ),
                           ),
                           child: Center(
-                            child: Icon(
-                              Icons.refresh_rounded,
-                              size: 18,
-                              color: theme.colorScheme.primary,
-                            ),
+                            child: widget.isChecking
+                                ? SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                  )
+                                : Icon(
+                                    Icons.refresh_rounded,
+                                    size: 18,
+                                    color: theme.colorScheme.primary,
+                                  ),
                           ),
                         ),
                       ),
@@ -367,6 +431,39 @@ class _ProviderHealthTileState extends State<ProviderHealthTile> {
                           ),
                         ),
                       ],
+
+                      // Settings action button
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => ProviderFormScreen(
+                                    initialConfig: config,
+                                  ),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.tune_rounded, size: 16),
+                            label: Text(
+                              isRu ? 'Настройки источника' : 'Provider Settings',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -450,33 +547,39 @@ class ProviderQualityHint {
         (scheme) => scheme.outline,
       );
     }
-    if (diagnostics?.lastErrorMessage != null ||
-        health?.status == ProviderStatus.offline) {
+    if (health?.status == ProviderStatus.offline) {
       return ProviderQualityHint._(
-        isRu ? 'Ошибка поиска' : 'Search failing',
+        isRu ? 'Недоступен' : 'Offline',
         Icons.error_outline_rounded,
-        (scheme) => scheme.error,
+        (scheme) => const Color(0xFFEF4444),
       );
     }
-    if (diagnostics != null && diagnostics.lastResultCount == 0) {
+    if (health != null && health.status == ProviderStatus.online) {
+      if (health.errorMessage != null && health.errorMessage!.isNotEmpty) {
+        return ProviderQualityHint._(
+          isRu ? 'Требуется ключ' : 'Auth Required',
+          Icons.key_rounded,
+          (scheme) => const Color(0xFFF59E0B),
+        );
+      }
+      if (health.pingMs > 2500) {
+        return ProviderQualityHint._(
+          isRu ? 'Медленно' : 'Slow',
+          Icons.speed_rounded,
+          (scheme) => const Color(0xFFF59E0B),
+        );
+      }
       return ProviderQualityHint._(
-        isRu ? 'Нет результатов' : 'No recent results',
-        Icons.search_off_rounded,
-        (scheme) => scheme.tertiary,
+        isRu ? 'Отлично' : 'Healthy',
+        Icons.check_circle_rounded,
+        (scheme) => const Color(0xFF10B981),
       );
     }
-    if (health != null && health.pingMs > 2500) {
+    if (diagnostics != null && diagnostics.lastErrorMessage != null) {
       return ProviderQualityHint._(
-        isRu ? 'Медленно' : 'Slow',
-        Icons.speed_rounded,
-        (scheme) => scheme.secondary,
-      );
-    }
-    if (health != null || diagnostics != null) {
-      return ProviderQualityHint._(
-        isRu ? 'Стабилен' : 'Healthy',
-        Icons.check_circle_outline_rounded,
-        (scheme) => scheme.primary,
+        isRu ? 'Сбои поиска' : 'Search issues',
+        Icons.warning_amber_rounded,
+        (scheme) => const Color(0xFFF59E0B),
       );
     }
     return ProviderQualityHint._(
@@ -485,4 +588,40 @@ class ProviderQualityHint {
       (scheme) => scheme.outline,
     );
   }
+}
+
+String? _friendlyErrorMessage(String? raw, bool isRu) {
+  if (raw == null || raw.isEmpty) return null;
+  final lower = raw.toLowerCase();
+  if (lower.contains('401') || lower.contains('unauthorized')) {
+    return isRu
+        ? 'Требуется API-ключ и User ID (укажите в настройках источника)'
+        : 'API key and User ID required (configure in provider settings)';
+  }
+  if (lower.contains('403') || lower.contains('forbidden')) {
+    return isRu
+        ? 'Доступ ограничен (защита Cloudflare / блокировка)'
+        : 'Access forbidden (Cloudflare protection / provider blocked)';
+  }
+  if (lower.contains('404')) {
+    return isRu
+        ? 'Эндпоинт API не найден (404)'
+        : 'API endpoint not found (404)';
+  }
+  if (lower.contains('429')) {
+    return isRu
+        ? 'Превышен лимит запросов (Rate Limit)'
+        : 'Rate limit exceeded';
+  }
+  if (lower.contains('timeout') || lower.contains('timed out')) {
+    return isRu
+        ? 'Превышено время ожидания ответа (>20 сек)'
+        : 'Connection timed out (>20s)';
+  }
+  if (lower.contains('socketexception') || lower.contains('failed host lookup')) {
+    return isRu
+        ? 'Нет связи с сервером (DNS / нет интернета)'
+        : 'Cannot reach server (DNS / offline)';
+  }
+  return raw;
 }

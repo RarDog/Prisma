@@ -22,6 +22,7 @@ class ProviderCheckScreen extends ConsumerStatefulWidget {
 
 class _ProviderCheckScreenState extends ConsumerState<ProviderCheckScreen> {
   bool _isCheckingAll = false;
+  final Set<String> _checkingIds = {};
 
   @override
   Widget build(BuildContext context) {
@@ -306,6 +307,7 @@ class _ProviderCheckScreenState extends ConsumerState<ProviderCheckScreen> {
                         config: item,
                         health: health[item.id],
                         diagnostics: diagnostics[item.id],
+                        isChecking: _isCheckingAll || _checkingIds.contains(item.id),
                         onCheck: () => _checkOne(ref, item.id),
                       );
                     }),
@@ -322,13 +324,20 @@ class _ProviderCheckScreenState extends ConsumerState<ProviderCheckScreen> {
     setState(() => _isCheckingAll = true);
     unawaited(HapticFeedback.mediumImpact());
     try {
-      final result = await ref.read(providerCheckServiceProvider).checkAll();
+      final result = await ref.read(providerCheckServiceProvider).checkAll(
+        onProgress: (healthItem) {
+          if (!mounted) return;
+          ref.read(providerHealthProvider.notifier).update((state) => {
+            ...state,
+            healthItem.providerId: healthItem,
+          });
+          ref.invalidate(enabledProviderHealthProvider);
+        },
+      );
       if (result is Success<List<ProviderHealth>>) {
         ref.read(providerHealthProvider.notifier).state = {
           for (final item in result.data) item.providerId: item,
         };
-        // The feed/Artists banners read from Isar through their own provider,
-        // so they must be rebuilt after a manual check.
         ref.invalidate(enabledProviderHealthProvider);
       }
     } finally {
@@ -337,14 +346,21 @@ class _ProviderCheckScreenState extends ConsumerState<ProviderCheckScreen> {
   }
 
   Future<void> _checkOne(WidgetRef ref, String providerId) async {
-    final result =
-        await ref.read(providerCheckServiceProvider).checkOne(providerId);
-    if (result is Success<ProviderHealth>) {
-      ref.read(providerHealthProvider.notifier).state = {
-        ...ref.read(providerHealthProvider),
-        providerId: result.data,
-      };
-      ref.invalidate(enabledProviderHealthProvider);
+    setState(() => _checkingIds.add(providerId));
+    try {
+      final result =
+          await ref.read(providerCheckServiceProvider).checkOne(providerId);
+      if (result is Success<ProviderHealth>) {
+        ref.read(providerHealthProvider.notifier).update((state) => {
+          ...state,
+          providerId: result.data,
+        });
+        ref.invalidate(enabledProviderHealthProvider);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _checkingIds.remove(providerId));
+      }
     }
   }
 }

@@ -71,8 +71,12 @@ Map<String, String> getMediaUrlHeaders({
 
   if (pid.contains('gelbooru') || u.contains('gelbooru.com')) {
     defaultReferer = 'https://gelbooru.com/';
+  } else if (pid.contains('tbib') || u.contains('tbib.org')) {
+    defaultReferer = 'https://tbib.org/';
   } else if (pid.contains('safebooru') || u.contains('safebooru.org')) {
     defaultReferer = 'https://safebooru.org/';
+  } else if (pid.contains('rule34_us') || u.contains('rule34.us')) {
+    defaultReferer = 'https://rule34.us/';
   } else if (pid.contains('rule34') || u.contains('rule34.xxx')) {
     defaultReferer = 'https://rule34.xxx/';
   } else if (pid.contains('realbooru') || u.contains('realbooru.com')) {
@@ -743,9 +747,10 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
 
   void _initializeVideo() {
     MediaKit.ensureInitialized();
+    final isMobile = Platform.isAndroid || Platform.isIOS;
     _player = Player(
-      configuration: const PlayerConfiguration(
-        bufferSize: 64 * 1024 * 1024,
+      configuration: PlayerConfiguration(
+        bufferSize: isMobile ? 32 * 1024 * 1024 : 64 * 1024 * 1024,
       ),
     );
     final bool enableHw = !_useSoftwareDecoding && !_softwareDecodingFallback;
@@ -822,13 +827,13 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
           currentSource,
           httpHeaders: isLocal ? null : _headersFor(widget.post),
         ),
-        play: false,
+        play: initialPosition == Duration.zero && shouldPlay,
       );
       await _applyVolume();
       if (initialPosition > Duration.zero) {
         await player.seek(initialPosition);
+        if (shouldPlay) await player.play();
       }
-      if (shouldPlay) await player.play();
     } catch (error) {
       await _handleVideoError(error.toString(), play: shouldPlay);
     }

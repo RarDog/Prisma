@@ -29,7 +29,14 @@ class ProviderCheckService {
     return Success(health);
   }
 
-  Future<Result<List<ProviderHealth>>> checkAll() {
-    return _manager.checkAll(concurrency: 3);
+  Future<Result<List<ProviderHealth>>> checkAll({
+    void Function(ProviderHealth)? onProgress,
+    bool onlyEnabled = false,
+  }) {
+    return _manager.checkAll(
+      concurrency: 4,
+      onProgress: onProgress,
+      onlyEnabled: onlyEnabled,
+    );
   }
 }

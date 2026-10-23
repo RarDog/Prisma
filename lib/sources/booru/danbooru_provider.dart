@@ -101,24 +101,30 @@ class DanbooruProvider
 
   @override
   Future<ProviderHealth> checkHealth() async {
-    final startedAt = DateTime.now();
+    final sw = Stopwatch()..start();
     try {
       await _dio.get<dynamic>(
         '/posts.json',
         queryParameters: {'limit': 1, ..._queryParameters},
+        options: Options(
+          receiveTimeout: const Duration(seconds: 6),
+          sendTimeout: const Duration(seconds: 5),
+        ),
       );
+      sw.stop();
       return ProviderHealth(
         providerId: id,
         status: ProviderStatus.online,
-        pingMs: DateTime.now().difference(startedAt).inMilliseconds,
+        pingMs: sw.elapsedMilliseconds,
         lastCheckedAt: DateTime.now(),
         apiVersion: 'danbooru',
       );
     } catch (error) {
+      sw.stop();
       return ProviderHealth(
         providerId: id,
         status: ProviderStatus.offline,
-        pingMs: DateTime.now().difference(startedAt).inMilliseconds,
+        pingMs: 0,
         lastCheckedAt: DateTime.now(),
         errorMessage: error.toString(),
         apiVersion: 'danbooru',

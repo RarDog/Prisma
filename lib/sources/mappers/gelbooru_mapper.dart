@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:gel_rule_app/core/models/post.dart';
 
 class GelbooruMapper {
@@ -5,6 +7,7 @@ class GelbooruMapper {
     dynamic data, {
     required String providerId,
     required String providerName,
+    String? baseUrl,
   }) {
     final items = _extractItems(data);
     return items
@@ -13,6 +16,7 @@ class GelbooruMapper {
               Map<String, dynamic>.from(item),
               providerId: providerId,
               providerName: providerName,
+              baseUrl: baseUrl,
             ))
         .toList();
   }
@@ -21,15 +25,39 @@ class GelbooruMapper {
     Map<String, dynamic> json, {
     required String providerId,
     required String providerName,
+    String? baseUrl,
   }) {
     final id = _string(json['id']);
-    final fileUrl = _string(json['file_url'] ?? json['fileUrl']);
-    final sampleUrl = _string(json['sample_url'] ??
+    var fileUrl = _string(json['file_url'] ?? json['fileUrl']);
+    var sampleUrl = _string(json['sample_url'] ??
         json['sampleUrl'] ??
         json['large_file_url'] ??
         fileUrl);
-    final previewUrl =
+    var previewUrl =
         _string(json['preview_url'] ?? json['previewUrl'] ?? sampleUrl);
+
+    // Fallback URL construction for Gelbooru 0.2 / TBIB engines
+    if (fileUrl.isEmpty && json['image'] != null && json['directory'] != null) {
+      final image = _string(json['image']);
+      final directory = _string(json['directory']);
+      if (image.isNotEmpty && directory.isNotEmpty) {
+        final cleanBase = (baseUrl != null && baseUrl.isNotEmpty)
+            ? (baseUrl.endsWith('/')
+                ? baseUrl.substring(0, baseUrl.length - 1)
+                : baseUrl)
+            : 'https://tbib.org';
+        final dotIndex = image.lastIndexOf('.');
+        final baseName = dotIndex != -1 ? image.substring(0, dotIndex) : image;
+        fileUrl = '$cleanBase/images/$directory/$image';
+        final hasSample = json['sample'] == true ||
+            json['sample'] == 1 ||
+            json['sample'] == 'true';
+        sampleUrl = hasSample
+            ? '$cleanBase/samples/$directory/sample_$baseName.jpg'
+            : fileUrl;
+        previewUrl = '$cleanBase/thumbnails/$directory/thumbnail_$baseName.jpg';
+      }
+    }
     final explicitGroups = _tagGroupsFromJson(json);
     final tags = explicitGroups.isEmpty
         ? _tags(json['tags'] ?? json['tag_string'])
@@ -46,7 +74,7 @@ class GelbooruMapper {
       width: _int(json['width']),
       height: _int(json['height']),
       source: _nullableString(json['source']),
-      createdAt: _date(json['created_at'] ?? json['createdAt']),
+      createdAt: _date(json['created_at'] ?? json['createdAt'] ?? json['change']),
       fileType: _fileType(fileUrl, json['file_ext']),
       score: _int(json['score']),
       tagGroups: explicitGroups.isEmpty ? _tagGroups(tags) : explicitGroups,
@@ -55,7 +83,16 @@ class GelbooruMapper {
 
   static List<dynamic> _extractItems(dynamic data) {
     if (data is List) return data;
-    if (data is String) return _extractItemsFromText(data);
+    if (data is String) {
+      final trimmed = data.trim();
+      if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+        try {
+          final decoded = jsonDecode(trimmed);
+          return _extractItems(decoded);
+        } catch (_) {}
+      }
+      return _extractItemsFromText(data);
+    }
     if (data is Map) {
       final posts = data['post'] ?? data['posts'];
       if (posts is List) return posts;
@@ -112,6 +149,12 @@ class GelbooruMapper {
 
   static DateTime _date(dynamic value) {
     if (value is int) return DateTime.fromMillisecondsSinceEpoch(value * 1000);
+    if (value is String) {
+      final asInt = int.tryParse(value);
+      if (asInt != null && asInt > 1000000000) {
+        return DateTime.fromMillisecondsSinceEpoch(asInt * 1000);
+      }
+    }
     return DateTime.tryParse(value?.toString() ?? '') ?? DateTime.now();
   }
 

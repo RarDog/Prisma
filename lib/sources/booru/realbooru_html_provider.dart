@@ -102,22 +102,34 @@ class RealbooruHtmlProvider
 
   @override
   Future<ProviderHealth> checkHealth() async {
-    final startedAt = DateTime.now();
+    final sw = Stopwatch()..start();
     try {
-      final posts = await searchPosts(tags: const [], page: 0, limit: 1);
+      final response = await _dio.get<String>(
+        '/index.php',
+        queryParameters: {'page': 'post', 's': 'list', 'pid': 0},
+        options: Options(
+          responseType: ResponseType.plain,
+          receiveTimeout: const Duration(seconds: 6),
+          sendTimeout: const Duration(seconds: 5),
+        ),
+      );
+      sw.stop();
+      final isOk = (response.statusCode ?? 500) < 400 &&
+          (response.data?.contains('thumb') ?? false);
       return ProviderHealth(
         providerId: id,
-        status: posts.isEmpty ? ProviderStatus.offline : ProviderStatus.online,
-        pingMs: DateTime.now().difference(startedAt).inMilliseconds,
+        status: isOk ? ProviderStatus.online : ProviderStatus.offline,
+        pingMs: isOk ? sw.elapsedMilliseconds : 0,
         lastCheckedAt: DateTime.now(),
         apiVersion: 'realbooru-html',
-        errorMessage: posts.isEmpty ? 'No posts found in HTML response' : null,
+        errorMessage: isOk ? null : 'No posts found in HTML response',
       );
     } catch (error) {
+      sw.stop();
       return ProviderHealth(
         providerId: id,
         status: ProviderStatus.offline,
-        pingMs: DateTime.now().difference(startedAt).inMilliseconds,
+        pingMs: 0,
         lastCheckedAt: DateTime.now(),
         errorMessage: error.toString(),
       );
@@ -192,13 +204,15 @@ class RealbooruHtmlProvider
       final tags = _tags(_attribute(imgTag, 'title'));
       final isVideo = imgTag.contains('#0000ff') ||
           tags.contains('webm') ||
-          tags.contains('video');
+          tags.contains('video') ||
+          tags.contains('mp4');
       final isGif =
           !isVideo && (tags.contains('gif') || tags.contains('animated_gif'));
       final derivedOriginal = _imageUrlFromThumbnail(
         previewUrl,
         gif: isGif,
         video: isVideo,
+        tags: tags,
       );
       posts.add(
         Post(
@@ -206,7 +220,9 @@ class RealbooruHtmlProvider
           providerId: this.id,
           providerName: name,
           previewUrl: previewUrl,
-          sampleUrl: derivedOriginal.isEmpty ? previewUrl : derivedOriginal,
+          sampleUrl: isVideo
+              ? previewUrl
+              : (derivedOriginal.isEmpty ? previewUrl : derivedOriginal),
           fileUrl: derivedOriginal.isEmpty ? previewUrl : derivedOriginal,
           tags: tags,
           rating: 'explicit',
@@ -220,7 +236,7 @@ class RealbooruHtmlProvider
                   ? 'gif'
                   : 'image',
           score: 0,
-          tagGroups: _tagGroups(tags),
+          tagGroups: const {},
         ),
       );
     }
@@ -265,7 +281,9 @@ class RealbooruHtmlProvider
         : originalUrl.isNotEmpty
             ? originalUrl
             : imageUrl;
-    final sampleUrl = videoSources.length > 1 ? videoSources[1] : mediaUrl;
+    final sampleUrl = isVideo
+        ? (imageUrl.isNotEmpty ? imageUrl : _thumbnailFromMediaUrl(mediaUrl))
+        : (videoSources.length > 1 ? videoSources[1] : mediaUrl);
 
     // For video posts, derive the poster thumbnail image (.jpg) so the UI doesn't break
     final previewUrl = isVideo
@@ -308,6 +326,7 @@ class RealbooruHtmlProvider
       'character': [],
       'copyright': [],
       'metadata': [],
+      'meta': [],
       'general': [],
     };
     final allTags = <String>{};
@@ -324,8 +343,9 @@ class RealbooruHtmlProvider
         tagGroups['character']!.add(tag);
       } else if (cls.contains('copyright')) {
         tagGroups['copyright']!.add(tag);
-      } else if (cls.contains('metadata')) {
+      } else if (cls.contains('metadata') || cls.contains('meta')) {
         tagGroups['metadata']!.add(tag);
+        tagGroups['meta']!.add(tag);
       } else {
         tagGroups['general']!.add(tag);
       }
@@ -355,6 +375,7 @@ class RealbooruHtmlProvider
     }
 
     tagGroups.removeWhere((_, list) => list.isEmpty);
+    tagGroups['is_detailed'] = const ['true'];
 
     if (mediaUrl.isEmpty) return null;
     return Post(
@@ -397,9 +418,6 @@ class RealbooruHtmlProvider
         .toList(growable: false);
   }
 
-  Map<String, List<String>> _tagGroups(List<String> tags) =>
-      tags.isEmpty ? const {} : {'general': tags};
-
   String _fileType(String url) {
     final lower = url.toLowerCase().split('?').first;
     if (lower.endsWith('.webm') || lower.endsWith('.mp4')) return 'video';
@@ -425,13 +443,25 @@ class RealbooruHtmlProvider
     String thumbnailUrl, {
     bool gif = false,
     bool video = false,
+    List<String> tags = const [],
   }) {
     final uri = Uri.tryParse(thumbnailUrl);
     if (uri == null) return '';
     final match = RegExp(r'/+thumbnails/([^/]+)/([^/]+)/thumbnail_([^/.]+)\.')
         .firstMatch(uri.path);
     if (match == null) return '';
-    final extension = video ? 'mp4' : (gif ? 'gif' : 'jpeg');
+    final String extension;
+    if (video) {
+      extension = 'mp4';
+    } else if (gif) {
+      extension = 'gif';
+    } else if (tags.contains('png') || tags.contains('png_file')) {
+      extension = 'png';
+    } else if (tags.contains('jpg')) {
+      extension = 'jpg';
+    } else {
+      extension = 'jpeg';
+    }
     final path =
         '/images/${match.group(1)}/${match.group(2)}/${match.group(3)}.$extension';
     return uri.replace(path: path, query: null).toString();

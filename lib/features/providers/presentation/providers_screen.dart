@@ -36,7 +36,10 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
         lower == 'danbooru' ||
         lower == 'moebooru' ||
         lower == 'rule34' ||
+        lower == 'rule34_us' ||
+        lower == 'rule34us' ||
         lower == 'safebooru' ||
+        lower == 'tbib' ||
         lower == 'paheal' ||
         lower == 'realbooru_html' ||
         lower == 'e621';

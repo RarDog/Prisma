@@ -11,10 +11,17 @@ final postDetailsControllerProvider =
   final postRepository = ref.watch(postRepositoryProvider);
 
   bool needsRealbooruDetails(Post post) {
-    if (post.providerId != 'realbooru') return false;
+    if (post.providerId != 'realbooru' && post.providerId != 'rule34_us') {
+      return false;
+    }
+    if (post.tagGroups.containsKey('is_detailed')) return false;
+    final hasCategorizedGroups = post.tagGroups.entries.any(
+      (entry) => entry.key != 'general' && entry.value.isNotEmpty,
+    );
     return post.fileUrl.isEmpty ||
         post.fileUrl == post.previewUrl ||
-        post.tagGroups.isEmpty;
+        post.tagGroups.isEmpty ||
+        !hasCategorizedGroups;
   }
 
   bool needsPixivEnrichment(Post post) {

@@ -24,6 +24,8 @@ void main() {
       final rule34 = makeConfig('rule34', 'rule34');
       final safebooru = makeConfig('safebooru', 'safebooru');
       final realbooru = makeConfig('realbooru', 'realbooru_html');
+      final tbib = makeConfig('tbib', 'tbib');
+      final rule34us = makeConfig('rule34_us', 'rule34_us');
 
       expect(gelbooru.supportedTopPeriods, {
         TopPeriodFilter.none,
@@ -38,6 +40,14 @@ void main() {
         TopPeriodFilter.allTime,
       });
       expect(realbooru.supportedTopPeriods, {
+        TopPeriodFilter.none,
+        TopPeriodFilter.allTime,
+      });
+      expect(tbib.supportedTopPeriods, {
+        TopPeriodFilter.none,
+        TopPeriodFilter.allTime,
+      });
+      expect(rule34us.supportedTopPeriods, {
         TopPeriodFilter.none,
         TopPeriodFilter.allTime,
       });

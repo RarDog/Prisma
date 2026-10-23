@@ -180,6 +180,8 @@ class _PostCardState extends ConsumerState<PostCard>
               setState(() => _videoHoverActive = true);
             }
           });
+        } else {
+          _prewarmDetailsImage(context, widget.post);
         }
       },
       onExit: (_) {
@@ -337,8 +339,6 @@ class _PostCardState extends ConsumerState<PostCard>
                           final videoUrls = MediaUrlSelector.video(post);
                           if (!mobile &&
                               _videoHoverActive &&
-                              post.providerId != 'realbooru' &&
-                              _resolvedPost != null &&
                               MediaUrlSelector.isVideo(post) &&
                               videoUrls.isNotEmpty) {
                             return _FeedVideoPreview(
@@ -356,20 +356,31 @@ class _PostCardState extends ConsumerState<PostCard>
                             fit: BoxFit.cover,
                             placeholder: (context, url) =>
                                 const LoadingSkeleton(),
-                            errorWidget: (context, url, error) => ColoredBox(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .surfaceContainerHighest,
-                              child: Center(
-                                child: Icon(
-                                  isVideoPost
-                                      ? Icons.videocam_outlined
-                                      : (isAudioPost
-                                          ? Icons.music_note_rounded
-                                          : Icons.broken_image_rounded),
-                                ),
-                              ),
-                            ),
+                            errorWidget: (context, url, error) {
+                              if (imageUrl != post.previewUrl &&
+                                  post.previewUrl.trim().isNotEmpty) {
+                                return CachedNetworkImage(
+                                  imageUrl: post.previewUrl,
+                                  httpHeaders: headers,
+                                  memCacheWidth: memCacheWidth,
+                                  maxWidthDiskCache: maxDiskWidth,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) =>
+                                      const LoadingSkeleton(),
+                                  errorWidget: (context, url, error) =>
+                                      _buildErrorPlaceholder(
+                                    context,
+                                    isVideoPost,
+                                    isAudioPost,
+                                  ),
+                                );
+                              }
+                              return _buildErrorPlaceholder(
+                                context,
+                                isVideoPost,
+                                isAudioPost,
+                              );
+                            },
                           );
                         },
                       ),
@@ -704,14 +715,49 @@ class _PostCardState extends ConsumerState<PostCard>
     return 0.72;
   }
 
-  List<String> _feedUrls(Post post, {required bool mobile}) {
-    if (post.providerId == 'realbooru' || post.providerId == 'paheal') {
-      return [
-        post.sampleUrl,
-        post.fileUrl,
-        post.previewUrl,
-      ].where((url) => url.trim().isNotEmpty).toSet().toList(growable: false);
+  Widget _buildErrorPlaceholder(
+    BuildContext context,
+    bool isVideoPost,
+    bool isAudioPost,
+  ) {
+    return ColoredBox(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Center(
+        child: Icon(
+          isVideoPost
+              ? Icons.videocam_outlined
+              : (isAudioPost
+                  ? Icons.music_note_rounded
+                  : Icons.broken_image_rounded),
+        ),
+      ),
+    );
+  }
+
+  static final Set<String> _prewarmedDetailUrls = {};
+
+  void _prewarmDetailsImage(BuildContext context, Post post) {
+    final detailsUrls =
+        MediaUrlSelector.details(post, mode: widget.mediaQualityMode);
+    final url = detailsUrls.firstOrNull;
+    if (url == null || url.trim().isEmpty || url == post.previewUrl) return;
+    if (_prewarmedDetailUrls.contains(url)) return;
+    if (_prewarmedDetailUrls.length >= 300) {
+      _prewarmedDetailUrls.remove(_prewarmedDetailUrls.first);
     }
+    _prewarmedDetailUrls.add(url);
+    final headers = _headersFor(post);
+    final provider = CachedNetworkImageProvider(url, headers: headers);
+    unawaited(
+      precacheImage(
+        provider,
+        context,
+        onError: (_, __) {},
+      ),
+    );
+  }
+
+  List<String> _feedUrls(Post post, {required bool mobile}) {
     return MediaUrlSelector.feed(
       post,
       mode: widget.mediaQualityMode,
@@ -743,7 +789,9 @@ class _PostCardState extends ConsumerState<PostCard>
   }
 
   bool _needsRealbooruDetails(Post post) {
-    if (post.providerId != 'realbooru') return false;
+    if (post.providerId != 'realbooru' && post.providerId != 'rule34_us') {
+      return false;
+    }
     return post.fileUrl.isEmpty || post.fileUrl == post.previewUrl;
   }
 }
@@ -846,7 +894,11 @@ class _FeedVideoPreviewState extends State<_FeedVideoPreview> {
         MediaKit.ensureInitialized();
         var player = _player;
         if (player == null) {
-          player = Player();
+          player = Player(
+            configuration: const PlayerConfiguration(
+              bufferSize: 16 * 1024 * 1024,
+            ),
+          );
           _player = player;
           final isDesktop =
               Platform.isLinux || Platform.isWindows || Platform.isMacOS;

@@ -1,8 +1,13 @@
+import 'dart:async';
+import 'dart:math' as math;
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 import 'package:gel_rule_app/app/responsive.dart';
 import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/features/post/presentation/widgets/post_media_viewer.dart';
 import 'loading_skeleton.dart';
 import 'post_card.dart';
 
@@ -98,7 +103,7 @@ class PostMasonryGrid extends StatelessWidget {
         controller: controller,
         padding: pad,
         // ignore: deprecated_member_use
-        cacheExtent: 180.0,
+        cacheExtent: 800.0,
         addAutomaticKeepAlives: false,
         addRepaintBoundaries: true,
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -110,6 +115,7 @@ class PostMasonryGrid extends StatelessWidget {
         itemCount: posts.length + (loading ? columns : 0),
         itemBuilder: (context, index) {
           if (index >= posts.length) return const LoadingSkeleton();
+          _maybePrecacheAhead(context, index, mobile);
           return buildCard(posts[index], forceSquare: true);
         },
       );
@@ -121,13 +127,14 @@ class PostMasonryGrid extends StatelessWidget {
         controller: controller,
         padding: pad,
         // ignore: deprecated_member_use
-        cacheExtent: 180.0,
+        cacheExtent: 800.0,
         addAutomaticKeepAlives: false,
         addRepaintBoundaries: true,
         separatorBuilder: (_, __) => SizedBox(height: spacing),
         itemCount: posts.length + (loading ? 3 : 0),
         itemBuilder: (context, index) {
           if (index >= posts.length) return const LoadingSkeleton();
+          _maybePrecacheAhead(context, index, mobile);
           return buildCard(posts[index]);
         },
       );
@@ -137,7 +144,7 @@ class PostMasonryGrid extends StatelessWidget {
     return MasonryGridView.count(
       controller: controller,
       padding: pad,
-      cacheExtent: 180.0,
+      cacheExtent: 800.0,
       addAutomaticKeepAlives: false,
       addRepaintBoundaries: true,
       crossAxisCount: columns,
@@ -146,8 +153,46 @@ class PostMasonryGrid extends StatelessWidget {
       itemCount: posts.length + (loading ? columns : 0),
       itemBuilder: (context, index) {
         if (index >= posts.length) return const LoadingSkeleton();
+        _maybePrecacheAhead(context, index, mobile);
         return buildCard(posts[index]);
       },
     );
+  }
+
+  static final Set<String> _precachedUrls = {};
+
+  void _maybePrecacheAhead(
+    BuildContext context,
+    int currentIndex,
+    bool mobile,
+  ) {
+    if (posts.isEmpty) return;
+    const lookahead = 4;
+    final maxIdx = math.min(currentIndex + lookahead, posts.length - 1);
+    for (int i = currentIndex + 1; i <= maxIdx; i++) {
+      final post = posts[i];
+      if (post.fileType == 'text' || post.fileType == 'audio') continue;
+      final urls = MediaUrlSelector.feed(
+        post,
+        mode: mediaQualityMode,
+        mobile: mobile,
+      );
+      final url = urls.firstOrNull;
+      if (url == null || url.trim().isEmpty) continue;
+      if (_precachedUrls.contains(url)) continue;
+      if (_precachedUrls.length >= 600) {
+        _precachedUrls.remove(_precachedUrls.first);
+      }
+      _precachedUrls.add(url);
+      final headers = getPostMediaHeaders(post);
+      final provider = CachedNetworkImageProvider(url, headers: headers);
+      unawaited(
+        precacheImage(
+          provider,
+          context,
+          onError: (_, __) {},
+        ),
+      );
+    }
   }
 }

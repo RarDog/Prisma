@@ -180,8 +180,32 @@ class ProviderManager {
     return null;
   }
 
-  Future<Result<List<ProviderHealth>>> checkAll({int concurrency = 3}) async {
-    final providersResult = await activeProviders();
+  Future<Result<List<ContentProvider>>> allProviders() async {
+    final result = await _repository.getProviders();
+    if (result is Error<List<ContentProviderConfig>>) {
+      return Error(result.failure);
+    }
+    final configs = (result as Success<List<ContentProviderConfig>>).data;
+    final providers = configs
+        .map((config) {
+          try {
+            return _factory.create(config);
+          } catch (_) {
+            return null;
+          }
+        })
+        .whereType<ContentProvider>()
+        .toList();
+    return Success(providers);
+  }
+
+  Future<Result<List<ProviderHealth>>> checkAll({
+    int concurrency = 4,
+    void Function(ProviderHealth)? onProgress,
+    bool onlyEnabled = false,
+  }) async {
+    final providersResult =
+        onlyEnabled ? await activeProviders() : await allProviders();
     if (providersResult is Error<List<ContentProvider>>) {
       return Error(providersResult.failure);
     }
@@ -193,6 +217,7 @@ class ProviderManager {
       (provider) async {
         final health = await provider.checkHealth();
         await _repository.saveHealth(health);
+        onProgress?.call(health);
         return health;
       },
     );
