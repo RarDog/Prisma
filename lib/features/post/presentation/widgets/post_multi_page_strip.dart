@@ -73,73 +73,95 @@ class _PostMultiPageStripState extends State<PostMultiPageStrip> {
           width: 1.0,
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isNarrow = constraints.maxWidth < 350;
+          final isTiny = constraints.maxWidth < 300;
+          final downloadLabel = isRu
+              ? (isTiny ? 'Все' : (isNarrow ? 'Скачать все' : 'Скачать все (${widget.pages.length})'))
+              : (isTiny ? 'All' : (isNarrow ? 'Download all' : 'Download all (${widget.pages.length})'));
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.auto_stories_rounded,
-                size: 18,
-                color: theme.colorScheme.primary,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                isRu ? 'Страницы сета' : 'Set pages',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                '(${widget.currentIndex + 1}/${widget.pages.length})',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.outline,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const Spacer(),
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                tooltip: isRu ? 'Предыдущая' : 'Previous',
-                onPressed: widget.currentIndex > 0
-                    ? () => widget.onPageSelected(widget.currentIndex - 1)
-                    : null,
-                icon: const Icon(Icons.chevron_left_rounded, size: 22),
-              ),
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                tooltip: isRu ? 'Следующая' : 'Next',
-                onPressed: widget.currentIndex < widget.pages.length - 1
-                    ? () => widget.onPageSelected(widget.currentIndex + 1)
-                    : null,
-                icon: const Icon(Icons.chevron_right_rounded, size: 22),
-              ),
-              if (widget.onDownloadAll != null) ...[
-                const SizedBox(width: 4),
-                FilledButton.tonalIcon(
-                  style: FilledButton.styleFrom(
+              Row(
+                children: [
+                  Icon(
+                    Icons.auto_stories_rounded,
+                    size: 18,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            isRu ? 'Страницы' : 'Pages',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '(${widget.currentIndex + 1}/${widget.pages.length})',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.outline,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  IconButton(
                     visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    tooltip: isRu ? 'Предыдущая' : 'Previous',
+                    onPressed: widget.currentIndex > 0
+                        ? () => widget.onPageSelected(widget.currentIndex - 1)
+                        : null,
+                    icon: const Icon(Icons.chevron_left_rounded, size: 20),
                   ),
-                  onPressed: widget.onDownloadAll,
-                  icon: const Icon(Icons.download_for_offline_rounded, size: 16),
-                  label: Text(
-                    isRu
-                        ? 'Скачать все (${widget.pages.length})'
-                        : 'Download all (${widget.pages.length})',
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    tooltip: isRu ? 'Следующая' : 'Next',
+                    onPressed: widget.currentIndex < widget.pages.length - 1
+                        ? () => widget.onPageSelected(widget.currentIndex + 1)
+                        : null,
+                    icon: const Icon(Icons.chevron_right_rounded, size: 20),
                   ),
-                ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 10),
+                  if (widget.onDownloadAll != null) ...[
+                    const SizedBox(width: 4),
+                    Tooltip(
+                      message: isRu
+                          ? 'Скачать все страницы (${widget.pages.length})'
+                          : 'Download all pages (${widget.pages.length})',
+                      child: FilledButton.tonalIcon(
+                        style: FilledButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                        onPressed: widget.onDownloadAll,
+                        icon: const Icon(Icons.download_for_offline_rounded, size: 16),
+                        label: Text(downloadLabel),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 10),
           SizedBox(
             height: 76,
             child: ListView.separated(
@@ -240,7 +262,9 @@ class _PostMultiPageStripState extends State<PostMultiPageStrip> {
               },
             ),
           ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }

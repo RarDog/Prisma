@@ -20,6 +20,8 @@ class PixivMapper {
   static String toMasterUrl(String thumbUrl) {
     if (thumbUrl.isEmpty) return thumbUrl;
     var url = thumbUrl.replaceAll(RegExp(r'/c/[^/]+/'), '/');
+    url = url.replaceAll('custom-thumb', 'img-master');
+    url = url.replaceAll('custom1200', 'master1200');
     url = url.replaceAll('square1200', 'master1200');
     return url;
   }
@@ -40,9 +42,18 @@ class PixivMapper {
     final baseId = parentPost.id.split('_p').first;
     return List.generate(parentPost.pageCount, (i) {
       if (i == 0) return parentPost;
-      final fileUrl = parentPost.fileUrl.replaceAll(RegExp(r'_p\d+'), '_p$i');
-      final sampleUrl = parentPost.sampleUrl.replaceAll(RegExp(r'_p\d+'), '_p$i');
-      final previewUrl = parentPost.previewUrl.replaceAll(RegExp(r'_p\d+'), '_p$i');
+      final fileUrl = parentPost.fileUrl
+          .replaceAll('custom-thumb', 'img-master')
+          .replaceAll('custom1200', 'master1200')
+          .replaceAll(RegExp(r'_p\d+'), '_p$i');
+      final sampleUrl = parentPost.sampleUrl
+          .replaceAll('custom-thumb', 'img-master')
+          .replaceAll('custom1200', 'master1200')
+          .replaceAll(RegExp(r'_p\d+'), '_p$i');
+      final previewUrl = parentPost.previewUrl
+          .replaceAll('custom-thumb', 'img-master')
+          .replaceAll('custom1200', 'square1200')
+          .replaceAll(RegExp(r'_p\d+'), '_p$i');
       final tagGroups = Map<String, List<String>>.from(parentPost.tagGroups)
         ..['page_index'] = [i.toString()]
         ..remove('children')

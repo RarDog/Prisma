@@ -436,5 +436,45 @@ void main() {
       expect(pages[10].id, equals('151170372_p10'));
       expect(pages[10].fileUrl, contains('_p10.jpg'));
     });
+
+    test('PixivMapper.synthesizePages correctly handles custom-thumb and custom1200 URLs', () {
+      final parent = Post(
+        id: '151134738',
+        providerId: 'pixiv',
+        providerName: 'Pixiv',
+        previewUrl:
+            'https://i.pximg.net/c/250x250_80_a2/custom-thumb/img/2026/10/22/14/00/18/151134738-hash_p0_custom1200.jpg',
+        sampleUrl:
+            'https://i.pximg.net/custom-thumb/img/2026/10/22/14/00/18/151134738-hash_p0_custom1200.jpg',
+        fileUrl:
+            'https://i.pximg.net/custom-thumb/img/2026/10/22/14/00/18/151134738-hash_p0_custom1200.jpg',
+        tags: const ['manga'],
+        rating: 's',
+        width: 750,
+        height: 750,
+        source: 'https://www.pixiv.net/artworks/151134738',
+        createdAt: DateTime.now(),
+        fileType: 'jpg',
+        score: 100,
+        tagGroups: const {
+          'page_count': ['5'],
+        },
+      );
+
+      final pages = PixivMapper.synthesizePages(parent);
+      expect(pages.length, equals(5));
+      expect(pages[0].previewUrl, contains('custom-thumb'));
+      expect(pages[1].id, equals('151134738_p1'));
+      // Page 1+ must use img-master and square1200 for previewUrl (not custom-thumb)
+      expect(pages[1].previewUrl, contains('img-master'));
+      expect(pages[1].previewUrl, contains('_p1_square1200.jpg'));
+      expect(pages[1].previewUrl, isNot(contains('custom-thumb')));
+      expect(pages[1].previewUrl, isNot(contains('custom1200')));
+      // Page 1+ must use master1200 for sampleUrl and fileUrl
+      expect(pages[1].sampleUrl, contains('img-master'));
+      expect(pages[1].sampleUrl, contains('_p1_master1200.jpg'));
+      expect(pages[1].fileUrl, contains('img-master'));
+      expect(pages[1].fileUrl, contains('_p1_master1200.jpg'));
+    });
   });
 }
