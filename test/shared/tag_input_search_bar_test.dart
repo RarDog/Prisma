@@ -584,6 +584,50 @@ void main() {
 
     expect(textField.focusNode!.hasFocus, isTrue);
   });
+
+  testWidgets('plain search mode allows spaces without creating chips',
+      (tester) async {
+    String? submitted;
+    String? changed;
+
+    await tester.pumpWidget(_Harness(
+      child: TagInputSearchBar(
+        isPlainSearch: true,
+        onChanged: (v) => changed = v,
+        onSubmitted: (v) => submitted = v,
+      ),
+    ));
+
+    await tester.tap(find.byType(TextField));
+    await tester.enterText(find.byType(TextField), 'beautiful anime girl');
+    await tester.pumpAndSettle();
+
+    expect(find.byType(InputChip), findsNothing);
+    expect(changed, 'beautiful anime girl');
+
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+
+    expect(submitted, 'beautiful anime girl');
+  });
+
+  testWidgets('toggling search mode button invokes callback', (tester) async {
+    bool toggled = false;
+
+    await tester.pumpWidget(_Harness(
+      child: TagInputSearchBar(
+        isPlainSearch: true,
+        onToggleSearchMode: () => toggled = true,
+        onSubmitted: (_) {},
+      ),
+    ));
+
+    expect(find.byIcon(Icons.manage_search_rounded), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.manage_search_rounded));
+    await tester.pumpAndSettle();
+
+    expect(toggled, isTrue);
+  });
 }
 
 class _Harness extends StatelessWidget {

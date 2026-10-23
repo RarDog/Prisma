@@ -56,6 +56,30 @@ class FeedToolbar extends StatefulWidget {
 
 class _FeedToolbarState extends State<FeedToolbar> {
   late String _query;
+  bool? _manualPlainSearchMode;
+
+  bool get _isPlainSearch {
+    if (_manualPlainSearchMode != null) return _manualPlainSearchMode!;
+    final selected = widget.selectedProviderIds;
+    if (selected.length == 1) {
+      final id = selected.first.toLowerCase();
+      if (id == 'xvideos') return true;
+      for (final p in widget.providers) {
+        if (p.id.toLowerCase() == id) {
+          if (p.apiType.toLowerCase() == 'xvideos') return true;
+          break;
+        }
+      }
+    }
+    return false;
+  }
+
+  String _searchHint(bool isRu) {
+    if (_isPlainSearch) {
+      return isRu ? 'Поиск видео...' : 'Search videos...';
+    }
+    return isRu ? 'Поиск по тегам...' : 'Search tags...';
+  }
 
   @override
   void initState() {
@@ -81,6 +105,7 @@ class _FeedToolbarState extends State<FeedToolbar> {
     if (!listEquals(
             oldWidget.selectedProviderIds, widget.selectedProviderIds) ||
         !listEquals(oldWidget.providers, widget.providers)) {
+      _manualPlainSearchMode = null;
       final supported = _supportedPeriods;
       if (!supported.contains(widget.topPeriodFilter)) {
         final fallback = supported.contains(TopPeriodFilter.allTime) &&
@@ -117,6 +142,13 @@ class _FeedToolbarState extends State<FeedToolbar> {
                 child: TagInputSearchBar(
                   initialValue: _query,
                   suggestions: widget.tagSuggestions,
+                  hintText: _searchHint(isRu),
+                  isPlainSearch: _isPlainSearch,
+                  onToggleSearchMode: () {
+                    setState(() {
+                      _manualPlainSearchMode = !_isPlainSearch;
+                    });
+                  },
                   onChanged: (value) {
                     _query = value;
                     widget.onSearchChanged(value);
@@ -231,6 +263,13 @@ class _FeedToolbarState extends State<FeedToolbar> {
                 child: TagInputSearchBar(
                   initialValue: _query,
                   suggestions: widget.tagSuggestions,
+                  hintText: _searchHint(isRu),
+                  isPlainSearch: _isPlainSearch,
+                  onToggleSearchMode: () {
+                    setState(() {
+                      _manualPlainSearchMode = !_isPlainSearch;
+                    });
+                  },
                   onChanged: (value) {
                     _query = value;
                     widget.onSearchChanged(value);

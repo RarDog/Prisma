@@ -34,6 +34,8 @@ class TagInputSearchBar extends StatefulWidget {
     this.initialValue,
     this.hintText = 'Search tags',
     this.suggestions = const [],
+    this.isPlainSearch = false,
+    this.onToggleSearchMode,
     super.key,
   });
 
@@ -45,6 +47,8 @@ class TagInputSearchBar extends StatefulWidget {
   final String? initialValue;
   final String hintText;
   final List<TagSuggestion> suggestions;
+  final bool isPlainSearch;
+  final VoidCallback? onToggleSearchMode;
 
   @override
   State<TagInputSearchBar> createState() => _TagInputSearchBarState();
@@ -82,14 +86,38 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
   @override
   void didUpdateWidget(covariant TagInputSearchBar oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.isPlainSearch != widget.isPlainSearch) {
+      if (widget.isPlainSearch) {
+        final combined = _query;
+        _tags = [];
+        _controller.value = TextEditingValue(
+          text: combined,
+          selection: TextSelection.collapsed(offset: combined.length),
+        );
+      } else {
+        final text = _controller.text;
+        _controller.clear();
+        _setFromQuery(text);
+      }
+      setState(() {});
+    }
+
     final next = widget.initialValue ?? '';
     final externalChanged = widget.initialValue != oldWidget.initialValue;
     if (externalChanged && (!_focusNode.hasFocus || next != _query)) {
-      final oldTagCount = _tags.length;
-      _setFromQuery(next);
-      _lastExternalValue = next;
-      if (_tags.length > oldTagCount) {
-        _scrollToEnd();
+      if (widget.isPlainSearch) {
+        _controller.value = TextEditingValue(
+          text: next,
+          selection: TextSelection.collapsed(offset: next.length),
+        );
+        _lastExternalValue = next;
+      } else {
+        final oldTagCount = _tags.length;
+        _setFromQuery(next);
+        _lastExternalValue = next;
+        if (_tags.length > oldTagCount) {
+          _scrollToEnd();
+        }
       }
       setState(() {});
     }
@@ -285,79 +313,142 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
                     Icon(Icons.search_rounded, color: scheme.onSurfaceVariant),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: SizedBox(
-                        height: 38,
-                        child: Scrollbar(
-                          controller: _tagScrollController,
-                          thumbVisibility: false,
-                          child: SingleChildScrollView(
-                            controller: _tagScrollController,
-                            scrollDirection: Axis.horizontal,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                for (final tag in _tags) ...[
-                                  _buildTagChip(context, tag),
-                                  const SizedBox(width: 6),
-                                ],
-                                IntrinsicWidth(
-                                  stepWidth: 10,
-                                  child: ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      minWidth: _tags.isEmpty ? 140 : 48,
-                                      maxWidth: 240,
-                                    ),
-                                    child: Focus(
-                                      onKeyEvent: _handleKeyEvent,
-                                      child: TextField(
-                                        controller: _controller,
-                                        focusNode: _focusNode,
-                                        autocorrect: false,
-                                        enableSuggestions: false,
-                                        textInputAction: TextInputAction.search,
-                                        onTap: () {
-                                          SystemChannels.textInput
-                                              .invokeMethod<void>(
-                                                  'TextInput.show');
-                                        },
-                                        onSubmitted: (_) => _submit(),
-                                        onChanged: _handleDraftChanged,
-                                        decoration: InputDecoration(
-                                          isDense: true,
-                                          border: InputBorder.none,
-                                          enabledBorder: InputBorder.none,
-                                          focusedBorder: InputBorder.none,
-                                          filled: false,
-                                          contentPadding:
-                                              const EdgeInsets.symmetric(
-                                            vertical: 8,
-                                          ),
-                                          hintText: _tags.isEmpty
-                                              ? widget.hintText
-                                              : 'tag',
-                                          prefixIcon: null,
-                                          suffixIcon: null,
-                                        ),
+                      child: widget.isPlainSearch
+                          ? SizedBox(
+                              height: 38,
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Focus(
+                                  onKeyEvent: _handleKeyEvent,
+                                  child: TextField(
+                                    controller: _controller,
+                                    focusNode: _focusNode,
+                                    autocorrect: false,
+                                    enableSuggestions: false,
+                                    textInputAction: TextInputAction.search,
+                                    onTap: () {
+                                      SystemChannels.textInput
+                                          .invokeMethod<void>(
+                                              'TextInput.show');
+                                    },
+                                    onSubmitted: (_) => _submit(),
+                                    onChanged: _handleDraftChanged,
+                                    decoration: InputDecoration(
+                                      isDense: true,
+                                      border: InputBorder.none,
+                                      enabledBorder: InputBorder.none,
+                                      focusedBorder: InputBorder.none,
+                                      filled: false,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                        vertical: 8,
                                       ),
+                                      hintText: widget.hintText,
+                                      prefixIcon: null,
+                                      suffixIcon: null,
                                     ),
                                   ),
                                 ),
-                              ],
+                              ),
+                            )
+                          : SizedBox(
+                              height: 38,
+                              child: Scrollbar(
+                                controller: _tagScrollController,
+                                thumbVisibility: false,
+                                child: SingleChildScrollView(
+                                  controller: _tagScrollController,
+                                  scrollDirection: Axis.horizontal,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      for (final tag in _tags) ...[
+                                        _buildTagChip(context, tag),
+                                        const SizedBox(width: 6),
+                                      ],
+                                      IntrinsicWidth(
+                                        stepWidth: 10,
+                                        child: ConstrainedBox(
+                                          constraints: BoxConstraints(
+                                            minWidth: _tags.isEmpty ? 140 : 48,
+                                            maxWidth: 240,
+                                          ),
+                                          child: Focus(
+                                            onKeyEvent: _handleKeyEvent,
+                                            child: TextField(
+                                              controller: _controller,
+                                              focusNode: _focusNode,
+                                              autocorrect: false,
+                                              enableSuggestions: false,
+                                              textInputAction:
+                                                  TextInputAction.search,
+                                              onTap: () {
+                                                SystemChannels.textInput
+                                                    .invokeMethod<void>(
+                                                        'TextInput.show');
+                                              },
+                                              onSubmitted: (_) => _submit(),
+                                              onChanged: _handleDraftChanged,
+                                              decoration: InputDecoration(
+                                                isDense: true,
+                                                border: InputBorder.none,
+                                                enabledBorder: InputBorder.none,
+                                                focusedBorder: InputBorder.none,
+                                                filled: false,
+                                                contentPadding:
+                                                    const EdgeInsets.symmetric(
+                                                  vertical: 8,
+                                                ),
+                                                hintText: _tags.isEmpty
+                                                    ? widget.hintText
+                                                    : 'tag',
+                                                prefixIcon: null,
+                                                suffixIcon: null,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
+                    ),
+                    if (_query.isNotEmpty)
+                      IconButton(
+                        tooltip:
+                            Localizations.maybeLocaleOf(context)?.languageCode ==
+                                    'ru'
+                                ? 'Очистить'
+                                : 'Clear',
+                        visualDensity: VisualDensity.compact,
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: _clear,
                       ),
-                    ),
-                    IconButton(
-                      tooltip:
-                          Localizations.maybeLocaleOf(context)?.languageCode ==
-                                  'ru'
-                              ? 'Очистить'
-                              : 'Clear',
-                      visualDensity: VisualDensity.compact,
-                      icon: const Icon(Icons.close_rounded),
-                      onPressed: _clear,
-                    ),
+                    if (widget.onToggleSearchMode != null)
+                      IconButton(
+                        tooltip: widget.isPlainSearch
+                            ? (Localizations.maybeLocaleOf(context)?.languageCode ==
+                                    'ru'
+                                ? 'Режим: Поисковик (нажмите для тегов)'
+                                : 'Mode: Search engine (tap for tags)')
+                            : (Localizations.maybeLocaleOf(context)?.languageCode ==
+                                    'ru'
+                                ? 'Режим: Теги (нажмите для поисковика)'
+                                : 'Mode: Tags (tap for search engine)'),
+                        visualDensity: VisualDensity.compact,
+                        icon: Icon(
+                          widget.isPlainSearch
+                              ? Icons.manage_search_rounded
+                              : Icons.label_rounded,
+                          size: 20,
+                          color: widget.isPlainSearch
+                              ? scheme.primary
+                              : scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                        ),
+                        onPressed: widget.onToggleSearchMode,
+                      ),
                   ],
                 ),
               ),
@@ -406,7 +497,9 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
     if (event.logicalKey == LogicalKeyboardKey.enter ||
         event.logicalKey == LogicalKeyboardKey.numpadEnter) {
-      _commitDraft(_controller.text);
+      if (!widget.isPlainSearch) {
+        _commitDraft(_controller.text);
+      }
       _submit();
       return KeyEventResult.handled;
     }
@@ -417,6 +510,9 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
       }
       _focusNode.unfocus();
       return KeyEventResult.handled;
+    }
+    if (widget.isPlainSearch) {
+      return KeyEventResult.ignored;
     }
     if (event.logicalKey != LogicalKeyboardKey.backspace) {
       return KeyEventResult.ignored;
@@ -435,6 +531,11 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
   }
 
   void _handleDraftChanged(String value) {
+    if (widget.isPlainSearch) {
+      setState(() {});
+      _notifyChangedDebounced();
+      return;
+    }
     if (value.trim().isEmpty) {
       _debounce?.cancel();
       if (_portalController.isShowing) {
@@ -453,6 +554,14 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
   }
 
   void _setFromQuery(String query) {
+    if (widget.isPlainSearch) {
+      _tags = [];
+      _controller.value = TextEditingValue(
+        text: query,
+        selection: TextSelection.collapsed(offset: query.length),
+      );
+      return;
+    }
     _tags = _parseTags(query);
     _controller.clear();
   }
@@ -480,7 +589,9 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
     if (_portalController.isShowing) {
       _portalController.hide();
     }
-    _commitDraft(_controller.text);
+    if (!widget.isPlainSearch) {
+      _commitDraft(_controller.text);
+    }
     _lastExternalValue = _query;
     _focusNode.unfocus();
     widget.onSubmitted(_query);
@@ -532,6 +643,34 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
   }
 
   void _applySuggestion(String suggestion) {
+    if (widget.isPlainSearch) {
+      setState(() {
+        final text = _controller.text;
+        final words = text.split(RegExp(r'\s+'));
+        if (words.isNotEmpty && words.last.isNotEmpty) {
+          words[words.length - 1] = suggestion;
+          final updated = '${words.join(' ')} ';
+          _controller.value = TextEditingValue(
+            text: updated,
+            selection: TextSelection.collapsed(offset: updated.length),
+          );
+        } else {
+          final updated = '$suggestion ';
+          _controller.value = TextEditingValue(
+            text: updated,
+            selection: TextSelection.collapsed(offset: updated.length),
+          );
+        }
+      });
+      if (_portalController.isShowing) {
+        _portalController.hide();
+      }
+      _lastExternalValue = _query;
+      _notifyChanged();
+      widget.onSuggestionApplied?.call(_query);
+      _focusNode.requestFocus();
+      return;
+    }
     final draft = _controller.text.trim();
     setState(() {
       if (draft.isNotEmpty) {
@@ -583,6 +722,9 @@ class _TagInputSearchBarState extends State<TagInputSearchBar> {
   }
 
   String get _query {
+    if (widget.isPlainSearch) {
+      return _controller.text.trim();
+    }
     final draft = _controller.text.trim();
     final all = [..._tags, if (draft.isNotEmpty) draft];
     return all.join(' ');
