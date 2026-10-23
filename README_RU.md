@@ -106,22 +106,20 @@
 
 Все скомпилированные установочные пакеты размещены на официальной странице **[Releases](https://github.com/RarDog/Prisma/releases)**.
 
-### 🧪 Бета-канал (`v4.2.1-beta.3`)
-> [!NOTE]
-> **Политика распространения бета-версий**: Предварительные (бета) сборки публикуются исключительно для **Android** и **Linux** для удобства быстрого исправления багов.
+### 🎯 Релиз-кандидат (`v4.2.1-rc.1`)
 
-#### 📱 Android (Бета)
+#### 📱 Android (RC)
 | Пакет | Архитектура | Целевые устройства |
 | :--- | :--- | :--- |
-| **[Prisma-4.2.1-beta.3-arm64-v8a.apk](https://github.com/RarDog/Prisma/releases/download/v4.2.1-beta.3/Prisma-4.2.1-beta.3-arm64-v8a.apk)** | 64-битный ARM (`arm64-v8a`) | Большинство современных смартфонов и планшетов (Android 7.0+) |
-| **[Prisma-4.2.1-beta.3-armeabi-v7a.apk](https://github.com/RarDog/Prisma/releases/download/v4.2.1-beta.3/Prisma-4.2.1-beta.3-armeabi-v7a.apk)** | 32-битный ARM (`armeabi-v7a`) | Старые или ультрабюджетные устройства |
-| **[Prisma-4.2.1-beta.3-x86_64.apk](https://github.com/RarDog/Prisma/releases/download/v4.2.1-beta.3/Prisma-4.2.1-beta.3-x86_64.apk)** | 64-битный x86 (`x86_64`) | Эмуляторы Android, ChromeOS и x86-планшеты |
+| **[Prisma-4.2.1-rc.1-arm64-v8a.apk](https://github.com/RarDog/Prisma/releases/download/v4.2.1-rc.1/Prisma-4.2.1-rc.1-arm64-v8a.apk)** | 64-битный ARM (`arm64-v8a`) | Большинство современных смартфонов и планшетов (Android 7.0+) |
+| **[Prisma-4.2.1-rc.1-armeabi-v7a.apk](https://github.com/RarDog/Prisma/releases/download/v4.2.1-rc.1/Prisma-4.2.1-rc.1-armeabi-v7a.apk)** | 32-битный ARM (`armeabi-v7a`) | Старые или ультрабюджетные устройства |
+| **[Prisma-4.2.1-rc.1-x86_64.apk](https://github.com/RarDog/Prisma/releases/download/v4.2.1-rc.1/Prisma-4.2.1-rc.1-x86_64.apk)** | 64-битный x86 (`x86_64`) | Эмуляторы Android, ChromeOS и x86-планшеты |
 
-#### 🐧 Linux (Бета)
+#### 🐧 Linux (RC)
 | Пакет | Формат | Особенности |
 | :--- | :--- | :--- |
-| **[Prisma-v4.2.1-beta.3-linux-x86_64.AppImage](https://github.com/RarDog/Prisma/releases/download/v4.2.1-beta.3/Prisma-v4.2.1-beta.3-linux-x86_64.AppImage)** | AppImage | Портативный исполняемый файл (требуется `libmpv`) |
-| **[Prisma-v4.2.1-beta.3-linux-x64.tar.gz](https://github.com/RarDog/Prisma/releases/download/v4.2.1-beta.3/Prisma-v4.2.1-beta.3-linux-x64.tar.gz)** | Архив Tarball | Портативный каталог с бинарными файлами |
+| **[Prisma-v4.2.1-rc.1-linux-x86_64.AppImage](https://github.com/RarDog/Prisma/releases/download/v4.2.1-rc.1/Prisma-v4.2.1-rc.1-linux-x86_64.AppImage)** | AppImage | Портативный исполняемый файл (требуется `libmpv`) |
+| **[Prisma-v4.2.1-rc.1-linux-x64.tar.gz](https://github.com/RarDog/Prisma/releases/download/v4.2.1-rc.1/Prisma-v4.2.1-rc.1-linux-x64.tar.gz)** | Архив Tarball | Портативный каталог с бинарными файлами |
 
 ---
 

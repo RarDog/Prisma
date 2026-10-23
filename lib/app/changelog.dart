@@ -1,5 +1,28 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.2.1-rc.1',
+    title:
+        'Релиз-кандидат: плеер анимаций Pixiv Ugoira, поиск XVideos, обновлённый чейнджлог и оптимизации',
+    titleEn:
+        'Release Candidate: Pixiv Ugoira animation player, XVideos search engine, redesigned changelog & optimizations',
+    bullets: [
+      'Анимированные иллюстрации Pixiv (Ugoira): нативное воспроизведение анимаций с точными миллисекундными задержками каждого кадра от автора, фоновая распаковка кадров в изоляте и полноэкранный просмотр.',
+      'Интерактивный плеер Ugoira: панель управления с паузой, покадровой навигацией, ползунком таймлайна и регулировкой скорости (0.5x, 1x, 1.5x, 2x).',
+      'Полнотекстовый поиск XVideos: добавлено удобное переключение между тегами и свободным поисковым движком прямо в строке поиска.',
+      'Обновлённая история изменений: интерактивный таймлайн с неоновыми узлами, цветными маркерами категорий и бейджами версий (Релиз, Бета, RC).',
+      'Новый источник TBIB: интеграция The Big ImageBoard с поддержкой DAPI JSON и автокомплитом тегов.',
+      'Предзагрузка ленты и буферизация видео: ускорен старт воспроизведения видео, предзагрузка контента и обновлённая сетевая диагностика.',
+    ],
+    bulletsEn: [
+      'Pixiv Ugoira Support: native playback for animated illustrations matching authentic author frame delays, background isolate extraction, and fullscreen viewing.',
+      'Interactive Ugoira Player: controls overlay with play/pause, individual frame stepping, timeline scrubber, and speed controls (0.5x to 2x).',
+      'XVideos Search Mode Toggle: switch effortlessly between standard booru tags and freeform search engine directly from the search bar.',
+      'Redesigned Changelog: responsive visual timeline with glowing nodes, category markers, and release channel badges (Release, Beta, RC).',
+      'New TBIB Provider: full integration of The Big ImageBoard with DAPI JSON and autocomplete.',
+      'Feed Prefetching & Video Buffering: accelerated video playback startup, next-screen item preloading, and overhauled latency diagnostics.',
+    ],
+  ),
+  PrismaChange(
     version: '4.2.1-beta.4',
     title:
         'Пре-релиз: нативное воспроизведение анимаций Pixiv (Ugoira), фоновая распаковка кадров и панель управления',

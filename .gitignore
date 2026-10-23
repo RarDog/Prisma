@@ -13,3 +13,4 @@ android/local.properties
 *.apk
 *.tar.gz
 *.zip
+*.AppImage
