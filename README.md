@@ -72,7 +72,6 @@ Built from the ground up for low latency, smooth 60/120 FPS navigation, and pred
 ### 🛡️ Resource Optimization & Diagnostics
 * **Smart Memory GC & Watchdog**: Proactively intercepts OS low-memory warnings, releasing decoded raster surfaces before memory thresholds trigger process termination.
 * **Sliding-Window Eviction**: Ensures carousel memory bounds never exceed active neighbors ($\pm 1$), evicting distant decoders.
-* **Floating Diagnostic HUD**: Real-time developer overlay displaying RSS RAM, peak memory, image cache footprint, frame rates (FPS), and network transfer metrics.
 
 ---
 
