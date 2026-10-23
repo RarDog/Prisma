@@ -276,6 +276,21 @@ class ProviderRepository {
         createdAt: now,
         updatedAt: now,
       ),
+      ContentProviderConfig(
+        id: 'xvideos',
+        name: 'XVideos',
+        baseUrl: 'https://www.xvideos.com',
+        apiType: 'xvideos',
+        enabled: true,
+        priority: 18,
+        timeoutSeconds: 25,
+        customHeaders: {
+          'Referer': 'https://www.xvideos.com/',
+          'User-Agent': AppHeaders.desktopChromeUserAgent,
+        },
+        createdAt: now,
+        updatedAt: now,
+      ),
     ];
   }
 

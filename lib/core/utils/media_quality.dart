@@ -147,7 +147,7 @@ class MediaUrlSelector {
 
   static List<String> video(Post post) {
     return _compact([
-      post.fileUrl,
+      if (_looksLikeVideoUrl(post.fileUrl)) post.fileUrl,
       if (_looksLikeVideoUrl(post.sampleUrl)) post.sampleUrl,
       if (_looksLikeVideoUrl(post.previewUrl)) post.previewUrl,
     ]);
@@ -155,7 +155,7 @@ class MediaUrlSelector {
 
   static List<String> audio(Post post) {
     return _compact([
-      post.fileUrl,
+      if (_looksLikeAudioUrl(post.fileUrl)) post.fileUrl,
       if (_looksLikeAudioUrl(post.sampleUrl)) post.sampleUrl,
       if (_looksLikeAudioUrl(post.previewUrl)) post.previewUrl,
     ]);
@@ -183,6 +183,7 @@ class MediaUrlSelector {
     '.wmv',
     '.m4v',
     '.ts',
+    '.m3u8',
   };
 
   static const _audioExtensions = {
@@ -252,7 +253,7 @@ class MediaUrlSelector {
 
   static bool _isVideo(Post post) {
     final type = post.fileType.toLowerCase().trim();
-    if (type == 'video') return true;
+    if (type == 'video' || type == 'mp4' || type == 'webm') return true;
     if (type == 'audio' ||
         type == 'photo' ||
         type == 'archive' ||

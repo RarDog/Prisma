@@ -32,9 +32,19 @@ final postDetailsControllerProvider =
         post.fileUrl.contains('square1200');
   }
 
+  bool needsXVideosDetails(Post post) {
+    if (post.providerId != 'xvideos') return false;
+    if (post.tagGroups.containsKey('is_detailed')) return false;
+    return post.fileUrl.isEmpty ||
+        post.fileUrl == post.previewUrl ||
+        !post.fileUrl.contains('.mp4');
+  }
+
   Future<Post?> enrich(Post? post) async {
     if (post == null) return null;
-    if (needsRealbooruDetails(post) || needsPixivEnrichment(post)) {
+    if (needsRealbooruDetails(post) ||
+        needsPixivEnrichment(post) ||
+        needsXVideosDetails(post)) {
       final remote = await providerManager.getPost(post.providerId, post.id);
       if (remote is Success<Post?> && remote.data != null) {
         await cacheService.cachePosts([remote.data!]);

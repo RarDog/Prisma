@@ -422,6 +422,11 @@ class _ProviderCardState extends State<ProviderCard> {
           Icons.dashboard_customize_rounded,
           'Are.na API',
         ),
+      'xvideos' => (
+          const Color(0xFFDE2600),
+          Icons.play_circle_fill_rounded,
+          'XVideos Web',
+        ),
       _ => (
           const Color(0xFF6366F1),
           Icons.hub_rounded,

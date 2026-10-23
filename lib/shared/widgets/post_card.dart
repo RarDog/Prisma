@@ -443,6 +443,10 @@ class _PostCardState extends ConsumerState<PostCard>
                                     isAudioPost ||
                                     isTextPost))
                               const SizedBox(width: 4),
+                            if (post.tagGroups['duration_text']?.isNotEmpty == true) ...[
+                              _DurationBadge(duration: post.tagGroups['duration_text']!.first),
+                              const SizedBox(width: 4),
+                            ],
                             if (post.isUgoira ||
                                 post.fileType.toLowerCase().contains('video') ||
                                 post.fileType.toLowerCase().contains('webm') ||
@@ -1104,6 +1108,37 @@ class _PageCountBadge extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _DurationBadge extends StatelessWidget {
+  const _DurationBadge({required this.duration});
+
+  final String duration;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.70),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.20),
+          width: 0.7,
+        ),
+      ),
+      child: Text(
+        duration,
+        style: const TextStyle(
+          fontSize: 10,
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.2,
+          height: 1.1,
+        ),
       ),
     );
   }

@@ -23,6 +23,7 @@ import 'package:gel_rule_app/sources/booru/pixiv_provider.dart';
 import 'package:gel_rule_app/sources/booru/safebooru_provider.dart';
 import 'package:gel_rule_app/sources/booru/wallhaven_provider.dart';
 import 'package:gel_rule_app/sources/booru/arena_provider.dart';
+import 'package:gel_rule_app/sources/booru/xvideos_provider.dart';
 
 class ProviderFactory {
   /// Upper bound on cached HTTP clients. Each client owns a socket pool, so
@@ -272,6 +273,13 @@ class ProviderFactory {
         );
       case 'fapello':
         return FapelloProvider(
+          id: config.id,
+          name: config.name,
+          baseUrl: config.baseUrl,
+          dioClient: client,
+        );
+      case 'xvideos':
+        return XVideosProvider(
           id: config.id,
           name: config.name,
           baseUrl: config.baseUrl,

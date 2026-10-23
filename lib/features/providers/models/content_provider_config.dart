@@ -99,7 +99,7 @@ extension ContentProviderConfigTopPeriod on ContentProviderConfig {
           TopPeriodFilter.week,
           TopPeriodFilter.month,
         },
-      'paheal' || 'rule34_paheal' || 'pawchive' || 'fapello' => const {
+      'paheal' || 'rule34_paheal' || 'pawchive' || 'fapello' || 'xvideos' => const {
           TopPeriodFilter.none,
         },
       _ => const {
