@@ -90,6 +90,10 @@ class Post {
 
   bool get hasPools => poolIds.isNotEmpty;
 
+  bool get isUgoira =>
+      fileType.toLowerCase() == 'ugoira' ||
+      (tagGroups['media_type']?.contains('ugoira') ?? false);
+
   bool get hasNotes => tagGroups['has_notes']?.firstOrNull == 'true';
 
   int? get favCount {

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:gel_rule_app/core/models/post.dart';
+import 'package:gel_rule_app/sources/models/ugoira_metadata.dart';
 
 class PixivMapper {
   static dynamic _normalizeJson(dynamic data) {
@@ -67,11 +68,15 @@ class PixivMapper {
       final isExplicit = item['illust_content_type'] is Map &&
           ((item['illust_content_type']['sexual'] as num?) ?? 0) > 0;
 
+      final illustType = int.tryParse('${item['illust_type'] ?? 0}') ?? 0;
+      final isUgoira = illustType == 2;
+
       final tagGroups = <String, List<String>>{
         'general': tags,
         if (artist.isNotEmpty) 'artist': [artist],
         if (title.isNotEmpty) 'copyright': [title],
         if (pageCount > 1) 'page_count': [pageCount.toString()],
+        if (isUgoira) 'media_type': ['ugoira'],
       };
 
       DateTime createdAt;
@@ -99,7 +104,9 @@ class PixivMapper {
         height: int.tryParse('${item['height'] ?? 0}') ?? 0,
         source: 'https://www.pixiv.net/artworks/$id',
         createdAt: createdAt,
-        fileType: _fileType(masterUrl.isNotEmpty ? masterUrl : thumbUrl),
+        fileType: isUgoira
+            ? 'ugoira'
+            : _fileType(masterUrl.isNotEmpty ? masterUrl : thumbUrl),
         score: ratingCount > 0 ? ratingCount : viewCount,
         tagGroups: tagGroups,
       ));
@@ -184,6 +191,9 @@ class PixivMapper {
       final xRestrict = int.tryParse('${item['xRestrict'] ?? 0}') ?? 0;
       final isExplicit = xRestrict > 0;
 
+      final illustType = int.tryParse('${item['illustType'] ?? item['illust_type'] ?? 0}') ?? 0;
+      final isUgoira = illustType == 2;
+
       final description = item['description']?.toString() ?? '';
 
       final tagGroups = <String, List<String>>{
@@ -192,6 +202,7 @@ class PixivMapper {
         if (title.isNotEmpty) 'copyright': [title],
         if (description.isNotEmpty) 'description': [description],
         if (pageCount > 1) 'page_count': [pageCount.toString()],
+        if (isUgoira) 'media_type': ['ugoira'],
       };
 
       final createDateStr = item['createDate']?.toString();
@@ -215,7 +226,9 @@ class PixivMapper {
         height: int.tryParse('${item['height'] ?? 0}') ?? 0,
         source: 'https://www.pixiv.net/artworks/$id',
         createdAt: createdAt,
-        fileType: _fileType(masterUrl.isNotEmpty ? masterUrl : thumbUrl),
+        fileType: isUgoira
+            ? 'ugoira'
+            : _fileType(masterUrl.isNotEmpty ? masterUrl : thumbUrl),
         score: likeCount > 0 ? likeCount : bookmarkCount,
         tagGroups: tagGroups,
       ));
@@ -272,6 +285,9 @@ class PixivMapper {
     final xRestrict = int.tryParse('${body['xRestrict'] ?? 0}') ?? 0;
     final isExplicit = xRestrict > 0;
 
+    final illustType = int.tryParse('${body['illustType'] ?? 0}') ?? 0;
+    final isUgoira = illustType == 2;
+
     final bookmarkCount = int.tryParse('${body['bookmarkCount'] ?? 0}') ?? 0;
     final likeCount = int.tryParse('${body['likeCount'] ?? 0}') ?? 0;
     final score = likeCount > 0 ? likeCount : bookmarkCount;
@@ -287,6 +303,7 @@ class PixivMapper {
       if (title.isNotEmpty) 'copyright': [title],
       if (description.isNotEmpty) 'description': [description],
       if (pageCount > 1) 'page_count': [pageCount.toString()],
+      if (isUgoira) 'media_type': ['ugoira'],
     };
 
     return Post(
@@ -302,7 +319,7 @@ class PixivMapper {
       height: int.tryParse('${body['height'] ?? 0}') ?? 0,
       source: 'https://www.pixiv.net/artworks/$id',
       createdAt: createdAt,
-      fileType: _fileType(fileUrl),
+      fileType: isUgoira ? 'ugoira' : _fileType(fileUrl),
       score: score,
       tagGroups: tagGroups,
     );
@@ -356,6 +373,37 @@ class PixivMapper {
       fileType: _fileType(fileUrl),
       score: parentPost.score,
       tagGroups: tagGroups,
+    );
+  }
+
+  /// Parses /ajax/illust/{id}/ugoira_meta response
+  static UgoiraMetadata? ugoiraMetaFromResponse(dynamic data) {
+    final parsed = _normalizeJson(data);
+    if (parsed is! Map) return null;
+    final body = parsed['body'];
+    if (body is! Map) return null;
+
+    final src = body['src']?.toString();
+    if (src == null || src.isEmpty) return null;
+    final originalSrc = body['originalSrc']?.toString() ?? src;
+    final mimeType =
+        body['mime_type']?.toString() ?? 'image/vnd.pixiv.ugoira+zip';
+
+    final rawFrames = body['frames'];
+    final frames = <UgoiraFrame>[];
+    if (rawFrames is List) {
+      for (final raw in rawFrames) {
+        if (raw is Map) {
+          frames.add(UgoiraFrame.fromJson(Map<String, dynamic>.from(raw)));
+        }
+      }
+    }
+
+    return UgoiraMetadata(
+      zipUrl: src,
+      originalZipUrl: originalSrc,
+      mimeType: mimeType,
+      frames: frames,
     );
   }
 }
