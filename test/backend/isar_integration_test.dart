@@ -98,6 +98,7 @@ void main() {
       'konachan',
       'tbib',
       'rule34_us',
+      'xvideos',
     ]);
     final pixiv = providers.singleWhere((provider) => provider.id == 'pixiv');
     expect(pixiv.enabled, isTrue);

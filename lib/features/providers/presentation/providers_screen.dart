@@ -248,7 +248,11 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
         error: (error, _) => ErrorView(message: error.toString()),
         data: (rawItems) {
           final items = rawItems
-              .where((p) => p.apiType != 'fapello' && p.id != 'fapello')
+              .where((p) =>
+                  p.apiType != 'fapello' &&
+                  p.id != 'fapello' &&
+                  p.id.toLowerCase() != 'e621' &&
+                  p.id.toLowerCase() != 'e926')
               .toList();
           final activeCount = items.where((p) => p.enabled).length;
           final booruCount = items.where((p) => _isBooru(p.apiType)).length;

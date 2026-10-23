@@ -422,7 +422,7 @@ class _SettingsHubContent extends ConsumerWidget {
   String _buildAccountsSummary(bool isRu) {
     final pawchiveCount = settings.pawchiveAccounts.length;
     return isRu
-        ? 'Pawchive ($pawchiveCount) • Провайдеры'
-        : 'Pawchive ($pawchiveCount) • Providers';
+        ? 'Pawchive ($pawchiveCount) • e621 / e926 • Источники'
+        : 'Pawchive ($pawchiveCount) • e621 / e926 • Providers';
   }
 }
