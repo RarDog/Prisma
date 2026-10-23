@@ -10,6 +10,7 @@ import 'package:gel_rule_app/core/models/tag_suggestion.dart';
 import 'package:gel_rule_app/core/models/top_period_filter.dart';
 import 'package:gel_rule_app/sources/interfaces/content_provider.dart';
 import 'package:gel_rule_app/sources/mappers/pixiv_mapper.dart';
+import 'package:gel_rule_app/sources/models/ugoira_metadata.dart';
 
 class PixivProvider
     implements
@@ -445,6 +446,21 @@ class PixivProvider
         errorMessage: error.toString(),
         apiVersion: 'pixiv-web-ajax',
       );
+    }
+  }
+
+  /// Fetches Ugoira animation metadata (src zip URL and per-frame delay timings)
+  Future<UgoiraMetadata?> getUgoiraMeta(String illustId) async {
+    final cleanId = illustId.split('_p').first;
+    try {
+      final response = await _dio.get<dynamic>(
+        '/ajax/illust/$cleanId/ugoira_meta',
+        options: _authOptions,
+      );
+      _checkResponse(response);
+      return PixivMapper.ugoiraMetaFromResponse(response.data);
+    } catch (_) {
+      return null;
     }
   }
 
