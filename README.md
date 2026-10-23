@@ -93,6 +93,7 @@ Built from the ground up for low latency, smooth 60/120 FPS navigation, and pred
 | **Rule34 Paheal** | Booru | Shimmie HTML Scraper | ✅ | ✅ | ❌ | ❌ |
 | **Realbooru** | Booru | HTML Scraper | ✅ | ✅ | ❌ | ❌ |
 | **Safebooru** | Booru (SFW) | Gelbooru API | ❌ | ✅ | ❌ | ✅ |
+| **XVideos** | Video Tube | HTML Scraper | ✅ | ✅ | ❌ | ✅ |
 | ~~**Fapello**~~ | ~~Creator Media~~ | ~~Scraper Engine~~ | ~~✅~~ | ~~❌~~ | ~~❌~~ | ~~❌~~ |
 | ~~**Are.na**~~ | ~~Channels & Blocks~~ | ~~REST API~~ | ~~❌~~ | ~~❌~~ | ~~❌~~ | ~~❌~~ |
 | **Pawchive** | Creator Archives | Direct Sync | ✅ | ✅ | ❌ | ❌ |
