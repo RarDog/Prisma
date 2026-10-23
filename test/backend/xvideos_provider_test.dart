@@ -68,7 +68,7 @@ void main() {
           equals('https://thumb-cdn77.xvideos-cdn.com/d8ad5cbd/0/xv_22_t.jpg'));
       expect(post.fileType, equals('mp4'));
       expect(post.rating, equals('e'));
-      expect(post.source, equals('https://www.xvideos.com/video.kmlafhv3e4e/_'));
+      expect(post.source, equals('https://www.xvideos.com/video.kmlafhv3e4e/_2'));
       expect(post.tagGroups['title'], equals(['Sample Anime Game 2']));
       expect(post.tagGroups['artist'], equals(['Caribbeancom']));
       expect(post.tagGroups['duration_text'], equals(['11 min']));
@@ -148,6 +148,21 @@ void main() {
 
       expect(headers['Referer'], equals('https://www.xvideos.com/'));
       expect(headers['User-Agent'], isNotEmpty);
+    });
+
+    test('XVideosProvider suggestTags returns matching tag suggestions', () async {
+      final provider = XVideosProvider(
+        id: 'xvideos',
+        name: 'XVideos',
+        baseUrl: 'https://www.xvideos.com',
+        dioClient: DioClient(),
+      );
+
+      final suggestions = await provider.suggestTags('ani');
+      expect(suggestions.any((s) => s.name == 'anime'), isTrue);
+
+      final emptyQuerySuggestions = await provider.suggestTags('', limit: 5);
+      expect(emptyQuerySuggestions.length, equals(5));
     });
   });
 }

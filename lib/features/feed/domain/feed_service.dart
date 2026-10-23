@@ -121,7 +121,7 @@ class FeedService {
 
 /// Artist providers carry no booru tag vocabulary, so tag matching would filter
 /// out every one of their posts.
-const _tagMatchingBypassProviderIds = <String>{'pawchive', 'fapello'};
+const _tagMatchingBypassProviderIds = <String>{'pawchive', 'fapello', 'xvideos'};
 
 bool postMatchesRequestedTags(Post post, List<String> requestedTags) {
   if (_tagMatchingBypassProviderIds.contains(post.providerId)) return true;

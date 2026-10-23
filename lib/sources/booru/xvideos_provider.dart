@@ -5,6 +5,7 @@ import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'package:gel_rule_app/core/http/dio_client.dart';
 import 'package:gel_rule_app/core/models/post.dart';
 import 'package:gel_rule_app/core/models/provider_health.dart';
+import 'package:gel_rule_app/core/models/tag_suggestion.dart';
 import 'package:gel_rule_app/core/models/top_period_filter.dart';
 import 'package:gel_rule_app/sources/interfaces/content_provider.dart';
 
@@ -13,7 +14,11 @@ import 'package:gel_rule_app/sources/interfaces/content_provider.dart';
 /// metadata (title, duration, uploader, tags, views), and supports direct playback
 /// and downloads through the app's native video player.
 class XVideosProvider
-    implements ContentProvider, PostPageProvider, MediaHeadersProvider {
+    implements
+        ContentProvider,
+        PostPageProvider,
+        MediaHeadersProvider,
+        TagSuggestionProvider {
   XVideosProvider({
     required this.id,
     required this.name,
@@ -38,6 +43,22 @@ class XVideosProvider
         TopPeriodFilter.allTime,
       };
 
+  static const _popularTags = <String>[
+    'amateur', 'anal', 'anime', 'arab', 'asian', 'asmr', 'ass', 'bbw', 'bdsm', 'babe',
+    'beauty', 'big ass', 'big cock', 'big tits', 'black', 'blonde', 'blowjob', 'brunette',
+    'cam', 'celebrity', 'chubby', 'cleavage', 'close up', 'college', 'cosplay', 'creampie',
+    'cuckold', 'cumshot', 'deepthroat', 'double penetration', 'ebony', 'feet', 'femdom',
+    'fisting', 'funny', 'gangbang', 'gamer', 'gay', 'german', 'glamour', 'granny', 'group',
+    'hardcore', 'hentai', 'homemade', 'hotel', 'housewife', 'indian', 'interracial',
+    'japanese', 'korean', 'latex', 'latina', 'lesbian', 'lingerie', 'maid', 'massage',
+    'masturbation', 'mature', 'milf', 'model', 'nurse', 'office', 'old and young', 'orgy',
+    'outdoor', 'panties', 'pantyhose', 'party', 'petite', 'pissing', 'pornstar', 'pov',
+    'pregnant', 'public', 'pussy', 'reality', 'redhead', 'romance', 'rough', 'russian',
+    'school', 'seduction', 'shemale', 'shower', 'skinny', 'sleep', 'small tits', 'solo',
+    'spanking', 'squirt', 'stockings', 'striptease', 'student', 'swinger', 'tattoo', 'teen',
+    'threesome', 'toys', 'uniform', 'vintage', 'voyeur', 'vr', 'webcam', 'wife',
+  ];
+
   static final _blockPattern = RegExp(
     r'<div[^>]+id="video_([a-zA-Z0-9]+)"[^>]*data-id="(\d+)".*?(?=<div[^>]+id="video_|<div[^>]+class="pagination"|<div[^>]+id="content-under-media"|$)',
     dotAll: true,
@@ -45,6 +66,7 @@ class XVideosProvider
 
   static final _titlePattern =
       RegExp(r'<p class="title"><a[^>]+title="([^"]+)"');
+  static final _hrefPattern = RegExp(r'<a[^>]+href="(/video[^"]+)"');
   static final _dataSrcPattern = RegExp(r'data-src="([^"]+)"');
   static final _srcPattern = RegExp(r'src="([^"]+)"');
   static final _durationPattern =
@@ -59,23 +81,25 @@ class XVideosProvider
   );
 
   static final _jsTitlePattern =
-      RegExp(r"html5player\.setVideoTitle\('([^']+)'\)");
+      RegExp(r'''setVideoTitle\(['"]([^'"]+)['"]\)''');
   static final _jsHighPattern =
-      RegExp(r"html5player\.setVideoUrlHigh\('([^']+)'\)");
+      RegExp(r'''setVideoUrlHigh\(['"]([^'"]+)['"]\)''');
   static final _jsLowPattern =
-      RegExp(r"html5player\.setVideoUrlLow\('([^']+)'\)");
+      RegExp(r'''setVideoUrlLow\(['"]([^'"]+)['"]\)''');
   static final _jsHlsPattern =
-      RegExp(r"html5player\.setVideoHLS\('([^']+)'\)");
+      RegExp(r'''setVideoHLS\(['"]([^'"]+)['"]\)''');
   static final _jsThumb169Pattern =
-      RegExp(r"html5player\.setThumbUrl169\('([^']+)'\)");
+      RegExp(r'''setThumbUrl169\(['"]([^'"]+)['"]\)''');
   static final _jsThumbPattern =
-      RegExp(r"html5player\.setThumbUrl\('([^']+)'\)");
+      RegExp(r'''setThumbUrl\(['"]([^'"]+)['"]\)''');
   static final _tagPattern =
       RegExp(r'<a href="/tags/([^"]+)"[^>]*>([^<]+)</a>');
   static final _detailUploaderPattern = RegExp(
     r'class="btn btn-default label main uploader-tag[^>]*>.*?<span class="name">([^<]+)</span>',
     dotAll: true,
   );
+  static final _fallbackMp4Pattern =
+      RegExp(r'''https?://[^\s"'<>]+\.mp4\?[^\s"'<>]+''');
 
   Options get _htmlOptions => Options(
         responseType: ResponseType.plain,
@@ -84,6 +108,33 @@ class XVideosProvider
           'Referer': '$baseUrl/',
         },
       );
+
+  @override
+  Future<List<TagSuggestion>> suggestTags(String query, {int limit = 20}) async {
+    final clean = query.trim().toLowerCase();
+    if (clean.isEmpty) {
+      return _popularTags.take(limit).map((t) => TagSuggestion(
+        name: t,
+        category: TagCategory.general,
+        postCount: 0,
+        providerId: id,
+      )).toList();
+    }
+    final matches = _popularTags.where((t) => t.contains(clean)).toList()
+      ..sort((a, b) {
+        final aStarts = a.startsWith(clean);
+        final bStarts = b.startsWith(clean);
+        if (aStarts && !bStarts) return -1;
+        if (!aStarts && bStarts) return 1;
+        return a.compareTo(b);
+      });
+    return matches.take(limit).map((t) => TagSuggestion(
+      name: t,
+      category: TagCategory.general,
+      postCount: 0,
+      providerId: id,
+    )).toList();
+  }
 
   @override
   Future<List<Post>> searchPosts({
@@ -124,10 +175,10 @@ class XVideosProvider
     );
 
     final html = response.data ?? '';
-    return parseVideoList(html);
+    return parseVideoList(html, queryTags: effectiveTags);
   }
 
-  List<Post> parseVideoList(String html) {
+  List<Post> parseVideoList(String html, {String queryTags = ''}) {
     final posts = <Post>[];
     final matches = _blockPattern.allMatches(html);
 
@@ -139,6 +190,9 @@ class XVideosProvider
       final titleMatch = _titlePattern.firstMatch(block);
       final rawTitle = titleMatch?.group(1) ?? '';
       final title = _unescapeHtml(rawTitle);
+
+      final hrefMatch = _hrefPattern.firstMatch(block);
+      final relativePath = hrefMatch?.group(1) ?? '/video.$eid/_';
 
       final thumbMatch =
           _dataSrcPattern.firstMatch(block) ?? _srcPattern.firstMatch(block);
@@ -155,10 +209,19 @@ class XVideosProvider
       final viewsText = viewsMatch?.group(1) ?? '';
       final score = _parseViews(viewsText);
 
-      final postTags = <String>[
+      final titleWords = title
+          .toLowerCase()
+          .split(RegExp(r'[\s,._\-+()\[\]「」]+'))
+          .where((w) => w.length > 2)
+          .toList();
+
+      final postTags = <String>{
         if (uploader.isNotEmpty) uploader,
         if (durText.isNotEmpty) durText,
-      ];
+        if (queryTags.isNotEmpty)
+          ...queryTags.split(RegExp(r'\s+')).where((t) => t.isNotEmpty),
+        ...titleWords,
+      }.toList();
 
       final tagGroups = <String, List<String>>{
         if (title.isNotEmpty) 'title': [title],
@@ -167,6 +230,7 @@ class XVideosProvider
         if (durationSeconds > 0) 'duration': [durationSeconds.toString()],
         if (viewsText.isNotEmpty) 'views': [viewsText],
         'numeric_id': [numericId],
+        'path': [relativePath],
       };
 
       posts.add(Post(
@@ -180,7 +244,7 @@ class XVideosProvider
         rating: 'e',
         width: 1280,
         height: 720,
-        source: '$baseUrl/video.$eid/_',
+        source: '$baseUrl$relativePath',
         createdAt: DateTime.now(),
         fileType: 'mp4',
         score: score,
@@ -194,13 +258,43 @@ class XVideosProvider
   @override
   Future<Post?> getPost(String id) async {
     try {
-      final response = await _dio.get<String>(
-        '/video.$id/_',
-        options: _htmlOptions.copyWith(
-          followRedirects: true,
-          validateStatus: (status) => status != null && status < 400,
-        ),
-      );
+      final path = id.startsWith('/')
+          ? id
+          : (id.startsWith('video') ? '/$id' : '/video.$id/_');
+
+      Response<String> response;
+      try {
+        response = await _dio.get<String>(
+          path,
+          options: _htmlOptions.copyWith(
+            followRedirects: true,
+            maxRedirects: 5,
+          ),
+        );
+      } catch (dioError) {
+        if (id.contains('.')) {
+          final cleanId = id.split('.').last;
+          response = await _dio.get<String>(
+            '/video.$cleanId/_',
+            options: _htmlOptions.copyWith(
+              followRedirects: true,
+              maxRedirects: 5,
+            ),
+          );
+        } else {
+          rethrow;
+        }
+      }
+
+      if (response.statusCode == 301 || response.statusCode == 302) {
+        final loc = response.headers.value('location');
+        if (loc != null && loc.isNotEmpty) {
+          response = await _dio.get<String>(
+            loc,
+            options: _htmlOptions.copyWith(followRedirects: true),
+          );
+        }
+      }
 
       final html = response.data ?? '';
       if (html.isEmpty) return null;
@@ -212,14 +306,18 @@ class XVideosProvider
   }
 
   Post? parsePostDetail(String postId, String html) {
-    final titleMatch = _jsTitlePattern.firstMatch(html);
+    final titleMatch = _jsTitlePattern.firstMatch(html) ??
+        RegExp(r'<title>(.*?)(?: - XVIDEOS|\s*-\s*XVIDEOS\.COM)?</title>',
+                caseSensitive: false)
+            .firstMatch(html);
     final title = _unescapeHtml(titleMatch?.group(1) ?? '');
 
     final high = _jsHighPattern.firstMatch(html)?.group(1);
     final low = _jsLowPattern.firstMatch(html)?.group(1);
     final hls = _jsHlsPattern.firstMatch(html)?.group(1);
 
-    final videoUrl = high ?? low ?? hls;
+    final fallbackMp4 = _fallbackMp4Pattern.firstMatch(html)?.group(0);
+    final videoUrl = high ?? low ?? hls ?? fallbackMp4;
     if (videoUrl == null || videoUrl.isEmpty) return null;
 
     final thumbMatch =
