@@ -26,7 +26,9 @@ final postDetailsControllerProvider =
 
   bool needsPixivEnrichment(Post post) {
     if (post.providerId != 'pixiv') return false;
-    return post.fileUrl.contains('img-master') ||
+    if (post.fileType == 'ugoira') return false;
+    return !post.fileUrl.contains('img-original') ||
+        post.fileUrl.contains('img-master') ||
         post.fileUrl.contains('square1200');
   }
 

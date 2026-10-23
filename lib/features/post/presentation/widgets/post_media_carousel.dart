@@ -323,8 +323,19 @@ class _MobileMediaCarouselState extends ConsumerState<MobileMediaCarousel>
                   ? widget.activePost
                   : postItem;
 
+              final multiPageCount = (isActivePage &&
+                      widget.pages != null &&
+                      widget.pages!.length > 1)
+                  ? widget.pages!.length
+                  : 1;
+              final pageSubIndex = (isActivePage &&
+                      widget.pages != null &&
+                      widget.pages!.length > 1)
+                  ? widget.pageIndex
+                  : 0;
+
               return KeepAlivePostPage(
-                key: ValueKey(postItem.cacheKey),
+                key: ValueKey('${postItem.cacheKey}_${multiPageCount}_$pageSubIndex'),
                 keepAlive: distance <= 1,
                 child: Consumer(
                   builder: (context, ref, _) {

@@ -39,7 +39,10 @@ class PostPagesArgs {
 final postPagesProvider = FutureProvider.autoDispose
     .family<List<Post>, PostPagesArgs>((ref, args) async {
   final post = args.post;
-  if (!post.isMultiPage && args.post.pageCount <= 1) return [post];
+  final isPixivRoot = post.providerId == 'pixiv' && !post.id.contains('_p');
+  if (!post.isMultiPage && args.post.pageCount <= 1 && !isPixivRoot) {
+    return [post];
+  }
   final result = await ref.watch(providerManagerProvider).getPostPages(post);
   return result is Success<List<Post>> && result.data.isNotEmpty
       ? result.data

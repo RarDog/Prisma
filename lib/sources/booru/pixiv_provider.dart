@@ -43,6 +43,7 @@ class PixivProvider
   // Auth: PHPSESSID cookie value (optional)
   final String? _phpsessid;
   final Map<String, UgoiraMetadata> _ugoiraMetaCache = {};
+  final Map<String, List<Post>> _pagesCache = {};
 
   Dio get dio => _dio;
   Map<String, String> get queryParameters => _queryParameters;
@@ -205,6 +206,9 @@ class PixivProvider
   @override
   Future<List<Post>> getPostPages(Post post) async {
     final baseId = post.id.split('_p').first;
+    if (_pagesCache.containsKey(baseId)) {
+      return _pagesCache[baseId]!;
+    }
     try {
       final response = await _dio.get<dynamic>(
         '/ajax/illust/$baseId/pages',
@@ -225,7 +229,13 @@ class PixivProvider
             results.add(p);
           }
         }
-        if (results.isNotEmpty) return results;
+        if (results.isNotEmpty) {
+          if (_pagesCache.length > 200) {
+            _pagesCache.remove(_pagesCache.keys.first);
+          }
+          _pagesCache[baseId] = results;
+          return results;
+        }
       }
     } catch (_) {}
     return [post];
@@ -282,6 +292,11 @@ class PixivProvider
         final pageIndex = int.tryParse(parts.last) ?? 0;
         final parent = await getPost(baseId);
         if (parent == null) return null;
+
+        if (_pagesCache.containsKey(baseId)) {
+          final cached = _pagesCache[baseId]!;
+          if (pageIndex < cached.length) return cached[pageIndex];
+        }
 
         try {
           final pagesResponse = await _dio.get<dynamic>(
