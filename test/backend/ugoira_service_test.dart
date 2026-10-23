@@ -18,7 +18,7 @@ void main() {
       final encoder = ZipEncoder();
       final zipBytes = Uint8List.fromList(encoder.encode(archive)!);
 
-      final meta = const UgoiraMetadata(
+      const meta = UgoiraMetadata(
         zipUrl: 'https://example.com/ugoira.zip',
         originalZipUrl: 'https://example.com/ugoira0.zip',
         mimeType: 'image/vnd.pixiv.ugoira+zip',
@@ -51,7 +51,7 @@ void main() {
       final encoder = ZipEncoder();
       final zipBytes = Uint8List.fromList(encoder.encode(archive)!);
 
-      final meta = const UgoiraMetadata(
+      const meta = UgoiraMetadata(
         zipUrl: 'https://example.com/ugoira.zip',
         originalZipUrl: 'https://example.com/ugoira0.zip',
         mimeType: 'image/vnd.pixiv.ugoira+zip',

@@ -1,3 +1,3 @@
-const appDisplayVersion = '4.2.1-beta.3';
-const appBuildNumber = 122;
+const appDisplayVersion = '4.2.1-beta.4';
+const appBuildNumber = 123;
 const appReleaseChannel = 'Beta';

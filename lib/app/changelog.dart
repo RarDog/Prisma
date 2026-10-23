@@ -1,5 +1,26 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.2.1-beta.4',
+    title:
+        'Пре-релиз: нативное воспроизведение анимаций Pixiv (Ugoira), фоновая распаковка кадров и панель управления',
+    titleEn:
+        'Pre-release: Native Pixiv Ugoira animated illustration player, background isolate extraction & playback controls',
+    bullets: [
+      'Анимированные иллюстрации Pixiv (Ugoira): нативное воспроизведение анимаций с точными миллисекундными задержками каждого кадра от автора.',
+      'Интерактивный плеер Ugoira: панель управления с паузой, покадровой навигацией, ползунком таймлайна и регулировкой скорости (0.5x, 1x, 1.5x, 2x).',
+      'Фоновая декомпрессия: распаковка ZIP-архивов с кадрами в фоновом изоляте без просадки частоты кадров интерфейса.',
+      'Бейдж UGOIRA в ленте: специальный фиолетовый индикатор анимированных работ на карточках постов.',
+      'Полноэкранный режим: плавный просмотр анимаций на весь экран с поддержкой масштабирования и панорамирования.',
+    ],
+    bulletsEn: [
+      'Pixiv Ugoira Support: native playback for animated illustrations matching authentic per-frame author delay timings.',
+      'Interactive Ugoira Player: controls overlay with play/pause, individual frame stepping, timeline scrubber, and speed controls (0.5x to 2x).',
+      'Background Isolate Decompression: asynchronous ZIP frame extraction off the UI thread preventing frame drops.',
+      'UGOIRA Feed Badge: distinctive vibrant badge on feed cards for animated artworks.',
+      'Fullscreen Playback: interactive pinch-to-zoom and pan support while animating in fullscreen.',
+    ],
+  ),
+  PrismaChange(
     version: '4.2.1-beta.3',
     title:
         'Пре-релиз: предзагрузка ленты, буферизация видео, новый провайдер TBIB и исправление пинга',

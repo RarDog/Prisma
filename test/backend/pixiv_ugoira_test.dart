@@ -1,8 +1,6 @@
-import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gel_rule_app/core/models/post.dart';
 import 'package:gel_rule_app/sources/mappers/pixiv_mapper.dart';
-import 'package:gel_rule_app/sources/models/ugoira_metadata.dart';
 
 void main() {
   group('Pixiv Ugoira support', () {
