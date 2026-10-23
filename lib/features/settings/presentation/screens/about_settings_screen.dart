@@ -7,13 +7,13 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'package:gel_rule_app/app/app.dart';
 import 'package:gel_rule_app/app/app_version.dart';
-import 'package:gel_rule_app/app/changelog.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/features/providers/presentation/provider_check_screen.dart';
 import 'package:gel_rule_app/features/providers/presentation/providers_screen.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
 import 'package:gel_rule_app/features/settings/presentation/widgets/app_update_dialog.dart';
+import 'package:gel_rule_app/features/settings/presentation/widgets/prisma_changelog_dialog.dart';
 import 'package:gel_rule_app/features/settings/presentation/widgets/settings_shared_widgets.dart';
 
 class AboutSettingsScreen extends ConsumerWidget {
@@ -372,42 +372,7 @@ class AboutSettingsScreen extends ConsumerWidget {
   }
 
   Future<void> _showChangelog(BuildContext context, bool isRu) {
-    return showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(isRu ? 'История изменений Prisma' : 'Prisma changelog'),
-        content: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (final change in prismaChangelog) ...[
-                  Text(
-                    '${change.version} - ${change.localizedTitle(isRu)}',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 6),
-                  for (final bullet in change.localizedBullets(isRu))
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8, bottom: 4),
-                      child: Text('- $bullet'),
-                    ),
-                  const SizedBox(height: 12),
-                ],
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(isRu ? 'Закрыть' : 'Close'),
-          ),
-        ],
-      ),
-    );
+    return showPrismaChangelogDialog(context: context, isRu: isRu);
   }
 
   Future<void> _copyDiagnostics(
