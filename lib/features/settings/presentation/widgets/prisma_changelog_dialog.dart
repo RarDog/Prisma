@@ -219,6 +219,9 @@ class _TimelineItem extends StatelessWidget {
       change.version.toLowerCase().contains('beta') ||
       change.version.toLowerCase().contains('alpha');
 
+  bool get _isRC =>
+      change.version.toLowerCase().contains('rc');
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -369,19 +372,25 @@ class _TimelineItem extends StatelessWidget {
                               vertical: 2.5,
                             ),
                             decoration: BoxDecoration(
-                              color: _isBeta
-                                  ? const Color(0xFFF59E0B).withValues(alpha: 0.14)
-                                  : const Color(0xFF6366F1).withValues(alpha: 0.14),
+                              color: _isRC
+                                  ? const Color(0xFF8B5CF6).withValues(alpha: 0.16)
+                                  : (_isBeta
+                                      ? const Color(0xFFF59E0B).withValues(alpha: 0.14)
+                                      : const Color(0xFF6366F1).withValues(alpha: 0.14)),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              _isBeta ? 'Beta' : 'Release',
+                              _isRC
+                                  ? 'RC'
+                                  : (_isBeta ? 'Beta' : 'Release'),
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
-                                color: _isBeta
-                                    ? const Color(0xFFF59E0B)
-                                    : const Color(0xFF6366F1),
+                                color: _isRC
+                                    ? const Color(0xFF8B5CF6)
+                                    : (_isBeta
+                                        ? const Color(0xFFF59E0B)
+                                        : const Color(0xFF6366F1)),
                               ),
                             ),
                           ),

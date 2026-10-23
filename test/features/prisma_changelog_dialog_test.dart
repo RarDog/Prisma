@@ -70,5 +70,30 @@ void main() {
       expect(find.text('• Current version'), findsOneWidget);
       expect(find.text('Close'), findsOneWidget);
     });
+
+    testWidgets('renders RC badge correctly for release candidate versions',
+        (tester) async {
+      final fakeChangelog = [
+        const PrismaChange(
+          version: '4.3.0-rc.1',
+          title: 'Release Candidate 1',
+          bullets: ['Feature freeze and bug fixes.'],
+        ),
+      ];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: PrismaChangelogDialog(
+              isRu: true,
+              changelog: fakeChangelog,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('RC'), findsOneWidget);
+      expect(find.text('4.3.0-rc.1'), findsOneWidget);
+    });
   });
 }
