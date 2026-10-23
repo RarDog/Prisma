@@ -74,6 +74,10 @@ class FullscreenImageViewerPage extends ConsumerStatefulWidget {
       }
       return result;
     }
+    final detailsUrls = MediaUrlSelector.details(post, mode: qualityMode);
+    if (detailsUrls.isNotEmpty) {
+      return detailsUrls;
+    }
     final result = <String>[];
     if (post.sampleUrl.isNotEmpty) result.add(post.sampleUrl);
     if (post.fileUrl.isNotEmpty && !result.contains(post.fileUrl)) {
@@ -1102,11 +1106,18 @@ class _InteractiveFullscreenImageItemState
   }
 
   Widget _buildPlaceholder() {
-    if (widget.post.previewUrl.isNotEmpty) {
+    final cachedThumb = widget.post.sampleUrl.isNotEmpty
+        ? widget.post.sampleUrl
+        : widget.post.previewUrl;
+    if (cachedThumb.isNotEmpty) {
       return CachedNetworkImage(
-        imageUrl: widget.post.previewUrl,
+        imageUrl: cachedThumb,
         httpHeaders: widget.headers,
         fit: BoxFit.contain,
+        placeholder: (_, __) => const Center(
+          child:
+              CircularProgressIndicator(strokeWidth: 2, color: Colors.white54),
+        ),
         errorWidget: (_, __, ___) => const Center(
           child:
               CircularProgressIndicator(strokeWidth: 2, color: Colors.white54),

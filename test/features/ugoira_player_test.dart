@@ -13,9 +13,11 @@ class _FakeUgoiraService extends UgoiraService {
   @override
   Future<List<UgoiraFrame>> loadUgoiraFrames(
     UgoiraMetadata meta, {
+    String? postId,
     Map<String, String>? headers,
     void Function(double progress)? onProgress,
     dynamic cancelToken,
+    int maxRetries = 3,
   }) async {
     onProgress?.call(1.0);
     return mockFrames;
@@ -95,6 +97,57 @@ void main() {
 
       // Verify frame counter text (1 / 2 or 2 / 2)
       expect(find.textContaining('/ 2'), findsOneWidget);
+    });
+
+    testWidgets('UgoiraPlayer loads instantly from post ID cache without network reload', (tester) async {
+      final post = Post(
+        id: '998877',
+        providerId: 'pixiv',
+        providerName: 'Pixiv',
+        previewUrl: 'https://example.com/p.jpg',
+        sampleUrl: 'https://example.com/s.jpg',
+        fileUrl: 'https://example.com/f.jpg',
+        tags: const ['ugoira'],
+        rating: 's',
+        width: 100,
+        height: 100,
+        createdAt: DateTime(2026),
+        fileType: 'ugoira',
+        score: 10,
+        tagGroups: const {'media_type': ['ugoira']},
+      );
+
+      final dummyPng = Uint8List.fromList([
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
+        0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+        0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00,
+        0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
+        0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49,
+        0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
+      ]);
+
+      final frames = [
+        UgoiraFrame(file: '000000.jpg', delayMs: 100, bytes: dummyPng),
+      ];
+
+      final service = UgoiraService();
+      service.cacheByPostId('998877', frames);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: UgoiraPlayer(
+              post: post,
+              ugoiraService: service,
+              fullscreen: true,
+            ),
+          ),
+        ),
+      );
+
+      // Should render immediately without loading indicator since it was cached
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byType(Image), findsOneWidget);
     });
   });
 }

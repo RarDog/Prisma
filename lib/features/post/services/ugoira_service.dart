@@ -21,10 +21,26 @@ class UgoiraService {
 
   final Dio _dio;
   final Map<String, List<UgoiraFrame>> _memoryCache = {};
+  final Map<String, List<UgoiraFrame>> _postCache = {};
+  final Map<String, UgoiraMetadata> _metaCache = {};
 
-  bool isCached(String zipUrl) => _memoryCache.containsKey(zipUrl);
+  bool isCached(String key) =>
+      _memoryCache.containsKey(key) || _postCache.containsKey(key);
 
-  List<UgoiraFrame>? getCached(String zipUrl) => _memoryCache[zipUrl];
+  List<UgoiraFrame>? getCached(String key) =>
+      _memoryCache[key] ?? _postCache[key];
+
+  List<UgoiraFrame>? getCachedByPostId(String postId) => _postCache[postId];
+
+  void cacheByPostId(String postId, List<UgoiraFrame> frames) {
+    _postCache[postId] = frames;
+  }
+
+  UgoiraMetadata? getCachedMeta(String postId) => _metaCache[postId];
+
+  void cacheMeta(String postId, UgoiraMetadata meta) {
+    _metaCache[postId] = meta;
+  }
 
   /// Synchronously unpacks frames from in-memory zip bytes.
   /// Used directly in unit tests and inside isolates.
@@ -70,34 +86,66 @@ class UgoiraService {
   /// Downloads and extracts Ugoira frames in a background isolate.
   Future<List<UgoiraFrame>> loadUgoiraFrames(
     UgoiraMetadata meta, {
+    String? postId,
     Map<String, String>? headers,
     void Function(double progress)? onProgress,
     CancelToken? cancelToken,
+    int maxRetries = 3,
   }) async {
     final cacheKey = meta.zipUrl;
     if (_memoryCache.containsKey(cacheKey)) {
       final cached = _memoryCache[cacheKey]!;
+      if (postId != null && postId.isNotEmpty) {
+        _postCache[postId] = cached;
+      }
+      onProgress?.call(1.0);
+      return cached;
+    }
+    if (postId != null && postId.isNotEmpty && _postCache.containsKey(postId)) {
+      final cached = _postCache[postId]!;
+      _memoryCache[cacheKey] = cached;
       onProgress?.call(1.0);
       return cached;
     }
 
-    final response = await _dio.get<List<int>>(
-      meta.zipUrl,
-      options: Options(
-        responseType: ResponseType.bytes,
-        headers: headers,
-      ),
-      cancelToken: cancelToken,
-      onReceiveProgress: (received, total) {
-        if (total > 0 && onProgress != null) {
-          onProgress(received / total);
-        }
-      },
-    );
+    Response<List<int>>? response;
+    dynamic lastError;
 
-    final rawData = response.data;
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+      if (cancelToken?.isCancelled ?? false) {
+        throw DioException(
+          requestOptions: RequestOptions(path: meta.zipUrl),
+          type: DioExceptionType.cancel,
+        );
+      }
+      try {
+        response = await _dio.get<List<int>>(
+          meta.zipUrl,
+          options: Options(
+            responseType: ResponseType.bytes,
+            headers: headers,
+          ),
+          cancelToken: cancelToken,
+          onReceiveProgress: (received, total) {
+            if (total > 0 && onProgress != null) {
+              onProgress(received / total);
+            }
+          },
+        );
+        if (response.data != null && response.data!.isNotEmpty) {
+          break;
+        }
+      } catch (e) {
+        lastError = e;
+        if (cancelToken?.isCancelled ?? false) rethrow;
+        if (attempt >= maxRetries) rethrow;
+        await Future<void>.delayed(Duration(milliseconds: 700 * attempt));
+      }
+    }
+
+    final rawData = response?.data;
     if (rawData == null || rawData.isEmpty) {
-      throw Exception('Empty Ugoira archive received');
+      throw lastError ?? Exception('Empty Ugoira archive received');
     }
 
     final zipBytes = rawData is Uint8List
@@ -111,10 +159,15 @@ class UgoiraService {
     );
 
     _memoryCache[cacheKey] = unpacked;
+    if (postId != null && postId.isNotEmpty) {
+      _postCache[postId] = unpacked;
+    }
     return unpacked;
   }
 
   void clearCache() {
     _memoryCache.clear();
+    _postCache.clear();
+    _metaCache.clear();
   }
 }

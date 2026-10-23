@@ -42,6 +42,7 @@ class PixivProvider
   final Map<String, String> _queryParameters;
   // Auth: PHPSESSID cookie value (optional)
   final String? _phpsessid;
+  final Map<String, UgoiraMetadata> _ugoiraMetaCache = {};
 
   Dio get dio => _dio;
   Map<String, String> get queryParameters => _queryParameters;
@@ -450,18 +451,36 @@ class PixivProvider
   }
 
   /// Fetches Ugoira animation metadata (src zip URL and per-frame delay timings)
-  Future<UgoiraMetadata?> getUgoiraMeta(String illustId) async {
+  /// with automatic retries and in-memory caching.
+  Future<UgoiraMetadata?> getUgoiraMeta(
+    String illustId, {
+    int maxRetries = 3,
+  }) async {
     final cleanId = illustId.split('_p').first;
-    try {
-      final response = await _dio.get<dynamic>(
-        '/ajax/illust/$cleanId/ugoira_meta',
-        options: _authOptions,
-      );
-      _checkResponse(response);
-      return PixivMapper.ugoiraMetaFromResponse(response.data);
-    } catch (_) {
-      return null;
+    if (_ugoiraMetaCache.containsKey(cleanId)) {
+      return _ugoiraMetaCache[cleanId];
     }
+
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        final response = await _dio.get<dynamic>(
+          '/ajax/illust/$cleanId/ugoira_meta',
+          options: _authOptions,
+        );
+        _checkResponse(response);
+        final meta = PixivMapper.ugoiraMetaFromResponse(response.data);
+        if (meta != null && meta.frames.isNotEmpty) {
+          _ugoiraMetaCache[cleanId] = meta;
+          return meta;
+        }
+      } catch (_) {
+        if (attempt >= maxRetries) {
+          return null;
+        }
+        await Future<void>.delayed(Duration(milliseconds: 600 * attempt));
+      }
+    }
+    return null;
   }
 
   void _checkResponse(Response<dynamic> response) {

@@ -83,6 +83,24 @@ class _UgoiraPlayerState extends ConsumerState<UgoiraPlayer> {
   }
 
   Future<void> _loadUgoira() async {
+    final cleanId = widget.post.id.split('_p').first;
+
+    // Instant return if already cached in memory
+    final cachedFrames = _service.getCachedByPostId(cleanId);
+    if (cachedFrames != null && cachedFrames.isNotEmpty) {
+      if (mounted) {
+        setState(() {
+          _frames = cachedFrames;
+          _isLoading = false;
+          _errorMessage = null;
+          _currentFrameIndex = 0;
+          _isPlaying = true;
+        });
+        _scheduleNextFrame();
+      }
+      return;
+    }
+
     _cancelToken = CancelToken();
     setState(() {
       _isLoading = true;
@@ -91,14 +109,19 @@ class _UgoiraPlayerState extends ConsumerState<UgoiraPlayer> {
     });
 
     try {
-      UgoiraMetadata? meta = widget.ugoiraMetadata;
+      UgoiraMetadata? meta =
+          widget.ugoiraMetadata ?? _service.getCachedMeta(cleanId);
       if (meta == null) {
         final provider = await ref
             .read(providerManagerProvider)
             .getProviderInstance(widget.post.providerId);
         if (provider is PixivProvider) {
-          meta = await provider.getUgoiraMeta(widget.post.id);
+          meta = await provider.getUgoiraMeta(cleanId);
         }
+      }
+
+      if (meta != null && meta.frames.isNotEmpty) {
+        _service.cacheMeta(cleanId, meta);
       }
 
       if (meta == null || meta.frames.isEmpty) {
@@ -113,6 +136,7 @@ class _UgoiraPlayerState extends ConsumerState<UgoiraPlayer> {
 
       final frames = await _service.loadUgoiraFrames(
         meta,
+        postId: cleanId,
         headers: widget.mediaHeaders,
         onProgress: (p) {
           if (mounted) setState(() => _downloadProgress = p);
