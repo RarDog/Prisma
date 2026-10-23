@@ -24,23 +24,24 @@ class PostPagesArgs {
   const PostPagesArgs(this.post);
   final Post post;
 
+  String get baseId => post.id.split('_p').first;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is PostPagesArgs &&
           post.providerId == other.post.providerId &&
-          post.id == other.post.id &&
-          post.pageCount == other.post.pageCount;
+          baseId == other.baseId;
 
   @override
-  int get hashCode => Object.hash(post.providerId, post.id, post.pageCount);
+  int get hashCode => Object.hash(post.providerId, baseId);
 }
 
 final postPagesProvider = FutureProvider.autoDispose
     .family<List<Post>, PostPagesArgs>((ref, args) async {
   final post = args.post;
-  final isPixivRoot = post.providerId == 'pixiv' && !post.id.contains('_p');
-  if (!post.isMultiPage && args.post.pageCount <= 1 && !isPixivRoot) {
+  final isPixiv = post.providerId == 'pixiv';
+  if (!post.isMultiPage && args.post.pageCount <= 1 && !isPixiv) {
     return [post];
   }
   final result = await ref.watch(providerManagerProvider).getPostPages(post);

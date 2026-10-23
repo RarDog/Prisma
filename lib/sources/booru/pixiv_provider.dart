@@ -42,8 +42,8 @@ class PixivProvider
   final Map<String, String> _queryParameters;
   // Auth: PHPSESSID cookie value (optional)
   final String? _phpsessid;
-  final Map<String, UgoiraMetadata> _ugoiraMetaCache = {};
-  final Map<String, List<Post>> _pagesCache = {};
+  static final Map<String, UgoiraMetadata> _ugoiraMetaCache = {};
+  static final Map<String, List<Post>> _pagesCache = {};
 
   Dio get dio => _dio;
   Map<String, String> get queryParameters => _queryParameters;
@@ -209,35 +209,52 @@ class PixivProvider
     if (_pagesCache.containsKey(baseId)) {
       return _pagesCache[baseId]!;
     }
-    try {
-      final response = await _dio.get<dynamic>(
-        '/ajax/illust/$baseId/pages',
-        queryParameters: {'lang': 'en', ..._queryParameters},
-        options: _authOptions,
-      );
-      _checkResponse(response);
-      if (response.data is Map && response.data['body'] is List) {
-        final pagesList = response.data['body'] as List;
-        final results = <Post>[];
-        for (var i = 0; i < pagesList.length; i++) {
-          final p = PixivMapper.postFromPageResponse(
-            pageData: pagesList[i],
-            parentPost: post,
-            pageIndex: i,
-          );
-          if (p != null) {
-            results.add(p);
+
+    const maxRetries = 3;
+    for (var attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        // First try with auth, fallback to unauthenticated if auth fails (Pixiv pages are public)
+        final options = (attempt == 1) ? _authOptions : null;
+        final response = await _dio.get<dynamic>(
+          '/ajax/illust/$baseId/pages',
+          queryParameters: {'lang': 'en', ..._queryParameters},
+          options: options,
+        );
+        _checkResponse(response);
+        final normalized = PixivMapper.normalizeJson(response.data);
+        if (normalized is Map && normalized['body'] is List) {
+          final pagesList = normalized['body'] as List;
+          final results = <Post>[];
+          for (var i = 0; i < pagesList.length; i++) {
+            final p = PixivMapper.postFromPageResponse(
+              pageData: pagesList[i],
+              parentPost: post,
+              pageIndex: i,
+            );
+            if (p != null) {
+              results.add(p);
+            }
+          }
+          if (results.isNotEmpty) {
+            if (_pagesCache.length > 200) {
+              _pagesCache.remove(_pagesCache.keys.first);
+            }
+            _pagesCache[baseId] = results;
+            return results;
           }
         }
-        if (results.isNotEmpty) {
-          if (_pagesCache.length > 200) {
-            _pagesCache.remove(_pagesCache.keys.first);
-          }
-          _pagesCache[baseId] = results;
-          return results;
+      } on DioException catch (e) {
+        // If 401 unauthorized (e.g. invalid/expired PHPSESSID cookie), retry immediately without auth
+        if (e.response?.statusCode == 401 && attempt == 1) {
+          continue;
         }
+        if (attempt >= maxRetries) break;
+        await Future<void>.delayed(Duration(milliseconds: 250 * attempt));
+      } catch (_) {
+        if (attempt >= maxRetries) break;
+        await Future<void>.delayed(Duration(milliseconds: 250 * attempt));
       }
-    } catch (_) {}
+    }
     return [post];
   }
 

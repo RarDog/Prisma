@@ -4,6 +4,8 @@ import 'package:gel_rule_app/core/models/post.dart';
 import 'package:gel_rule_app/sources/models/ugoira_metadata.dart';
 
 class PixivMapper {
+  static dynamic normalizeJson(dynamic data) => _normalizeJson(data);
+
   static dynamic _normalizeJson(dynamic data) {
     if (data is String) {
       try {

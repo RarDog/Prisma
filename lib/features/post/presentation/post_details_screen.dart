@@ -174,11 +174,14 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
             }
             final post = effectivePost;
             final pagesAsync = ref.watch(postPagesProvider(PostPagesArgs(post)));
-            final pages = pagesAsync.value ?? [post];
-            final isMultiPage = pages.length > 1;
+            final loadedPages = pagesAsync.value;
+            final hasPages = loadedPages != null && loadedPages.length > 1;
+            final pages = hasPages ? loadedPages : [post];
+            final effectiveTotalPages = hasPages ? loadedPages.length : post.pageCount;
+            final isMultiPage = effectiveTotalPages > 1;
             final currentPostIndex =
-                _selectedPageIndex.clamp(0, pages.length - 1);
-            final targetPost = isMultiPage ? pages[currentPostIndex] : post;
+                _selectedPageIndex.clamp(0, (effectiveTotalPages > 0 ? effectiveTotalPages : 1) - 1);
+            final targetPost = hasPages ? pages[currentPostIndex.clamp(0, pages.length - 1)] : post;
 
             WidgetsBinding.instance.addPostFrameCallback((_) {
               ref.read(viewedHistoryServiceProvider).markViewed(post);
@@ -885,13 +888,13 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                           child: PostMediaViewer(
                             key: ValueKey('${post.cacheKey}_$currentPageIndex'),
                             post: post,
-                            pageIndex: (pages != null && pages.length > 1)
+                            pageIndex: ((pages != null && pages.length > 1) || post.pageCount > 1)
                                 ? currentPageIndex
                                 : null,
-                            pageCount: (pages != null && pages.length > 1)
-                                ? pages.length
+                            pageCount: ((pages != null && pages.length > 1) || post.pageCount > 1)
+                                ? (pages != null && pages.length > 1 ? pages.length : post.pageCount)
                                 : null,
-                            onPageChanged: (pages != null && pages.length > 1)
+                            onPageChanged: ((pages != null && pages.length > 1) || post.pageCount > 1)
                                 ? (idx) =>
                                     setState(() => _selectedPageIndex = idx)
                                 : null,
@@ -946,13 +949,13 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                       child: PostMediaViewer(
                         key: ValueKey('${post.cacheKey}_$currentPageIndex'),
                         post: post,
-                        pageIndex: (pages != null && pages.length > 1)
+                        pageIndex: ((pages != null && pages.length > 1) || post.pageCount > 1)
                             ? currentPageIndex
                             : null,
-                        pageCount: (pages != null && pages.length > 1)
-                            ? pages.length
+                        pageCount: ((pages != null && pages.length > 1) || post.pageCount > 1)
+                            ? (pages != null && pages.length > 1 ? pages.length : post.pageCount)
                             : null,
-                        onPageChanged: (pages != null && pages.length > 1)
+                        onPageChanged: ((pages != null && pages.length > 1) || post.pageCount > 1)
                             ? (idx) =>
                                 setState(() => _selectedPageIndex = idx)
                             : null,

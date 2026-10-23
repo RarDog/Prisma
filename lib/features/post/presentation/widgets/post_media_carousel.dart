@@ -323,19 +323,19 @@ class _MobileMediaCarouselState extends ConsumerState<MobileMediaCarousel>
                   ? widget.activePost
                   : postItem;
 
-              final multiPageCount = (isActivePage &&
-                      widget.pages != null &&
-                      widget.pages!.length > 1)
+              final hasLoadedPages = isActivePage &&
+                  widget.pages != null &&
+                  widget.pages!.length > 1;
+              final effectivePageCount = hasLoadedPages
                   ? widget.pages!.length
-                  : 1;
-              final pageSubIndex = (isActivePage &&
-                      widget.pages != null &&
-                      widget.pages!.length > 1)
-                  ? widget.pageIndex
-                  : 0;
+                  : (isActivePage && widget.activePost.pageCount > 1
+                      ? widget.activePost.pageCount
+                      : 1);
+              final isMultiSet = effectivePageCount > 1;
+              final pageSubIndex = isMultiSet ? widget.pageIndex : 0;
 
               return KeepAlivePostPage(
-                key: ValueKey('${postItem.cacheKey}_${multiPageCount}_$pageSubIndex'),
+                key: ValueKey('${postItem.cacheKey}_${effectivePageCount}_$pageSubIndex'),
                 keepAlive: distance <= 1,
                 child: Consumer(
                   builder: (context, ref, _) {
@@ -357,14 +357,11 @@ class _MobileMediaCarouselState extends ConsumerState<MobileMediaCarousel>
                     final itemIsVideo = MediaUrlSelector.isVideo(targetPost);
                     final itemIsAudio = MediaUrlSelector.isAudio(targetPost);
 
-                    final isMultiSet = isActivePage &&
-                        widget.pages != null &&
-                        widget.pages!.length > 1;
                     final mediaViewer = PostMediaViewer(
                       key: ValueKey('${targetPost.cacheKey}_${isMultiSet ? widget.pageIndex : 0}'),
                       post: targetPost,
                       pageIndex: isMultiSet ? widget.pageIndex : null,
-                      pageCount: isMultiSet ? widget.pages!.length : null,
+                      pageCount: isMultiSet ? effectivePageCount : null,
                       onPageChanged: isMultiSet ? widget.onSetPageChanged : null,
                       useLiveFeed: widget.useLiveFeed,
                       isActive: isActivePage,
