@@ -108,7 +108,7 @@ All pre-compiled packages are hosted on the official **[Releases](https://github
 
 ### 🧪 Beta Channel (`v4.2.1-beta.3`)
 > [!NOTE]
-> **Beta Distribution Policy**: Pre-release (beta) builds are published exclusively for **Android** and **Linux** to rapidly test engine optimizations and new source connectors.
+> **Beta Distribution Policy**: Pre-release (beta) builds are published exclusively for **Android** and **Linux** for convenient, rapid bug fixing and patch verification.
 
 #### 📱 Android (Beta)
 | Package | Architecture | Target Devices |
