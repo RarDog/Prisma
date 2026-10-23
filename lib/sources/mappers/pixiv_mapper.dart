@@ -51,7 +51,9 @@ class PixivMapper {
 
       final thumbUrl = item['url']?.toString() ?? '';
       final masterUrl = toMasterUrl(thumbUrl);
-      final pageCount = int.tryParse('${item['illust_page_count'] ?? 1}') ?? 1;
+      final pageCount = int.tryParse(
+              '${item['illust_page_count'] ?? item['pageCount'] ?? item['page_count'] ?? 1}') ??
+          1;
       final artist = item['user_name']?.toString() ?? '';
       final title = item['title']?.toString() ?? '';
 
@@ -174,7 +176,9 @@ class PixivMapper {
 
       final thumbUrl = item['url']?.toString() ?? '';
       final masterUrl = toMasterUrl(thumbUrl);
-      final pageCount = int.tryParse('${item['pageCount'] ?? 1}') ?? 1;
+      final pageCount = int.tryParse(
+              '${item['pageCount'] ?? item['page_count'] ?? item['illust_page_count'] ?? 1}') ??
+          1;
       final artist = item['userName']?.toString() ?? '';
       final title = item['title']?.toString() ?? '';
 
@@ -281,7 +285,9 @@ class PixivMapper {
       }
     }
 
-    final pageCount = int.tryParse('${body['pageCount'] ?? 1}') ?? 1;
+    final pageCount = int.tryParse(
+            '${body['pageCount'] ?? body['page_count'] ?? body['illust_page_count'] ?? 1}') ??
+        1;
     final xRestrict = int.tryParse('${body['xRestrict'] ?? 0}') ?? 0;
     final isExplicit = xRestrict > 0;
 

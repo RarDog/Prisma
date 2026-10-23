@@ -361,5 +361,47 @@ void main() {
       expect(page1.fileUrl, equals('https://i.pximg.net/img-original/img/2026/999888_p1.jpg'));
       expect(page1.tagGroups['page_index'], equals(['1']));
     });
+
+    test('PixivMapper parses pageCount with fallback keys (page_count, illust_page_count)', () {
+      final searchJson = {
+        'body': {
+          'illustManga': {
+            'data': [
+              {
+                'id': '111222',
+                'title': 'Multi-page artwork',
+                'url': 'https://i.pximg.net/thumb.jpg',
+                'illust_page_count': 5,
+              }
+            ]
+          }
+        }
+      };
+
+      final searchPosts = PixivMapper.postsFromSearchResponse(
+        searchJson,
+        providerId: 'pixiv',
+        providerName: 'Pixiv',
+      );
+      expect(searchPosts.first.pageCount, equals(5));
+      expect(searchPosts.first.isMultiPage, isTrue);
+
+      final detailJson = {
+        'body': {
+          'id': '333444',
+          'title': 'Detail multi artwork',
+          'page_count': 7,
+          'urls': {'original': 'https://i.pximg.net/orig.jpg'},
+        }
+      };
+      final detailPost = PixivMapper.postFromIllustResponse(
+        detailJson,
+        providerId: 'pixiv',
+        providerName: 'Pixiv',
+      );
+      expect(detailPost, isNotNull);
+      expect(detailPost!.pageCount, equals(7));
+      expect(detailPost.isMultiPage, isTrue);
+    });
   });
 }

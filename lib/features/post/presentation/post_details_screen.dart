@@ -173,7 +173,7 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
               return const EmptyView(title: 'Post not found');
             }
             final post = effectivePost;
-            final pagesAsync = ref.watch(postPagesProvider(post));
+            final pagesAsync = ref.watch(postPagesProvider(PostPagesArgs(post)));
             final pages = pagesAsync.value ?? [post];
             final isMultiPage = pages.length > 1;
             final currentPostIndex =
@@ -1380,7 +1380,9 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
             ),
             Builder(
               builder: (ctx) {
-                final pages = ref.read(postPagesProvider(post)).value ?? [post];
+                final pages =
+                    ref.read(postPagesProvider(PostPagesArgs(post))).value ??
+                        [post];
                 if (pages.length <= 1) return const SizedBox.shrink();
                 final isRu =
                     Localizations.maybeLocaleOf(ctx)?.languageCode == 'ru';
@@ -1601,7 +1603,8 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
     final rootPost = post ?? _activePost;
     if (rootPost == null) return;
 
-    final pages = ref.read(postPagesProvider(rootPost)).value ?? [rootPost];
+    final pages =
+        ref.read(postPagesProvider(PostPagesArgs(rootPost))).value ?? [rootPost];
     final isMulti = pages.length > 1;
     final currentIdx = _selectedPageIndex.clamp(0, pages.length - 1);
     final targetPost = isMulti ? pages[currentIdx] : rootPost;

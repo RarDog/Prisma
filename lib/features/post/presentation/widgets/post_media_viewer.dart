@@ -650,16 +650,20 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (pageIndex > 0)
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () => widget.onPageChanged?.call(pageIndex - 1),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 2),
-                        child: Icon(Icons.chevron_left_rounded,
-                            size: 20, color: Colors.white),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: pageIndex > 0
+                        ? () => widget.onPageChanged?.call(pageIndex - 1)
+                        : null,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      child: Icon(
+                        Icons.chevron_left_rounded,
+                        size: 20,
+                        color: pageIndex > 0 ? Colors.white : Colors.white38,
                       ),
                     ),
+                  ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Text(
@@ -672,16 +676,22 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
                       ),
                     ),
                   ),
-                  if (pageIndex < pageCount - 1)
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () => widget.onPageChanged?.call(pageIndex + 1),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 2),
-                        child: Icon(Icons.chevron_right_rounded,
-                            size: 20, color: Colors.white),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: pageIndex < pageCount - 1
+                        ? () => widget.onPageChanged?.call(pageIndex + 1)
+                        : null,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      child: Icon(
+                        Icons.chevron_right_rounded,
+                        size: 20,
+                        color: pageIndex < pageCount - 1
+                            ? Colors.white
+                            : Colors.white38,
                       ),
                     ),
+                  ),
                 ],
               ),
             ),

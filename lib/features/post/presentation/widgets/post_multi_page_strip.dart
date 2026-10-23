@@ -91,8 +91,37 @@ class _PostMultiPageStripState extends State<PostMultiPageStrip> {
                   fontWeight: FontWeight.w700,
                 ),
               ),
+              const SizedBox(width: 6),
+              Text(
+                '(${widget.currentIndex + 1}/${widget.pages.length})',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.outline,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               const Spacer(),
-              if (widget.onDownloadAll != null)
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                tooltip: isRu ? 'Предыдущая' : 'Previous',
+                onPressed: widget.currentIndex > 0
+                    ? () => widget.onPageSelected(widget.currentIndex - 1)
+                    : null,
+                icon: const Icon(Icons.chevron_left_rounded, size: 22),
+              ),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                tooltip: isRu ? 'Следующая' : 'Next',
+                onPressed: widget.currentIndex < widget.pages.length - 1
+                    ? () => widget.onPageSelected(widget.currentIndex + 1)
+                    : null,
+                icon: const Icon(Icons.chevron_right_rounded, size: 22),
+              ),
+              if (widget.onDownloadAll != null) ...[
+                const SizedBox(width: 4),
                 FilledButton.tonalIcon(
                   style: FilledButton.styleFrom(
                     visualDensity: VisualDensity.compact,
@@ -107,6 +136,7 @@ class _PostMultiPageStripState extends State<PostMultiPageStrip> {
                         : 'Download all (${widget.pages.length})',
                   ),
                 ),
+              ],
             ],
           ),
           const SizedBox(height: 10),

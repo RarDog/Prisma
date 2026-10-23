@@ -20,9 +20,26 @@ final postProviderInstanceProvider = FutureProvider.autoDispose
   return ref.watch(providerManagerProvider).getProviderInstance(providerId);
 });
 
+class PostPagesArgs {
+  const PostPagesArgs(this.post);
+  final Post post;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PostPagesArgs &&
+          post.providerId == other.post.providerId &&
+          post.id == other.post.id &&
+          post.pageCount == other.post.pageCount;
+
+  @override
+  int get hashCode => Object.hash(post.providerId, post.id, post.pageCount);
+}
+
 final postPagesProvider = FutureProvider.autoDispose
-    .family<List<Post>, Post>((ref, post) async {
-  if (!post.isMultiPage) return [post];
+    .family<List<Post>, PostPagesArgs>((ref, args) async {
+  final post = args.post;
+  if (!post.isMultiPage && args.post.pageCount <= 1) return [post];
   final result = await ref.watch(providerManagerProvider).getPostPages(post);
   return result is Success<List<Post>> && result.data.isNotEmpty
       ? result.data

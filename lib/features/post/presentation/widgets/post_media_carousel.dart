@@ -153,6 +153,13 @@ class _MobileMediaCarouselState extends ConsumerState<MobileMediaCarousel>
         widget.onLoadMore!();
       }
     }
+    if (widget.pages != oldWidget.pages ||
+        widget.pageIndex != oldWidget.pageIndex ||
+        widget.activePost.cacheKey != oldWidget.activePost.cacheKey) {
+      if (mounted) {
+        setState(() {});
+      }
+    }
   }
 
   @override
