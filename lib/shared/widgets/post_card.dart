@@ -417,6 +417,7 @@ class _PostCardState extends ConsumerState<PostCard>
                       child: _ProviderBadge(name: post.providerName),
                     ),
                     if (post.isMultiPage ||
+                        post.isUgoira ||
                         post.fileType.toLowerCase().contains('video') ||
                         post.fileType.toLowerCase().contains('webm') ||
                         post.fileType.toLowerCase().contains('mp4') ||
@@ -433,7 +434,8 @@ class _PostCardState extends ConsumerState<PostCard>
                             if (post.isMultiPage)
                               _PageCountBadge(count: post.pageCount),
                             if (post.isMultiPage &&
-                                (post.fileType.toLowerCase().contains('video') ||
+                                (post.isUgoira ||
+                                    post.fileType.toLowerCase().contains('video') ||
                                     post.fileType.toLowerCase().contains('webm') ||
                                     post.fileType.toLowerCase().contains('mp4') ||
                                     post.fileType.toLowerCase().contains('gif') ||
@@ -441,7 +443,8 @@ class _PostCardState extends ConsumerState<PostCard>
                                     isAudioPost ||
                                     isTextPost))
                               const SizedBox(width: 4),
-                            if (post.fileType.toLowerCase().contains('video') ||
+                            if (post.isUgoira ||
+                                post.fileType.toLowerCase().contains('video') ||
                                 post.fileType.toLowerCase().contains('webm') ||
                                 post.fileType.toLowerCase().contains('mp4') ||
                                 post.fileType.toLowerCase().contains('gif') ||
@@ -449,11 +452,13 @@ class _PostCardState extends ConsumerState<PostCard>
                                 isAudioPost ||
                                 isTextPost)
                               _MediaBadge(
-                                fileType: isAudioPost
-                                    ? 'audio'
-                                    : (isTextPost
-                                        ? 'text'
-                                        : (isVideoPost ? 'video' : post.fileType)),
+                                fileType: post.isUgoira
+                                    ? 'ugoira'
+                                    : (isAudioPost
+                                        ? 'audio'
+                                        : (isTextPost
+                                            ? 'text'
+                                            : (isVideoPost ? 'video' : post.fileType))),
                               ),
                           ],
                         ),
@@ -1110,6 +1115,7 @@ class _MediaBadge extends StatelessWidget {
   final String fileType;
 
   Color _accentColor(String type) => switch (type) {
+        'ugoira' => const Color(0xFFC084FC), // fuchsia/violet
         'video' => const Color(0xFFFBBF24), // amber
         'gif' => const Color(0xFF38BDF8), // cyan
         'audio' => const Color(0xFFA78BFA), // violet
@@ -1165,6 +1171,7 @@ class _MediaBadge extends StatelessWidget {
 
   String _type(String raw) {
     final value = raw.toLowerCase();
+    if (value.contains('ugoira')) return 'ugoira';
     if (value.contains('audio') ||
         value.contains('mp3') ||
         value.contains('wav') ||
@@ -1184,6 +1191,7 @@ class _MediaBadge extends StatelessWidget {
   }
 
   IconData _icon(String type) => switch (type) {
+        'ugoira' => Icons.motion_photos_on_rounded,
         'audio' => Icons.music_note_rounded,
         'video' => Icons.play_arrow_rounded,
         'gif' => Icons.gif_box_rounded,
@@ -1192,6 +1200,7 @@ class _MediaBadge extends StatelessWidget {
       };
 
   String _label(String type) => switch (type) {
+        'ugoira' => 'UGOIRA',
         'audio' => 'AUDIO',
         'video' => 'VIDEO',
         'gif' => 'GIF',
