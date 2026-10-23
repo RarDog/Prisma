@@ -17,6 +17,7 @@ import 'package:gel_rule_app/features/feed/presentation/feed_controller.dart';
 import 'media_viewer_shortcuts.dart';
 import 'post_media_viewer.dart';
 import 'post_notes_overlay.dart';
+import 'ugoira_player.dart';
 
 class FullscreenImageViewerPage extends ConsumerStatefulWidget {
   const FullscreenImageViewerPage({
@@ -398,6 +399,16 @@ class FullscreenImageViewerPageState
                                     ? widget.initialVideoPosition
                                     : Duration.zero,
                                 localFilePath: localPath,
+                                onTap: _toggleControls,
+                              );
+                            }
+
+                            if (currentPost.isUgoira) {
+                              return UgoiraPlayer(
+                                key: ValueKey('fs_ugoira_${currentPost.cacheKey}'),
+                                post: currentPost,
+                                mediaHeaders: widget.headersBuilder(currentPost),
+                                fullscreen: true,
                                 onTap: _toggleControls,
                               );
                             }

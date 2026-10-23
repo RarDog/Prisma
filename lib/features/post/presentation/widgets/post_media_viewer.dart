@@ -14,6 +14,7 @@ import 'fullscreen_image_viewer_page.dart';
 import 'media_viewer_shortcuts.dart';
 import 'post_content_heroes.dart';
 import 'post_notes_overlay.dart';
+import 'ugoira_player.dart';
 import 'video_surface.dart';
 import 'zoomable_image.dart';
 
@@ -393,6 +394,15 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
     });
     if (_isSwf(widget.post)) {
       return const UnsupportedSwfPanel();
+    }
+
+    if (widget.post.isUgoira) {
+      return UgoiraPlayer(
+        post: widget.post,
+        mediaHeaders: widget.mediaHeaders,
+        fullscreen: widget.fullscreen,
+        onOpenFullscreen: widget.fullscreen ? null : () => _openFullscreen(context),
+      );
     }
 
     if (_controller != null || _player != null) {
