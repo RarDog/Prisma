@@ -9,6 +9,7 @@ import 'package:gel_rule_app/core/performance/performance_monitor.dart';
 import 'package:gel_rule_app/features/post/presentation/post_details_controller.dart';
 import 'package:gel_rule_app/features/post/presentation/post_details_providers.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
+import 'package:gel_rule_app/sources/mappers/pixiv_mapper.dart';
 import 'post_media_viewer.dart';
 
 double calculateMediaHeight({
@@ -323,16 +324,29 @@ class _MobileMediaCarouselState extends ConsumerState<MobileMediaCarousel>
                   ? widget.activePost
                   : postItem;
 
-              final hasLoadedPages = isActivePage &&
-                  widget.pages != null &&
-                  widget.pages!.length > 1;
-              final effectivePageCount = hasLoadedPages
-                  ? widget.pages!.length
+              final effectivePages = (isActivePage &&
+                      widget.pages != null &&
+                      widget.pages!.length > 1)
+                  ? widget.pages!
+                  : (isActivePage &&
+                          widget.activePost.providerId == 'pixiv' &&
+                          widget.activePost.pageCount > 1
+                      ? PixivMapper.synthesizePages(widget.activePost)
+                      : null);
+              final hasPages = effectivePages != null && effectivePages.length > 1;
+              final effectivePageCount = hasPages
+                  ? effectivePages.length
                   : (isActivePage && widget.activePost.pageCount > 1
                       ? widget.activePost.pageCount
                       : 1);
               final isMultiSet = effectivePageCount > 1;
-              final pageSubIndex = isMultiSet ? widget.pageIndex : 0;
+              final pageSubIndex = isMultiSet
+                  ? (widget.pageIndex ?? 0).clamp(0, effectivePageCount - 1)
+                  : 0;
+              final currentMediaPost =
+                  (isMultiSet && hasPages && pageSubIndex < effectivePages.length)
+                      ? effectivePages[pageSubIndex]
+                      : targetPost;
 
               return KeepAlivePostPage(
                 key: ValueKey('${postItem.cacheKey}_${effectivePageCount}_$pageSubIndex'),
@@ -341,26 +355,26 @@ class _MobileMediaCarouselState extends ConsumerState<MobileMediaCarousel>
                   builder: (context, ref, _) {
                     final notesAsync =
                         ref.watch(postNotesProvider(PostDetailsArgs(
-                      providerId: targetPost.providerId,
-                      postId: targetPost.id,
+                      providerId: currentMediaPost.providerId,
+                      postId: currentMediaPost.id,
                     )));
                     final notes = notesAsync.value ?? const [];
                     final showNotes =
-                        ref.watch(showPostNotesProvider(targetPost.cacheKey));
+                        ref.watch(showPostNotesProvider(currentMediaPost.cacheKey));
                     final localMedia = ref
                         .watch(
-                            downloadedMediaByKeyProvider(targetPost.cacheKey))
+                            downloadedMediaByKeyProvider(currentMediaPost.cacheKey))
                         .value;
                     final mediaHeaders =
-                        ref.watch(postMediaHeadersProvider(targetPost)).value ??
+                        ref.watch(postMediaHeadersProvider(currentMediaPost)).value ??
                             const {};
-                    final itemIsVideo = MediaUrlSelector.isVideo(targetPost);
-                    final itemIsAudio = MediaUrlSelector.isAudio(targetPost);
+                    final itemIsVideo = MediaUrlSelector.isVideo(currentMediaPost);
+                    final itemIsAudio = MediaUrlSelector.isAudio(currentMediaPost);
 
                     final mediaViewer = PostMediaViewer(
-                      key: ValueKey('${targetPost.cacheKey}_${isMultiSet ? widget.pageIndex : 0}'),
-                      post: targetPost,
-                      pageIndex: isMultiSet ? widget.pageIndex : null,
+                      key: ValueKey('${currentMediaPost.cacheKey}_${isMultiSet ? pageSubIndex : 0}'),
+                      post: currentMediaPost,
+                      pageIndex: isMultiSet ? pageSubIndex : null,
                       pageCount: isMultiSet ? effectivePageCount : null,
                       onPageChanged: isMultiSet ? widget.onSetPageChanged : null,
                       useLiveFeed: widget.useLiveFeed,

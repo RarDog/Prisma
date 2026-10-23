@@ -255,6 +255,11 @@ class PixivProvider
         await Future<void>.delayed(Duration(milliseconds: 250 * attempt));
       }
     }
+    final synthesized = PixivMapper.synthesizePages(post);
+    if (synthesized.length > 1) {
+      _pagesCache[baseId] = synthesized;
+      return synthesized;
+    }
     return [post];
   }
 

@@ -33,6 +33,40 @@ class PixivMapper {
     return 'jpg';
   }
 
+  /// Synthesizes pages list instantly from a Pixiv parent post using its pageCount
+  /// and standard Pixiv CDN URL scheme (_p0 -> _p{index}).
+  static List<Post> synthesizePages(Post parentPost) {
+    if (parentPost.pageCount <= 1) return [parentPost];
+    final baseId = parentPost.id.split('_p').first;
+    return List.generate(parentPost.pageCount, (i) {
+      if (i == 0) return parentPost;
+      final fileUrl = parentPost.fileUrl.replaceAll(RegExp(r'_p\d+'), '_p$i');
+      final sampleUrl = parentPost.sampleUrl.replaceAll(RegExp(r'_p\d+'), '_p$i');
+      final previewUrl = parentPost.previewUrl.replaceAll(RegExp(r'_p\d+'), '_p$i');
+      final tagGroups = Map<String, List<String>>.from(parentPost.tagGroups)
+        ..['page_index'] = [i.toString()]
+        ..remove('children')
+        ..remove('parent_id');
+      return Post(
+        id: '${baseId}_p$i',
+        providerId: parentPost.providerId,
+        providerName: parentPost.providerName,
+        previewUrl: previewUrl,
+        sampleUrl: sampleUrl,
+        fileUrl: fileUrl,
+        tags: parentPost.tags,
+        rating: parentPost.rating,
+        width: parentPost.width,
+        height: parentPost.height,
+        source: parentPost.source,
+        createdAt: parentPost.createdAt,
+        fileType: parentPost.fileType,
+        score: parentPost.score,
+        tagGroups: tagGroups,
+      );
+    });
+  }
+
   static List<Post> postsFromRankingResponse(
     dynamic data, {
     required String providerId,

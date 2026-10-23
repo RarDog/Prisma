@@ -403,5 +403,38 @@ void main() {
       expect(detailPost!.pageCount, equals(7));
       expect(detailPost.isMultiPage, isTrue);
     });
+
+    test('PixivMapper.synthesizePages generates all page posts from parent post', () {
+      final parent = Post(
+        id: '151170372',
+        providerId: 'pixiv',
+        providerName: 'Pixiv',
+        previewUrl:
+            'https://i.pximg.net/c/240x240/img-master/img/2026/10/23/12/01/24/151170372-hash_p0_square1200.jpg',
+        sampleUrl:
+            'https://i.pximg.net/img-master/img/2026/10/23/12/01/24/151170372-hash_p0_master1200.jpg',
+        fileUrl:
+            'https://i.pximg.net/img-original/img/2026/10/23/12/01/24/151170372-hash_p0.jpg',
+        tags: const ['comicPOOL'],
+        rating: 's',
+        width: 750,
+        height: 750,
+        source: 'https://www.pixiv.net/artworks/151170372',
+        createdAt: DateTime.now(),
+        fileType: 'jpg',
+        score: 332,
+        tagGroups: const {
+          'page_count': ['11'],
+        },
+      );
+
+      final pages = PixivMapper.synthesizePages(parent);
+      expect(pages.length, equals(11));
+      expect(pages[0].id, equals('151170372'));
+      expect(pages[1].id, equals('151170372_p1'));
+      expect(pages[1].sampleUrl, contains('_p1_master1200.jpg'));
+      expect(pages[10].id, equals('151170372_p10'));
+      expect(pages[10].fileUrl, contains('_p10.jpg'));
+    });
   });
 }

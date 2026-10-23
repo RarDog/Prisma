@@ -14,6 +14,7 @@ import 'package:gel_rule_app/app/app_strings.dart';
 import 'package:gel_rule_app/app/responsive.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:gel_rule_app/sources/mappers/pixiv_mapper.dart';
 import 'package:gel_rule_app/shared/widgets/adaptive_scaffold.dart';
 import 'package:gel_rule_app/shared/widgets/empty_view.dart';
 import 'package:gel_rule_app/shared/widgets/error_view.dart';
@@ -176,12 +177,24 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
             final pagesAsync = ref.watch(postPagesProvider(PostPagesArgs(post)));
             final loadedPages = pagesAsync.value;
             final hasPages = loadedPages != null && loadedPages.length > 1;
-            final pages = hasPages ? loadedPages : [post];
-            final effectiveTotalPages = hasPages ? loadedPages.length : post.pageCount;
-            final isMultiPage = effectiveTotalPages > 1;
+            final pages = hasPages
+                ? loadedPages
+                : (post.providerId == 'pixiv' && post.pageCount > 1
+                    ? PixivMapper.synthesizePages(post)
+                    : (post.pageCount > 1
+                        ? List.generate(
+                            post.pageCount,
+                            (i) => i == 0
+                                ? post
+                                : post.copyWith(
+                                    id: '${post.id.split('_p').first}_p$i',
+                                  ),
+                          )
+                        : [post]));
+            final isMultiPage = pages.length > 1;
             final currentPostIndex =
-                _selectedPageIndex.clamp(0, (effectiveTotalPages > 0 ? effectiveTotalPages : 1) - 1);
-            final targetPost = hasPages ? pages[currentPostIndex.clamp(0, pages.length - 1)] : post;
+                _selectedPageIndex.clamp(0, pages.length - 1);
+            final targetPost = isMultiPage ? pages[currentPostIndex] : post;
 
             WidgetsBinding.instance.addPostFrameCallback((_) {
               ref.read(viewedHistoryServiceProvider).markViewed(post);

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:gel_rule_app/sources/mappers/pixiv_mapper.dart';
 import 'post_details_controller.dart';
 
 final postNotesProvider = FutureProvider.autoDispose
@@ -45,6 +46,12 @@ final postPagesProvider = FutureProvider.autoDispose
     return [post];
   }
   final result = await ref.watch(providerManagerProvider).getPostPages(post);
+  if (result is Success<List<Post>> && result.data.length > 1) {
+    return result.data;
+  }
+  if (isPixiv && (post.isMultiPage || post.pageCount > 1)) {
+    return PixivMapper.synthesizePages(post);
+  }
   return result is Success<List<Post>> && result.data.isNotEmpty
       ? result.data
       : [post];
