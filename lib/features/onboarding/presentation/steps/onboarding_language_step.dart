@@ -39,10 +39,10 @@ class _OnboardingLanguageStepState
   }
 
   Future<void> _handleRestoreResult(
-    Result<AppSettings> result,
+    Result<BackupRestoreSummary> result,
     bool isRu,
   ) async {
-    if (result is Success<AppSettings>) {
+    if (result is Success<BackupRestoreSummary>) {
       ref.invalidate(appSettingsProvider);
       ref.invalidate(settingsControllerProvider);
       ref.invalidate(providerRepositoryProvider);
@@ -54,23 +54,27 @@ class _OnboardingLanguageStepState
       ref.invalidate(mangaLibraryEntriesProvider);
       ref.invalidate(mangaReadingHistoryProvider);
       ref.invalidate(mangaOfflineServiceProvider);
+      ref.invalidate(downloadedMediaByKeyProvider);
 
       await ref.read(onboardingServiceProvider).markCompleted();
 
       if (mounted) {
+        final summary = result.data;
+        final count = summary.totalItemsRestored;
+        final extra = count > 0 ? (isRu ? ' ($count элементов)' : ' ($count items)') : '';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               isRu
-                  ? 'Данные успешно восстановлены! Добро пожаловать.'
-                  : 'Data successfully restored! Welcome.',
+                  ? 'Данные успешно восстановлены!$extra Добро пожаловать.'
+                  : 'Data successfully restored!$extra Welcome.',
             ),
             behavior: SnackBarBehavior.floating,
           ),
         );
         context.go('/');
       }
-    } else if (result is Error<AppSettings>) {
+    } else if (result is Error<BackupRestoreSummary>) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

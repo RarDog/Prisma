@@ -40,12 +40,13 @@ void main() {
       final jsonStr = await backupService.createBackupJson();
       final decoded = jsonDecode(jsonStr) as Map<String, dynamic>;
 
-      expect(decoded['version'], equals(3));
+      expect(decoded['version'], equals(4));
       expect(decoded['settings'], isA<Map>());
       expect(decoded['providers'], isA<List>());
       expect(decoded['favorites'], isA<List>());
       expect(decoded['collections'], isA<List>());
       expect(decoded['viewedHistory'], isA<List>());
+      expect(decoded['downloadedMedia'], isA<List>());
 
       // Test restoring into modified state
       fakeSettings.current = AppSettings.defaults;
@@ -53,6 +54,8 @@ void main() {
 
       final restoreResult = await backupService.restoreFromJson(jsonStr);
       expect(restoreResult.isSuccess, isTrue);
+      final summary = (restoreResult as Success<BackupRestoreSummary>).data;
+      expect(summary.settings.themeMode, equals('light'));
       expect(fakeSettings.current.themeMode, equals('light'));
       expect(fakeSettings.current.languageCode, equals('en'));
       expect(fakeSettings.current.appSeedColor, equals(0xFF123456));

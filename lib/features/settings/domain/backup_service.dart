@@ -19,6 +19,34 @@ import 'package:gel_rule_app/core/models/post.dart';
 import 'package:gel_rule_app/features/providers/data/provider_repository.dart';
 import 'package:gel_rule_app/features/settings/domain/settings_service.dart';
 
+class BackupRestoreSummary {
+  const BackupRestoreSummary({
+    required this.settings,
+    this.providersCount = 0,
+    this.favoritesCount = 0,
+    this.collectionsCount = 0,
+    this.mangaEntriesCount = 0,
+    this.historyCount = 0,
+    this.downloadedMediaCount = 0,
+  });
+
+  final AppSettings settings;
+  final int providersCount;
+  final int favoritesCount;
+  final int collectionsCount;
+  final int mangaEntriesCount;
+  final int historyCount;
+  final int downloadedMediaCount;
+
+  int get totalItemsRestored =>
+      providersCount +
+      favoritesCount +
+      collectionsCount +
+      mangaEntriesCount +
+      historyCount +
+      downloadedMediaCount;
+}
+
 class BackupService {
   BackupService(
     this._settingsService, [
@@ -62,6 +90,7 @@ class BackupService {
     final mangaLibraryData = <Map<String, dynamic>>[];
     final mangaProgressData = <Map<String, dynamic>>[];
     final viewedHistoryData = <Map<String, dynamic>>[];
+    final downloadedMediaData = <Map<String, dynamic>>[];
 
     final db = _databaseService;
     if (db != null) {
@@ -173,6 +202,21 @@ class BackupService {
             'updatedAt': p.updatedAt.toIso8601String(),
           });
         }
+
+        // 9. Downloaded offline media
+        final downloadedMediaEntities =
+            await isar.downloadedMediaEntitys.where().findAll();
+        for (final dm in downloadedMediaEntities) {
+          downloadedMediaData.add({
+            'cacheKey': dm.cacheKey,
+            'providerId': dm.providerId,
+            'postId': dm.postId,
+            'savedPath': dm.savedPath,
+            'fileName': dm.fileName,
+            'downloadedAt': dm.downloadedAt.toIso8601String(),
+            'status': dm.status,
+          });
+        }
       });
     }
 
@@ -187,6 +231,7 @@ class BackupService {
       'mangaLibrary': mangaLibraryData,
       'mangaProgress': mangaProgressData,
       'viewedHistory': viewedHistoryData,
+      'downloadedMedia': downloadedMediaData,
     };
   }
 
@@ -200,14 +245,14 @@ class BackupService {
     final payload = await createBackupDataMap();
     const encoder = JsonEncoder.withIndent('  ');
     return encoder.convert({
-      'version': 3,
+      'version': 4,
       'createdAt': DateTime.now().toIso8601String(),
       ...payload,
     });
   }
 
   /// Restores all user data from a backup JSON string.
-  Future<Result<AppSettings>> restoreFromJson(String jsonContent) async {
+  Future<Result<BackupRestoreSummary>> restoreFromJson(String jsonContent) async {
     try {
       final decoded = jsonDecode(jsonContent);
       if (decoded is! Map<String, dynamic>) {
@@ -224,6 +269,13 @@ class BackupService {
       final settings = AppSettings.fromJson(rawSettings);
       await _settingsService.updateSettings(settings);
 
+      var providerCount = 0;
+      var favCount = 0;
+      var colCount = 0;
+      var mangaCount = 0;
+      var histCount = 0;
+      var dmCount = 0;
+
       // 2. Database entities
       final db = _databaseService;
       if (db != null) {
@@ -237,7 +289,8 @@ class BackupService {
                   Map<String, dynamic>.from(item),
                 );
                 await isar.providerConfigEntitys
-                    .put(ProviderConfigEntity.fromModel(model));
+                    .putByProviderId(ProviderConfigEntity.fromModel(model));
+                providerCount++;
               }
             }
           }
@@ -262,6 +315,7 @@ class BackupService {
                       DateTime.tryParse(fav['savedAt']?.toString() ?? '') ??
                           DateTime.now();
                 await isar.favoriteEntitys.putByFavoriteKey(entity);
+                favCount++;
               }
             }
           }
@@ -298,6 +352,7 @@ class BackupService {
                       DateTime.tryParse(col['updatedAt']?.toString() ?? '') ??
                           DateTime.now();
                 await isar.collectionEntitys.putByCollectionId(entity);
+                colCount++;
               }
             }
           }
@@ -366,6 +421,7 @@ class BackupService {
                   ..newChaptersCount =
                       (m['newChaptersCount'] as num?)?.toInt() ?? 0;
                 await isar.mangaLibraryEntryEntitys.putByMangaId(entity);
+                mangaCount++;
               }
             }
           }
@@ -412,6 +468,29 @@ class BackupService {
                       DateTime.tryParse(v['viewedAt']?.toString() ?? '') ??
                           DateTime.now();
                 await isar.viewedPostEntitys.putByViewedKey(entity);
+                histCount++;
+              }
+            }
+          }
+
+          // Downloaded Media
+          final dmList = decoded['downloadedMedia'];
+          if (dmList is List) {
+            for (final item in dmList) {
+              if (item is Map) {
+                final dm = Map<String, dynamic>.from(item);
+                final entity = DownloadedMediaEntity()
+                  ..cacheKey = (dm['cacheKey'] ?? '').toString()
+                  ..providerId = (dm['providerId'] ?? '').toString()
+                  ..postId = (dm['postId'] ?? '').toString()
+                  ..savedPath = (dm['savedPath'] ?? '').toString()
+                  ..fileName = (dm['fileName'] ?? '').toString()
+                  ..downloadedAt = DateTime.tryParse(
+                          dm['downloadedAt']?.toString() ?? '') ??
+                      DateTime.now()
+                  ..status = (dm['status'] ?? 'completed').toString();
+                await isar.downloadedMediaEntitys.putByCacheKey(entity);
+                dmCount++;
               }
             }
           }
@@ -423,7 +502,15 @@ class BackupService {
         await repo.ensureSeedProviders();
       }
 
-      return Success(settings);
+      return Success(BackupRestoreSummary(
+        settings: settings,
+        providersCount: providerCount,
+        favoritesCount: favCount,
+        collectionsCount: colCount,
+        mangaEntriesCount: mangaCount,
+        historyCount: histCount,
+        downloadedMediaCount: dmCount,
+      ));
     } catch (e) {
       return Error(Failure(
         code: 'import_error',
@@ -632,7 +719,7 @@ class BackupService {
       final backupJson = await readPersistentBackup();
       if (backupJson != null && backupJson.trim().isNotEmpty) {
         final result = await restoreFromJson(backupJson);
-        if (result is Success<AppSettings>) {
+        if (result is Success<BackupRestoreSummary>) {
           AppLogger.log(
               'Prisma: Auto-restored user data from persistent storage!');
           return true;
@@ -645,7 +732,7 @@ class BackupService {
   }
 
   /// Restores explicitly from persistent storage.
-  Future<Result<AppSettings>> restoreFromPersistentStorage() async {
+  Future<Result<BackupRestoreSummary>> restoreFromPersistentStorage() async {
     final backupJson = await readPersistentBackup();
     if (backupJson == null || backupJson.trim().isEmpty) {
       return const Error(Failure(
@@ -758,7 +845,7 @@ class BackupService {
   }
 
   /// Imports backup from user-selected file.
-  Future<Result<AppSettings>?> importBackup() async {
+  Future<Result<BackupRestoreSummary>?> importBackup() async {
     const typeGroup = XTypeGroup(
       label: 'JSON files',
       extensions: ['json'],
@@ -768,7 +855,7 @@ class BackupService {
     if (file == null) return null;
     final content = await file.readAsString();
     final result = await restoreFromJson(content);
-    if (result is Success<AppSettings>) {
+    if (result is Success<BackupRestoreSummary>) {
       await saveAutoBackupToPersistentStorage(force: true);
     }
     return result;

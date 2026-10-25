@@ -22,10 +22,11 @@ class StorageSettingsScreen extends ConsumerWidget {
   void _handleRestoreResult(
     BuildContext context,
     WidgetRef ref,
-    Result<AppSettings> result,
+    Result<BackupRestoreSummary> result,
     bool isRu,
   ) {
-    if (result is Success<AppSettings>) {
+    if (result is Success<BackupRestoreSummary>) {
+      final summary = result.data;
       ref.invalidate(appSettingsProvider);
       ref.invalidate(settingsControllerProvider);
       ref.invalidate(providerRepositoryProvider);
@@ -37,16 +38,37 @@ class StorageSettingsScreen extends ConsumerWidget {
       ref.invalidate(mangaLibraryEntriesProvider);
       ref.invalidate(mangaReadingHistoryProvider);
       ref.invalidate(mangaOfflineServiceProvider);
+      ref.invalidate(downloadedMediaByKeyProvider);
+
+      final parts = <String>[];
+      if (summary.favoritesCount > 0) {
+        parts.add(isRu ? '${summary.favoritesCount} избр.' : '${summary.favoritesCount} favs');
+      }
+      if (summary.collectionsCount > 0) {
+        parts.add(isRu ? '${summary.collectionsCount} колл.' : '${summary.collectionsCount} collections');
+      }
+      if (summary.mangaEntriesCount > 0) {
+        parts.add(isRu ? '${summary.mangaEntriesCount} манги' : '${summary.mangaEntriesCount} manga');
+      }
+      if (summary.providersCount > 0) {
+        parts.add(isRu ? '${summary.providersCount} источн.' : '${summary.providersCount} providers');
+      }
+      if (summary.downloadedMediaCount > 0) {
+        parts.add(isRu ? '${summary.downloadedMediaCount} офлайн-файлов' : '${summary.downloadedMediaCount} offline files');
+      }
+
+      final details = parts.isNotEmpty ? ' (${parts.join(", ")})' : '';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             isRu
-                ? 'Все данные (настройки, провайдеры, избранное, коллекции, манга, история) успешно импортированы!'
-                : 'All data (settings, providers, favorites, collections, manga, history) successfully imported!',
+                ? 'Все данные успешно импортированы!$details'
+                : 'All data successfully imported!$details',
           ),
+          duration: const Duration(seconds: 4),
         ),
       );
-    } else if (result is Error<AppSettings>) {
+    } else if (result is Error<BackupRestoreSummary>) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
