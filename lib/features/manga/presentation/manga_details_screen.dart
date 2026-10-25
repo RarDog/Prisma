@@ -10,7 +10,7 @@ import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/features/post/presentation/widgets/post_media_viewer.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
 import 'package:gel_rule_app/shared/widgets/app_shell.dart';
-import 'package:gel_rule_app/sources/booru/mangadex_provider.dart';
+import 'package:gel_rule_app/sources/manga/mangadex_provider.dart';
 import '../domain/manga_library_service.dart';
 import '../domain/manga_library_providers.dart';
 import 'manga_reader_screen.dart';

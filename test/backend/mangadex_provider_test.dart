@@ -3,7 +3,7 @@ import 'package:gel_rule_app/core/http/dio_client.dart';
 import 'package:gel_rule_app/core/models/post.dart';
 import 'package:gel_rule_app/features/post/presentation/widgets/post_media_viewer.dart';
 import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
-import 'package:gel_rule_app/sources/booru/mangadex_provider.dart';
+import 'package:gel_rule_app/sources/manga/mangadex_provider.dart';
 import 'package:gel_rule_app/sources/mappers/mangadex_mapper.dart';
 import 'package:gel_rule_app/sources/provider_factory.dart';
 

@@ -114,7 +114,7 @@ void main() {
 
   testWidgets('DownloadDynamicIsland renders completed task state',
       (tester) async {
-    final task = DownloadTask(
+    const task = DownloadTask(
       id: 'task-completed',
       fileName: 'completed_art.png',
       progress: 1.0,

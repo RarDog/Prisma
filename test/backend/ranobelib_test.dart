@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gel_rule_app/core/http/dio_client.dart';
-import 'package:gel_rule_app/sources/booru/ranobelib_provider.dart';
+import 'package:gel_rule_app/sources/manga/ranobelib_provider.dart';
 
 void main() {
   test('RanobeLibProvider fetches various novel chapters', () async {

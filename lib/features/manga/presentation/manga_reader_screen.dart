@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/features/post/presentation/widgets/post_media_viewer.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
-import 'package:gel_rule_app/sources/booru/mangadex_provider.dart';
+import 'package:gel_rule_app/sources/manga/mangadex_provider.dart';
 import '../domain/manga_library_providers.dart';
 import '../domain/reader_navigation_helper.dart';
 import 'mixins/reader_fullscreen_mixin.dart';

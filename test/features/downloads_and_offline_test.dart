@@ -10,7 +10,7 @@ import 'package:gel_rule_app/features/downloads/domain/download_manager_service.
 import 'package:gel_rule_app/features/downloads/domain/download_service.dart';
 import 'package:gel_rule_app/features/downloads/models/download_task.dart';
 import 'package:gel_rule_app/features/manga/domain/manga_offline_service.dart';
-import 'package:gel_rule_app/sources/booru/mangadex_provider.dart';
+import 'package:gel_rule_app/sources/manga/mangadex_provider.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 

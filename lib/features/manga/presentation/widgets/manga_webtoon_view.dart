@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:gel_rule_app/sources/booru/mangadex_provider.dart';
+import 'package:gel_rule_app/sources/manga/mangadex_provider.dart';
 import '../../domain/reader_navigation_helper.dart';
 import 'manga_reader_page_image.dart';
 import 'manga_reader_types.dart';

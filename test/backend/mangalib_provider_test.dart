@@ -6,7 +6,7 @@ import 'package:gel_rule_app/core/models/post.dart';
 import 'package:gel_rule_app/core/models/provider_health.dart';
 import 'package:gel_rule_app/core/models/tag_suggestion.dart';
 import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
-import 'package:gel_rule_app/sources/booru/mangalib_provider.dart';
+import 'package:gel_rule_app/sources/manga/mangalib_provider.dart';
 import 'package:gel_rule_app/sources/provider_factory.dart';
 
 void main() {

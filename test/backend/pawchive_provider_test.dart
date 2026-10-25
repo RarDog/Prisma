@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gel_rule_app/features/artists/models/artist_work_query.dart';
 import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
 import 'package:gel_rule_app/core/models/post.dart';
-import 'package:gel_rule_app/sources/booru/pawchive_provider.dart';
+import 'package:gel_rule_app/sources/artist/pawchive_provider.dart';
 import 'package:gel_rule_app/sources/provider_factory.dart';
 import 'package:gel_rule_app/core/utils/media_quality.dart';
 import 'package:gel_rule_app/core/http/dio_client.dart';

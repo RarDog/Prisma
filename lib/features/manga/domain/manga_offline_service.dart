@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:gel_rule_app/core/utils/logger.dart';
 import 'package:path_provider/path_provider.dart';
 
-import 'package:gel_rule_app/sources/booru/mangadex_provider.dart';
+import 'package:gel_rule_app/sources/manga/mangadex_provider.dart';
 
 class MangaOfflineService {
   MangaOfflineService({Dio? dio, String? baseDir})

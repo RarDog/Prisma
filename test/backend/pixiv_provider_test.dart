@@ -4,7 +4,7 @@ import 'package:gel_rule_app/features/providers/models/content_provider_config.d
 import 'package:gel_rule_app/core/models/post.dart';
 import 'package:gel_rule_app/sources/interfaces/content_provider.dart';
 import 'package:gel_rule_app/sources/provider_factory.dart';
-import 'package:gel_rule_app/sources/booru/pixiv_provider.dart';
+import 'package:gel_rule_app/sources/artist/pixiv_provider.dart';
 import 'package:gel_rule_app/sources/mappers/pixiv_mapper.dart';
 import 'package:gel_rule_app/core/http/dio_client.dart';
 

@@ -8,7 +8,7 @@ import 'package:gel_rule_app/core/models/provider_health.dart';
 import 'package:gel_rule_app/core/models/tag_suggestion.dart';
 import 'package:gel_rule_app/core/models/top_period_filter.dart';
 import 'package:gel_rule_app/core/utils/logger.dart';
-import 'package:gel_rule_app/sources/booru/mangadex_provider.dart';
+import 'package:gel_rule_app/sources/manga/mangadex_provider.dart';
 import 'package:gel_rule_app/sources/interfaces/content_provider.dart';
 
 class MangaLibProvider
