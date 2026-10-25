@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,13 +10,11 @@ import 'package:gel_rule_app/sources/manga/mangadex_provider.dart';
 import '../domain/manga_library_service.dart';
 import '../domain/manga_library_providers.dart';
 import 'manga_details_screen.dart';
-import 'widgets/manga_card.dart';
-import 'widgets/manga_library_card.dart';
+import 'widgets/manga_catalog_view.dart';
+import 'widgets/manga_library_view.dart';
+import 'widgets/manga_screen_app_bar.dart';
 
-enum MangaTab {
-  catalog,
-  library,
-}
+export 'widgets/manga_screen_app_bar.dart';
 
 class MangaScreen extends ConsumerStatefulWidget {
   const MangaScreen({super.key});
@@ -308,37 +305,6 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
     _loadManga(refresh: true);
   }
 
-  Color _ratingColor(String rating, ThemeData theme) {
-    return switch (rating.toLowerCase()) {
-      'safe' => const Color(0xFF10B981),
-      'suggestive' => const Color(0xFFF59E0B),
-      'erotica' => const Color(0xFFEF4444),
-      'pornographic' => const Color(0xFFDC2626),
-      _ => theme.colorScheme.primary,
-    };
-  }
-
-  IconData _ratingIcon(String rating) {
-    return switch (rating.toLowerCase()) {
-      'safe' => Icons.shield_rounded,
-      'suggestive' => Icons.visibility_rounded,
-      'erotica' => Icons.explicit_rounded,
-      'pornographic' => Icons.eighteen_up_rating_rounded,
-      _ => Icons.tune_rounded,
-    };
-  }
-
-  IconData _periodIcon(TopPeriodFilter period) {
-    return switch (period) {
-      TopPeriodFilter.none => Icons.auto_awesome_rounded,
-      TopPeriodFilter.allTime => Icons.workspace_premium_rounded,
-      TopPeriodFilter.year => Icons.calendar_today_rounded,
-      TopPeriodFilter.month => Icons.calendar_month_rounded,
-      TopPeriodFilter.week => Icons.date_range_rounded,
-      TopPeriodFilter.day => Icons.today_rounded,
-    };
-  }
-
   void _onSearchChanged(String text) {
     _debounceTimer?.cancel();
     final query = text.trim();
@@ -368,28 +334,6 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
         } catch (_) {}
       }
     });
-  }
-
-  IconData _suggestionIcon(TagCategory category) {
-    return switch (category) {
-      TagCategory.artist => Icons.person_rounded,
-      TagCategory.copyright => Icons.auto_stories_rounded,
-      TagCategory.character => Icons.palette_rounded,
-      TagCategory.meta => Icons.style_rounded,
-      TagCategory.species => Icons.warning_amber_rounded,
-      TagCategory.general || TagCategory.unknown => Icons.tag_rounded,
-    };
-  }
-
-  Color _suggestionColor(TagCategory category, ThemeData theme) {
-    return switch (category) {
-      TagCategory.artist => const Color(0xFFFF5252),
-      TagCategory.copyright => const Color(0xFFBA68C8),
-      TagCategory.character => const Color(0xFF66BB6A),
-      TagCategory.meta => const Color(0xFFF59E0B),
-      TagCategory.species => const Color(0xFFEC4899),
-      TagCategory.general || TagCategory.unknown => theme.colorScheme.primary,
-    };
   }
 
   Future<void> _openManga(Post post) async {
@@ -630,696 +574,69 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(60),
-        child: ClipRRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-            child: AppBar(
-              backgroundColor: isDark
-                  ? theme.colorScheme.surface.withValues(alpha: 0.75)
-                  : Colors.white.withValues(alpha: 0.85),
-              surfaceTintColor: Colors.transparent,
-              elevation: 0,
-              title: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Tab Switcher (Каталог / Библиотека)
-                  Container(
-                    padding: const EdgeInsets.all(3),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? Colors.white10
-                          : Colors.black.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _tabButton(
-                          title: isRu ? 'Каталог' : 'Catalog',
-                          icon: Icons.explore_rounded,
-                          isSelected: _selectedTab == MangaTab.catalog,
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            setState(() => _selectedTab = MangaTab.catalog);
-                          },
-                        ),
-                        _tabButton(
-                          title: isRu ? 'Библиотека' : 'Library',
-                          icon: Icons.bookmarks_rounded,
-                          isSelected: _selectedTab == MangaTab.library,
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            setState(() => _selectedTab = MangaTab.library);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                if (_selectedTab == MangaTab.catalog) ...[
-                  // Compact rating toggle button
-                  Center(
-                    child: InkWell(
-                      onTap: _toggleRating,
-                      borderRadius: BorderRadius.circular(16),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 9, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: _ratingColor(_selectedRating, theme)
-                              .withValues(alpha: 0.14),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: _selectedRating == 'All'
-                                ? (isDark ? Colors.white24 : Colors.black12)
-                                : _ratingColor(_selectedRating, theme)
-                                    .withValues(alpha: 0.8),
-                            width: 1.2,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              _ratingIcon(_selectedRating),
-                              size: 13,
-                              color: _ratingColor(_selectedRating, theme),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              _selectedRating,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: _selectedRating == 'All'
-                                    ? theme.colorScheme.onSurfaceVariant
-                                    : _ratingColor(_selectedRating, theme),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.refresh_rounded, size: 20),
-                    tooltip: isRu ? 'Обновить' : 'Refresh',
-                    onPressed: () => _loadManga(refresh: true),
-                  ),
-                ],
-                const SizedBox(width: 4),
-              ],
-            ),
-          ),
-        ),
+      appBar: MangaScreenAppBar(
+        selectedTab: _selectedTab,
+        onTabChanged: (tab) => setState(() => _selectedTab = tab),
+        selectedRating: _selectedRating,
+        onToggleRating: _toggleRating,
+        onRefreshCatalog: () => _loadManga(refresh: true),
       ),
       body: _selectedTab == MangaTab.catalog
-          ? _buildCatalogView(context, theme, isDark, isRu)
-          : _buildLibraryView(context, theme, isDark, isRu),
-    );
-  }
-
-  Widget _tabButton({
-    required String title,
-    required IconData icon,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFF6740) : Colors.transparent,
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 15,
-              color: isSelected ? Colors.white : Colors.white70,
+          ? MangaCatalogView(
+              scrollController: _scrollController,
+              searchController: _searchController,
+              onSearchChanged: _onSearchChanged,
+              onSearchSubmitted: (val) {
+                _debounceTimer?.cancel();
+                setState(() {
+                  _activeQuery = val;
+                  _suggestions = [];
+                });
+                _loadManga(refresh: true);
+              },
+              onClearSearch: () {
+                _debounceTimer?.cancel();
+                _searchController.clear();
+                setState(() {
+                  _activeQuery = '';
+                  _suggestions = [];
+                });
+                _loadManga(refresh: true);
+              },
+              activeQuery: _activeQuery,
+              suggestions: _suggestions,
+              onSuggestionSelected: (suggestion) {
+                _debounceTimer?.cancel();
+                _searchController.text = suggestion.name;
+                setState(() {
+                  _activeQuery = suggestion.name;
+                  _suggestions = [];
+                });
+                _loadManga(refresh: true);
+              },
+              mangaProviders: _mangaProviders,
+              selectedProviderId: _selectedProviderId,
+              onProviderSelected: _onProviderSelected,
+              selectedTopPeriod: _selectedTopPeriod,
+              onTopPeriodSelected: _onTopPeriodSelected,
+              errorMessage: _errorMessage,
+              onRetry: () => _loadManga(refresh: true),
+              mangaList: _mangaList,
+              loading: _loading,
+              onOpenManga: _openManga,
+            )
+          : MangaLibraryView(
+              libraryFilter: _libraryFilter,
+              onFilterSelected: (keyName) =>
+                  setState(() => _libraryFilter = keyName),
+              checkingUpdates: _checkingUpdates,
+              onCheckUpdates: _checkLibraryUpdates,
+              onOpenEntry: _openLibraryEntry,
+              onShowEntryOptions: _showLibraryEntryOptions,
             ),
-            const SizedBox(width: 6),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                color: isSelected ? Colors.white : Colors.white70,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCatalogView(
-      BuildContext context, ThemeData theme, bool isDark, bool isRu) {
-    return CustomScrollView(
-      key: const PageStorageKey<String>('manga_catalog_scroll_view'),
-      controller: _scrollController,
-      // ignore: deprecated_member_use
-      cacheExtent: 180.0,
-      slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              16,
-              MediaQuery.paddingOf(context).top + 68,
-              16,
-              6,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: _searchController,
-                  textInputAction: TextInputAction.search,
-                  onChanged: _onSearchChanged,
-                  onSubmitted: (val) {
-                    _debounceTimer?.cancel();
-                    setState(() {
-                      _activeQuery = val;
-                      _suggestions = [];
-                    });
-                    _loadManga(refresh: true);
-                  },
-                  decoration: InputDecoration(
-                    hintText: isRu
-                        ? 'Поиск манги, автора или тега...'
-                        : 'Search manga, artist or tag...',
-                    prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                    suffixIcon: _searchController.text.isNotEmpty ||
-                            _activeQuery.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear_rounded, size: 18),
-                            onPressed: () {
-                              _debounceTimer?.cancel();
-                              _searchController.clear();
-                              setState(() {
-                                _activeQuery = '';
-                                _suggestions = [];
-                              });
-                              _loadManga(refresh: true);
-                            },
-                          )
-                        : null,
-                    filled: true,
-                    fillColor: isDark
-                        ? Colors.white.withValues(alpha: 0.06)
-                        : Colors.black.withValues(alpha: 0.04),
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-
-                if (_suggestions.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final suggestion in _suggestions)
-                        ActionChip(
-                          avatar: Icon(
-                            _suggestionIcon(suggestion.category),
-                            size: 15,
-                            color: _suggestionColor(suggestion.category, theme),
-                          ),
-                          label: Text(
-                            suggestion.name.startsWith('author:')
-                                ? suggestion.name.substring(7)
-                                : suggestion.name,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: isDark
-                                  ? Colors.white.withValues(alpha: 0.9)
-                                  : Colors.black87,
-                            ),
-                          ),
-                          backgroundColor: isDark
-                              ? Colors.white.withValues(alpha: 0.06)
-                              : Colors.black.withValues(alpha: 0.04),
-                          side: BorderSide(
-                            color: _suggestionColor(suggestion.category, theme)
-                                .withValues(alpha: 0.35),
-                            width: 1,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          onPressed: () {
-                            HapticFeedback.selectionClick();
-                            _debounceTimer?.cancel();
-                            _searchController.text = suggestion.name;
-                            setState(() {
-                              _activeQuery = suggestion.name;
-                              _suggestions = [];
-                            });
-                            _loadManga(refresh: true);
-                          },
-                        ),
-                    ],
-                  ),
-                ],
-                const SizedBox(height: 12),
-
-                if (_mangaProviders.isNotEmpty)
-                  SizedBox(
-                    height: 38,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _mangaProviders.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 8),
-                      itemBuilder: (context, index) {
-                        final provider = _mangaProviders[index];
-                        final isSelected = provider.id == _selectedProviderId;
-                        final Color brandColor = switch (provider.id) {
-                          'mangadex' => const Color(0xFFFF6740),
-                          'mangalib' => const Color(0xFF2563EB),
-                          'ranobelib' => const Color(0xFF10B981),
-                          _ => theme.colorScheme.primary,
-                        };
-
-                        final IconData icon = switch (provider.id) {
-                          'mangadex' => Icons.auto_stories_rounded,
-                          'mangalib' => Icons.menu_book_rounded,
-                          'ranobelib' => Icons.article_rounded,
-                          _ => Icons.hub_rounded,
-                        };
-
-                        return InkWell(
-                          onTap: () => _onProviderSelected(provider.id),
-                          borderRadius: BorderRadius.circular(20),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? brandColor.withValues(alpha: 0.18)
-                                  : (isDark
-                                      ? Colors.white.withValues(alpha: 0.04)
-                                      : Colors.black.withValues(alpha: 0.03)),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: isSelected
-                                    ? brandColor
-                                    : Colors.transparent,
-                                width: 1.5,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(icon,
-                                    size: 16,
-                                    color: isSelected
-                                        ? brandColor
-                                        : theme.colorScheme.onSurfaceVariant),
-                                const SizedBox(width: 6),
-                                Text(
-                                  provider.name,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.w600,
-                                    color: isSelected
-                                        ? brandColor
-                                        : theme.colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-
-                const SizedBox(height: 12),
-
-                // Top periods filter chips
-                SizedBox(
-                  height: 34,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: [
-                      for (final period in TopPeriodFilter.values)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 6),
-                          child: ChoiceChip(
-                            avatar: Icon(
-                              _periodIcon(period),
-                              size: 14,
-                              color: _selectedTopPeriod == period
-                                  ? (isDark ? Colors.black87 : Colors.white)
-                                  : theme.colorScheme.onSurfaceVariant,
-                            ),
-                            label: Text(
-                              switch (period) {
-                                TopPeriodFilter.none =>
-                                  isRu ? 'Свежее' : 'Recent',
-                                TopPeriodFilter.allTime =>
-                                  isRu ? 'Топ за все время' : 'All-time Top',
-                                TopPeriodFilter.year =>
-                                  isRu ? 'Топ за год' : 'Year Top',
-                                TopPeriodFilter.month =>
-                                  isRu ? 'Топ за месяц' : 'Month Top',
-                                TopPeriodFilter.week =>
-                                  isRu ? 'Топ за неделю' : 'Week Top',
-                                TopPeriodFilter.day =>
-                                  isRu ? 'Топ за день' : 'Day Top',
-                              },
-                              style: const TextStyle(
-                                  fontSize: 11, fontWeight: FontWeight.w600),
-                            ),
-                            selected: _selectedTopPeriod == period,
-                            onSelected: (_) => _onTopPeriodSelected(period),
-                            visualDensity: VisualDensity.compact,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        if (_errorMessage != null)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Center(
-                child: Column(
-                  children: [
-                    const Icon(Icons.error_outline_rounded,
-                        color: Colors.redAccent, size: 48),
-                    const SizedBox(height: 12),
-                    Text(
-                      _errorMessage!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.white70),
-                    ),
-                    const SizedBox(height: 16),
-                    FilledButton(
-                      onPressed: () => _loadManga(refresh: true),
-                      child: Text(isRu ? 'Повторить' : 'Retry'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          )
-        else if (_mangaList.isEmpty && !_loading)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 60),
-              child: Center(
-                child: Column(
-                  children: [
-                    Icon(Icons.search_off_rounded,
-                        size: 56, color: theme.colorScheme.onSurfaceVariant),
-                    const SizedBox(height: 12),
-                    Text(
-                      isRu ? 'Ничего не найдено' : 'No manga found',
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          )
-        else
-          SliverPadding(
-            padding: const EdgeInsets.all(12),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.62,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 12,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final post = _mangaList[index];
-                  return RepaintBoundary(
-                    child: MangaCard(
-                      post: post,
-                      onTap: () => _openManga(post),
-                    ),
-                  );
-                },
-                childCount: _mangaList.length,
-                addAutomaticKeepAlives: false,
-                addRepaintBoundaries: true,
-              ),
-            ),
-          ),
-        if (_loading)
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Center(
-                  child: CircularProgressIndicator(color: Color(0xFFFF6740))),
-            ),
-          ),
-        SliverToBoxAdapter(
-          child: SizedBox(height: MediaQuery.paddingOf(context).bottom + 80),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLibraryView(
-      BuildContext context, ThemeData theme, bool isDark, bool isRu) {
-    final AsyncValue<List<MangaLibraryEntry>> entriesAsync =
-        _libraryFilter == 'history'
-            ? ref.watch(mangaReadingHistoryProvider)
-            : ref.watch(mangaLibraryEntriesProvider(
-                _libraryFilter == 'all' ? null : _libraryFilter));
-
-    return CustomScrollView(
-      // ignore: deprecated_member_use
-      cacheExtent: 180.0,
-      slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              16,
-              MediaQuery.paddingOf(context).top + 68,
-              16,
-              10,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Filter pills & sync button
-                Row(
-                  children: [
-                    Expanded(
-                      child: SizedBox(
-                        height: 38,
-                        child: ListView(
-                          scrollDirection: Axis.horizontal,
-                          children: [
-                            _libraryFilterChip(
-                              keyName: 'all',
-                              label: isRu ? 'Все сохранённые' : 'All Saved',
-                              icon: Icons.bookmarks_rounded,
-                            ),
-                            _libraryFilterChip(
-                              keyName: 'reading',
-                              label: isRu ? 'Читаю' : 'Reading',
-                              icon: Icons.auto_stories_rounded,
-                            ),
-                            _libraryFilterChip(
-                              keyName: 'plan_to_read',
-                              label: isRu ? 'В планах' : 'Plan to read',
-                              icon: Icons.bookmark_added_rounded,
-                            ),
-                            _libraryFilterChip(
-                              keyName: 'completed',
-                              label: isRu ? 'Прочитано' : 'Completed',
-                              icon: Icons.check_circle_outline_rounded,
-                            ),
-                            _libraryFilterChip(
-                              keyName: 'history',
-                              label: isRu ? '⏱ История чтения' : '⏱ History',
-                              icon: Icons.history_rounded,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton.filledTonal(
-                      onPressed: _checkingUpdates ? null : _checkLibraryUpdates,
-                      tooltip: isRu
-                          ? 'Проверить обновления глав'
-                          : 'Check for new chapters',
-                      icon: _checkingUpdates
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.sync_rounded, size: 20),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-        entriesAsync.when(
-          loading: () => const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 60),
-              child: Center(
-                  child: CircularProgressIndicator(color: Color(0xFFFF6740))),
-            ),
-          ),
-          error: (err, _) => SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Center(
-                child: Text('Ошибка загрузки библиотеки: $err',
-                    style: const TextStyle(color: Colors.redAccent)),
-              ),
-            ),
-          ),
-          data: (entries) {
-            if (entries.isEmpty) {
-              return SliverToBoxAdapter(
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 80, horizontal: 24),
-                  child: Center(
-                    child: Column(
-                      children: [
-                        Icon(
-                          _libraryFilter == 'history'
-                              ? Icons.history_toggle_off_rounded
-                              : Icons.bookmark_border_rounded,
-                          size: 64,
-                          color: theme.colorScheme.onSurfaceVariant
-                              .withValues(alpha: 0.5),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _libraryFilter == 'history'
-                              ? (isRu
-                                  ? 'История чтения пуста'
-                                  : 'Reading history is empty')
-                              : (isRu
-                                  ? 'В библиотеке пока пусто'
-                                  : 'Your library is empty'),
-                          style: theme.textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _libraryFilter == 'history'
-                              ? (isRu
-                                  ? 'Начните читать мангу в каталоге, и она появится здесь!'
-                                  : 'Read any manga to see it here!')
-                              : (isRu
-                                  ? 'Нажмите кнопку закладки на странице манги, чтобы добавить её сюда.'
-                                  : 'Bookmark manga from details screen to save it here.'),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              color: theme.colorScheme.onSurfaceVariant,
-                              fontSize: 13),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }
-
-            return SliverPadding(
-              padding: const EdgeInsets.all(12),
-              sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 0.58,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 12,
-                ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final entry = entries[index];
-                    return RepaintBoundary(
-                      child: MangaLibraryCard(
-                        entry: entry,
-                        onTap: () => _openLibraryEntry(entry),
-                        onLongPress: () => _showLibraryEntryOptions(entry),
-                      ),
-                    );
-                  },
-                  childCount: entries.length,
-                  addAutomaticKeepAlives: false,
-                  addRepaintBoundaries: true,
-                ),
-              ),
-            );
-          },
-        ),
-        SliverToBoxAdapter(
-          child: SizedBox(height: MediaQuery.paddingOf(context).bottom + 80),
-        ),
-      ],
-    );
-  }
-
-  Widget _libraryFilterChip({
-    required String keyName,
-    required String label,
-    required IconData icon,
-  }) {
-    final isSelected = _libraryFilter == keyName;
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: ChoiceChip(
-        avatar: Icon(
-          icon,
-          size: 15,
-          color: isSelected ? Colors.white : Colors.white70,
-        ),
-        label: Text(label),
-        selected: isSelected,
-        selectedColor: const Color(0xFFFF6740),
-        onSelected: (_) {
-          HapticFeedback.selectionClick();
-          setState(() => _libraryFilter = keyName);
-        },
-        visualDensity: VisualDensity.compact,
-      ),
     );
   }
 }
