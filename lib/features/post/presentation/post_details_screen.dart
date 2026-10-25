@@ -18,30 +18,19 @@ import 'package:gel_rule_app/sources/mappers/pixiv_mapper.dart';
 import 'package:gel_rule_app/shared/widgets/adaptive_scaffold.dart';
 import 'package:gel_rule_app/shared/widgets/empty_view.dart';
 import 'package:gel_rule_app/shared/widgets/error_view.dart';
-import 'package:gel_rule_app/shared/widgets/keyboard_shortcut_utils.dart';
 import 'package:gel_rule_app/shared/widgets/post_card.dart';
 import 'package:gel_rule_app/features/collections/presentation/collection_form_dialog.dart';
 import 'package:gel_rule_app/features/favorites/presentation/favorites_controller.dart';
 import 'package:gel_rule_app/features/feed/presentation/feed_controller.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
 import 'package:gel_rule_app/features/viewed/presentation/viewed_controller.dart';
-import 'post_details_controller.dart';
-import 'widgets/cloud_mirrors_card.dart';
-import 'widgets/post_action_bar.dart';
-import 'widgets/post_media_viewer.dart';
-import 'widgets/post_pools_card.dart';
-import 'widgets/post_relations_card.dart';
-import 'widgets/post_tags_panel.dart';
 import 'package:gel_rule_app/sources/booru/e621_provider.dart';
-import 'widgets/comments_section.dart';
-import 'widgets/post_info_card.dart';
-
+import 'post_details_controller.dart';
 import 'post_details_providers.dart';
-import 'widgets/post_artist_posts_card.dart';
-import 'widgets/post_details_intents.dart';
-import 'widgets/post_media_carousel.dart';
-import 'widgets/post_multi_page_strip.dart';
-import 'widgets/post_translate_button.dart';
+import 'widgets/post_action_bar.dart';
+import 'widgets/post_details_desktop_layout.dart';
+import 'widgets/post_details_mobile_layout.dart';
+import 'widgets/post_media_viewer.dart';
 
 export 'post_details_providers.dart';
 export 'widgets/post_artist_posts_card.dart';
@@ -256,945 +245,177 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
             final e621Provider =
                 providerInstance is E621Provider ? providerInstance : null;
 
+            final labels = _postActionLabels(strings);
+
             if (Responsive.isMobile(context)) {
-              return _buildMobileDetails(
-                context,
-                ref,
-                targetPost,
-                settings,
-                favoriteKeys,
-                qualityMode,
-                strings,
-                _mediaGestureLocked,
-                _setMediaGestureLocked,
-                feedPosts,
-                (newIndex) => _handlePagerPageChanged(newIndex, feedPosts),
-                true,
-                pages,
-                currentPostIndex,
+              return PostDetailsMobileLayout(
+                post: post,
+                targetPost: targetPost,
+                pages: pages,
+                currentPageIndex: currentPostIndex,
+                feedPosts: feedPosts,
+                settings: settings,
+                strings: strings,
+                labels: labels,
+                favoriteKeys: favoriteKeys,
+                localMedia: localMedia,
+                fileSizeBytes: fileSizeBytes,
+                isDownloading: isDownloading,
+                qualityMode: qualityMode,
+                notes: notes,
+                notesAsync: notesAsync,
+                showNotes: showNotes,
+                e621Provider: e621Provider,
+                shouldShowCloudCard: shouldShowCloudCard,
+                isTextOnly: isTextOnly,
+                fromFeed: widget.fromFeed,
+                mediaGestureLocked: _mediaGestureLocked,
+                isActive: true,
+                onClose: () => _close(context),
+                onMediaGestureLockChanged: _setMediaGestureLocked,
+                onPostIndexChanged: (newIndex) =>
+                    _handlePagerPageChanged(newIndex, feedPosts),
+                onToggleFavorite: (ref, p, keys) =>
+                    _toggleFavorite(ref, p, keys),
+                onShowQuickActions: (ctx, ref, p, keys) =>
+                    _showMobileQuickActions(ctx, ref, p, keys),
+                onSaveVideoSnapshot: (ref, p, snapshot) =>
+                    _saveVideoSnapshot(ref, p, snapshot),
+                onSaveVideoPreferences: (ref, snapshot) =>
+                    _saveVideoPreferences(ref, snapshot),
+                onPageSelected: (idx) =>
+                    setState(() => _selectedPageIndex = idx),
+                onDownloadAllPages: () =>
+                    _downloadAllPages(context, ref, pages),
+                onAddToCollection: () => _addToCollection(context, ref, post),
+                onOpenSource: () => _openSourcePage(ref, targetPost),
+                onOpenSimilar: () => _openSimilar(context, ref, targetPost),
+                onHidePost: () => _hidePost(context, ref, targetPost),
+                onDownload: settings.allowDownloads
+                    ? () => _download(context, ref, post)
+                    : null,
+                onSaveAs: settings.allowDownloads
+                    ? () => _saveAs(context, ref, post)
+                    : null,
+                onDeleteLocalFile: () =>
+                    _deleteLocalFile(context, ref, targetPost),
+                onShare: () => _sharePost(context, ref, targetPost),
+                onOpenArtistPost: (artistPost, filtered) =>
+                    Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => PostDetailsScreen(
+                      providerId: artistPost.providerId,
+                      postId: artistPost.id,
+                      initialPost: artistPost,
+                      postsList: filtered,
+                    ),
+                  ),
+                ),
+                onOpenPostId: (targetId) =>
+                    _openPostById(context, post.providerId, targetId),
+                onOpenComic: (poolId, currentPost, [targetId]) => _openComic(
+                    context, e621Provider!, poolId, currentPost, targetId),
+                onPlayStream: (streamUrl) => launchUrl(
+                  Uri.parse(streamUrl),
+                  mode: LaunchMode.externalApplication,
+                ),
+                onDownloadStream: settings.allowDownloads
+                    ? (streamUrl) =>
+                        _downloadUrl(context, ref, post, streamUrl)
+                    : null,
+                onLoadMore: widget.fromFeed
+                    ? () => ref
+                        .read(feedControllerProvider.notifier)
+                        .loadNextPage()
+                    : null,
               );
             }
-            return Shortcuts(
-              shortcuts: {
-                LogicalKeySet(LogicalKeyboardKey.arrowLeft):
-                    const PreviousPostIntent(),
-                LogicalKeySet(LogicalKeyboardKey.keyA):
-                    const PreviousPostIntent(),
-                LogicalKeySet(LogicalKeyboardKey.arrowRight):
-                    const NextPostIntent(),
-                LogicalKeySet(LogicalKeyboardKey.keyD): const NextPostIntent(),
-                LogicalKeySet(LogicalKeyboardKey.keyF):
-                    const ToggleFavoriteIntent(),
-                LogicalKeySet(LogicalKeyboardKey.keyC):
-                    const AddCollectionIntent(),
-                LogicalKeySet(LogicalKeyboardKey.keyS): const DownloadIntent(),
-                LogicalKeySet(
-                        LogicalKeyboardKey.control, LogicalKeyboardKey.keyS):
-                    const DownloadIntent(),
-                LogicalKeySet(LogicalKeyboardKey.escape): const CloseIntent(),
-              },
-              child: Actions(
-                actions: {
-                  PreviousPostIntent: NonTextInputAction<PreviousPostIntent>(
-                    onInvoke: (_) {
-                      if (previous != null) _openPost(context, previous);
-                      return null;
-                    },
-                  ),
-                  NextPostIntent: NonTextInputAction<NextPostIntent>(
-                    onInvoke: (_) {
-                      if (next != null) _openPost(context, next);
-                      return null;
-                    },
-                  ),
-                  ToggleFavoriteIntent:
-                      NonTextInputAction<ToggleFavoriteIntent>(
-                    onInvoke: (_) {
-                      _toggleFavorite(ref, post, favoriteKeys);
-                      return null;
-                    },
-                  ),
-                  AddCollectionIntent: NonTextInputAction<AddCollectionIntent>(
-                    onInvoke: (_) {
-                      _addToCollection(context, ref, post);
-                      return null;
-                    },
-                  ),
-                  CloseIntent: NonTextInputAction<CloseIntent>(
-                    onInvoke: (_) {
-                      _close(context);
-                      return null;
-                    },
-                  ),
-                  DownloadIntent: NonTextInputAction<DownloadIntent>(
-                    onInvoke: (_) {
-                      if (settings.allowDownloads) {
-                        _download(context, ref, post);
-                      }
-                      return null;
-                    },
-                  ),
-                },
-                child: Focus(
-                  autofocus: true,
-                  child: ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          IconButton.filledTonal(
-                            tooltip: strings.ru ? 'Предыдущий' : 'Previous',
-                            onPressed: previous == null
-                                ? null
-                                : () => _openPost(context, previous),
-                            icon: const Icon(Icons.chevron_left_rounded),
-                          ),
-                          Expanded(
-                            child: Center(
-                              child: (MediaUrlSelector.isVideo(targetPost) ||
-                                      MediaUrlSelector.isAudio(targetPost))
-                                  ? ConstrainedBox(
-                                      constraints: BoxConstraints(
-                                        maxHeight:
-                                            MediaUrlSelector.isAudio(targetPost)
-                                                ? 360
-                                                : 760,
-                                        maxWidth: MediaUrlSelector.isAudio(targetPost)
-                                            ? 620
-                                            : double.infinity,
-                                      ),
-                                      child: AspectRatio(
-                                        aspectRatio:
-                                            MediaUrlSelector.isAudio(targetPost)
-                                                ? 1.4
-                                                : ((targetPost.width > 0 &&
-                                                        targetPost.height > 0)
-                                                    ? (targetPost.width / targetPost.height)
-                                                        .clamp(0.45, 2.4)
-                                                    : (16 / 9)),
-                                        child: PostMediaViewer(
-                                          key: ValueKey('${targetPost.cacheKey}_$currentPostIndex'),
-                                          post: targetPost,
-                                          pageIndex: isMultiPage ? currentPostIndex : null,
-                                          pageCount: isMultiPage ? pages.length : null,
-                                          onPageChanged: isMultiPage
-                                              ? (newIdx) => setState(() => _selectedPageIndex = newIdx)
-                                              : null,
-                                          useLiveFeed: isMultiPage ? false : widget.fromFeed,
-                                          postsList: isMultiPage ? pages : feedPosts,
-                                          onLoadMore: (!isMultiPage && widget.fromFeed)
-                                              ? () => ref
-                                                  .read(feedControllerProvider
-                                                      .notifier)
-                                                  .loadNextPage()
-                                              : null,
-                                          onPostIndexChanged: (index) {
-                                            if (isMultiPage) {
-                                              if (index >= 0 && index < pages.length) {
-                                                setState(() => _selectedPageIndex = index);
-                                              }
-                                              return;
-                                            }
-                                            final currentPosts = widget.fromFeed
-                                                ? (ref
-                                                        .read(
-                                                            feedControllerProvider)
-                                                        .value
-                                                        ?.posts ??
-                                                    feedPosts)
-                                                : feedPosts;
-                                            if (index >= 0 &&
-                                                index < currentPosts.length) {
-                                              final target =
-                                                  currentPosts[index];
-                                              if (target.cacheKey !=
-                                                  post.cacheKey) {
-                                                _openPost(context, target);
-                                              }
-                                            }
-                                          },
-                                          localFilePath: localMedia?.savedPath,
-                                          qualityMode: qualityMode,
-                                          notes: notes,
-                                          showNotes: showNotes,
-                                          mediaHeaders: ref
-                                                  .watch(
-                                                      postMediaHeadersProvider(
-                                                          targetPost))
-                                                  .value ??
-                                              const {},
-                                          initialPosition: Duration(
-                                            milliseconds:
-                                                settings.videoPlaybackPositions[
-                                                        targetPost.cacheKey] ??
-                                                    0,
-                                          ),
-                                          initialLoop: settings.videoPlayerLoop,
-                                          initialMuted:
-                                              settings.videoPlayerMuted,
-                                          initialCoverVideo:
-                                              settings.videoPlayerCover,
-                                          initialHalfVolume:
-                                              settings.videoPlayerHalfVolume,
-                                          initialVolume:
-                                              settings.videoPlayerVolume,
-                                          onVolumeChanged: (vol) => ref
-                                              .read(settingsControllerProvider
-                                                  .notifier)
-                                              .setVideoPlayerVolume(vol),
-                                          onPlaybackSnapshot: (snapshot) =>
-                                              _saveVideoSnapshot(
-                                                  ref, targetPost, snapshot),
-                                          onPlaybackPreferencesChanged:
-                                              (snapshot) =>
-                                                  _saveVideoPreferences(
-                                                      ref, snapshot),
-                                        ),
-                                      ),
-                                    )
-                                  : ConstrainedBox(
-                                      constraints: const BoxConstraints(
-                                        maxHeight: 760,
-                                      ),
-                                      child: AspectRatio(
-                                        aspectRatio: (targetPost.width > 0 &&
-                                                targetPost.height > 0)
-                                            ? (targetPost.width / targetPost.height)
-                                                .clamp(0.2, 5.0)
-                                            : (ref.watch(postMediaDimensionsProvider(
-                                                            targetPost.cacheKey)) !=
-                                                        null &&
-                                                    ref
-                                                            .watch(postMediaDimensionsProvider(
-                                                                targetPost.cacheKey))!
-                                                            .height >
-                                                        0
-                                                ? (ref.watch(postMediaDimensionsProvider(targetPost.cacheKey))!.width /
-                                                        ref
-                                                            .watch(postMediaDimensionsProvider(targetPost.cacheKey))!
-                                                            .height)
-                                                    .clamp(0.2, 5.0)
-                                                : (16 / 9)),
-                                        child: PostMediaViewer(
-                                          key: ValueKey('${targetPost.cacheKey}_$currentPostIndex'),
-                                          post: targetPost,
-                                          pageIndex: isMultiPage ? currentPostIndex : null,
-                                          pageCount: isMultiPage ? pages.length : null,
-                                          onPageChanged: isMultiPage
-                                              ? (newIdx) => setState(() => _selectedPageIndex = newIdx)
-                                              : null,
-                                          useLiveFeed: isMultiPage ? false : widget.fromFeed,
-                                          postsList: isMultiPage ? pages : feedPosts,
-                                          onLoadMore: (!isMultiPage && widget.fromFeed)
-                                              ? () => ref
-                                                  .read(feedControllerProvider
-                                                      .notifier)
-                                                  .loadNextPage()
-                                              : null,
-                                          onPostIndexChanged: (index) {
-                                            if (isMultiPage) {
-                                              if (index >= 0 && index < pages.length) {
-                                                setState(() => _selectedPageIndex = index);
-                                              }
-                                              return;
-                                            }
-                                            final currentPosts = widget.fromFeed
-                                                ? (ref
-                                                        .read(
-                                                            feedControllerProvider)
-                                                        .value
-                                                        ?.posts ??
-                                                    feedPosts)
-                                                : feedPosts;
-                                            if (index >= 0 &&
-                                                index < currentPosts.length) {
-                                              final target =
-                                                  currentPosts[index];
-                                              if (target.cacheKey !=
-                                                  post.cacheKey) {
-                                                _openPost(context, target);
-                                              }
-                                            }
-                                          },
-                                          localFilePath: localMedia?.savedPath,
-                                          qualityMode: qualityMode,
-                                          notes: notes,
-                                          showNotes: showNotes,
-                                          mediaHeaders: ref
-                                                  .watch(
-                                                      postMediaHeadersProvider(
-                                                          targetPost))
-                                                  .value ??
-                                              const {},
-                                          initialPosition: Duration(
-                                            milliseconds:
-                                                settings.videoPlaybackPositions[
-                                                        targetPost.cacheKey] ??
-                                                    0,
-                                          ),
-                                          initialLoop: settings.videoPlayerLoop,
-                                          initialMuted:
-                                              settings.videoPlayerMuted,
-                                          initialCoverVideo:
-                                              settings.videoPlayerCover,
-                                          initialHalfVolume:
-                                              settings.videoPlayerHalfVolume,
-                                          initialVolume:
-                                              settings.videoPlayerVolume,
-                                          onVolumeChanged: (vol) => ref
-                                              .read(settingsControllerProvider
-                                                  .notifier)
-                                              .setVideoPlayerVolume(vol),
-                                          onPlaybackSnapshot: (snapshot) =>
-                                              _saveVideoSnapshot(
-                                                  ref, targetPost, snapshot),
-                                          onPlaybackPreferencesChanged:
-                                              (snapshot) =>
-                                                  _saveVideoPreferences(
-                                                      ref, snapshot),
-                                        ),
-                                      ),
-                                    ),
-                            ),
-                          ),
-                          IconButton.filledTonal(
-                            tooltip: strings.ru ? 'Следующий' : 'Next',
-                            onPressed: next == null
-                                ? null
-                                : () => _openPost(context, next),
-                            icon: const Icon(Icons.chevron_right_rounded),
-                          ),
-                        ],
-                      ),
-                      if (!MediaUrlSelector.isVideo(post) &&
-                          !MediaUrlSelector.isAudio(post) &&
-                          (post.providerId.toLowerCase().contains('e621') ||
-                              post.providerId.toLowerCase().contains('e926') ||
-                              post.hasNotes)) ...[
-                        const SizedBox(height: 10),
-                        Center(
-                          child: GoogleTranslateButton(
-                            hasNotes: notes.isNotEmpty,
-                            isLoading: notesAsync.isLoading,
-                            showNotes: showNotes,
-                            notesCount: notes.length,
-                            isRu: strings.ru,
-                            onToggle: () {
-                              ref
-                                  .read(showPostNotesProvider(post.cacheKey)
-                                      .notifier)
-                                  .state = !showNotes;
-                            },
-                          ),
-                        ),
-                      ],
-                      if (pages.length > 1) ...[
-                        const SizedBox(height: 10),
-                        PostMultiPageStrip(
-                          pages: pages,
-                          currentIndex: currentPostIndex,
-                          onPageSelected: (idx) {
-                            setState(() => _selectedPageIndex = idx);
-                          },
-                          onDownloadAll: settings.allowDownloads
-                              ? () => _downloadAllPages(context, ref, pages)
-                              : null,
-                        ),
-                      ],
-                      if (currentIndex >= 0) ...[
-                        const SizedBox(height: 10),
-                        NeighborStrip(
-                          posts: feedPosts,
-                          currentIndex: currentIndex,
-                          onOpen: (post) => _openPost(context, post),
-                        ),
-                      ],
-                      const SizedBox(height: 16),
-                      PostActionBar(
-                        isFavorite: favoriteKeys.contains(post.cacheKey),
-                        labels: _postActionLabels(strings),
-                        downloaded: localMedia != null,
-                        isDownloading: isDownloading,
-                        onFavorite: () =>
-                            _toggleFavorite(ref, post, favoriteKeys),
-                        onCollection: () =>
-                            _addToCollection(context, ref, post),
-                        onOpen: () => launchUrl(Uri.parse(targetPost.fileUrl)),
-                        onOpenSource: () => _openSourcePage(ref, post),
-                        onCopy: () => Clipboard.setData(
-                            ClipboardData(text: targetPost.fileUrl)),
-                        onSimilar: () => _openSimilar(context, ref, post),
-                        onHide: () => _hidePost(context, ref, post),
-                        onDownload: settings.allowDownloads
-                            ? () => _download(context, ref, targetPost)
-                            : null,
-                        onSaveAs: settings.allowDownloads
-                            ? () => _saveAs(context, ref, targetPost)
-                            : null,
-                        onDeleteLocalFile: () =>
-                            _deleteLocalFile(context, ref, targetPost),
-                        onShare: () => _sharePost(context, ref, targetPost),
-                      ),
-                      const SizedBox(height: 16),
-                      PostInfoCard(
-                        post: post,
-                        strings: strings,
-                        localMedia: localMedia,
-                        fileSizeBytes: fileSizeBytes,
-                        e621Provider: e621Provider,
-                      ),
-                      ArtistPostsCard(
-                        post: post,
-                        onOpenPost: (p, filtered) => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => PostDetailsScreen(
-                              providerId: p.providerId,
-                              postId: p.id,
-                              initialPost: p,
-                              postsList: filtered,
-                            ),
-                          ),
-                        ),
-                      ),
-                      if (post.hasRelations) ...[
-                        const SizedBox(height: 16),
-                        PostRelationsCard(
-                          post: post,
-                          onOpenPostId: (targetId) =>
-                              _openPostById(context, post.providerId, targetId),
-                        ),
-                      ],
-                      if (post.hasPools && e621Provider != null) ...[
-                        const SizedBox(height: 16),
-                        PostPoolsCard(
-                          post: post,
-                          provider: e621Provider,
-                          onOpenComic: (poolId, currentPost, [targetId]) =>
-                              _openComic(context, e621Provider, poolId,
-                                  currentPost, targetId),
-                          onOpenPostId: (targetId) =>
-                              _openPostById(context, post.providerId, targetId),
-                        ),
-                      ],
-                      if (shouldShowCloudCard) ...[
-                        const SizedBox(height: 16),
-                        CloudMirrorsCard(
-                          links: post.cloudLinks,
-                          strings: strings,
-                          commentary: isTextOnly ? null : post.commentary,
-                          onPlayStream: (streamUrl) => launchUrl(
-                            Uri.parse(streamUrl),
-                            mode: LaunchMode.externalApplication,
-                          ),
-                          onDownloadStream: settings.allowDownloads
-                              ? (streamUrl) =>
-                                  _downloadUrl(context, ref, post, streamUrl)
-                              : null,
-                        ),
-                      ],
-                      const SizedBox(height: 16),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? Theme.of(context)
-                                  .colorScheme
-                                  .surfaceContainerHigh
-                                  .withValues(alpha: 0.70)
-                              : Theme.of(context)
-                                  .colorScheme
-                                  .surfaceContainerLow,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                    ? Colors.white.withValues(alpha: 0.12)
-                                    : Theme.of(context)
-                                        .colorScheme
-                                        .outlineVariant
-                                        .withValues(alpha: 0.40),
-                            width: 1.1,
-                          ),
-                        ),
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.tag_rounded,
-                                  size: 20,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  '${strings.tags} (${post.cleanTags.length})',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            PostTagsPanel(post: post),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      CommentsSection(post: post),
-                      const SizedBox(height: 80),
-                    ],
+
+            return PostDetailsDesktopLayout(
+              post: post,
+              targetPost: targetPost,
+              previous: previous,
+              next: next,
+              pages: pages,
+              isMultiPage: isMultiPage,
+              currentPostIndex: currentPostIndex,
+              feedPosts: feedPosts,
+              settings: settings,
+              strings: strings,
+              labels: labels,
+              favoriteKeys: favoriteKeys,
+              localMedia: localMedia,
+              fileSizeBytes: fileSizeBytes,
+              isDownloading: isDownloading,
+              qualityMode: qualityMode,
+              notes: notes,
+              notesAsync: notesAsync,
+              showNotes: showNotes,
+              e621Provider: e621Provider,
+              shouldShowCloudCard: shouldShowCloudCard,
+              isTextOnly: isTextOnly,
+              fromFeed: widget.fromFeed,
+              onOpenPost: (p) => _openPost(context, p),
+              onToggleFavorite: () => _toggleFavorite(ref, post, favoriteKeys),
+              onAddToCollection: () => _addToCollection(context, ref, post),
+              onClose: () => _close(context),
+              onDownload: settings.allowDownloads
+                  ? () => _download(context, ref, post)
+                  : null,
+              onSaveAs: settings.allowDownloads
+                  ? () => _saveAs(context, ref, post)
+                  : null,
+              onDeleteLocalFile: () =>
+                  _deleteLocalFile(context, ref, targetPost),
+              onShare: () => _sharePost(context, ref, targetPost),
+              onOpenSource: () => _openSourcePage(ref, targetPost),
+              onOpenSimilar: () => _openSimilar(context, ref, targetPost),
+              onHidePost: () => _hidePost(context, ref, targetPost),
+              onPageSelected: (idx) =>
+                  setState(() => _selectedPageIndex = idx),
+              onDownloadAllPages: () =>
+                  _downloadAllPages(context, ref, pages),
+              onOpenArtistPost: (artistPost, filtered) =>
+                  Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => PostDetailsScreen(
+                    providerId: artistPost.providerId,
+                    postId: artistPost.id,
+                    initialPost: artistPost,
+                    postsList: filtered,
                   ),
                 ),
               ),
+              onOpenPostId: (targetId) =>
+                  _openPostById(context, post.providerId, targetId),
+              onOpenComic: (poolId, currentPost, [targetId]) => _openComic(
+                  context, e621Provider!, poolId, currentPost, targetId),
+              onPlayStream: (streamUrl) => launchUrl(
+                Uri.parse(streamUrl),
+                mode: LaunchMode.externalApplication,
+              ),
+              onDownloadStream: settings.allowDownloads
+                  ? (streamUrl) =>
+                      _downloadUrl(context, ref, post, streamUrl)
+                  : null,
+              onToggleNotes: () => ref
+                  .read(showPostNotesProvider(targetPost.cacheKey).notifier)
+                  .state = !showNotes,
+              onVolumeChanged: (vol) => ref
+                  .read(settingsControllerProvider.notifier)
+                  .setVideoPlayerVolume(vol),
+              onPlaybackSnapshot: (snapshot) =>
+                  _saveVideoSnapshot(ref, targetPost, snapshot),
+              onPlaybackPreferencesChanged: (snapshot) =>
+                  _saveVideoPreferences(ref, snapshot),
+              onLoadMore: widget.fromFeed
+                  ? () => ref
+                      .read(feedControllerProvider.notifier)
+                      .loadNextPage()
+                  : null,
             );
           },
         ),
-      ),
-    );
-  }
-
-  Widget _buildMobileDetails(
-    BuildContext context,
-    WidgetRef ref,
-    Post post,
-    AppSettings settings,
-    Set<String> favoriteKeys,
-    MediaQualityMode qualityMode,
-    AppStrings strings,
-    bool mediaGestureLocked,
-    ValueChanged<bool>? onMediaGestureLockChanged, [
-    List<Post>? feedPosts,
-    ValueChanged<int>? onPostIndexChanged,
-    bool isActive = true,
-    List<Post>? pages,
-    int currentPageIndex = 0,
-  ]) {
-    final isVideo = MediaUrlSelector.isVideo(post);
-    final isAudio = MediaUrlSelector.isAudio(post);
-    final localMedia =
-        ref.watch(downloadedMediaByKeyProvider(post.cacheKey)).value;
-    final fileSizeBytes = localMedia != null
-        ? DownloadedMediaService.getFileSizeSync(localMedia)
-        : null;
-    final isDownloading = ref.watch(
-      downloadTasksProvider.select(
-        (tasks) =>
-            tasks.value?.any(
-              (t) =>
-                  (t.post?.cacheKey == post.cacheKey ||
-                      t.id == post.cacheKey) &&
-                  (t.status == DownloadTaskStatus.running ||
-                      t.status == DownloadTaskStatus.queued),
-            ) ??
-            false,
-      ),
-    );
-    final notesAsync = ref.watch(postNotesProvider(
-        PostDetailsArgs(providerId: post.providerId, postId: post.id)));
-    final notes = notesAsync.value ?? const [];
-    final showNotes = ref.watch(showPostNotesProvider(post.cacheKey));
-    final isTextOnly = post.fileType == 'text' ||
-        (post.previewUrl.isEmpty &&
-            post.sampleUrl.isEmpty &&
-            post.fileUrl.isEmpty &&
-            !MediaUrlSelector.isVideo(post) &&
-            !MediaUrlSelector.isAudio(post));
-    final shouldShowCloudCard = isTextOnly
-        ? post.cloudLinks.isNotEmpty
-        : (post.cloudLinks.isNotEmpty ||
-            (post.commentary != null && post.commentary!.trim().isNotEmpty));
-
-    final providerInstance =
-        ref.watch(postProviderInstanceProvider(post.providerId)).value;
-    final e621Provider =
-        providerInstance is E621Provider ? providerInstance : null;
-    final posts = feedPosts;
-    final hasMultiplePosts = posts != null && posts.length > 1;
-    final basePostId = post.id.split('_p').first;
-    final currentIndex = (posts != null && hasMultiplePosts)
-        ? posts.indexWhere(
-            (item) =>
-                item.providerId == post.providerId &&
-                (item.id == post.id || item.id == basePostId),
-          )
-        : 0;
-
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final screenHeight = MediaQuery.sizeOf(context).height;
-    final availableWidth = (screenWidth - 16).clamp(100.0, double.infinity);
-    final singleDynamicDim =
-        ref.watch(postMediaDimensionsProvider(post.cacheKey));
-    final singleMediaHeight = calculateMediaHeight(
-      post: post,
-      availableWidth: availableWidth,
-      screenHeight: screenHeight,
-      dynamicDimensions: singleDynamicDim,
-    );
-    final singleMediaAspect = post.width > 0 && post.height > 0
-        ? post.width / post.height
-        : (singleDynamicDim != null && singleDynamicDim.height > 0
-            ? singleDynamicDim.width / singleDynamicDim.height
-            : 16 / 9);
-
-    return GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onVerticalDragEnd: (details) {
-        if (mediaGestureLocked) return;
-        if ((details.primaryVelocity ?? 0) > 900) _close(context);
-      },
-      child: ListView(
-        padding: EdgeInsets.fromLTRB(
-          8,
-          8,
-          8,
-          120 + MediaQuery.paddingOf(context).bottom,
-        ),
-        children: [
-          if (posts != null && posts.length > 1)
-            MobileMediaCarousel(
-              key: const ValueKey('mobile_media_carousel'),
-              posts: posts,
-              initialIndex: currentIndex >= 0 ? currentIndex : 0,
-              activePost: post,
-              settings: settings,
-              favoriteKeys: favoriteKeys,
-              qualityMode: qualityMode,
-              onPageChanged: (newIndex) => onPostIndexChanged?.call(newIndex),
-              useLiveFeed: widget.fromFeed,
-              onLoadMore: widget.fromFeed
-                  ? () =>
-                      ref.read(feedControllerProvider.notifier).loadNextPage()
-                  : null,
-              onMediaGestureLockChanged: onMediaGestureLockChanged,
-              onToggleFavorite: (r, p) => _toggleFavorite(r, p, favoriteKeys),
-              onShowQuickActions: (ctx, r, p) =>
-                  _showMobileQuickActions(ctx, r, p, favoriteKeys),
-              onSaveVideoSnapshot: (r, p, s) => _saveVideoSnapshot(r, p, s),
-              onSaveVideoPreferences: (r, s) => _saveVideoPreferences(r, s),
-              pages: pages,
-              pageIndex: currentPageIndex,
-              onSetPageChanged: (idx) =>
-                  setState(() => _selectedPageIndex = idx),
-            )
-          else
-            GestureDetector(
-              behavior: HitTestBehavior.deferToChild,
-              onDoubleTap: isVideo
-                  ? null
-                  : () => _toggleFavorite(ref, post, favoriteKeys),
-              onLongPress: isVideo
-                  ? null
-                  : () =>
-                      _showMobileQuickActions(context, ref, post, favoriteKeys),
-              child: (isVideo || isAudio)
-                  ? Center(
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxHeight: isAudio ? 340 : singleMediaHeight,
-                        ),
-                        child: AspectRatio(
-                          aspectRatio:
-                              isAudio ? 1.3 : singleMediaAspect.clamp(0.2, 5.0),
-                          child: PostMediaViewer(
-                            key: ValueKey('${post.cacheKey}_$currentPageIndex'),
-                            post: post,
-                            pageIndex: ((pages != null && pages.length > 1) || post.pageCount > 1)
-                                ? currentPageIndex
-                                : null,
-                            pageCount: ((pages != null && pages.length > 1) || post.pageCount > 1)
-                                ? (pages != null && pages.length > 1 ? pages.length : post.pageCount)
-                                : null,
-                            onPageChanged: ((pages != null && pages.length > 1) || post.pageCount > 1)
-                                ? (idx) =>
-                                    setState(() => _selectedPageIndex = idx)
-                                : null,
-                            useLiveFeed: (pages != null && pages.length > 1)
-                                ? false
-                                : widget.fromFeed,
-                            isActive: isActive,
-                            postsList: (pages != null && pages.length > 1)
-                                ? pages
-                                : feedPosts,
-                            onLoadMore: widget.fromFeed
-                                ? () => ref
-                                    .read(feedControllerProvider.notifier)
-                                    .loadNextPage()
-                                : null,
-                            onPostIndexChanged: onPostIndexChanged,
-                            localFilePath: localMedia?.savedPath,
-                            qualityMode: qualityMode,
-                            notes: notes,
-                            showNotes: showNotes,
-                            mediaHeaders: ref
-                                    .watch(postMediaHeadersProvider(post))
-                                    .value ??
-                                const {},
-                            initialPosition: Duration(
-                              milliseconds: settings
-                                      .videoPlaybackPositions[post.cacheKey] ??
-                                  0,
-                            ),
-                            initialLoop: settings.videoPlayerLoop,
-                            initialMuted: settings.videoPlayerMuted,
-                            initialCoverVideo: settings.videoPlayerCover,
-                            initialHalfVolume: settings.videoPlayerHalfVolume,
-                            initialVolume: settings.videoPlayerVolume,
-                            onVolumeChanged: (vol) => ref
-                                .read(settingsControllerProvider.notifier)
-                                .setVideoPlayerVolume(vol),
-                            onPlaybackSnapshot: (snapshot) =>
-                                _saveVideoSnapshot(ref, post, snapshot),
-                            onPlaybackPreferencesChanged: (snapshot) =>
-                                _saveVideoPreferences(ref, snapshot),
-                            onMediaGestureLockChanged: (locked) {
-                              onMediaGestureLockChanged?.call(locked);
-                            },
-                          ),
-                        ),
-                      ),
-                    )
-                  : SizedBox(
-                      width: double.infinity,
-                      height: singleMediaHeight,
-                      child: PostMediaViewer(
-                        key: ValueKey('${post.cacheKey}_$currentPageIndex'),
-                        post: post,
-                        pageIndex: ((pages != null && pages.length > 1) || post.pageCount > 1)
-                            ? currentPageIndex
-                            : null,
-                        pageCount: ((pages != null && pages.length > 1) || post.pageCount > 1)
-                            ? (pages != null && pages.length > 1 ? pages.length : post.pageCount)
-                            : null,
-                        onPageChanged: ((pages != null && pages.length > 1) || post.pageCount > 1)
-                            ? (idx) =>
-                                setState(() => _selectedPageIndex = idx)
-                            : null,
-                        useLiveFeed: (pages != null && pages.length > 1)
-                            ? false
-                            : widget.fromFeed,
-                        isActive: isActive,
-                        postsList: (pages != null && pages.length > 1)
-                            ? pages
-                            : feedPosts,
-                        onLoadMore: widget.fromFeed
-                            ? () => ref
-                                .read(feedControllerProvider.notifier)
-                                .loadNextPage()
-                            : null,
-                        onPostIndexChanged: onPostIndexChanged,
-                        localFilePath: localMedia?.savedPath,
-                        qualityMode: qualityMode,
-                        notes: notes,
-                        showNotes: showNotes,
-                        mediaHeaders:
-                            ref.watch(postMediaHeadersProvider(post)).value ??
-                                const {},
-                        initialPosition: Duration(
-                          milliseconds:
-                              settings.videoPlaybackPositions[post.cacheKey] ??
-                                  0,
-                        ),
-                        initialLoop: settings.videoPlayerLoop,
-                        initialMuted: settings.videoPlayerMuted,
-                        initialCoverVideo: settings.videoPlayerCover,
-                        initialHalfVolume: settings.videoPlayerHalfVolume,
-                        initialVolume: settings.videoPlayerVolume,
-                        onVolumeChanged: (vol) => ref
-                            .read(settingsControllerProvider.notifier)
-                            .setVideoPlayerVolume(vol),
-                        onPlaybackSnapshot: (snapshot) =>
-                            _saveVideoSnapshot(ref, post, snapshot),
-                        onPlaybackPreferencesChanged: (snapshot) =>
-                            _saveVideoPreferences(ref, snapshot),
-                        onMediaGestureLockChanged: (locked) {
-                          onMediaGestureLockChanged?.call(locked);
-                        },
-                      ),
-                    ),
-            ),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            switchInCurve: Curves.easeOut,
-            switchOutCurve: Curves.easeIn,
-            child: KeyedSubtree(
-              key: ValueKey(post.cacheKey),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (!MediaUrlSelector.isVideo(post) &&
-                      !MediaUrlSelector.isAudio(post) &&
-                      (post.providerId.toLowerCase().contains('e621') ||
-                          post.providerId.toLowerCase().contains('e926') ||
-                          post.hasNotes)) ...[
-                    const SizedBox(height: 8),
-                    Center(
-                      child: GoogleTranslateButton(
-                        hasNotes: notes.isNotEmpty,
-                        isLoading: notesAsync.isLoading,
-                        showNotes: showNotes,
-                        notesCount: notes.length,
-                        isRu: strings.ru,
-                        onToggle: () {
-                          ref
-                              .read(
-                                  showPostNotesProvider(post.cacheKey).notifier)
-                              .state = !showNotes;
-                        },
-                      ),
-                    ),
-                  ],
-                  if (pages != null && pages.length > 1) ...[
-                    PostMultiPageStrip(
-                      pages: pages,
-                      currentIndex: currentPageIndex,
-                      onPageSelected: (idx) {
-                        setState(() => _selectedPageIndex = idx);
-                      },
-                      onDownloadAll: settings.allowDownloads
-                          ? () => _downloadAllPages(context, ref, pages)
-                          : null,
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-                  const SizedBox(height: 12),
-                  PostActionBar(
-                    isFavorite: favoriteKeys.contains(post.cacheKey),
-                    labels: _postActionLabels(strings),
-                    downloaded: localMedia != null,
-                    isDownloading: isDownloading,
-                    onFavorite: () => _toggleFavorite(ref, post, favoriteKeys),
-                    onCollection: () => _addToCollection(context, ref, post),
-                    onOpen: () => launchUrl(Uri.parse(post.fileUrl)),
-                    onOpenSource: () => _openSourcePage(ref, post),
-                    onCopy: () =>
-                        Clipboard.setData(ClipboardData(text: post.fileUrl)),
-                    onSimilar: () => _openSimilar(context, ref, post),
-                    onHide: () => _hidePost(context, ref, post),
-                    onDownload: settings.allowDownloads
-                        ? () => _download(context, ref, post)
-                        : null,
-                    onSaveAs: settings.allowDownloads
-                        ? () => _saveAs(context, ref, post)
-                        : null,
-                    onDeleteLocalFile: () =>
-                        _deleteLocalFile(context, ref, post),
-                    onShare: () => _sharePost(context, ref, post),
-                  ),
-                  const SizedBox(height: 12),
-                  PostInfoCard(
-                    post: post,
-                    strings: strings,
-                    localMedia: localMedia,
-                    fileSizeBytes: fileSizeBytes,
-                    e621Provider: e621Provider,
-                  ),
-                  ArtistPostsCard(
-                    post: post,
-                    onOpenPost: (p, filtered) => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => PostDetailsScreen(
-                          providerId: p.providerId,
-                          postId: p.id,
-                          initialPost: p,
-                          postsList: filtered,
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (post.hasRelations) ...[
-                    const SizedBox(height: 12),
-                    PostRelationsCard(
-                      post: post,
-                      onOpenPostId: (targetId) =>
-                          _openPostById(context, post.providerId, targetId),
-                    ),
-                  ],
-                  if (post.hasPools && e621Provider != null) ...[
-                    const SizedBox(height: 12),
-                    PostPoolsCard(
-                      post: post,
-                      provider: e621Provider,
-                      onOpenComic: (poolId, currentPost, [targetId]) =>
-                          _openComic(context, e621Provider, poolId, currentPost,
-                              targetId),
-                      onOpenPostId: (targetId) =>
-                          _openPostById(context, post.providerId, targetId),
-                    ),
-                  ],
-                  if (shouldShowCloudCard) ...[
-                    const SizedBox(height: 12),
-                    CloudMirrorsCard(
-                      links: post.cloudLinks,
-                      strings: strings,
-                      commentary: isTextOnly ? null : post.commentary,
-                      onPlayStream: (streamUrl) => launchUrl(
-                        Uri.parse(streamUrl),
-                        mode: LaunchMode.externalApplication,
-                      ),
-                      onDownloadStream: settings.allowDownloads
-                          ? (streamUrl) =>
-                              _downloadUrl(context, ref, post, streamUrl)
-                          : null,
-                    ),
-                  ],
-                  const SizedBox(height: 12),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? Theme.of(context)
-                              .colorScheme
-                              .surfaceContainerHigh
-                              .withValues(alpha: 0.70)
-                          : Theme.of(context).colorScheme.surfaceContainerLow,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white.withValues(alpha: 0.12)
-                            : Theme.of(context)
-                                .colorScheme
-                                .outlineVariant
-                                .withValues(alpha: 0.40),
-                        width: 1.1,
-                      ),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: ExpansionTile(
-                      tilePadding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 2),
-                      childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-                      initiallyExpanded: false,
-                      shape: const Border(),
-                      collapsedShape: const Border(),
-                      leading: Icon(
-                        Icons.tag_rounded,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      title: Text(
-                        '${strings.tags} (${post.cleanTags.length})',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                      children: [
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: PostTagsPanel(post: post),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  CommentsSection(post: post),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-        ],
       ),
     );
   }
