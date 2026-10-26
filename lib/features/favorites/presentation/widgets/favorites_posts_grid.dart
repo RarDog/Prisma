@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:gel_rule_app/app/app_navigator.dart';
-import 'package:gel_rule_app/app/responsive.dart';
-import 'package:gel_rule_app/backend/backend.dart';
-import 'package:gel_rule_app/shared/widgets/empty_view.dart';
-import 'package:gel_rule_app/shared/widgets/post_masonry_grid.dart';
+import 'package:prisma_app/app/app_navigator.dart';
+import 'package:prisma_app/app/responsive.dart';
+import 'package:prisma_app/backend/backend.dart';
+import 'package:prisma_app/shared/widgets/empty_view.dart';
+import 'package:prisma_app/shared/widgets/post_masonry_grid.dart';
 import '../favorites_controller.dart';
 
 class FavoritesPostsGrid extends ConsumerWidget {

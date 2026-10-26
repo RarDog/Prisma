@@ -1,5 +1,5 @@
-import 'package:gel_rule_app/core/models/cloud_media_link.dart';
-import 'package:gel_rule_app/core/utils/cloud_link_extractor.dart';
+import 'package:prisma_app/core/models/cloud_media_link.dart';
+import 'package:prisma_app/core/utils/cloud_link_extractor.dart';
 
 class Post {
   const Post({

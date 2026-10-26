@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/core/http/dio_client.dart';
-import 'package:gel_rule_app/core/models/top_period_filter.dart';
-import 'package:gel_rule_app/sources/booru/wallhaven_provider.dart';
-import 'package:gel_rule_app/sources/booru/arena_provider.dart';
-import 'package:gel_rule_app/sources/provider_factory.dart';
-import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
+import 'package:prisma_app/core/http/dio_client.dart';
+import 'package:prisma_app/core/models/top_period_filter.dart';
+import 'package:prisma_app/sources/booru/wallhaven_provider.dart';
+import 'package:prisma_app/sources/booru/arena_provider.dart';
+import 'package:prisma_app/sources/provider_factory.dart';
+import 'package:prisma_app/features/providers/models/content_provider_config.dart';
 
 void main() {
   group('WallhavenProvider Unit Tests', () {

@@ -1,13 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/core/errors/app_exception.dart';
-import 'package:gel_rule_app/core/http/dio_client.dart';
-import 'package:gel_rule_app/core/models/post.dart';
-import 'package:gel_rule_app/core/models/provider_health.dart';
-import 'package:gel_rule_app/core/models/tag_suggestion.dart';
-import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
-import 'package:gel_rule_app/sources/manga/mangalib_provider.dart';
-import 'package:gel_rule_app/sources/provider_factory.dart';
+import 'package:prisma_app/core/errors/app_exception.dart';
+import 'package:prisma_app/core/http/dio_client.dart';
+import 'package:prisma_app/core/models/post.dart';
+import 'package:prisma_app/core/models/provider_health.dart';
+import 'package:prisma_app/core/models/tag_suggestion.dart';
+import 'package:prisma_app/features/providers/models/content_provider_config.dart';
+import 'package:prisma_app/sources/manga/mangalib_provider.dart';
+import 'package:prisma_app/sources/provider_factory.dart';
 
 void main() {
   group('MangaLibProvider Tests', () {

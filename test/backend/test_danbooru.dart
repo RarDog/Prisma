@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/sources/mappers/danbooru_mapper.dart';
-import 'package:gel_rule_app/core/utils/media_quality.dart';
+import 'package:prisma_app/sources/mappers/danbooru_mapper.dart';
+import 'package:prisma_app/core/utils/media_quality.dart';
 
 void main() {
   test('danbooru video mapping', () {

@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:gel_rule_app/backend/di/backend_providers.dart';
+import 'package:prisma_app/backend/di/backend_providers.dart';
 import 'manga_library_service.dart';
 import 'manga_offline_service.dart';
 

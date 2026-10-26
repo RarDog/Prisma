@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:gel_rule_app/core/models/post.dart';
-import 'package:gel_rule_app/core/models/post_note.dart';
+import 'package:prisma_app/core/models/post.dart';
+import 'package:prisma_app/core/models/post_note.dart';
 
 class PostNotesOverlay extends StatelessWidget {
   const PostNotesOverlay({

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/core/models/post.dart';
-import 'package:gel_rule_app/features/post/presentation/widgets/post_media_viewer.dart';
+import 'package:prisma_app/core/models/post.dart';
+import 'package:prisma_app/features/post/presentation/widgets/post_media_viewer.dart';
 
 Post _post(String id, {String providerId = 'fapello'}) => Post(
       id: id,

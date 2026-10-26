@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:gel_rule_app/core/utils/logger.dart';
+import 'package:prisma_app/core/utils/logger.dart';
 
 class PerformanceMetrics {
   final int rssBytes;

@@ -1,10 +1,10 @@
-import 'package:gel_rule_app/core/errors/failure.dart';
-import 'package:gel_rule_app/core/utils/result.dart';
-import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
-import 'package:gel_rule_app/core/models/provider_health.dart';
-import 'package:gel_rule_app/sources/provider_factory.dart';
-import 'package:gel_rule_app/sources/provider_manager.dart';
-import 'package:gel_rule_app/features/providers/data/provider_repository.dart';
+import 'package:prisma_app/core/errors/failure.dart';
+import 'package:prisma_app/core/utils/result.dart';
+import 'package:prisma_app/features/providers/models/content_provider_config.dart';
+import 'package:prisma_app/core/models/provider_health.dart';
+import 'package:prisma_app/sources/provider_factory.dart';
+import 'package:prisma_app/sources/provider_manager.dart';
+import 'package:prisma_app/features/providers/data/provider_repository.dart';
 
 class ProviderCheckService {
   ProviderCheckService(this._repository, this._factory, this._manager);

@@ -1,4 +1,4 @@
-name: gel_rule_app
+name: prisma_app
 description: Local backend/core layer for a Flutter booru browser app.
 publish_to: "none"
 version: 4.2.1-rc.1+124
@@ -33,6 +33,8 @@ dependencies:
   file_selector: ^1.0.3
   path: ^1.9.0
   archive: ^3.6.1
+  crypto: ^3.0.3
+  flutter_secure_storage: ^9.2.2
   media_kit_libs_android_video: ^1.3.8
   share_plus: ^10.0.0
   dynamic_color: ^1.7.0

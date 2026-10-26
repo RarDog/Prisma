@@ -3,13 +3,13 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:gel_rule_app/app/motion.dart';
-import 'package:gel_rule_app/backend/backend.dart';
-import 'package:gel_rule_app/core/performance/performance_monitor.dart';
-import 'package:gel_rule_app/features/post/presentation/post_details_controller.dart';
-import 'package:gel_rule_app/features/post/presentation/post_details_providers.dart';
-import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
-import 'package:gel_rule_app/sources/mappers/pixiv_mapper.dart';
+import 'package:prisma_app/app/motion.dart';
+import 'package:prisma_app/backend/backend.dart';
+import 'package:prisma_app/core/performance/performance_monitor.dart';
+import 'package:prisma_app/features/post/presentation/post_details_controller.dart';
+import 'package:prisma_app/features/post/presentation/post_details_providers.dart';
+import 'package:prisma_app/features/settings/presentation/settings_controller.dart';
+import 'package:prisma_app/sources/mappers/pixiv_mapper.dart';
 import 'post_media_viewer.dart';
 
 double calculateMediaHeight({

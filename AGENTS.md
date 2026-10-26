@@ -6,7 +6,7 @@
 
 ## 1. High-Level Overview
 
-* **Application**: Prisma (`gel_rule_app`) — high-performance cross-platform multimedia client for booru imageboards, creator networks (Pixiv, Pawchive), adult video tubes (XVideos), and manga/light novel catalogs (MangaDex, MangaLib, RanobeLib).
+* **Application**: Prisma (`prisma_app`) — high-performance cross-platform multimedia client for booru imageboards, creator networks (Pixiv, Pawchive), adult video tubes (XVideos), and manga/light novel catalogs (MangaDex, MangaLib, RanobeLib).
 * **Tech Stack**:
   * **Flutter** 3.24+ / **Dart** 3.3+
   * **State Management**: `flutter_riverpod` (v2.5+, `StateNotifier`, `AsyncNotifier`, functional providers)

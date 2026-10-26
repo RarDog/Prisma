@@ -23,7 +23,7 @@ fi
 echo "Building AppImage for Prisma v${VERSION}..."
 
 BUNDLE_DIR="${ROOT_DIR}/build/linux/x64/release/bundle"
-if [ ! -f "${BUNDLE_DIR}/gel_rule_app" ]; then
+if [ ! -f "${BUNDLE_DIR}/prisma_app" ]; then
   echo "Release bundle not found. Running 'flutter build linux --release'..."
   flutter build linux --release
 fi
@@ -80,7 +80,7 @@ fi
 export PATH="${HERE}/usr/bin:${PATH}"
 export LD_LIBRARY_PATH="${MPV_SHADOW_DIR}:${HERE}/lib:${HERE}/usr/lib:${LD_LIBRARY_PATH}"
 export XDG_DATA_DIRS="${HERE}/usr/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
-exec "${HERE}/gel_rule_app" "$@"
+exec "${HERE}/prisma_app" "$@"
 EOF
 chmod +x "${APP_DIR}/AppRun"
 
@@ -90,18 +90,18 @@ cat << 'EOF' > "${APP_DIR}/prisma.desktop"
 Name=Prisma
 GenericName=Booru Client
 Comment=Prisma - Modern Booru & Art Client
-Exec=gel_rule_app %u
+Exec=prisma_app %u
 Icon=prisma
 Terminal=false
 Type=Application
 Categories=Network;Graphics;
-StartupWMClass=com.example.gel_rule_app
+StartupWMClass=com.example.prisma_app
 EOF
 
 mkdir -p "${APP_DIR}/usr/share/applications"
 cp "${APP_DIR}/prisma.desktop" "${APP_DIR}/usr/share/applications/prisma.desktop"
-cp "${APP_DIR}/prisma.desktop" "${APP_DIR}/usr/share/applications/com.example.gel_rule_app.desktop"
-cp "${APP_DIR}/prisma.desktop" "${APP_DIR}/com.example.gel_rule_app.desktop"
+cp "${APP_DIR}/prisma.desktop" "${APP_DIR}/usr/share/applications/com.example.prisma_app.desktop"
+cp "${APP_DIR}/prisma.desktop" "${APP_DIR}/com.example.prisma_app.desktop"
 
 # Icons: Generate all standard resolutions directly from the supersampled round icon
 ROUNDED_ICON="${ROOT_DIR}/assets/icon/app_icon_rounded.png"
@@ -125,11 +125,11 @@ for size in sizes:
     hicolor_dir = f"{app_dir}/usr/share/icons/hicolor/{size}x{size}/apps"
     os.makedirs(hicolor_dir, exist_ok=True)
     resized.save(f"{hicolor_dir}/prisma.png")
-    resized.save(f"{hicolor_dir}/com.example.gel_rule_app.png")
+    resized.save(f"{hicolor_dir}/com.example.prisma_app.png")
 
 # AppDir roots
 src.save(f"{app_dir}/prisma.png")
-src.save(f"{app_dir}/com.example.gel_rule_app.png")
+src.save(f"{app_dir}/com.example.prisma_app.png")
 src.save(f"{app_dir}/.DirIcon", format="PNG")
 src.save(f"{bundle_dir}/prisma.png")
 print("Icons generated successfully for all resolutions.")

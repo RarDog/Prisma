@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/features/favorites/models/favorite.dart';
-import 'package:gel_rule_app/core/models/post.dart';
-import 'package:gel_rule_app/features/favorites/data/favorite_repository.dart';
-import 'package:gel_rule_app/features/favorites/domain/favorite_service.dart';
-import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:prisma_app/features/favorites/models/favorite.dart';
+import 'package:prisma_app/core/models/post.dart';
+import 'package:prisma_app/features/favorites/data/favorite_repository.dart';
+import 'package:prisma_app/features/favorites/domain/favorite_service.dart';
+import 'package:prisma_app/core/utils/result.dart';
 
 class FakeFavoriteRepository implements FavoriteRepository {
   final favorites = <String, Favorite>{};

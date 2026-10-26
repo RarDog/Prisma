@@ -1,9 +1,9 @@
-import 'package:gel_rule_app/core/utils/logger.dart';
-import 'package:gel_rule_app/core/utils/result.dart';
-import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
-import 'package:gel_rule_app/features/providers/data/provider_repository.dart';
-import 'package:gel_rule_app/features/settings/domain/backup_service.dart';
-import 'package:gel_rule_app/features/settings/domain/settings_service.dart';
+import 'package:prisma_app/core/utils/logger.dart';
+import 'package:prisma_app/core/utils/result.dart';
+import 'package:prisma_app/features/providers/models/content_provider_config.dart';
+import 'package:prisma_app/features/providers/data/provider_repository.dart';
+import 'package:prisma_app/features/settings/domain/backup_service.dart';
+import 'package:prisma_app/features/settings/domain/settings_service.dart';
 
 class OnboardingService {
   OnboardingService({

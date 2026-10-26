@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gel_rule_app/core/models/post.dart';
-import 'package:gel_rule_app/features/manga/presentation/widgets/page_flip_3d.dart';
-import 'package:gel_rule_app/features/manga/presentation/manga_reader_screen.dart';
-import 'package:gel_rule_app/features/manga/presentation/manga_details_screen.dart';
-import 'package:gel_rule_app/shared/widgets/app_shell.dart';
-import 'package:gel_rule_app/sources/manga/mangadex_provider.dart';
-import 'package:gel_rule_app/features/settings/domain/settings_service.dart';
+import 'package:prisma_app/core/models/post.dart';
+import 'package:prisma_app/features/manga/presentation/widgets/page_flip_3d.dart';
+import 'package:prisma_app/features/manga/presentation/manga_reader_screen.dart';
+import 'package:prisma_app/features/manga/presentation/manga_details_screen.dart';
+import 'package:prisma_app/shared/widgets/app_shell.dart';
+import 'package:prisma_app/sources/manga/mangadex_provider.dart';
+import 'package:prisma_app/features/settings/domain/settings_service.dart';
 
 void main() {
   group('Manga & 3D Reader Tests', () {

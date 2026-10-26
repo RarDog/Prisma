@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gel_rule_app/sources/manga/mangadex_provider.dart';
+import 'package:prisma_app/sources/manga/mangadex_provider.dart';
 import '../../domain/manga_library_service.dart';
 
 class MangaChaptersList extends StatelessWidget {

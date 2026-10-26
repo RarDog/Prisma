@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/backend/backend.dart';
+import 'package:prisma_app/backend/backend.dart';
 
 void main() {
   group('Provider Top Period Filtering Tests', () {

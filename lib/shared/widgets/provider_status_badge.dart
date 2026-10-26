@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:gel_rule_app/backend/backend.dart';
+import 'package:prisma_app/backend/backend.dart';
 
 class ProviderStatusBadge extends StatelessWidget {
   const ProviderStatusBadge({

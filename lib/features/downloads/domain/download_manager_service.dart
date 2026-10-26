@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
-import 'package:gel_rule_app/core/utils/result.dart';
-import 'package:gel_rule_app/features/downloads/models/download_task.dart';
-import 'package:gel_rule_app/core/models/post.dart';
-import 'package:gel_rule_app/core/utils/media_quality.dart';
-import 'package:gel_rule_app/features/downloads/domain/download_service.dart';
-import 'package:gel_rule_app/features/downloads/domain/downloaded_media_service.dart';
-import 'package:gel_rule_app/features/settings/domain/settings_service.dart';
+import 'package:prisma_app/core/utils/result.dart';
+import 'package:prisma_app/features/downloads/models/download_task.dart';
+import 'package:prisma_app/core/models/post.dart';
+import 'package:prisma_app/core/utils/media_quality.dart';
+import 'package:prisma_app/features/downloads/domain/download_service.dart';
+import 'package:prisma_app/features/downloads/domain/downloaded_media_service.dart';
+import 'package:prisma_app/features/settings/domain/settings_service.dart';
 
 class DownloadManagerService {
   DownloadManagerService(

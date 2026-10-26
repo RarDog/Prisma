@@ -6,11 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'package:gel_rule_app/backend/backend.dart';
-import 'package:gel_rule_app/features/post/presentation/widgets/post_media_viewer.dart';
-import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
-import 'package:gel_rule_app/shared/widgets/app_shell.dart';
-import 'package:gel_rule_app/sources/manga/mangadex_provider.dart';
+import 'package:prisma_app/backend/backend.dart';
+import 'package:prisma_app/features/post/presentation/widgets/post_media_viewer.dart';
+import 'package:prisma_app/features/settings/presentation/settings_controller.dart';
+import 'package:prisma_app/shared/widgets/app_shell.dart';
+import 'package:prisma_app/sources/manga/mangadex_provider.dart';
 import '../domain/manga_library_service.dart';
 import '../domain/manga_library_providers.dart';
 import 'manga_reader_screen.dart';

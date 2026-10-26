@@ -1,9 +1,9 @@
 import 'package:isar/isar.dart';
 
-import 'package:gel_rule_app/core/database/app_database.dart';
-import 'package:gel_rule_app/core/database/database_service.dart';
-import 'package:gel_rule_app/core/utils/result.dart';
-import 'package:gel_rule_app/features/viewed/models/viewed_post.dart';
+import 'package:prisma_app/core/database/app_database.dart';
+import 'package:prisma_app/core/database/database_service.dart';
+import 'package:prisma_app/core/utils/result.dart';
+import 'package:prisma_app/features/viewed/models/viewed_post.dart';
 
 class ViewedPostRepository {
   ViewedPostRepository(this._databaseService);

@@ -1,6 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:gel_rule_app/backend/backend.dart';
+import 'package:prisma_app/backend/backend.dart';
 
 import 'artist_service_utils.dart';
 import 'artists_liquid_card.dart';

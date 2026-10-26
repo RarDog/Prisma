@@ -1,4 +1,4 @@
-import 'package:gel_rule_app/core/errors/failure.dart';
+import 'package:prisma_app/core/errors/failure.dart';
 
 sealed class Result<T> {
   const Result();

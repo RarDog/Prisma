@@ -1,4 +1,4 @@
-package com.example.gel_rule_app
+package com.example.prisma_app
 
 import android.content.ContentValues
 import android.content.Context

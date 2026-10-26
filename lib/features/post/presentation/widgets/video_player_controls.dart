@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 
-import 'package:gel_rule_app/app/motion.dart';
+import 'package:prisma_app/app/motion.dart';
 
 class RoundControlButton extends StatelessWidget {
   const RoundControlButton({

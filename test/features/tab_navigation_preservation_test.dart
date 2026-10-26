@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/backend/backend.dart';
-import 'package:gel_rule_app/shared/widgets/app_shell.dart';
+import 'package:prisma_app/backend/backend.dart';
+import 'package:prisma_app/shared/widgets/app_shell.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/app/app_version.dart';
-import 'package:gel_rule_app/core/http/app_headers.dart';
+import 'package:prisma_app/app/app_version.dart';
+import 'package:prisma_app/core/http/app_headers.dart';
 
 void main() {
   group('AppHeaders', () {

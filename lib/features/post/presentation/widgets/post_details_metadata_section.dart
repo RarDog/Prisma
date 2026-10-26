@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'package:gel_rule_app/app/app_strings.dart';
-import 'package:gel_rule_app/backend/backend.dart';
-import 'package:gel_rule_app/sources/booru/e621_provider.dart';
+import 'package:prisma_app/app/app_strings.dart';
+import 'package:prisma_app/backend/backend.dart';
+import 'package:prisma_app/sources/booru/e621_provider.dart';
 import 'cloud_mirrors_card.dart';
 import 'comments_section.dart';
 import 'post_action_bar.dart';

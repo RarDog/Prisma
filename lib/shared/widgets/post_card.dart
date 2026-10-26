@@ -6,11 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:gel_rule_app/app/motion.dart';
-import 'package:gel_rule_app/backend/backend.dart';
-import 'package:gel_rule_app/core/performance/performance_monitor.dart';
-import 'package:gel_rule_app/core/utils/result.dart';
-import 'package:gel_rule_app/features/post/presentation/widgets/post_media_viewer.dart';
+import 'package:prisma_app/app/motion.dart';
+import 'package:prisma_app/backend/backend.dart';
+import 'package:prisma_app/core/performance/performance_monitor.dart';
+import 'package:prisma_app/core/utils/result.dart';
+import 'package:prisma_app/features/post/presentation/widgets/post_media_viewer.dart';
 import 'blur_content.dart';
 import 'loading_skeleton.dart';
 import 'rating_badge.dart';

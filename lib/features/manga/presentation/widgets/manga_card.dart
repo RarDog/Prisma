@@ -1,8 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
-import 'package:gel_rule_app/core/models/post.dart';
-import 'package:gel_rule_app/features/post/presentation/widgets/post_media_viewer.dart';
+import 'package:prisma_app/core/models/post.dart';
+import 'package:prisma_app/features/post/presentation/widgets/post_media_viewer.dart';
 
 class MangaCard extends StatelessWidget {
   const MangaCard({

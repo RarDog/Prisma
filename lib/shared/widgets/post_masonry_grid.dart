@@ -5,9 +5,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
-import 'package:gel_rule_app/app/responsive.dart';
-import 'package:gel_rule_app/backend/backend.dart';
-import 'package:gel_rule_app/features/post/presentation/widgets/post_media_viewer.dart';
+import 'package:prisma_app/app/responsive.dart';
+import 'package:prisma_app/backend/backend.dart';
+import 'package:prisma_app/features/post/presentation/widgets/post_media_viewer.dart';
 import 'loading_skeleton.dart';
 import 'post_card.dart';
 

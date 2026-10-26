@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
-import 'package:gel_rule_app/features/providers/data/provider_repository.dart';
-import 'package:gel_rule_app/features/settings/domain/backup_service.dart';
-import 'package:gel_rule_app/features/onboarding/domain/onboarding_service.dart';
-import 'package:gel_rule_app/features/settings/domain/settings_service.dart';
-import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:prisma_app/features/providers/models/content_provider_config.dart';
+import 'package:prisma_app/features/providers/data/provider_repository.dart';
+import 'package:prisma_app/features/settings/domain/backup_service.dart';
+import 'package:prisma_app/features/onboarding/domain/onboarding_service.dart';
+import 'package:prisma_app/features/settings/domain/settings_service.dart';
+import 'package:prisma_app/core/utils/result.dart';
 
 class _FakeSettingsService extends Fake implements SettingsService {
   AppSettings current = AppSettings.defaults;

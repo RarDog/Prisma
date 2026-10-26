@@ -5,11 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:gel_rule_app/backend/backend.dart';
-import 'package:gel_rule_app/core/utils/result.dart';
-import 'package:gel_rule_app/features/settings/presentation/widgets/app_update_dialog.dart';
-import 'package:gel_rule_app/core/motion/desktop_smooth_scroll_binding.dart';
-import 'package:gel_rule_app/features/downloads/presentation/widgets/download_dynamic_island.dart';
+import 'package:prisma_app/backend/backend.dart';
+import 'package:prisma_app/core/utils/result.dart';
+import 'package:prisma_app/features/settings/presentation/widgets/app_update_dialog.dart';
+import 'package:prisma_app/core/motion/desktop_smooth_scroll_binding.dart';
+import 'package:prisma_app/features/downloads/presentation/widgets/download_dynamic_island.dart';
 import 'app_strings.dart';
 import 'motion.dart';
 import 'router.dart';

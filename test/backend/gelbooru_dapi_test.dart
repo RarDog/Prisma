@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
-import 'package:gel_rule_app/sources/booru/gelbooru_provider.dart';
-import 'package:gel_rule_app/sources/provider_factory.dart';
-import 'package:gel_rule_app/core/http/dio_client.dart';
+import 'package:prisma_app/features/providers/models/content_provider_config.dart';
+import 'package:prisma_app/sources/booru/gelbooru_provider.dart';
+import 'package:prisma_app/sources/provider_factory.dart';
+import 'package:prisma_app/core/http/dio_client.dart';
 
 void main() {
   test('ProviderFactory creates GelbooruProvider with query credentials', () {

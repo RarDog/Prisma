@@ -1,10 +1,10 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/core/models/post.dart';
-import 'package:gel_rule_app/features/post/presentation/widgets/ugoira_player.dart';
-import 'package:gel_rule_app/features/post/services/ugoira_service.dart';
-import 'package:gel_rule_app/sources/models/ugoira_metadata.dart';
+import 'package:prisma_app/core/models/post.dart';
+import 'package:prisma_app/features/post/presentation/widgets/ugoira_player.dart';
+import 'package:prisma_app/features/post/services/ugoira_service.dart';
+import 'package:prisma_app/sources/models/ugoira_metadata.dart';
 
 class _FakeUgoiraService extends UgoiraService {
   _FakeUgoiraService(this.mockFrames);

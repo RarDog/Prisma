@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:gel_rule_app/core/models/post.dart';
-import 'package:gel_rule_app/sources/models/ugoira_metadata.dart';
+import 'package:prisma_app/core/models/post.dart';
+import 'package:prisma_app/sources/models/ugoira_metadata.dart';
 
 class PixivMapper {
   static dynamic normalizeJson(dynamic data) => _normalizeJson(data);

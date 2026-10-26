@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/core/models/post.dart';
-import 'package:gel_rule_app/core/utils/media_quality.dart';
-import 'package:gel_rule_app/shared/widgets/post_card.dart';
+import 'package:prisma_app/core/models/post.dart';
+import 'package:prisma_app/core/utils/media_quality.dart';
+import 'package:prisma_app/shared/widgets/post_card.dart';
 
 void main() {
   group('PostCard UGOIRA Badge', () {

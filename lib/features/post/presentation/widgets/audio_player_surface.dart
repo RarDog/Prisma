@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-import 'package:gel_rule_app/backend/backend.dart';
+import 'package:prisma_app/backend/backend.dart';
 
 class AudioSurface extends StatefulWidget {
   const AudioSurface({

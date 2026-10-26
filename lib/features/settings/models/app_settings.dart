@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:gel_rule_app/features/artists/models/pawchive_account.dart';
+import 'package:prisma_app/features/artists/models/pawchive_account.dart';
 
 class AppSettings {
   const AppSettings({
