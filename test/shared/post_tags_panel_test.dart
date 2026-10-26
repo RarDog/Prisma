@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prisma_app/core/models/post.dart';
-import 'package:prisma_app/features/post/presentation/widgets/post_tags_panel.dart';
+import 'package:gel_rule_app/core/models/post.dart';
+import 'package:gel_rule_app/features/post/presentation/widgets/post_tags_panel.dart';
 import 'package:go_router/go_router.dart';
 
 void main() {

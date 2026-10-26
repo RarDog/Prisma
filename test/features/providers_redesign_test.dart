@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prisma_app/backend/backend.dart';
-import 'package:prisma_app/features/providers/presentation/provider_check_screen.dart';
-import 'package:prisma_app/features/providers/presentation/provider_form_screen.dart';
-import 'package:prisma_app/features/providers/presentation/providers_controller.dart';
-import 'package:prisma_app/features/providers/presentation/providers_screen.dart';
+import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/features/providers/presentation/provider_check_screen.dart';
+import 'package:gel_rule_app/features/providers/presentation/provider_form_screen.dart';
+import 'package:gel_rule_app/features/providers/presentation/providers_controller.dart';
+import 'package:gel_rule_app/features/providers/presentation/providers_screen.dart';
 
 ContentProviderConfig _sampleConfig({
   required String id,

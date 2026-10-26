@@ -1,10 +1,10 @@
-import 'package:prisma_app/core/utils/result.dart';
-import 'package:prisma_app/features/favorites/models/favorite.dart';
-import 'package:prisma_app/core/models/post.dart';
-import 'package:prisma_app/features/favorites/data/favorite_repository.dart';
-import 'package:prisma_app/features/feed/data/post_repository.dart';
-import 'package:prisma_app/features/downloads/domain/download_manager_service.dart';
-import 'package:prisma_app/features/settings/domain/settings_service.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:gel_rule_app/features/favorites/models/favorite.dart';
+import 'package:gel_rule_app/core/models/post.dart';
+import 'package:gel_rule_app/features/favorites/data/favorite_repository.dart';
+import 'package:gel_rule_app/features/feed/data/post_repository.dart';
+import 'package:gel_rule_app/features/downloads/domain/download_manager_service.dart';
+import 'package:gel_rule_app/features/settings/domain/settings_service.dart';
 
 class FavoriteService {
   FavoriteService(this._repository, [this._postRepository]);

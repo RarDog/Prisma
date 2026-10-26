@@ -2,14 +2,14 @@ import 'dart:convert';
 
 import 'package:isar/isar.dart';
 
-import 'package:prisma_app/core/database/app_database.dart';
-import 'package:prisma_app/core/database/database_service.dart';
-import 'package:prisma_app/core/http/app_headers.dart';
-import 'package:prisma_app/core/security/credential_store.dart';
-import 'package:prisma_app/core/utils/result.dart';
-import 'package:prisma_app/features/providers/models/content_provider_config.dart';
-import 'package:prisma_app/core/models/provider_diagnostics.dart';
-import 'package:prisma_app/core/models/provider_health.dart';
+import 'package:gel_rule_app/core/database/app_database.dart';
+import 'package:gel_rule_app/core/database/database_service.dart';
+import 'package:gel_rule_app/core/http/app_headers.dart';
+import 'package:gel_rule_app/core/security/credential_store.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
+import 'package:gel_rule_app/core/models/provider_diagnostics.dart';
+import 'package:gel_rule_app/core/models/provider_health.dart';
 
 class ProviderRepository {
   ProviderRepository(

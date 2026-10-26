@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prisma_app/app/app.dart';
-import 'package:prisma_app/app/app_strings.dart';
-import 'package:prisma_app/backend/backend.dart';
-import 'package:prisma_app/features/downloads/presentation/widgets/download_dynamic_island.dart';
+import 'package:gel_rule_app/app/app.dart';
+import 'package:gel_rule_app/app/app_strings.dart';
+import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/features/downloads/presentation/widgets/download_dynamic_island.dart';
 
 class _FakeDownloadManagerService extends DownloadManagerService {
   _FakeDownloadManagerService()

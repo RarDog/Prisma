@@ -3,11 +3,11 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:prisma_app/backend/di/backend_providers.dart';
-import 'package:prisma_app/core/models/post.dart';
-import 'package:prisma_app/features/post/services/ugoira_service.dart';
-import 'package:prisma_app/sources/artist/pixiv_provider.dart';
-import 'package:prisma_app/sources/models/ugoira_metadata.dart';
+import 'package:gel_rule_app/backend/di/backend_providers.dart';
+import 'package:gel_rule_app/core/models/post.dart';
+import 'package:gel_rule_app/features/post/services/ugoira_service.dart';
+import 'package:gel_rule_app/sources/artist/pixiv_provider.dart';
+import 'package:gel_rule_app/sources/models/ugoira_metadata.dart';
 
 final ugoiraServiceProvider = Provider<UgoiraService>((ref) {
   return UgoiraService();

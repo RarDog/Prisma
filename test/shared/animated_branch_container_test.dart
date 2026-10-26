@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prisma_app/shared/widgets/animated_branch_container.dart';
+import 'package:gel_rule_app/shared/widgets/animated_branch_container.dart';
 
 class _StatefulCounter extends StatefulWidget {
   const _StatefulCounter({required this.title});

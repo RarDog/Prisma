@@ -3,7 +3,7 @@ import 'dart:collection';
 import 'package:archive/archive.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:prisma_app/sources/models/ugoira_metadata.dart';
+import 'package:gel_rule_app/sources/models/ugoira_metadata.dart';
 
 class _UnpackParams {
   const _UnpackParams(this.zipBytes, this.frames);

@@ -4,9 +4,9 @@ import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:prisma_app/app/app.dart';
-import 'package:prisma_app/app/app_strings.dart';
-import 'package:prisma_app/backend/backend.dart';
+import 'package:gel_rule_app/app/app.dart';
+import 'package:gel_rule_app/app/app_strings.dart';
+import 'package:gel_rule_app/backend/backend.dart';
 
 /// Overlay that listens to [downloadTasksProvider] and places [DownloadDynamicIsland]
 /// adaptively at the top-center on mobile or top-right on desktop.

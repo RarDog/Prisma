@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prisma_app/backend/backend.dart';
-import 'package:prisma_app/core/cache/cache_service.dart';
-import 'package:prisma_app/core/utils/result.dart';
-import 'package:prisma_app/features/post/presentation/post_details_controller.dart';
+import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/core/cache/cache_service.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:gel_rule_app/features/post/presentation/post_details_controller.dart';
 
 Post _post(String id, {String providerId = 'gelbooru'}) => Post(
       id: id,

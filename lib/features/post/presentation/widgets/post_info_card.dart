@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'package:prisma_app/app/app_strings.dart';
-import 'package:prisma_app/backend/backend.dart';
-import 'package:prisma_app/shared/widgets/rating_badge.dart';
-import 'package:prisma_app/sources/booru/e621_provider.dart';
+import 'package:gel_rule_app/app/app_strings.dart';
+import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/shared/widgets/rating_badge.dart';
+import 'package:gel_rule_app/sources/booru/e621_provider.dart';
 
 class PostInfoCard extends StatefulWidget {
   const PostInfoCard({

@@ -1,21 +1,21 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
-import 'package:prisma_app/core/errors/app_exception.dart';
-import 'package:prisma_app/core/http/app_headers.dart';
-import 'package:prisma_app/core/errors/failure.dart';
-import 'package:prisma_app/core/utils/result.dart';
-import 'package:prisma_app/features/providers/models/content_provider_config.dart';
-import 'package:prisma_app/core/models/post.dart';
-import 'package:prisma_app/core/models/post_comment.dart';
-import 'package:prisma_app/core/models/post_note.dart';
-import 'package:prisma_app/core/models/provider_diagnostics.dart';
-import 'package:prisma_app/core/models/provider_health.dart';
-import 'package:prisma_app/core/models/tag_suggestion.dart';
-import 'package:prisma_app/core/models/top_period_filter.dart';
-import 'package:prisma_app/features/providers/data/provider_repository.dart';
-import 'package:prisma_app/sources/interfaces/content_provider.dart';
-import 'package:prisma_app/sources/provider_factory.dart';
+import 'package:gel_rule_app/core/errors/app_exception.dart';
+import 'package:gel_rule_app/core/http/app_headers.dart';
+import 'package:gel_rule_app/core/errors/failure.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
+import 'package:gel_rule_app/core/models/post.dart';
+import 'package:gel_rule_app/core/models/post_comment.dart';
+import 'package:gel_rule_app/core/models/post_note.dart';
+import 'package:gel_rule_app/core/models/provider_diagnostics.dart';
+import 'package:gel_rule_app/core/models/provider_health.dart';
+import 'package:gel_rule_app/core/models/tag_suggestion.dart';
+import 'package:gel_rule_app/core/models/top_period_filter.dart';
+import 'package:gel_rule_app/features/providers/data/provider_repository.dart';
+import 'package:gel_rule_app/sources/interfaces/content_provider.dart';
+import 'package:gel_rule_app/sources/provider_factory.dart';
 
 class ProviderManager {
   ProviderManager(this._repository, this._factory);

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prisma_app/core/models/post.dart';
-import 'package:prisma_app/sources/mappers/pixiv_mapper.dart';
+import 'package:gel_rule_app/core/models/post.dart';
+import 'package:gel_rule_app/sources/mappers/pixiv_mapper.dart';
 
 void main() {
   group('Pixiv Ugoira support', () {

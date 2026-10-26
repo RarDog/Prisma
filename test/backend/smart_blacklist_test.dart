@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prisma_app/backend/backend.dart';
+import 'package:gel_rule_app/backend/backend.dart';
 
 void main() {
   test('matches simple tag and multi tag AND rules', () {

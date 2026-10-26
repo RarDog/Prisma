@@ -6,11 +6,11 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
-import 'package:prisma_app/app/app_version.dart';
-import 'package:prisma_app/core/errors/failure.dart';
-import 'package:prisma_app/core/utils/result.dart';
-import 'package:prisma_app/features/settings/models/app_update_info.dart';
-import 'package:prisma_app/features/settings/domain/settings_service.dart';
+import 'package:gel_rule_app/app/app_version.dart';
+import 'package:gel_rule_app/core/errors/failure.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:gel_rule_app/features/settings/models/app_update_info.dart';
+import 'package:gel_rule_app/features/settings/domain/settings_service.dart';
 
 enum UpdateSource {
   gitea,
@@ -631,7 +631,7 @@ class UpdateService {
     final cleanDownloadedPath = downloadedPath.replaceAll('/', '\\');
     final cleanExePath = exePath.replaceAll('/', '\\');
 
-    final scriptPath = '${Directory.systemTemp.path}\\prisma_apply_update.bat';
+    final scriptPath = '${Directory.systemTemp.path}\\gel_rule_apply_update.bat';
     final scriptContent = '''
 @echo off
 timeout /t 2 /nobreak >nul
@@ -664,7 +664,7 @@ del /f /q "%~f0"
     // once extraction succeeded, so a corrupt archive can never destroy the
     // working installation.
     final stagingDir = '$parentDir/.prisma_update_staging';
-    final scriptPath = '${Directory.systemTemp.path}/prisma_apply_update.sh';
+    final scriptPath = '${Directory.systemTemp.path}/gel_rule_apply_update.sh';
     final scriptContent = '''#!/bin/sh
 sleep 2
 rm -rf "$stagingDir"

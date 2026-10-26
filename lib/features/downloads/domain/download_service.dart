@@ -1,13 +1,13 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:prisma_app/core/http/app_headers.dart';
+import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
-import 'package:prisma_app/core/models/post.dart';
-import 'package:prisma_app/core/utils/media_quality.dart';
+import 'package:gel_rule_app/core/models/post.dart';
+import 'package:gel_rule_app/core/utils/media_quality.dart';
 
 class DownloadService {
   DownloadService({Dio? dio})

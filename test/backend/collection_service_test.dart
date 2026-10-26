@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prisma_app/features/collections/models/collection.dart';
-import 'package:prisma_app/core/models/post.dart';
-import 'package:prisma_app/features/collections/data/collection_repository.dart';
-import 'package:prisma_app/features/collections/domain/collection_service.dart';
-import 'package:prisma_app/core/utils/result.dart';
+import 'package:gel_rule_app/features/collections/models/collection.dart';
+import 'package:gel_rule_app/core/models/post.dart';
+import 'package:gel_rule_app/features/collections/data/collection_repository.dart';
+import 'package:gel_rule_app/features/collections/domain/collection_service.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
 
 class FakeCollectionRepository implements CollectionRepository {
   final collections = <String, Collection>{};

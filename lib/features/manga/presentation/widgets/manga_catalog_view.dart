@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:prisma_app/backend/backend.dart';
+import 'package:gel_rule_app/backend/backend.dart';
 import 'manga_card.dart';
 
 class MangaCatalogView extends StatelessWidget {

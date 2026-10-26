@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prisma_app/features/search/models/search_history.dart';
-import 'package:prisma_app/features/search/data/search_repository.dart';
-import 'package:prisma_app/features/search/domain/search_service.dart';
-import 'package:prisma_app/core/utils/result.dart';
+import 'package:gel_rule_app/features/search/models/search_history.dart';
+import 'package:gel_rule_app/features/search/data/search_repository.dart';
+import 'package:gel_rule_app/features/search/domain/search_service.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
 
 class FakeSearchRepository implements SearchRepository {
   final items = <SearchHistory>[];

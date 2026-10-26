@@ -6,7 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
 
-import 'package:prisma_app/core/http/app_headers.dart';
+import 'package:gel_rule_app/core/http/app_headers.dart';
 
 class DioClient {
   DioClient({

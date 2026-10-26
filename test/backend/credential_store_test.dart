@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prisma_app/core/security/credential_store.dart';
+import 'package:gel_rule_app/core/security/credential_store.dart';
 
 void main() {
   group('CredentialStore secret-key classification', () {

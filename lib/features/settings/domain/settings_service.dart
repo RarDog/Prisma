@@ -2,16 +2,16 @@ import 'dart:convert';
 
 import 'package:isar/isar.dart';
 
-import 'package:prisma_app/core/database/app_database.dart';
-import 'package:prisma_app/core/database/database_service.dart';
-import 'package:prisma_app/core/errors/failure.dart';
-import 'package:prisma_app/core/utils/result.dart';
-import 'package:prisma_app/features/providers/models/content_provider_config.dart';
-import 'package:prisma_app/core/models/provider_diagnostics.dart';
-import 'package:prisma_app/features/providers/data/provider_repository.dart';
+import 'package:gel_rule_app/core/database/app_database.dart';
+import 'package:gel_rule_app/core/database/database_service.dart';
+import 'package:gel_rule_app/core/errors/failure.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
+import 'package:gel_rule_app/core/models/provider_diagnostics.dart';
+import 'package:gel_rule_app/features/providers/data/provider_repository.dart';
 
-export 'package:prisma_app/features/settings/models/app_settings.dart';
-import 'package:prisma_app/features/settings/models/app_settings.dart';
+export 'package:gel_rule_app/features/settings/models/app_settings.dart';
+import 'package:gel_rule_app/features/settings/models/app_settings.dart';
 
 
 class SettingsService {

@@ -3,11 +3,11 @@ import 'dart:io';
 import 'package:isar/isar.dart';
 import 'package:path/path.dart' as p;
 
-import 'package:prisma_app/core/database/app_database.dart';
-import 'package:prisma_app/core/database/database_service.dart';
-import 'package:prisma_app/core/utils/result.dart';
-import 'package:prisma_app/features/downloads/models/downloaded_media.dart';
-import 'package:prisma_app/core/models/post.dart';
+import 'package:gel_rule_app/core/database/app_database.dart';
+import 'package:gel_rule_app/core/database/database_service.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:gel_rule_app/features/downloads/models/downloaded_media.dart';
+import 'package:gel_rule_app/core/models/post.dart';
 
 class DownloadedMediaRepository {
   DownloadedMediaRepository(this._databaseService);

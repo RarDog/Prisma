@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:prisma_app/backend/backend.dart';
+import 'package:gel_rule_app/backend/backend.dart';
 import 'page_flip_3d.dart';
 
 class MangaDetailsViewer extends StatelessWidget {

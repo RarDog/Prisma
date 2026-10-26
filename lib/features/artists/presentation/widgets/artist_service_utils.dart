@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:prisma_app/app/responsive.dart';
+import 'package:gel_rule_app/app/responsive.dart';
 
 enum ArtistsTab {
   all,

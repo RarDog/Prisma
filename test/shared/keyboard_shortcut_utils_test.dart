@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prisma_app/shared/widgets/keyboard_shortcut_utils.dart';
+import 'package:gel_rule_app/shared/widgets/keyboard_shortcut_utils.dart';
 
 class _TestIntent extends Intent {
   const _TestIntent();

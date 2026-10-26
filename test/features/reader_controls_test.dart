@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:prisma_app/features/manga/domain/reader_navigation_helper.dart';
-import 'package:prisma_app/features/manga/presentation/novel_reader_screen.dart';
-import 'package:prisma_app/sources/manga/mangadex_provider.dart';
+import 'package:gel_rule_app/features/manga/domain/reader_navigation_helper.dart';
+import 'package:gel_rule_app/features/manga/presentation/novel_reader_screen.dart';
+import 'package:gel_rule_app/sources/manga/mangadex_provider.dart';
 
 void main() {
   group('ReaderNavigationHelper Tests', () {

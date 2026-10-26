@@ -2,20 +2,20 @@ import 'dart:ffi' show Abi;
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prisma_app/features/providers/models/content_provider_config.dart';
-import 'package:prisma_app/core/models/post.dart';
-import 'package:prisma_app/features/collections/data/collection_repository.dart';
-import 'package:prisma_app/features/favorites/data/favorite_repository.dart';
-import 'package:prisma_app/features/feed/data/post_repository.dart';
-import 'package:prisma_app/features/providers/data/provider_repository.dart';
-import 'package:prisma_app/features/viewed/data/viewed_post_repository.dart';
-import 'package:prisma_app/features/collections/domain/collection_service.dart';
-import 'package:prisma_app/features/settings/domain/settings_service.dart';
-import 'package:prisma_app/features/viewed/domain/viewed_history_service.dart';
-import 'package:prisma_app/core/cache/cache_service.dart';
-import 'package:prisma_app/core/database/app_database.dart';
-import 'package:prisma_app/core/database/database_service.dart';
-import 'package:prisma_app/core/utils/result.dart';
+import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
+import 'package:gel_rule_app/core/models/post.dart';
+import 'package:gel_rule_app/features/collections/data/collection_repository.dart';
+import 'package:gel_rule_app/features/favorites/data/favorite_repository.dart';
+import 'package:gel_rule_app/features/feed/data/post_repository.dart';
+import 'package:gel_rule_app/features/providers/data/provider_repository.dart';
+import 'package:gel_rule_app/features/viewed/data/viewed_post_repository.dart';
+import 'package:gel_rule_app/features/collections/domain/collection_service.dart';
+import 'package:gel_rule_app/features/settings/domain/settings_service.dart';
+import 'package:gel_rule_app/features/viewed/domain/viewed_history_service.dart';
+import 'package:gel_rule_app/core/cache/cache_service.dart';
+import 'package:gel_rule_app/core/database/app_database.dart';
+import 'package:gel_rule_app/core/database/database_service.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:isar/isar.dart';
 
 void main() {

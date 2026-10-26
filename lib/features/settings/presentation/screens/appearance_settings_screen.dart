@@ -2,10 +2,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:prisma_app/app/app.dart';
-import 'package:prisma_app/backend/backend.dart';
-import 'package:prisma_app/features/settings/presentation/settings_controller.dart';
-import 'package:prisma_app/features/settings/presentation/widgets/settings_shared_widgets.dart';
+import 'package:gel_rule_app/app/app.dart';
+import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
+import 'package:gel_rule_app/features/settings/presentation/widgets/settings_shared_widgets.dart';
 
 class AppearanceSettingsScreen extends ConsumerWidget {
   const AppearanceSettingsScreen({super.key});

@@ -3,10 +3,10 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prisma_app/features/settings/models/app_update_info.dart';
-import 'package:prisma_app/features/settings/domain/settings_service.dart';
-import 'package:prisma_app/features/settings/domain/update_service.dart';
-import 'package:prisma_app/core/database/database_service.dart';
+import 'package:gel_rule_app/features/settings/models/app_update_info.dart';
+import 'package:gel_rule_app/features/settings/domain/settings_service.dart';
+import 'package:gel_rule_app/features/settings/domain/update_service.dart';
+import 'package:gel_rule_app/core/database/database_service.dart';
 
 void main() {
   test('UpdateService parses GitHub release JSON correctly', () {

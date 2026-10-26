@@ -10,10 +10,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
-import 'package:prisma_app/app/responsive.dart';
-import 'package:prisma_app/backend/backend.dart';
-import 'package:prisma_app/core/performance/performance_monitor.dart';
-import 'package:prisma_app/features/feed/presentation/feed_controller.dart';
+import 'package:gel_rule_app/app/responsive.dart';
+import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/core/performance/performance_monitor.dart';
+import 'package:gel_rule_app/features/feed/presentation/feed_controller.dart';
 import 'media_viewer_shortcuts.dart';
 import 'post_media_viewer.dart';
 import 'post_notes_overlay.dart';

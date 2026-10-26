@@ -1,11 +1,11 @@
 import 'package:dio/dio.dart' show CancelToken;
 
-import 'package:prisma_app/core/errors/app_exception.dart';
-import 'package:prisma_app/core/models/post.dart';
-import 'package:prisma_app/core/models/post_comment.dart';
-import 'package:prisma_app/core/models/provider_health.dart';
-import 'package:prisma_app/core/models/top_period_filter.dart';
-import 'package:prisma_app/sources/interfaces/content_provider.dart';
+import 'package:gel_rule_app/core/errors/app_exception.dart';
+import 'package:gel_rule_app/core/models/post.dart';
+import 'package:gel_rule_app/core/models/post_comment.dart';
+import 'package:gel_rule_app/core/models/provider_health.dart';
+import 'package:gel_rule_app/core/models/top_period_filter.dart';
+import 'package:gel_rule_app/sources/interfaces/content_provider.dart';
 
 class CustomProvider implements ContentProvider, CommentProvider {
   CustomProvider(this._delegate);

@@ -5,13 +5,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:prisma_app/app/app.dart';
-import 'package:prisma_app/backend/backend.dart';
-import 'package:prisma_app/features/onboarding/presentation/steps/onboarding_api_keys_step.dart';
-import 'package:prisma_app/features/onboarding/presentation/steps/onboarding_appearance_step.dart';
-import 'package:prisma_app/features/onboarding/presentation/steps/onboarding_completion_step.dart';
-import 'package:prisma_app/features/onboarding/presentation/steps/onboarding_language_step.dart';
-import 'package:prisma_app/features/onboarding/presentation/steps/onboarding_sources_step.dart';
+import 'package:gel_rule_app/app/app.dart';
+import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/features/onboarding/presentation/steps/onboarding_api_keys_step.dart';
+import 'package:gel_rule_app/features/onboarding/presentation/steps/onboarding_appearance_step.dart';
+import 'package:gel_rule_app/features/onboarding/presentation/steps/onboarding_completion_step.dart';
+import 'package:gel_rule_app/features/onboarding/presentation/steps/onboarding_language_step.dart';
+import 'package:gel_rule_app/features/onboarding/presentation/steps/onboarding_sources_step.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});

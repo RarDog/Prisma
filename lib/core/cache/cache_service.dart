@@ -2,11 +2,11 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 
-import 'package:prisma_app/core/database/app_database.dart';
-import 'package:prisma_app/core/database/database_service.dart';
-import 'package:prisma_app/core/models/post.dart';
-import 'package:prisma_app/core/utils/logger.dart';
-import 'package:prisma_app/core/utils/result.dart';
+import 'package:gel_rule_app/core/database/app_database.dart';
+import 'package:gel_rule_app/core/database/database_service.dart';
+import 'package:gel_rule_app/core/models/post.dart';
+import 'package:gel_rule_app/core/utils/logger.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
 
 class CacheService {
   CacheService(this._databaseService);

@@ -1,15 +1,15 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prisma_app/core/http/dio_client.dart';
-import 'package:prisma_app/core/models/post.dart';
-import 'package:prisma_app/core/models/top_period_filter.dart';
-import 'package:prisma_app/features/providers/models/content_provider_config.dart';
-import 'package:prisma_app/sources/booru/rule34_us_provider.dart';
-import 'package:prisma_app/sources/booru/tbib_provider.dart';
-import 'package:prisma_app/sources/interfaces/content_provider.dart';
-import 'package:prisma_app/sources/mappers/gelbooru_mapper.dart';
-import 'package:prisma_app/sources/provider_factory.dart';
+import 'package:gel_rule_app/core/http/dio_client.dart';
+import 'package:gel_rule_app/core/models/post.dart';
+import 'package:gel_rule_app/core/models/top_period_filter.dart';
+import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
+import 'package:gel_rule_app/sources/booru/rule34_us_provider.dart';
+import 'package:gel_rule_app/sources/booru/tbib_provider.dart';
+import 'package:gel_rule_app/sources/interfaces/content_provider.dart';
+import 'package:gel_rule_app/sources/mappers/gelbooru_mapper.dart';
+import 'package:gel_rule_app/sources/provider_factory.dart';
 
 void main() {
   group('TBIB and Rule34.us Provider Tests', () {

@@ -2,8 +2,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prisma_app/backend/backend.dart';
-import 'package:prisma_app/shared/widgets/app_search_bar.dart';
+import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/shared/widgets/app_search_bar.dart';
 
 void main() {
   testWidgets('commits typed tag with space', (tester) async {

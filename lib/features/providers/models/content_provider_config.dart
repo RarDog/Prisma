@@ -1,4 +1,4 @@
-import 'package:prisma_app/core/models/top_period_filter.dart';
+import 'package:gel_rule_app/core/models/top_period_filter.dart';
 
 class ContentProviderConfig {
   const ContentProviderConfig({

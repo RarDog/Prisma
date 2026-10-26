@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:prisma_app/sources/manga/mangadex_provider.dart';
+import 'package:gel_rule_app/sources/manga/mangadex_provider.dart';
 
 Future<void> showMangaLanguagePicker({
   required BuildContext context,

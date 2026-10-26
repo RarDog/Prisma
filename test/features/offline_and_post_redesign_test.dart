@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prisma_app/features/downloads/models/downloaded_media.dart';
-import 'package:prisma_app/features/downloads/domain/downloaded_media_service.dart';
-import 'package:prisma_app/features/post/presentation/widgets/post_action_bar.dart';
+import 'package:gel_rule_app/features/downloads/models/downloaded_media.dart';
+import 'package:gel_rule_app/features/downloads/domain/downloaded_media_service.dart';
+import 'package:gel_rule_app/features/post/presentation/widgets/post_action_bar.dart';
 
 void main() {
   group('DownloadedMediaService formatting & utility tests', () {

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:prisma_app/app/app.dart';
-import 'package:prisma_app/backend/backend.dart';
-import 'package:prisma_app/core/utils/result.dart';
-import 'package:prisma_app/features/post/presentation/post_details_controller.dart';
-import 'package:prisma_app/sources/booru/e621_provider.dart';
+import 'package:gel_rule_app/app/app.dart';
+import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:gel_rule_app/features/post/presentation/post_details_controller.dart';
+import 'package:gel_rule_app/sources/booru/e621_provider.dart';
 
 final postCommentsProvider = FutureProvider.autoDispose
     .family<List<PostComment>, PostDetailsArgs>((ref, args) async {

@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prisma_app/core/models/post.dart';
-import 'package:prisma_app/features/settings/domain/backup_service.dart';
-import 'package:prisma_app/features/downloads/domain/download_service.dart';
-import 'package:prisma_app/features/settings/domain/settings_service.dart';
-import 'package:prisma_app/core/utils/result.dart';
+import 'package:gel_rule_app/core/models/post.dart';
+import 'package:gel_rule_app/features/settings/domain/backup_service.dart';
+import 'package:gel_rule_app/features/downloads/domain/download_service.dart';
+import 'package:gel_rule_app/features/settings/domain/settings_service.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
 
 void main() {
   group('QoL Features Unit Tests', () {

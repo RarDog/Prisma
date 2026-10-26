@@ -1,8 +1,8 @@
-import 'package:prisma_app/core/utils/result.dart';
-import 'package:prisma_app/core/errors/failure.dart';
-import 'package:prisma_app/features/collections/models/collection.dart';
-import 'package:prisma_app/core/models/post.dart';
-import 'package:prisma_app/features/collections/data/collection_repository.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:gel_rule_app/core/errors/failure.dart';
+import 'package:gel_rule_app/features/collections/models/collection.dart';
+import 'package:gel_rule_app/core/models/post.dart';
+import 'package:gel_rule_app/features/collections/data/collection_repository.dart';
 
 class CollectionService {
   CollectionService(this._repository);

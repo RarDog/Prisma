@@ -1,9 +1,9 @@
 import 'dart:io';
 
-import 'package:prisma_app/core/utils/result.dart';
-import 'package:prisma_app/features/downloads/models/downloaded_media.dart';
-import 'package:prisma_app/core/models/post.dart';
-import 'package:prisma_app/features/downloads/data/downloaded_media_repository.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:gel_rule_app/features/downloads/models/downloaded_media.dart';
+import 'package:gel_rule_app/core/models/post.dart';
+import 'package:gel_rule_app/features/downloads/data/downloaded_media_repository.dart';
 
 class DownloadedMediaService {
   DownloadedMediaService(this._repository);

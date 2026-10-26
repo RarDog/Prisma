@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prisma_app/features/settings/domain/update_service.dart';
+import 'package:gel_rule_app/features/settings/domain/update_service.dart';
 
 void main() {
   group('UpdateService Version Parsing & Beta Support', () {

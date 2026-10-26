@@ -1,4 +1,4 @@
-import 'package:prisma_app/core/models/post.dart';
+import 'package:gel_rule_app/core/models/post.dart';
 
 enum MediaQualityMode {
   auto,

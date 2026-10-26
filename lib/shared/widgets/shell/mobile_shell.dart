@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:prisma_app/features/settings/presentation/settings_screen.dart';
+import 'package:gel_rule_app/features/settings/presentation/settings_screen.dart';
 import '../app_destination.dart';
 import '../app_shell.dart';
 import '../circular_reveal_page_route.dart';

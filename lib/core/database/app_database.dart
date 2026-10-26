@@ -4,15 +4,15 @@ import 'dart:io';
 import 'package:isar/isar.dart' hide Collection;
 import 'package:path_provider/path_provider.dart';
 
-import 'package:prisma_app/features/collections/models/collection.dart';
-import 'package:prisma_app/features/providers/models/content_provider_config.dart';
-import 'package:prisma_app/features/favorites/models/favorite.dart';
-import 'package:prisma_app/core/models/post.dart';
-import 'package:prisma_app/core/models/provider_diagnostics.dart';
-import 'package:prisma_app/core/models/provider_health.dart';
-import 'package:prisma_app/features/search/models/search_history.dart';
-import 'package:prisma_app/features/viewed/models/viewed_post.dart';
-import 'package:prisma_app/features/downloads/models/downloaded_media.dart';
+import 'package:gel_rule_app/features/collections/models/collection.dart';
+import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
+import 'package:gel_rule_app/features/favorites/models/favorite.dart';
+import 'package:gel_rule_app/core/models/post.dart';
+import 'package:gel_rule_app/core/models/provider_diagnostics.dart';
+import 'package:gel_rule_app/core/models/provider_health.dart';
+import 'package:gel_rule_app/features/search/models/search_history.dart';
+import 'package:gel_rule_app/features/viewed/models/viewed_post.dart';
+import 'package:gel_rule_app/features/downloads/models/downloaded_media.dart';
 
 part 'app_database.g.dart';
 
@@ -30,7 +30,7 @@ class AppDatabase {
       // not crash-loop the app on every startup. Wipe the data file and
       // recreate it — cached content is disposable, losing it beats losing
       // the whole app session.
-      final file = File('$dir/prisma_app.isar');
+      final file = File('$dir/gel_rule_app.isar');
       if (await file.exists()) {
         await file.delete();
       }
@@ -55,7 +55,7 @@ class AppDatabase {
         MangaReadingProgressEntitySchema,
       ],
       directory: dir,
-      name: 'prisma_app',
+      name: 'gel_rule_app',
     );
 
   Future<void> close() => isar.close();

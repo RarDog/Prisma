@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prisma_app/app/app_version.dart';
-import 'package:prisma_app/app/changelog.dart';
-import 'package:prisma_app/features/settings/presentation/widgets/prisma_changelog_dialog.dart';
+import 'package:gel_rule_app/app/app_version.dart';
+import 'package:gel_rule_app/app/changelog.dart';
+import 'package:gel_rule_app/features/settings/presentation/widgets/prisma_changelog_dialog.dart';
 
 void main() {
   group('PrismaChangelogDialog Tests', () {

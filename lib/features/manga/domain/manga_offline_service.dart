@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:prisma_app/core/http/app_headers.dart';
+import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'package:flutter/foundation.dart';
-import 'package:prisma_app/core/utils/logger.dart';
+import 'package:gel_rule_app/core/utils/logger.dart';
 import 'package:path_provider/path_provider.dart';
 
-import 'package:prisma_app/sources/manga/mangadex_provider.dart';
+import 'package:gel_rule_app/sources/manga/mangadex_provider.dart';
 
 class MangaOfflineService {
   MangaOfflineService({Dio? dio, String? baseDir})

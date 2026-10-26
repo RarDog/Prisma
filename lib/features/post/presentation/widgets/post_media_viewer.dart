@@ -23,8 +23,8 @@ export 'video_player_controls.dart';
 export 'video_surface.dart';
 export 'zoomable_image.dart';
 
-import 'package:prisma_app/backend/backend.dart';
-import 'package:prisma_app/core/http/app_headers.dart';
+import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/core/http/app_headers.dart';
 
 final Map<String, VideoPlaybackSnapshot> playbackMemory =
     <String, VideoPlaybackSnapshot>{};

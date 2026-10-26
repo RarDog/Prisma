@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:prisma_app/app/app.dart';
-import 'package:prisma_app/backend/di/backend_providers.dart';
-import 'package:prisma_app/features/settings/models/app_update_info.dart';
+import 'package:gel_rule_app/app/app.dart';
+import 'package:gel_rule_app/backend/di/backend_providers.dart';
+import 'package:gel_rule_app/features/settings/models/app_update_info.dart';
 
 Future<void> showAppUpdateDialog({
   required BuildContext context,

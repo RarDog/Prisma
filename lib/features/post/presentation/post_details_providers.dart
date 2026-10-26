@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:prisma_app/backend/backend.dart';
-import 'package:prisma_app/core/utils/result.dart';
-import 'package:prisma_app/sources/mappers/pixiv_mapper.dart';
+import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:gel_rule_app/sources/mappers/pixiv_mapper.dart';
 import 'post_details_controller.dart';
 
 final postNotesProvider = FutureProvider.autoDispose

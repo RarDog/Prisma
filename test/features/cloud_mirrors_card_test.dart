@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prisma_app/app/app_strings.dart';
-import 'package:prisma_app/core/models/cloud_media_link.dart';
-import 'package:prisma_app/features/post/presentation/widgets/cloud_mirrors_card.dart';
+import 'package:gel_rule_app/app/app_strings.dart';
+import 'package:gel_rule_app/core/models/cloud_media_link.dart';
+import 'package:gel_rule_app/features/post/presentation/widgets/cloud_mirrors_card.dart';
 
 void main() {
   testWidgets(

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prisma_app/core/models/post.dart';
-import 'package:prisma_app/core/utils/media_quality.dart';
-import 'package:prisma_app/features/post/presentation/widgets/post_media_viewer.dart';
-import 'package:prisma_app/shared/widgets/adaptive_scaffold.dart';
+import 'package:gel_rule_app/core/models/post.dart';
+import 'package:gel_rule_app/core/utils/media_quality.dart';
+import 'package:gel_rule_app/features/post/presentation/widgets/post_media_viewer.dart';
+import 'package:gel_rule_app/shared/widgets/adaptive_scaffold.dart';
 
 void main() {
   group('PostMediaViewer fullscreen image tests', () {

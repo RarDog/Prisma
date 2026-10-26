@@ -1,29 +1,29 @@
 import 'dart:convert';
 
-import 'package:prisma_app/core/http/dio_client.dart';
-import 'package:prisma_app/core/http/app_headers.dart';
-import 'package:prisma_app/features/providers/models/content_provider_config.dart';
-import 'package:prisma_app/sources/interfaces/content_provider.dart';
-import 'package:prisma_app/sources/booru/custom_provider.dart';
-import 'package:prisma_app/sources/booru/danbooru_provider.dart';
-import 'package:prisma_app/sources/booru/e621_provider.dart';
-import 'package:prisma_app/sources/booru/fapello_provider.dart';
-import 'package:prisma_app/sources/booru/gelbooru_provider.dart';
-import 'package:prisma_app/sources/booru/moebooru_provider.dart';
-import 'package:prisma_app/sources/artist/pawchive_provider.dart';
-import 'package:prisma_app/sources/booru/realbooru_html_provider.dart';
-import 'package:prisma_app/sources/booru/rule34_provider.dart';
-import 'package:prisma_app/sources/booru/rule34_paheal_provider.dart';
-import 'package:prisma_app/sources/booru/rule34_us_provider.dart';
-import 'package:prisma_app/sources/booru/tbib_provider.dart';
-import 'package:prisma_app/sources/manga/mangadex_provider.dart';
-import 'package:prisma_app/sources/manga/mangalib_provider.dart';
-import 'package:prisma_app/sources/manga/ranobelib_provider.dart';
-import 'package:prisma_app/sources/artist/pixiv_provider.dart';
-import 'package:prisma_app/sources/booru/safebooru_provider.dart';
-import 'package:prisma_app/sources/booru/wallhaven_provider.dart';
-import 'package:prisma_app/sources/booru/arena_provider.dart';
-import 'package:prisma_app/sources/video/xvideos_provider.dart';
+import 'package:gel_rule_app/core/http/dio_client.dart';
+import 'package:gel_rule_app/core/http/app_headers.dart';
+import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
+import 'package:gel_rule_app/sources/interfaces/content_provider.dart';
+import 'package:gel_rule_app/sources/booru/custom_provider.dart';
+import 'package:gel_rule_app/sources/booru/danbooru_provider.dart';
+import 'package:gel_rule_app/sources/booru/e621_provider.dart';
+import 'package:gel_rule_app/sources/booru/fapello_provider.dart';
+import 'package:gel_rule_app/sources/booru/gelbooru_provider.dart';
+import 'package:gel_rule_app/sources/booru/moebooru_provider.dart';
+import 'package:gel_rule_app/sources/artist/pawchive_provider.dart';
+import 'package:gel_rule_app/sources/booru/realbooru_html_provider.dart';
+import 'package:gel_rule_app/sources/booru/rule34_provider.dart';
+import 'package:gel_rule_app/sources/booru/rule34_paheal_provider.dart';
+import 'package:gel_rule_app/sources/booru/rule34_us_provider.dart';
+import 'package:gel_rule_app/sources/booru/tbib_provider.dart';
+import 'package:gel_rule_app/sources/manga/mangadex_provider.dart';
+import 'package:gel_rule_app/sources/manga/mangalib_provider.dart';
+import 'package:gel_rule_app/sources/manga/ranobelib_provider.dart';
+import 'package:gel_rule_app/sources/artist/pixiv_provider.dart';
+import 'package:gel_rule_app/sources/booru/safebooru_provider.dart';
+import 'package:gel_rule_app/sources/booru/wallhaven_provider.dart';
+import 'package:gel_rule_app/sources/booru/arena_provider.dart';
+import 'package:gel_rule_app/sources/video/xvideos_provider.dart';
 
 class ProviderFactory {
   /// Upper bound on cached HTTP clients. Each client owns a socket pool, so

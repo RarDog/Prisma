@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:prisma_app/backend/backend.dart';
+import 'package:gel_rule_app/backend/backend.dart';
 
 class TagSuggestionDropdown extends StatelessWidget {
   const TagSuggestionDropdown({

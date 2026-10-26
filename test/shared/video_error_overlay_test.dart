@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prisma_app/features/post/presentation/widgets/post_media_viewer.dart';
+import 'package:gel_rule_app/features/post/presentation/widgets/post_media_viewer.dart';
 
 void main() {
   testWidgets('video error retry button invokes callback', (tester) async {

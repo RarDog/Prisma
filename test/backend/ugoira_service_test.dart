@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prisma_app/features/post/services/ugoira_service.dart';
-import 'package:prisma_app/sources/models/ugoira_metadata.dart';
+import 'package:gel_rule_app/features/post/services/ugoira_service.dart';
+import 'package:gel_rule_app/sources/models/ugoira_metadata.dart';
 
 void main() {
   group('UgoiraService', () {

@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
-import 'package:prisma_app/app/responsive.dart';
+import 'package:gel_rule_app/app/responsive.dart';
 
 class AdaptiveScaffold extends StatelessWidget {
   const AdaptiveScaffold({

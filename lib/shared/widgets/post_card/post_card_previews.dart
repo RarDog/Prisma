@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:prisma_app/core/models/post.dart';
-import 'package:prisma_app/core/utils/cloud_link_extractor.dart';
+import 'package:gel_rule_app/core/models/post.dart';
+import 'package:gel_rule_app/core/utils/cloud_link_extractor.dart';
 
 class TextPostCardPreview extends StatelessWidget {
   const TextPostCardPreview({

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:prisma_app/features/artists/models/pawchive_account.dart';
+import 'package:gel_rule_app/features/artists/models/pawchive_account.dart';
 
 /// Connected Pawchive account tile with push/sync shortcuts and a
 /// overflow menu (set active / push / delete).

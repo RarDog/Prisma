@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prisma_app/core/http/dio_client.dart';
-import 'package:prisma_app/core/models/post.dart';
-import 'package:prisma_app/features/providers/models/content_provider_config.dart';
-import 'package:prisma_app/sources/video/xvideos_provider.dart';
-import 'package:prisma_app/sources/provider_factory.dart';
+import 'package:gel_rule_app/core/http/dio_client.dart';
+import 'package:gel_rule_app/core/models/post.dart';
+import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
+import 'package:gel_rule_app/sources/video/xvideos_provider.dart';
+import 'package:gel_rule_app/sources/provider_factory.dart';
 
 void main() {
   group('XVideosProvider Tests', () {

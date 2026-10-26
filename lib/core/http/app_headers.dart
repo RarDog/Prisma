@@ -1,4 +1,4 @@
-import 'package:prisma_app/app/app_version.dart';
+import 'package:gel_rule_app/app/app_version.dart';
 
 /// Centralized repository and utility for application HTTP headers and User-Agents.
 abstract final class AppHeaders {

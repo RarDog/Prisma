@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:prisma_app/app/app_version.dart';
-import 'package:prisma_app/app/changelog.dart';
+import 'package:gel_rule_app/app/app_version.dart';
+import 'package:gel_rule_app/app/changelog.dart';
 
 Future<void> showPrismaChangelogDialog({
   required BuildContext context,

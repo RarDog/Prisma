@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:prisma_app/backend/backend.dart';
+import 'package:gel_rule_app/backend/backend.dart';
 
 import 'artist_card.dart';
 import 'artist_service_utils.dart';

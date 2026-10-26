@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prisma_app/core/models/post.dart';
-import 'package:prisma_app/features/post/presentation/widgets/post_multi_page_strip.dart';
+import 'package:gel_rule_app/core/models/post.dart';
+import 'package:gel_rule_app/features/post/presentation/widgets/post_multi_page_strip.dart';
 
 void main() {
   testWidgets('PostMultiPageStrip renders pages, counters, and arrows switch pages', (tester) async {

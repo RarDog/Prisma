@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart' hide SearchController;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prisma_app/app/app.dart';
-import 'package:prisma_app/backend/backend.dart';
-import 'package:prisma_app/features/collections/presentation/collections_controller.dart';
-import 'package:prisma_app/features/collections/presentation/collections_screen.dart';
-import 'package:prisma_app/features/favorites/presentation/favorites_controller.dart';
-import 'package:prisma_app/features/favorites/presentation/favorites_screen.dart';
-import 'package:prisma_app/features/favorites/presentation/favorites_state.dart';
-import 'package:prisma_app/features/search/presentation/search_controller.dart'
+import 'package:gel_rule_app/app/app.dart';
+import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/features/collections/presentation/collections_controller.dart';
+import 'package:gel_rule_app/features/collections/presentation/collections_screen.dart';
+import 'package:gel_rule_app/features/favorites/presentation/favorites_controller.dart';
+import 'package:gel_rule_app/features/favorites/presentation/favorites_screen.dart';
+import 'package:gel_rule_app/features/favorites/presentation/favorites_state.dart';
+import 'package:gel_rule_app/features/search/presentation/search_controller.dart'
     as search_feature;
-import 'package:prisma_app/features/search/presentation/search_screen.dart';
-import 'package:prisma_app/features/search/presentation/search_state.dart';
-import 'package:prisma_app/features/viewed/presentation/viewed_controller.dart';
-import 'package:prisma_app/features/viewed/presentation/viewed_screen.dart';
+import 'package:gel_rule_app/features/search/presentation/search_screen.dart';
+import 'package:gel_rule_app/features/search/presentation/search_state.dart';
+import 'package:gel_rule_app/features/viewed/presentation/viewed_controller.dart';
+import 'package:gel_rule_app/features/viewed/presentation/viewed_screen.dart';
 
 Post _samplePost({
   required String id,

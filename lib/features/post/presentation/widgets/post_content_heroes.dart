@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:prisma_app/backend/backend.dart';
-import 'package:prisma_app/shared/widgets/formatted_content_text.dart';
+import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/shared/widgets/formatted_content_text.dart';
 
 class UnsupportedSwfPanel extends StatelessWidget {
   const UnsupportedSwfPanel({super.key});

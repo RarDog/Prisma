@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:prisma_app/backend/backend.dart';
-import 'package:prisma_app/features/providers/presentation/provider_form_screen.dart';
-import 'package:prisma_app/shared/widgets/provider_status_badge.dart';
+import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/features/providers/presentation/provider_form_screen.dart';
+import 'package:gel_rule_app/shared/widgets/provider_status_badge.dart';
 
 class ProviderHealthTile extends StatefulWidget {
   const ProviderHealthTile({

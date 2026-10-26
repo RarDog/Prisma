@@ -1,9 +1,9 @@
 import 'package:isar/isar.dart';
 
-import 'package:prisma_app/core/database/app_database.dart';
-import 'package:prisma_app/core/database/database_service.dart';
-import 'package:prisma_app/core/utils/result.dart';
-import 'package:prisma_app/features/search/models/search_history.dart';
+import 'package:gel_rule_app/core/database/app_database.dart';
+import 'package:gel_rule_app/core/database/database_service.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:gel_rule_app/features/search/models/search_history.dart';
 
 class SearchRepository {
   SearchRepository(this._databaseService);

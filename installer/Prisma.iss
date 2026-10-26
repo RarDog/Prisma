@@ -1,7 +1,7 @@
 #define MyAppName "Prisma"
 #define MyAppVersion "2.0.1"
 #define MyAppPublisher "RarDog"
-#define MyAppExeName "prisma_app.exe"
+#define MyAppExeName "gel_rule_app.exe"
 
 [Setup]
 AppId={{8B7B8F47-3F16-4E63-8D41-6F2F94938F0E}

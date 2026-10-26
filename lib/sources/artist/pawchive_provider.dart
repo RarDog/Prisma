@@ -2,18 +2,18 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 
-import 'package:prisma_app/core/http/dio_client.dart';
-import 'package:prisma_app/features/artists/models/artist_announcement.dart';
-import 'package:prisma_app/features/artists/models/artist_link.dart';
-import 'package:prisma_app/features/artists/models/artist_profile.dart';
-import 'package:prisma_app/features/artists/models/artist_tag.dart';
-import 'package:prisma_app/features/artists/models/artist_work_query.dart';
-import 'package:prisma_app/core/models/post.dart';
-import 'package:prisma_app/core/models/post_comment.dart';
-import 'package:prisma_app/core/models/provider_health.dart';
-import 'package:prisma_app/core/models/top_period_filter.dart';
-import 'package:prisma_app/core/utils/cloud_link_extractor.dart';
-import 'package:prisma_app/sources/interfaces/content_provider.dart';
+import 'package:gel_rule_app/core/http/dio_client.dart';
+import 'package:gel_rule_app/features/artists/models/artist_announcement.dart';
+import 'package:gel_rule_app/features/artists/models/artist_link.dart';
+import 'package:gel_rule_app/features/artists/models/artist_profile.dart';
+import 'package:gel_rule_app/features/artists/models/artist_tag.dart';
+import 'package:gel_rule_app/features/artists/models/artist_work_query.dart';
+import 'package:gel_rule_app/core/models/post.dart';
+import 'package:gel_rule_app/core/models/post_comment.dart';
+import 'package:gel_rule_app/core/models/provider_health.dart';
+import 'package:gel_rule_app/core/models/top_period_filter.dart';
+import 'package:gel_rule_app/core/utils/cloud_link_extractor.dart';
+import 'package:gel_rule_app/sources/interfaces/content_provider.dart';
 
 class PawchiveProvider
     implements ContentProvider, ArtistProvider, CommentProvider {

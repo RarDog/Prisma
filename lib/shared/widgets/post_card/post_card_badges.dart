@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:prisma_app/app/motion.dart';
+import 'package:gel_rule_app/app/motion.dart';
 
 class FavoriteButton extends StatelessWidget {
   const FavoriteButton({

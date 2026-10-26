@@ -5,8 +5,8 @@ import 'dart:isolate';
 
 import 'package:path_provider/path_provider.dart';
 
-import 'package:prisma_app/core/models/tag_suggestion.dart';
-import 'package:prisma_app/core/utils/logger.dart';
+import 'package:gel_rule_app/core/models/tag_suggestion.dart';
+import 'package:gel_rule_app/core/utils/logger.dart';
 
 class TagCacheService {
   TagCacheService({String? customPath}) : _customPath = customPath;

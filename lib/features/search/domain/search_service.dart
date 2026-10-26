@@ -1,11 +1,11 @@
 import 'dart:async';
 
-import 'package:prisma_app/core/utils/result.dart';
-import 'package:prisma_app/features/search/models/search_history.dart';
-import 'package:prisma_app/core/models/tag_suggestion.dart';
-import 'package:prisma_app/sources/provider_manager.dart';
-import 'package:prisma_app/features/search/data/search_repository.dart';
-import 'package:prisma_app/features/search/domain/tag_cache_service.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:gel_rule_app/features/search/models/search_history.dart';
+import 'package:gel_rule_app/core/models/tag_suggestion.dart';
+import 'package:gel_rule_app/sources/provider_manager.dart';
+import 'package:gel_rule_app/features/search/data/search_repository.dart';
+import 'package:gel_rule_app/features/search/domain/tag_cache_service.dart';
 
 class SearchService {
   SearchService(

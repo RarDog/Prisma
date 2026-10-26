@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
-import 'package:prisma_app/core/http/app_headers.dart';
+import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:prisma_app/core/http/dio_client.dart';
-import 'package:prisma_app/features/favorites/models/favorite_artist_item.dart';
-import 'package:prisma_app/features/artists/models/pawchive_account.dart';
-import 'package:prisma_app/features/settings/domain/settings_service.dart';
+import 'package:gel_rule_app/core/http/dio_client.dart';
+import 'package:gel_rule_app/features/favorites/models/favorite_artist_item.dart';
+import 'package:gel_rule_app/features/artists/models/pawchive_account.dart';
+import 'package:gel_rule_app/features/settings/domain/settings_service.dart';
 
 final pawchiveSyncServiceProvider = Provider<PawchiveSyncService>((ref) {
   return PawchiveSyncService(dio: DioClient().dio);

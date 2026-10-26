@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prisma_app/shared/widgets/app_destination.dart';
-import 'package:prisma_app/shared/widgets/liquid_glass_bottom_bar.dart';
+import 'package:gel_rule_app/shared/widgets/app_destination.dart';
+import 'package:gel_rule_app/shared/widgets/liquid_glass_bottom_bar.dart';
 
 void main() {
   testWidgets('LiquidGlassSettingsButton renders gear icon in light mode',

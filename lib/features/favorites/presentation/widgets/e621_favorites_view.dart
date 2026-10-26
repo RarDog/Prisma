@@ -5,16 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:prisma_app/app/app.dart';
-import 'package:prisma_app/app/app_navigator.dart';
-import 'package:prisma_app/app/responsive.dart';
-import 'package:prisma_app/backend/backend.dart';
-import 'package:prisma_app/sources/booru/e621_provider.dart';
-import 'package:prisma_app/shared/widgets/empty_view.dart';
-import 'package:prisma_app/shared/widgets/post_masonry_grid.dart';
-import 'package:prisma_app/features/providers/presentation/providers_controller.dart';
-import 'package:prisma_app/features/providers/presentation/widgets/e621_auth_dialog.dart';
-import 'package:prisma_app/features/favorites/presentation/favorites_controller.dart';
+import 'package:gel_rule_app/app/app.dart';
+import 'package:gel_rule_app/app/app_navigator.dart';
+import 'package:gel_rule_app/app/responsive.dart';
+import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/sources/booru/e621_provider.dart';
+import 'package:gel_rule_app/shared/widgets/empty_view.dart';
+import 'package:gel_rule_app/shared/widgets/post_masonry_grid.dart';
+import 'package:gel_rule_app/features/providers/presentation/providers_controller.dart';
+import 'package:gel_rule_app/features/providers/presentation/widgets/e621_auth_dialog.dart';
+import 'package:gel_rule_app/features/favorites/presentation/favorites_controller.dart';
 
 enum E621SubTab { favorites, popular }
 

@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
-import 'package:prisma_app/app/motion.dart';
+import 'package:gel_rule_app/app/motion.dart';
 import 'media_viewer_shortcuts.dart';
 import 'video_player_controls.dart';
 

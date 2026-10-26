@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:prisma_app/backend/backend.dart';
-import 'package:prisma_app/shared/widgets/confirm_dialog.dart';
+import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/shared/widgets/confirm_dialog.dart';
 import '../../models/favorite_enums.dart';
 import 'favorites_liquid_card.dart';
 import 'favorites_posts_grid.dart';

@@ -1,7 +1,7 @@
 import 'package:isar/isar.dart';
 
-import 'package:prisma_app/core/errors/app_exception.dart';
-import 'package:prisma_app/core/utils/result.dart';
+import 'package:gel_rule_app/core/errors/app_exception.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
 import 'app_database.dart';
 
 class DatabaseService {

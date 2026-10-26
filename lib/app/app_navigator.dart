@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:prisma_app/core/models/post.dart';
+import 'package:gel_rule_app/core/models/post.dart';
 
 /// Post navigation goes through go_router so deep links and the back
 /// stack behave the same as every other screen.
