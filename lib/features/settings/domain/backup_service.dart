@@ -8,16 +8,17 @@ import 'package:isar/isar.dart' hide Collection;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
-import 'package:gel_rule_app/core/utils/logger.dart';
+import 'package:prisma_app/core/utils/logger.dart';
 
-import 'package:gel_rule_app/core/database/app_database.dart';
-import 'package:gel_rule_app/core/database/database_service.dart';
-import 'package:gel_rule_app/core/errors/failure.dart';
-import 'package:gel_rule_app/core/utils/result.dart';
-import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
-import 'package:gel_rule_app/core/models/post.dart';
-import 'package:gel_rule_app/features/providers/data/provider_repository.dart';
-import 'package:gel_rule_app/features/settings/domain/settings_service.dart';
+import 'package:prisma_app/core/database/app_database.dart';
+import 'package:prisma_app/core/database/database_service.dart';
+import 'package:prisma_app/core/errors/failure.dart';
+import 'package:prisma_app/core/security/credential_store.dart';
+import 'package:prisma_app/core/utils/result.dart';
+import 'package:prisma_app/features/providers/models/content_provider_config.dart';
+import 'package:prisma_app/core/models/post.dart';
+import 'package:prisma_app/features/providers/data/provider_repository.dart';
+import 'package:prisma_app/features/settings/domain/settings_service.dart';
 
 class BackupRestoreSummary {
   const BackupRestoreSummary({
@@ -283,13 +284,29 @@ class BackupService {
           // Providers
           final providersList = decoded['providers'];
           if (providersList is List) {
+            final credentialStore = CredentialStore();
             for (final item in providersList) {
               if (item is Map) {
                 final model = ContentProviderConfig.fromJson(
                   Map<String, dynamic>.from(item),
                 );
+                // Route credentials into the secure store so restored
+                // configs never persist API keys in the database itself.
+                var toPersist = model;
+                final secrets =
+                    CredentialStore.extractSecrets(model.customHeaders);
+                if (secrets.isNotEmpty) {
+                  final storedSecurely =
+                      await credentialStore.write(model.id, secrets);
+                  if (storedSecurely) {
+                    toPersist = model.copyWith(
+                      customHeaders:
+                          CredentialStore.stripSecrets(model.customHeaders),
+                    );
+                  }
+                }
                 await isar.providerConfigEntitys
-                    .putByProviderId(ProviderConfigEntity.fromModel(model));
+                    .putByProviderId(ProviderConfigEntity.fromModel(toPersist));
                 providerCount++;
               }
             }

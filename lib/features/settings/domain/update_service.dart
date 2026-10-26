@@ -1,14 +1,16 @@
 import 'package:dio/dio.dart';
 import 'dart:io';
+import 'dart:isolate';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
-import 'package:gel_rule_app/app/app_version.dart';
-import 'package:gel_rule_app/core/errors/failure.dart';
-import 'package:gel_rule_app/core/utils/result.dart';
-import 'package:gel_rule_app/features/settings/models/app_update_info.dart';
-import 'package:gel_rule_app/features/settings/domain/settings_service.dart';
+import 'package:prisma_app/app/app_version.dart';
+import 'package:prisma_app/core/errors/failure.dart';
+import 'package:prisma_app/core/utils/result.dart';
+import 'package:prisma_app/features/settings/models/app_update_info.dart';
+import 'package:prisma_app/features/settings/domain/settings_service.dart';
 
 enum UpdateSource {
   gitea,
@@ -184,10 +186,32 @@ class UpdateService {
     String? linuxTarGzUrl;
     String? macosZipUrl;
 
+    final assetDigests = <String, String>{};
+    String? checksumFileUrl;
+
     for (final item in assets.whereType<Map>()) {
-      final name = (item['name'] ?? '').toString().toLowerCase();
+      final name = (item['name'] ?? '').toString();
+      final lowerName = name.toLowerCase();
       final url = (item['browser_download_url'] ?? '').toString();
       if (url.isEmpty) continue;
+
+      // GitHub exposes `digest` as "sha256:<hex>" on release assets.
+      final digestRaw = (item['digest'] ?? '').toString();
+      if (digestRaw.toLowerCase().startsWith('sha256:')) {
+        final hash = digestRaw.split(':').last.trim().toLowerCase();
+        if (RegExp(r'^[0-9a-f]{64}$').hasMatch(hash)) {
+          assetDigests[lowerName] = hash;
+        }
+      }
+      // Gitea and other hosts: rely on a sidecar checksum list asset.
+      if (const {
+        'sha256sums',
+        'sha256sums.txt',
+        'checksums.txt',
+        'sha256-checksums.txt',
+      }.contains(lowerName)) {
+        checksumFileUrl ??= url;
+      }
 
       if (name.endsWith('.apk')) {
         // Detect per-ABI APKs by name pattern produced by --split-per-abi.
@@ -241,8 +265,33 @@ class UpdateService {
       linuxAppImageUrl: linuxAppImageUrl,
       linuxTarGzUrl: linuxTarGzUrl,
       macosZipUrl: macosZipUrl,
+      assetDigests: Map.unmodifiable(assetDigests),
+      checksumFileUrl: checksumFileUrl,
     );
   }
+
+  /// Parses the content of a SHA256SUMS-style checksum list into a map of
+  /// lowercase file name -> sha256 hex digest. Skips comments and malformed
+  /// lines; supports the `*` binary-mode marker.
+  static Map<String, String> parseChecksumList(String content) {
+    final result = <String, String>{};
+    for (final rawLine in content.split(RegExp(r'\r?\n'))) {
+      final line = rawLine.trim();
+      if (line.isEmpty || line.startsWith('#')) continue;
+      final match =
+          RegExp(r'^([0-9a-fA-F]{64})\s+\*?(.+)$').firstMatch(line);
+      if (match == null) continue;
+      final hash = match.group(1)!.toLowerCase();
+      final fileName = match.group(2)!.trim().toLowerCase();
+      if (fileName.isEmpty) continue;
+      result[fileName] = hash;
+    }
+    return result;
+  }
+
+  /// Visible for testing: parses a release JSON payload into [AppUpdateInfo].
+  AppUpdateInfo releaseFromJsonForTest(Map<String, dynamic> json) =>
+      _releaseFromJson(json);
 
   /// Returns the download URL for the current platform/ABI.
   /// Pass [abi] (e.g. from [getPrimaryAbi]) on Android for per-ABI selection.
@@ -337,7 +386,27 @@ class UpdateService {
       },
     );
 
-    onProgress(1.0, 'Установка обновления и перезапуск...');
+    // Integrity gate: never install a package whose checksum can be checked
+    // but does not match. When the release publishes no digest at all we
+    // proceed, since refusing would brick every update for such releases.
+    final expectedDigest = await _expectedDigestFor(info, fileName);
+    String installStatus = 'Установка обновления и перезапуск...';
+    if (expectedDigest != null) {
+      onProgress(1.0, 'Проверка целостности...');
+      final actualDigest = await _computeSha256(targetPath);
+      if (actualDigest != expectedDigest) {
+        try {
+          await tempDir.delete(recursive: true);
+        } catch (_) {}
+        throw Exception(
+          'Проверка целостности обновления не пройдена (SHA-256 не совпадает). '
+          'Загрузка отменена, установленная версия не тронута.',
+        );
+      }
+      installStatus = 'Целостность подтверждена. Установка обновления...';
+    }
+
+    onProgress(1.0, installStatus);
 
     if (Platform.isAndroid) {
       const downloadChannel = MethodChannel('rulegel/downloads');
@@ -363,6 +432,53 @@ class UpdateService {
       return;
     }
   }
+
+  /// Resolves the expected SHA-256 digest for a downloaded release asset:
+  /// first from the release JSON `digest` fields, then from a sidecar
+  /// checksum list (SHA256SUMS / checksums.txt) if the release carries one.
+  /// Returns null when the release publishes no verifiable digest.
+  Future<String?> _expectedDigestFor(
+    AppUpdateInfo info,
+    String fileName,
+  ) async {
+    final fromJson = info.digestFor(fileName);
+    if (fromJson != null) return fromJson;
+
+    final checksumUrl = info.checksumFileUrl;
+    if (checksumUrl == null || checksumUrl.isEmpty) return null;
+    try {
+      final response = await _dio.get<String>(
+        checksumUrl,
+        options: Options(responseType: ResponseType.plain),
+      );
+      final digests = parseChecksumList(response.data ?? '');
+      final expected = digests[fileName.toLowerCase()];
+      if (expected == null) return null;
+      return RegExp(r'^[0-9a-f]{64}$').hasMatch(expected) ? expected : null;
+    } catch (_) {
+      // Sidecar unavailable — fall through to unverified install rather than
+      // blocking updates whose metadata simply moved.
+      return null;
+    }
+  }
+
+  /// Computes the SHA-256 hex digest of the file at [path] off the main
+  /// isolate so large packages do not jank the UI.
+  static Future<String> _computeSha256(String path) {
+    return Isolate.run(() async {
+      final sink = _HexDigestSink();
+      final converter = sha256.startChunkedConversion(sink);
+      await for (final chunk in File(path).openRead()) {
+        converter.add(chunk);
+      }
+      converter.close();
+      return sink.hex;
+    });
+  }
+
+  /// Visible for testing: exposes the isolate-based SHA-256 helper.
+  static Future<String> computeSha256ForTest(String path) =>
+      _computeSha256(path);
 
   Future<void> _installLinuxUpdate(String downloadedPath) async {
     await Process.run('chmod', ['+x', downloadedPath]);
@@ -488,11 +604,24 @@ del /f /q "%~f0"
     appBundlePath ??= '/Applications/Prisma.app';
     final parentDir = Directory(appBundlePath).parent.path;
 
+    // Unzip into a staging directory FIRST and only replace the live bundle
+    // once extraction succeeded, so a corrupt archive can never destroy the
+    // working installation.
+    final stagingDir = '$parentDir/.prisma_update_staging';
     final scriptPath = '${Directory.systemTemp.path}/prisma_apply_update.sh';
     final scriptContent = '''#!/bin/sh
 sleep 2
-rm -rf "$appBundlePath"
-unzip -q -o "$downloadedPath" -d "$parentDir"
+rm -rf "$stagingDir"
+if unzip -q -o "$downloadedPath" -d "$stagingDir"; then
+  STAGED_APP=\$(find "\$stagingDir" -maxdepth 1 -name "*.app" | head -n 1)
+  if [ -n "\$STAGED_APP" ]; then
+    rm -rf "$appBundlePath"
+    mv "\$STAGED_APP" "$appBundlePath"
+  else
+    unzip -q -o "$downloadedPath" -d "$parentDir"
+  fi
+fi
+rm -rf "$stagingDir"
 rm -f "$downloadedPath"
 xattr -dr com.apple.quarantine "$appBundlePath" 2>/dev/null || true
 open "$appBundlePath"
@@ -530,6 +659,16 @@ rm -f "\$0"
 
   static int compareVersionsForTest(String latest, String current) =>
       _compareVersions(latest, current);
+}
+
+class _HexDigestSink implements Sink<Digest> {
+  String hex = '';
+
+  @override
+  void add(Digest data) => hex = data.toString();
+
+  @override
+  void close() {}
 }
 
 class _ParsedVersion implements Comparable<_ParsedVersion> {

@@ -17,6 +17,8 @@ class AppUpdateInfo {
     this.linuxAppImageUrl,
     this.linuxTarGzUrl,
     this.macosZipUrl,
+    this.assetDigests = const {},
+    this.checksumFileUrl,
   });
 
   final String version;
@@ -41,6 +43,19 @@ class AppUpdateInfo {
   final String? linuxAppImageUrl;
   final String? linuxTarGzUrl;
   final String? macosZipUrl;
+
+  /// SHA-256 hex digests for release assets, keyed by lowercase asset file
+  /// name. Populated from the `digest` field of the release JSON.
+  final Map<String, String> assetDigests;
+
+  /// URL of a sidecar checksum list asset (e.g. SHA256SUMS, checksums.txt)
+  /// attached to the release, if any. Parsed at download time.
+  final String? checksumFileUrl;
+
+  /// Expected SHA-256 hex digest for the asset named [fileName]
+  /// (case-insensitive), or null when the release provides none.
+  String? digestFor(String fileName) =>
+      assetDigests[fileName.toLowerCase()];
 
   /// Returns the best APK URL for [abi], falling back to the generic APK.
   String? apkUrlForAbi(String abi) {

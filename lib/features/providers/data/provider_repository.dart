@@ -2,19 +2,29 @@ import 'dart:convert';
 
 import 'package:isar/isar.dart';
 
-import 'package:gel_rule_app/core/database/app_database.dart';
-import 'package:gel_rule_app/core/database/database_service.dart';
-import 'package:gel_rule_app/core/http/app_headers.dart';
-import 'package:gel_rule_app/core/utils/result.dart';
-import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
-import 'package:gel_rule_app/core/models/provider_diagnostics.dart';
-import 'package:gel_rule_app/core/models/provider_health.dart';
+import 'package:prisma_app/core/database/app_database.dart';
+import 'package:prisma_app/core/database/database_service.dart';
+import 'package:prisma_app/core/http/app_headers.dart';
+import 'package:prisma_app/core/security/credential_store.dart';
+import 'package:prisma_app/core/utils/result.dart';
+import 'package:prisma_app/features/providers/models/content_provider_config.dart';
+import 'package:prisma_app/core/models/provider_diagnostics.dart';
+import 'package:prisma_app/core/models/provider_health.dart';
 
 class ProviderRepository {
-  ProviderRepository(this._databaseService, {this.onDataChanged});
+  ProviderRepository(
+    this._databaseService, {
+    this.onDataChanged,
+    CredentialStore? credentialStore,
+  }) : _credentialStore = credentialStore ?? CredentialStore();
 
   final DatabaseService _databaseService;
+  final CredentialStore _credentialStore;
   final void Function()? onDataChanged;
+
+  /// Provider ids already checked for legacy plaintext secrets this session,
+  /// so opportunistic migration does not run on every config reload.
+  final Set<String> _legacyMigrationAttempted = {};
 
   static List<ContentProviderConfig> seedProviders() {
     final now = DateTime.now();
@@ -350,8 +360,8 @@ class ProviderRepository {
 
   Future<Result<List<ContentProviderConfig>>> getProviders({
     bool enabledOnly = false,
-  }) {
-    return _databaseService.safeRead((isar) async {
+  }) async {
+    final result = await _databaseService.safeRead((isar) async {
       final providers = enabledOnly
           ? await isar.providerConfigEntitys
               .filter()
@@ -361,28 +371,96 @@ class ProviderRepository {
       providers.sort((a, b) => a.priority.compareTo(b.priority));
       return providers.map((entity) => entity.toModel()).toList();
     });
+    if (result is! Success<List<ContentProviderConfig>>) return result;
+    final overlaid = <ContentProviderConfig>[];
+    for (final config in result.data) {
+      overlaid.add(await _overlayCredentials(config));
+    }
+    return Success(overlaid);
   }
 
-  Future<Result<ContentProviderConfig?>> getProvider(String id) {
-    return _databaseService.safeRead((isar) async {
+  Future<Result<ContentProviderConfig?>> getProvider(String id) async {
+    final result = await _databaseService.safeRead((isar) async {
       final entity = await isar.providerConfigEntitys
           .filter()
           .providerIdEqualTo(id)
           .findFirst();
       return entity?.toModel();
     });
+    if (result is! Success<ContentProviderConfig?>) return result;
+    final config = result.data;
+    if (config == null) return result;
+    return Success(await _overlayCredentials(config));
+  }
+
+  /// Merges credentials from the secure store into the in-memory config so
+  /// the rest of the app (provider factory, auth dialogs, UI badges) sees a
+  /// complete customHeaders map, while Isar itself never stores the secrets.
+  Future<ContentProviderConfig> _overlayCredentials(
+    ContentProviderConfig config,
+  ) async {
+    final secureSecrets = await _credentialStore.read(config.id);
+    final hasPlaintextSecrets = CredentialStore.hasSecrets(config.customHeaders);
+    if (secureSecrets.isNotEmpty) {
+      final base = hasPlaintextSecrets
+          ? CredentialStore.stripSecrets(config.customHeaders)
+          : config.customHeaders;
+      return config.copyWith(customHeaders: {...base, ...secureSecrets});
+    }
+    if (hasPlaintextSecrets) {
+      _migrateLegacySecrets(config);
+    }
+    return config;
+  }
+
+  /// Moves legacy plaintext secrets (persisted before the secure store
+  /// existed) into the OS keychain and rewrites the database row stripped.
+  /// Fire-and-forget: config reads must never block on keychain I/O.
+  void _migrateLegacySecrets(ContentProviderConfig config) {
+    if (!_legacyMigrationAttempted.add(config.id)) return;
+    () async {
+      final secrets = CredentialStore.extractSecrets(config.customHeaders);
+      final migrated = await _credentialStore.write(config.id, secrets);
+      if (!migrated) return;
+      final stripped = config.copyWith(
+        customHeaders: CredentialStore.stripSecrets(config.customHeaders),
+      );
+      await _databaseService.safeWrite((isar) async {
+        final entity = await isar.providerConfigEntitys
+            .filter()
+            .providerIdEqualTo(config.id)
+            .findFirst();
+        if (entity != null) {
+          entity.customHeadersJson = jsonEncode(stripped.customHeaders);
+          await isar.providerConfigEntitys.put(entity);
+        }
+      });
+    }();
   }
 
   Future<Result<void>> saveProvider(ContentProviderConfig config) async {
+    final secrets = CredentialStore.extractSecrets(config.customHeaders);
+    var persisted = config;
+    if (secrets.isNotEmpty) {
+      final storedSecurely = await _credentialStore.write(config.id, secrets);
+      if (storedSecurely) {
+        persisted = config.copyWith(
+          customHeaders: CredentialStore.stripSecrets(config.customHeaders),
+        );
+      }
+      // Keychain unavailable: keep legacy plaintext persistence so the
+      // credentials are not silently lost.
+    }
     final res = await _databaseService.safeWrite((isar) async {
       await isar.providerConfigEntitys
-          .put(ProviderConfigEntity.fromModel(config));
+          .put(ProviderConfigEntity.fromModel(persisted));
     });
     if (res is Success) onDataChanged?.call();
     return res;
   }
 
   Future<Result<void>> deleteProvider(String id) async {
+    await _credentialStore.delete(id);
     final res = await _databaseService.safeWrite((isar) async {
       await isar.providerConfigEntitys
           .filter()
