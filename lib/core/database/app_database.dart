@@ -1,17 +1,18 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:isar/isar.dart' hide Collection;
 import 'package:path_provider/path_provider.dart';
 
-import 'package:gel_rule_app/features/collections/models/collection.dart';
-import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
-import 'package:gel_rule_app/features/favorites/models/favorite.dart';
-import 'package:gel_rule_app/core/models/post.dart';
-import 'package:gel_rule_app/core/models/provider_diagnostics.dart';
-import 'package:gel_rule_app/core/models/provider_health.dart';
-import 'package:gel_rule_app/features/search/models/search_history.dart';
-import 'package:gel_rule_app/features/viewed/models/viewed_post.dart';
-import 'package:gel_rule_app/features/downloads/models/downloaded_media.dart';
+import 'package:prisma_app/features/collections/models/collection.dart';
+import 'package:prisma_app/features/providers/models/content_provider_config.dart';
+import 'package:prisma_app/features/favorites/models/favorite.dart';
+import 'package:prisma_app/core/models/post.dart';
+import 'package:prisma_app/core/models/provider_diagnostics.dart';
+import 'package:prisma_app/core/models/provider_health.dart';
+import 'package:prisma_app/features/search/models/search_history.dart';
+import 'package:prisma_app/features/viewed/models/viewed_post.dart';
+import 'package:prisma_app/features/downloads/models/downloaded_media.dart';
 
 part 'app_database.g.dart';
 
@@ -22,7 +23,22 @@ class AppDatabase {
 
   static Future<AppDatabase> open({String? directory}) async {
     final dir = directory ?? (await getApplicationDocumentsDirectory()).path;
-    final isar = await Isar.open(
+    try {
+      return AppDatabase(await _openIsar(dir));
+    } catch (_) {
+      // Recovery path: a corrupted or schema-incompatible database file must
+      // not crash-loop the app on every startup. Wipe the data file and
+      // recreate it — cached content is disposable, losing it beats losing
+      // the whole app session.
+      final file = File('$dir/prisma_app.isar');
+      if (await file.exists()) {
+        await file.delete();
+      }
+      return AppDatabase(await _openIsar(dir));
+    }
+  }
+
+  static Future<Isar> _openIsar(String dir) => Isar.open(
       [
         ProviderConfigEntitySchema,
         ProviderHealthEntitySchema,
@@ -39,10 +55,8 @@ class AppDatabase {
         MangaReadingProgressEntitySchema,
       ],
       directory: dir,
-      name: 'gel_rule_app',
+      name: 'prisma_app',
     );
-    return AppDatabase(isar);
-  }
 
   Future<void> close() => isar.close();
 }
@@ -148,6 +162,7 @@ class CachedPostEntity {
   late DateTime createdAt;
   late String fileType;
   late int score;
+  @Index()
   late DateTime cachedAt;
 
   Post toModel() => Post(

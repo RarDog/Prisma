@@ -1,16 +1,23 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:gel_rule_app/core/http/app_headers.dart';
+import 'package:prisma_app/core/http/app_headers.dart';
 import 'package:flutter/foundation.dart';
-import 'package:gel_rule_app/core/utils/logger.dart';
+import 'package:prisma_app/core/utils/logger.dart';
 import 'package:path_provider/path_provider.dart';
 
-import 'package:gel_rule_app/sources/manga/mangadex_provider.dart';
+import 'package:prisma_app/sources/manga/mangadex_provider.dart';
 
 class MangaOfflineService {
   MangaOfflineService({Dio? dio, String? baseDir})
-      : _dio = dio ?? Dio(),
+      : _dio = dio ??
+            Dio(BaseOptions(
+              // receiveTimeout applies between data chunks, so chapter
+              // downloads on slow connections are not cut off mid-transfer.
+              connectTimeout: const Duration(seconds: 30),
+              receiveTimeout: const Duration(seconds: 60),
+              sendTimeout: const Duration(seconds: 30),
+            )),
         _baseDir = baseDir;
 
   final Dio _dio;

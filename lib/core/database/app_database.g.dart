@@ -3278,6 +3278,19 @@ const CachedPostEntitySchema = CollectionSchema(
           caseSensitive: true,
         )
       ],
+    ),
+    r'cachedAt': IndexSchema(
+      id: -699654806693614168,
+      name: r'cachedAt',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'cachedAt',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
     )
   },
   links: {},
@@ -3495,6 +3508,14 @@ extension CachedPostEntityQueryWhereSort
       return query.addWhereClause(const IdWhereClause.any());
     });
   }
+
+  QueryBuilder<CachedPostEntity, CachedPostEntity, QAfterWhere> anyCachedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'cachedAt'),
+      );
+    });
+  }
 }
 
 extension CachedPostEntityQueryWhere
@@ -3699,6 +3720,99 @@ extension CachedPostEntityQueryWhere
               includeUpper: false,
             ));
       }
+    });
+  }
+
+  QueryBuilder<CachedPostEntity, CachedPostEntity, QAfterWhereClause>
+      cachedAtEqualTo(DateTime cachedAt) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'cachedAt',
+        value: [cachedAt],
+      ));
+    });
+  }
+
+  QueryBuilder<CachedPostEntity, CachedPostEntity, QAfterWhereClause>
+      cachedAtNotEqualTo(DateTime cachedAt) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'cachedAt',
+              lower: [],
+              upper: [cachedAt],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'cachedAt',
+              lower: [cachedAt],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'cachedAt',
+              lower: [cachedAt],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'cachedAt',
+              lower: [],
+              upper: [cachedAt],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<CachedPostEntity, CachedPostEntity, QAfterWhereClause>
+      cachedAtGreaterThan(
+    DateTime cachedAt, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'cachedAt',
+        lower: [cachedAt],
+        includeLower: include,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<CachedPostEntity, CachedPostEntity, QAfterWhereClause>
+      cachedAtLessThan(
+    DateTime cachedAt, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'cachedAt',
+        lower: [],
+        upper: [cachedAt],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<CachedPostEntity, CachedPostEntity, QAfterWhereClause>
+      cachedAtBetween(
+    DateTime lowerCachedAt,
+    DateTime upperCachedAt, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'cachedAt',
+        lower: [lowerCachedAt],
+        includeLower: includeLower,
+        upper: [upperCachedAt],
+        includeUpper: includeUpper,
+      ));
     });
   }
 }
