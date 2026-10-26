@@ -32,6 +32,7 @@ import 'package:prisma_app/features/search/domain/search_service.dart';
 import 'package:prisma_app/features/search/domain/tag_cache_service.dart';
 import 'package:prisma_app/features/settings/domain/settings_service.dart';
 import 'package:prisma_app/features/settings/domain/update_service.dart';
+import 'package:prisma_app/app/app.dart' show appSettingsProvider;
 import 'package:prisma_app/features/viewed/domain/viewed_history_service.dart';
 import 'package:prisma_app/features/settings/domain/backup_service.dart';
 import 'package:prisma_app/features/onboarding/domain/onboarding_service.dart';
@@ -253,6 +254,8 @@ final downloadTasksProvider = StreamProvider<List<DownloadTask>>((ref) {
 });
 
 final updateServiceProvider = Provider<UpdateService>((ref) {
+  final settings = ref.watch(appSettingsProvider).value;
+  final isRu = settings?.languageCode != 'en';
   return UpdateService(
     Dio(
       BaseOptions(
@@ -265,6 +268,7 @@ final updateServiceProvider = Provider<UpdateService>((ref) {
       ),
     ),
     ref.watch(settingsServiceProvider),
+    strings: isRu ? UpdateStrings.russian : UpdateStrings.english,
   );
 });
 

@@ -192,9 +192,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final extra = state.extra;
           final Post? initialPost;
           final List<Post>? postsList;
+          var fromFeed = false;
           if (extra is PostNavigationContext) {
             initialPost = extra.currentPost;
-            postsList = extra.posts;
+            // An empty list means "unknown" — same as no context at all.
+            postsList = extra.posts.isEmpty ? null : extra.posts;
+            fromFeed = extra.fromFeed;
           } else if (extra is Post) {
             initialPost = extra;
             postsList = null;
@@ -207,6 +210,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             postId: state.pathParameters['postId']!,
             initialPost: initialPost,
             postsList: postsList,
+            fromFeed: fromFeed,
           );
         },
         routes: [

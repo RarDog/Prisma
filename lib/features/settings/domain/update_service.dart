@@ -17,8 +17,69 @@ enum UpdateSource {
   github,
 }
 
+/// User-visible update strings. The service runs outside the widget tree, so
+/// the localized set is injected at construction instead of reaching into
+/// BuildContext.
+class UpdateStrings {
+  const UpdateStrings({
+    required this.appImageUnavailable,
+    required this.downloadStarted,
+    required this.installingAndRestarting,
+    required this.verifyingIntegrity,
+    required this.integrityCheckFailed,
+    required this.integrityVerified,
+    required this.notAnAppImage,
+    required this.mbUnit,
+  });
+
+  static const russian = UpdateStrings(
+    appImageUnavailable:
+        'Обновление в формате AppImage недоступно для этой версии на сервере обновлений.',
+    downloadStarted: 'Начало загрузки...',
+    installingAndRestarting: 'Установка обновления и перезапуск...',
+    verifyingIntegrity: 'Проверка целостности...',
+    integrityCheckFailed:
+        'Проверка целостности обновления не пройдена (SHA-256 не совпадает). '
+        'Загрузка отменена, установленная версия не тронута.',
+    integrityVerified: 'Целостность подтверждена. Установка обновления...',
+    notAnAppImage:
+        'Скачанный файл не является AppImage и не может заменить текущий запускаемый файл.',
+    mbUnit: 'МБ',
+  );
+
+  static const english = UpdateStrings(
+    appImageUnavailable:
+        'AppImage updates are not available for this version on the update server.',
+    downloadStarted: 'Starting download...',
+    installingAndRestarting: 'Installing update and restarting...',
+    verifyingIntegrity: 'Verifying integrity...',
+    integrityCheckFailed:
+        'Update integrity check failed (SHA-256 mismatch). '
+        'Download discarded, the installed version is untouched.',
+    integrityVerified: 'Integrity verified. Installing update...',
+    notAnAppImage:
+        'The downloaded file is not an AppImage and cannot replace the current executable.',
+    mbUnit: 'MB',
+  );
+
+  final String appImageUnavailable;
+  final String downloadStarted;
+  final String installingAndRestarting;
+  final String verifyingIntegrity;
+  final String integrityCheckFailed;
+  final String integrityVerified;
+  final String notAnAppImage;
+  final String mbUnit;
+}
+
 class UpdateService {
-  UpdateService(this._dio, this._settingsService);
+  UpdateService(
+    this._dio,
+    this._settingsService, {
+    this.strings = UpdateStrings.russian,
+  });
+
+  final UpdateStrings strings;
 
   static const giteaLatestReleaseUrl =
       'https://gitea.rardogsynapse.online/api/v1/repos/RarDog/Prisma/releases/latest';
@@ -306,9 +367,7 @@ class UpdateService {
         if (info.linuxAppImageUrl != null) {
           return info.linuxAppImageUrl;
         }
-        throw Exception(
-          'Обновление в формате AppImage недоступно для этой версии на сервере обновлений.',
-        );
+        throw Exception(strings.appImageUnavailable);
       }
       return info.linuxTarGzUrl ?? info.portableZipUrl ?? info.linuxAppImageUrl;
     }
@@ -366,7 +425,7 @@ class UpdateService {
     final tempDir = await baseTempDir.createTemp('prisma_update_');
     final targetPath = '${tempDir.path}${Platform.pathSeparator}$fileName';
 
-    onProgress(0.0, 'Начало загрузки...');
+    onProgress(0.0, strings.downloadStarted);
 
     await _dio.download(
       assetUrl,
@@ -378,10 +437,12 @@ class UpdateService {
           final mbReceived = (received / (1024 * 1024)).toStringAsFixed(1);
           final mbTotal = (total / (1024 * 1024)).toStringAsFixed(1);
           onProgress(
-              ratio, '$mbReceived / $mbTotal МБ (${(ratio * 100).toInt()}%)');
+              ratio,
+              '$mbReceived / $mbTotal ${strings.mbUnit} '
+              '(${(ratio * 100).toInt()}%)');
         } else {
           final mbReceived = (received / (1024 * 1024)).toStringAsFixed(1);
-          onProgress(-1.0, '$mbReceived МБ');
+          onProgress(-1.0, '$mbReceived ${strings.mbUnit}');
         }
       },
     );
@@ -390,20 +451,17 @@ class UpdateService {
     // but does not match. When the release publishes no digest at all we
     // proceed, since refusing would brick every update for such releases.
     final expectedDigest = await _expectedDigestFor(info, fileName);
-    String installStatus = 'Установка обновления и перезапуск...';
+    String installStatus = strings.installingAndRestarting;
     if (expectedDigest != null) {
-      onProgress(1.0, 'Проверка целостности...');
+      onProgress(1.0, strings.verifyingIntegrity);
       final actualDigest = await _computeSha256(targetPath);
       if (actualDigest != expectedDigest) {
         try {
           await tempDir.delete(recursive: true);
         } catch (_) {}
-        throw Exception(
-          'Проверка целостности обновления не пройдена (SHA-256 не совпадает). '
-          'Загрузка отменена, установленная версия не тронута.',
-        );
+        throw Exception(strings.integrityCheckFailed);
       }
-      installStatus = 'Целостность подтверждена. Установка обновления...';
+      installStatus = strings.integrityVerified;
     }
 
     onProgress(1.0, installStatus);
@@ -489,9 +547,7 @@ class UpdateService {
     final runningAppImage = Platform.environment['APPIMAGE'];
     if (runningAppImage != null && runningAppImage.isNotEmpty) {
       if (!isAppImageFile) {
-        throw Exception(
-          'Скачанный файл не является AppImage и не может заменить текущий запускаемый файл.',
-        );
+        throw Exception(strings.notAnAppImage);
       }
 
       final appImageFile = File(runningAppImage);

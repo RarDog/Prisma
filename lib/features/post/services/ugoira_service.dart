@@ -50,7 +50,13 @@ class _BoundedLruCache<K, V> {
 }
 
 class UgoiraService {
-  UgoiraService({Dio? dio}) : _dio = dio ?? Dio();
+  UgoiraService({Dio? dio})
+      : _dio = dio ??
+            Dio(BaseOptions(
+              connectTimeout: const Duration(seconds: 20),
+              receiveTimeout: const Duration(seconds: 30),
+              sendTimeout: const Duration(seconds: 20),
+            ));
 
   final Dio _dio;
   // Decoded Ugoira frame bytes are multi-MB per post; a handful of entries

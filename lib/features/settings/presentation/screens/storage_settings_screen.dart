@@ -58,13 +58,23 @@ class StorageSettingsScreen extends ConsumerWidget {
       }
 
       final details = parts.isNotEmpty ? ' (${parts.join(", ")})' : '';
+      final warningText = summary.warning == null
+          ? ''
+          : (isRu
+              ? '\nПредупреждение: ${summary.warning}'
+              : '\nWarning: ${summary.warning}');
+      final restoredNothing =
+          summary.totalItemsRestored == 0 && summary.providersCount == 0;
+      final message = restoredNothing
+          ? (isRu
+              ? 'Восстановлены только настройки — в бэкапе нет избранного, коллекций, манги и истории.'
+              : 'Only settings were restored — the backup contains no favorites, collections, manga or history.')
+          : (isRu
+              ? 'Все данные успешно импортированы!$details'
+              : 'All data successfully imported!$details');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            isRu
-                ? 'Все данные успешно импортированы!$details'
-                : 'All data successfully imported!$details',
-          ),
+          content: Text('$message$warningText'),
           duration: const Duration(seconds: 4),
         ),
       );

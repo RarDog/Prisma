@@ -29,6 +29,7 @@ class BackupRestoreSummary {
     this.mangaEntriesCount = 0,
     this.historyCount = 0,
     this.downloadedMediaCount = 0,
+    this.warning,
   });
 
   final AppSettings settings;
@@ -38,6 +39,10 @@ class BackupRestoreSummary {
   final int mangaEntriesCount;
   final int historyCount;
   final int downloadedMediaCount;
+
+  /// Set when some sections could not be restored (e.g. a DB transaction
+  /// failed) while others succeeded.
+  final String? warning;
 
   int get totalItemsRestored =>
       providersCount +
@@ -277,10 +282,19 @@ class BackupService {
       var histCount = 0;
       var dmCount = 0;
 
-      // 2. Database entities
+      // 2. Database entities — one transaction per section: a failure in a
+      // malformed section must not silently zero the whole restore.
       final db = _databaseService;
+      Failure? dbFailure;
       if (db != null) {
-        await db.safeWrite((isar) async {
+        Future<void> runSection(
+          Future<void> Function(Isar isar) section,
+        ) async {
+          final result = await db.safeWrite(section);
+          if (result is Error) dbFailure ??= result.failure;
+        }
+
+        await runSection((isar) async {
           // Providers
           final providersList = decoded['providers'];
           if (providersList is List) {
@@ -311,7 +325,9 @@ class BackupService {
               }
             }
           }
+        });
 
+        await runSection((isar) async {
           // Favorites
           final favoritesList = decoded['favorites'];
           if (favoritesList is List) {
@@ -336,7 +352,9 @@ class BackupService {
               }
             }
           }
+        });
 
+        await runSection((isar) async {
           // Cached Posts
           final postsList = decoded['favoritePosts'];
           if (postsList is List) {
@@ -348,7 +366,9 @@ class BackupService {
               }
             }
           }
+        });
 
+        await runSection((isar) async {
           // Collections
           final collectionsList = decoded['collections'];
           if (collectionsList is List) {
@@ -373,7 +393,9 @@ class BackupService {
               }
             }
           }
+        });
 
+        await runSection((isar) async {
           // Collection Posts
           final cpList = decoded['collectionPosts'];
           if (cpList is List) {
@@ -395,7 +417,9 @@ class BackupService {
               }
             }
           }
+        });
 
+        await runSection((isar) async {
           // Search History
           final searchList = decoded['searchHistory'];
           if (searchList is List) {
@@ -417,7 +441,9 @@ class BackupService {
               }
             }
           }
+        });
 
+        await runSection((isar) async {
           // Manga Library
           final mangaList = decoded['mangaLibrary'];
           if (mangaList is List) {
@@ -442,7 +468,9 @@ class BackupService {
               }
             }
           }
+        });
 
+        await runSection((isar) async {
           // Manga Reading Progress
           final progressList = decoded['mangaProgress'];
           if (progressList is List) {
@@ -467,7 +495,9 @@ class BackupService {
               }
             }
           }
+        });
 
+        await runSection((isar) async {
           // Viewed History
           final viewedList = decoded['viewedHistory'];
           if (viewedList is List) {
@@ -489,7 +519,9 @@ class BackupService {
               }
             }
           }
+        });
 
+        await runSection((isar) async {
           // Downloaded Media
           final dmList = decoded['downloadedMedia'];
           if (dmList is List) {
@@ -514,6 +546,19 @@ class BackupService {
         });
       }
 
+      final restoredTotal = providerCount +
+          favCount +
+          colCount +
+          mangaCount +
+          histCount +
+          dmCount;
+      if (dbFailure != null && restoredTotal == 0) {
+        return Error(Failure(
+          code: 'import_error',
+          message: 'Failed to import data: ${dbFailure!.message}',
+        ));
+      }
+
       final repo = _providerRepository;
       if (repo != null) {
         await repo.ensureSeedProviders();
@@ -527,6 +572,7 @@ class BackupService {
         mangaEntriesCount: mangaCount,
         historyCount: histCount,
         downloadedMediaCount: dmCount,
+        warning: dbFailure?.message,
       ));
     } catch (e) {
       return Error(Failure(
@@ -581,6 +627,18 @@ class BackupService {
     return dirs;
   }
 
+  /// User-content weight of a backup payload: favorites, collections, manga
+  /// entries and history. Used to compare snapshots so a fresh install's
+  /// empty state can never silently shadow a data-bearing backup.
+  int _backupContentWeight(Map<String, dynamic> payload) {
+    int len(Object? value) => value is List ? value.length : 0;
+    return len(payload['favorites']) +
+        len(payload['collections']) +
+        len(payload['mangaLibrary']) +
+        len(payload['searchHistory']) +
+        len(payload['viewedHistory']);
+  }
+
   /// Automatically writes backup JSON snapshot to external persistent storage.
   Future<bool> saveAutoBackupToPersistentStorage({bool force = false}) async {
     try {
@@ -608,10 +666,22 @@ class BackupService {
           if (!await dir.exists()) {
             await dir.create(recursive: true);
           }
-          final file = File('$dirPath/$backupFileName');
-          await file.writeAsString(json);
+          final mainFile = File('$dirPath/$backupFileName');
+          // Rotate: keep the previous generation alongside the newest one so
+          // a degraded (e.g. freshly-installed) state can never destroy the
+          // last data-bearing snapshot — it only displaces it.
+          if (await mainFile.exists()) {
+            final previous = File('$dirPath/prisma_backup_previous.json');
+            if (await previous.exists()) {
+              await previous.delete();
+            }
+            try {
+              await mainFile.rename(previous.path);
+            } catch (_) {}
+          }
+          await mainFile.writeAsString(json);
           anySaved = true;
-          lastPersistentBackupPath = file.path;
+          lastPersistentBackupPath = mainFile.path;
         } catch (e, st) {
           AppLogger.log(
               'BackupService: failed to write backup to $dirPath', e, st);
@@ -664,6 +734,7 @@ class BackupService {
       }
 
       final candidateDirs = await getCandidateBackupDirectories();
+      final candidates = <(String, String, int, DateTime)>[];
       for (final dirPath in candidateDirs) {
         try {
           final dir = Directory(dirPath);
@@ -675,34 +746,47 @@ class BackupService {
             return name.startsWith('prisma_backup') && name.endsWith('.json');
           }).toList();
 
-          if (files.isNotEmpty) {
-            final fileModTimes = <String, DateTime>{};
-            for (final f in files) {
-              fileModTimes[f.path] = await f.lastModified();
-            }
-            files.sort((a, b) =>
-                (fileModTimes[b.path] ?? DateTime.fromMillisecondsSinceEpoch(0))
-                    .compareTo(fileModTimes[a.path] ??
-                        DateTime.fromMillisecondsSinceEpoch(0)));
-            for (final f in files) {
+          for (final f in files) {
+            try {
+              final text = await f.readAsString();
+              if (text.trim().isEmpty || !text.contains('"version"')) continue;
+              DateTime modified =
+                  DateTime.fromMillisecondsSinceEpoch(0);
               try {
-                final text = await f.readAsString();
-                if (text.trim().isNotEmpty && text.contains('"version"')) {
-                  lastPersistentBackupPath = f.path;
-                  return text;
+                modified = await f.lastModified();
+              } catch (_) {}
+              var weight = 0;
+              try {
+                final decoded = jsonDecode(text);
+                if (decoded is Map<String, dynamic>) {
+                  weight = _backupContentWeight(decoded);
                 }
-              } catch (e, st) {
-                AppLogger.log(
-                    'BackupService: failed reading candidate file ${f.path}',
-                    e,
-                    st);
-              }
+              } catch (_) {}
+              candidates.add((f.path, text, weight, modified));
+            } catch (e, st) {
+              AppLogger.log(
+                  'BackupService: failed reading candidate file ${f.path}',
+                  e,
+                  st);
             }
           }
         } catch (e, st) {
           AppLogger.log(
               'BackupService: candidateDir scan error for $dirPath', e, st);
         }
+      }
+
+      if (candidates.isNotEmpty) {
+        // Prefer the snapshot with the most user content, newest first on
+        // ties. A fresh install's empty auto-backup must never shadow the
+        // last data-bearing snapshot during auto-restore.
+        candidates.sort((a, b) {
+          final byWeight = b.$3.compareTo(a.$3);
+          if (byWeight != 0) return byWeight;
+          return b.$4.compareTo(a.$4);
+        });
+        lastPersistentBackupPath = candidates.first.$1;
+        return candidates.first.$2;
       }
     } catch (e, st) {
       AppLogger.log('BackupService.readPersistentBackup error', e, st);
@@ -863,18 +947,31 @@ class BackupService {
 
   /// Imports backup from user-selected file.
   Future<Result<BackupRestoreSummary>?> importBackup() async {
-    const typeGroup = XTypeGroup(
-      label: 'JSON files',
-      extensions: ['json'],
-      mimeTypes: ['application/json', 'text/plain', 'text/*', '*/*'],
-    );
-    final file = await openFile(acceptedTypeGroups: [typeGroup]);
-    if (file == null) return null;
-    final content = await file.readAsString();
-    final result = await restoreFromJson(content);
-    if (result is Success<BackupRestoreSummary>) {
-      await saveAutoBackupToPersistentStorage(force: true);
+    // No type filter: platform dialogs hide files whose extension does not
+    // match (e.g. renamed or extension-less exports). JSON validity is
+    // checked by the restore itself.
+    final XFile? file;
+    try {
+      file = await openFile();
+    } catch (e) {
+      return Error(Failure(
+        code: 'file_picker_failed',
+        message: 'Could not open the file picker: $e',
+      ));
     }
-    return result;
+    if (file == null) return null;
+    try {
+      final content = await file.readAsString();
+      final result = await restoreFromJson(content);
+      if (result is Success<BackupRestoreSummary>) {
+        await saveAutoBackupToPersistentStorage(force: true);
+      }
+      return result;
+    } catch (e) {
+      return Error(Failure(
+        code: 'import_error',
+        message: 'Failed to read the backup file: $e',
+      ));
+    }
   }
 }

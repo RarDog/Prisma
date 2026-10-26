@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:prisma_app/core/models/post.dart';
-import 'package:prisma_app/features/post/presentation/post_details_screen.dart';
-import 'package:prisma_app/features/post/presentation/similar_posts_screen.dart';
 
+/// Post navigation goes through go_router so deep links and the back
+/// stack behave the same as every other screen.
 class AppNavigator {
   const AppNavigator._();
 
@@ -14,15 +15,12 @@ class AppNavigator {
     bool fromFeed = false,
   }) async {
     FocusManager.instance.primaryFocus?.unfocus();
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (ctx) => PostDetailsScreen(
-          providerId: post.providerId,
-          postId: post.id,
-          initialPost: post,
-          postsList: postsList,
-          fromFeed: fromFeed,
-        ),
+    await context.push(
+      '/post/${post.providerId}/${post.id}',
+      extra: PostNavigationContext(
+        currentPost: post,
+        posts: postsList ?? const <Post>[],
+        fromFeed: fromFeed,
       ),
     );
     FocusManager.instance.primaryFocus?.unfocus();
@@ -33,14 +31,9 @@ class AppNavigator {
     required Post post,
   }) async {
     FocusManager.instance.primaryFocus?.unfocus();
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (ctx) => SimilarPostsScreen(
-          providerId: post.providerId,
-          postId: post.id,
-          initialPost: post,
-        ),
-      ),
+    await context.push(
+      '/post/${post.providerId}/${post.id}/similar',
+      extra: post,
     );
     FocusManager.instance.primaryFocus?.unfocus();
   }

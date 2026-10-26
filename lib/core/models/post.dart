@@ -224,8 +224,10 @@ class PostNavigationContext {
   const PostNavigationContext({
     required this.currentPost,
     required this.posts,
+    this.fromFeed = false,
   });
 
   final Post currentPost;
   final List<Post> posts;
+  final bool fromFeed;
 }

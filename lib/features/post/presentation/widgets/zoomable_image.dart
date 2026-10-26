@@ -69,6 +69,8 @@ class DioImageFallbackState extends State<DioImageFallback> {
         responseType: ResponseType.bytes,
         headers: widget.headers,
         followRedirects: true,
+        // A bare Dio has no connectTimeout: a dead host hangs forever.
+        connectTimeout: const Duration(seconds: 20),
         receiveTimeout: const Duration(seconds: 20),
         sendTimeout: const Duration(seconds: 10),
       ),
