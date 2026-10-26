@@ -1,5 +1,28 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.2.1-rc.2',
+    title:
+        'Стабильность и скорость: защищённые обновления, редизайн Артистов и ускоренная манга',
+    titleEn:
+        'Stability & speed: verified updates, Artists redesign and a faster manga pipeline',
+    bullets: [
+      'Безопасность: SHA-256 проверка установочных файлов перед обновлением, ключи API и куки аккаунтов переехали в системный keychain вместо базы данных.',
+      'Редизайн Артистов: крупные карточки авторов со свечением в цвете сервиса, живые отметки «обновлено N назад» и аккуратная звезда избранного.',
+      'Манга быстрее и экономнее: обложки и офлайн-страницы декодируются с ограничением памяти, проверка обновлений библиотеки идёт в 4 потока и запускается сама.',
+      'Провайдеры стабильнее: исправлена потеря HTTP-клиентов при массовой проверке, умные ретраи, фоновый HTML-парсинг и кэш конфигураций источников.',
+      'Бэкапы: авто-бэкап больше не затирает последнюю копию с данными — хранятся два поколения, а восстановление показывает подробный итог и любые предупреждения.',
+      'Надёжность сети: поддержка Retry-After, отмена устаревших запросов, таймауты для всех загрузок и переход навигации постов на go_router.',
+    ],
+    bulletsEn: [
+      'Security: SHA-256 verification of update packages before install, plus API keys and account cookies moved from the database into the OS keychain.',
+      'Artists redesign: large author hero cards with service-colored glow, live "updated N ago" stamps and a cleaner favorite star.',
+      'Faster, leaner manga: covers and offline reader pages decode with memory limits, library update checks run in a 4-worker pool and fire automatically.',
+      'More stable providers: fixed HTTP client loss during health sweeps, smarter retries, background HTML parsing and a source config cache.',
+      'Backups: auto-backup no longer overwrites the last data-bearing snapshot — two generations are kept, and restore reports a detailed summary and warnings.',
+      'Network reliability: Retry-After support, stale request cancellation, timeouts for every downloader and post navigation moved onto go_router.',
+    ],
+  ),
+  PrismaChange(
     version: '4.2.1-rc.1',
     title:
         'Релиз-кандидат: плеер анимаций Pixiv Ugoira, поиск XVideos, обновлённый чейнджлог и оптимизации',
