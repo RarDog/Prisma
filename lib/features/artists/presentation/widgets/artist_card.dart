@@ -22,126 +22,32 @@ class ArtistCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final scheme = theme.colorScheme;
-    final sColor = artistServiceColor(artist.service);
+    final badges = <Widget>[
+      LiquidMiniBadge(
+        label: artist.service.isEmpty ? 'Artist' : artist.service,
+        color: artistServiceColor(artist.service),
+        hasDot: true,
+      ),
+      if (artist.postCount != null)
+        LiquidMiniBadge(
+          label: '${artist.postCount} ${isRu ? 'постов' : 'posts'}',
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.white70
+              : const Color(0xFF64748B),
+        ),
+    ];
 
-    return ArtistsLiquidCard(
-      glowColor: sColor.withValues(alpha: 0.35),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+    return _ArtistHeroCard(
+      service: artist.service,
+      name: artist.name,
+      avatarUrl: artist.avatarUrl,
+      badges: badges,
+      updatedAt: artist.updatedAt,
+      isRu: isRu,
       onTap: onTap,
-      child: Row(
-        children: [
-          ArtistAvatar(artist: artist),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  artist.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.2,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 4,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    LiquidMiniBadge(
-                      label: artist.service.isEmpty ? 'Artist' : artist.service,
-                      color: sColor,
-                      hasDot: true,
-                    ),
-                    if (artist.postCount != null)
-                      LiquidMiniBadge(
-                        label:
-                            '${artist.postCount} ${isRu ? 'постов' : 'posts'}',
-                        color:
-                            isDark ? Colors.white70 : const Color(0xFF64748B),
-                      ),
-                  ],
-                ),
-                if (artist.updatedAt != null) ...[
-                  const SizedBox(height: 5),
-                  Builder(
-                    builder: (_) {
-                      final dt = artist.updatedAt!.toLocal();
-                      final d = dt.day.toString().padLeft(2, '0');
-                      final m = dt.month.toString().padLeft(2, '0');
-                      final y = dt.year;
-                      final hr = dt.hour.toString().padLeft(2, '0');
-                      final min = dt.minute.toString().padLeft(2, '0');
-                      return Text(
-                        '${isRu ? 'Обновлено' : 'Updated'}: $d.$m.$y $hr:$min',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
-                          fontSize: 11,
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(width: 4),
-          // Interactive Favorite button with gold glow
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: onToggleFavorite,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: isFavorite
-                      ? Colors.amber.withValues(alpha: isDark ? 0.22 : 0.15)
-                      : (isDark
-                          ? Colors.white.withValues(alpha: 0.05)
-                          : Colors.black.withValues(alpha: 0.03)),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isFavorite
-                        ? Colors.amber.withValues(alpha: 0.6)
-                        : (isDark
-                            ? Colors.white.withValues(alpha: 0.08)
-                            : Colors.black.withValues(alpha: 0.06)),
-                  ),
-                  boxShadow: isFavorite
-                      ? [
-                          BoxShadow(
-                            color: Colors.amber.withValues(alpha: 0.35),
-                            blurRadius: 10,
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Icon(
-                  isFavorite ? Icons.star_rounded : Icons.star_outline_rounded,
-                  color: isFavorite ? Colors.amber : scheme.onSurfaceVariant,
-                  size: 22,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 4),
-          Icon(
-            Icons.chevron_right_rounded,
-            color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
-            size: 22,
-          ),
-        ],
+      trailing: _FavoriteStarButton(
+        active: isFavorite,
+        onTap: onToggleFavorite,
       ),
     );
   }
@@ -161,19 +67,171 @@ class FavoriteArtistCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
+    final badges = <Widget>[
+      LiquidMiniBadge(
+        label: item.service.isEmpty
+            ? 'Artist'
+            : formatArtistServiceName(item.service),
+        color: artistServiceColor(item.service),
+        hasDot: true,
+      ),
+      LiquidMiniBadge(
+        label: isRu ? 'В избранном' : 'Favorited',
+        color: Colors.amber,
+        hasDot: false,
+      ),
+    ];
+
+    return _ArtistHeroCard(
+      service: item.service,
+      name: item.name,
+      avatarUrl: item.avatarUrl,
+      badges: badges,
+      updatedAt: null,
+      isRu: isRu,
+      onTap: onTap,
+      trailing: _FavoriteStarButton(
+        active: true,
+        onTap: onRemove,
+      ),
+    );
+  }
+}
+
+/// Shared hero layout for catalog and favorite artist cards: large
+/// service-tinted avatar, bold name, badge row and a floating star toggle
+/// pinned to the top-right corner.
+class _ArtistHeroCard extends StatelessWidget {
+  const _ArtistHeroCard({
+    required this.service,
+    required this.name,
+    required this.avatarUrl,
+    required this.badges,
+    required this.updatedAt,
+    required this.isRu,
+    required this.onTap,
+    required this.trailing,
+  });
+
+  final String service;
+  final String name;
+  final String? avatarUrl;
+  final List<Widget> badges;
+  final DateTime? updatedAt;
+  final bool isRu;
+  final VoidCallback onTap;
+  final Widget trailing;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
-    final sColor = artistServiceColor(item.service);
+    final sColor = artistServiceColor(service);
 
-    final avatarFallback = Container(
-      width: 52,
-      height: 52,
+    return ArtistsLiquidCard(
+      glowColor: sColor.withValues(alpha: 0.40),
+      padding: EdgeInsets.zero,
+      onTap: onTap,
+      child: Stack(
+        children: [
+          // Service-colored gradient wash behind the content
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    sColor.withValues(alpha: isDark ? 0.14 : 0.08),
+                    sColor.withValues(alpha: 0.0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Right padding keeps the text clear of the floating star
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 52, 12),
+            child: Row(
+              children: [
+                _HeroAvatar(
+                  name: name,
+                  avatarUrl: avatarUrl,
+                  accent: sColor,
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15.5,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: badges,
+                      ),
+                      if (updatedAt != null) ...[
+                        const SizedBox(height: 5),
+                        _UpdatedLine(
+                          updatedAt: updatedAt!,
+                          accent: sColor,
+                          isRu: isRu,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: theme.colorScheme.onSurfaceVariant
+                      .withValues(alpha: 0.6),
+                  size: 22,
+                ),
+              ],
+            ),
+          ),
+          Positioned(top: 6, right: 6, child: trailing),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroAvatar extends StatelessWidget {
+  const _HeroAvatar({
+    required this.name,
+    required this.avatarUrl,
+    required this.accent,
+  });
+
+  final String name;
+  final String? avatarUrl;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final fallback = DecoratedBox(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
         gradient: LinearGradient(
           colors: [
-            sColor.withValues(alpha: 0.85),
+            accent.withValues(alpha: 0.90),
             theme.colorScheme.tertiaryContainer,
           ],
           begin: Alignment.topLeft,
@@ -182,10 +240,10 @@ class FavoriteArtistCard extends StatelessWidget {
       ),
       child: Center(
         child: Text(
-          item.name.trim().isNotEmpty
-              ? item.name.trim().characters.first.toUpperCase()
-              : '?',
-          style: theme.textTheme.titleMedium?.copyWith(
+          name.trim().isEmpty
+              ? '?'
+              : name.trim().characters.first.toUpperCase(),
+          style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w800,
             color: Colors.white,
           ),
@@ -193,121 +251,126 @@ class FavoriteArtistCard extends StatelessWidget {
       ),
     );
 
-    return ArtistsLiquidCard(
-      glowColor: sColor.withValues(alpha: 0.35),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      onTap: onTap,
-      child: Row(
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.20)
-                    : Colors.white.withValues(alpha: 0.90),
-                width: 1.5,
+    return Container(
+      width: 72,
+      height: 72,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.20)
+              : Colors.white.withValues(alpha: 0.90),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: accent.withValues(alpha: 0.30),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: avatarUrl == null || avatarUrl!.isEmpty
+            ? fallback
+            : CachedNetworkImage(
+                imageUrl: avatarUrl!,
+                memCacheWidth: 200,
+                memCacheHeight: 200,
+                fit: BoxFit.cover,
+                placeholder: (_, __) => fallback,
+                errorWidget: (_, __, ___) => fallback,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: sColor.withValues(alpha: 0.22),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+      ),
+    );
+  }
+}
+
+class _UpdatedLine extends StatelessWidget {
+  const _UpdatedLine({
+    required this.updatedAt,
+    required this.accent,
+    required this.isRu,
+  });
+
+  final DateTime updatedAt;
+  final Color accent;
+  final bool isRu;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final local = updatedAt.toLocal();
+    final fresh = DateTime.now().difference(local).inDays < 3;
+    return Text(
+      '${isRu ? 'Обновлено' : 'Updated'}: '
+      '${formatArtistRelativeTime(local, isRu)}',
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: theme.textTheme.bodySmall?.copyWith(
+        color: fresh
+            ? accent.withValues(alpha: 0.95)
+            : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+        fontSize: 11,
+        fontWeight: fresh ? FontWeight.w600 : FontWeight.w400,
+      ),
+    );
+  }
+}
+
+class _FavoriteStarButton extends StatelessWidget {
+  const _FavoriteStarButton({
+    required this.active,
+    required this.onTap,
+  });
+
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final scheme = theme.colorScheme;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.all(7),
+          decoration: BoxDecoration(
+            color: active
+                ? Colors.amber.withValues(alpha: isDark ? 0.22 : 0.15)
+                : (isDark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.black.withValues(alpha: 0.03)),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: active
+                  ? Colors.amber.withValues(alpha: 0.6)
+                  : (isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.black.withValues(alpha: 0.06)),
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: item.avatarUrl != null && item.avatarUrl!.isNotEmpty
-                  ? CachedNetworkImage(
-                      imageUrl: item.avatarUrl!,
-                      memCacheWidth: 140,
-                      memCacheHeight: 140,
-                      fit: BoxFit.cover,
-                      placeholder: (_, __) => avatarFallback,
-                      errorWidget: (_, __, ___) => avatarFallback,
-                    )
-                  : avatarFallback,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  item.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.2,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 4,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    LiquidMiniBadge(
-                      label: item.service.isEmpty
-                          ? 'Artist'
-                          : formatArtistServiceName(item.service),
-                      color: sColor,
-                      hasDot: true,
-                    ),
-                    LiquidMiniBadge(
-                      label: isRu ? 'В избранном' : 'Favorited',
-                      color: Colors.amber,
-                      hasDot: false,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 4),
-          // Interactive Remove from Favorites star button
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: onRemove,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.amber.withValues(alpha: isDark ? 0.22 : 0.15),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Colors.amber.withValues(alpha: 0.6),
-                  ),
-                  boxShadow: [
+            boxShadow: active
+                ? [
                     BoxShadow(
                       color: Colors.amber.withValues(alpha: 0.35),
                       blurRadius: 10,
                     ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.star_rounded,
-                  color: Colors.amber,
-                  size: 22,
-                ),
-              ),
-            ),
+                  ]
+                : null,
           ),
-          const SizedBox(width: 4),
-          Icon(
-            Icons.chevron_right_rounded,
-            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+          child: Icon(
+            active ? Icons.star_rounded : Icons.star_outline_rounded,
+            color: active ? Colors.amber : scheme.onSurfaceVariant,
             size: 22,
           ),
-        ],
+        ),
       ),
     );
   }
@@ -394,19 +457,20 @@ class ArtistSkeletonCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final blockColor = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : Colors.black.withValues(alpha: 0.06);
 
     return ArtistsLiquidCard(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.fromLTRB(14, 12, 52, 12),
       child: Row(
         children: [
           Container(
-            width: 54,
-            height: 54,
+            width: 72,
+            height: 72,
             decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.08)
-                  : Colors.black.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(16),
+              color: blockColor,
+              borderRadius: BorderRadius.circular(20),
             ),
           ),
           const SizedBox(width: 14),
@@ -416,23 +480,28 @@ class ArtistSkeletonCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 140,
+                  width: 150,
                   height: 16,
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.10)
-                        : Colors.black.withValues(alpha: 0.08),
+                    color: blockColor,
                     borderRadius: BorderRadius.circular(6),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 9),
                 Container(
-                  width: 80,
+                  width: 96,
                   height: 12,
                   decoration: BoxDecoration(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.06)
-                        : Colors.black.withValues(alpha: 0.05),
+                    color: blockColor,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+                const SizedBox(height: 9),
+                Container(
+                  width: 128,
+                  height: 11,
+                  decoration: BoxDecoration(
+                    color: blockColor,
                     borderRadius: BorderRadius.circular(6),
                   ),
                 ),

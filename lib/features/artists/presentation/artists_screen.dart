@@ -2,10 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import 'package:prisma_app/app/app.dart';
-import 'package:prisma_app/app/responsive.dart';
 import 'package:prisma_app/backend/backend.dart';
 import 'package:prisma_app/core/utils/result.dart';
 import 'package:prisma_app/shared/widgets/adaptive_scaffold.dart';
@@ -13,16 +11,18 @@ import 'package:prisma_app/shared/widgets/empty_view.dart';
 import 'package:prisma_app/shared/widgets/error_view.dart';
 import 'package:prisma_app/shared/widgets/provider_health_banner.dart';
 import 'package:prisma_app/features/settings/presentation/settings_controller.dart';
-import 'widgets/artist_card.dart';
 import 'widgets/artist_service_utils.dart';
+import 'widgets/artists_catalog_view.dart';
+import 'widgets/artists_favorites_empty.dart';
+import 'widgets/artists_favorites_view.dart';
 import 'widgets/artists_header.dart';
-import 'widgets/pawchive_accounts_sheet.dart';
+import 'widgets/pawchive/pawchive_accounts_sheet.dart';
 
 export 'widgets/artist_card.dart';
 export 'widgets/artist_service_utils.dart';
 export 'widgets/artists_header.dart';
 export 'widgets/artists_liquid_card.dart';
-export 'widgets/pawchive_accounts_sheet.dart';
+export 'widgets/pawchive/pawchive_accounts_sheet.dart';
 
 /// Marker from `FapelloProvider`'s `ProviderUnavailableException`, used to
 /// replace the raw error with an explanation of the block.
@@ -116,33 +116,35 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
         setState(() {});
       }
     });
-    _scroll.addListener(() {
-      final offset = _scroll.offset;
-      if (_scroll.hasClients &&
-          _scroll.position.hasContentDimensions &&
-          _scroll.position.extentAfter < 500) {
-        _loadMore();
-      }
+    _scroll.addListener(_onScroll);
+  }
 
-      if (offset <= 60) {
+  void _onScroll() {
+    final offset = _scroll.offset;
+    if (_scroll.hasClients &&
+        _scroll.position.hasContentDimensions &&
+        _scroll.position.extentAfter < 500) {
+      _loadMore();
+    }
+
+    if (offset <= 60) {
+      _scrollDeltaAccumulator = 0;
+      if (!_headerVisible) setState(() => _headerVisible = true);
+    } else {
+      final delta = offset - _lastScrollOffset;
+      if ((delta > 0 && _scrollDeltaAccumulator < 0) ||
+          (delta < 0 && _scrollDeltaAccumulator > 0)) {
         _scrollDeltaAccumulator = 0;
-        if (!_headerVisible) setState(() => _headerVisible = true);
-      } else {
-        final delta = offset - _lastScrollOffset;
-        if ((delta > 0 && _scrollDeltaAccumulator < 0) ||
-            (delta < 0 && _scrollDeltaAccumulator > 0)) {
-          _scrollDeltaAccumulator = 0;
-        }
-        _scrollDeltaAccumulator += delta;
-
-        if (_scrollDeltaAccumulator > 50) {
-          if (_headerVisible) setState(() => _headerVisible = false);
-        } else if (_scrollDeltaAccumulator < -14) {
-          if (!_headerVisible) setState(() => _headerVisible = true);
-        }
       }
-      _lastScrollOffset = offset;
-    });
+      _scrollDeltaAccumulator += delta;
+
+      if (_scrollDeltaAccumulator > 50) {
+        if (_headerVisible) setState(() => _headerVisible = false);
+      } else if (_scrollDeltaAccumulator < -14) {
+        if (!_headerVisible) setState(() => _headerVisible = true);
+      }
+    }
+    _lastScrollOffset = offset;
   }
 
   @override
@@ -245,6 +247,7 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
                   providers: items,
                   selectedProviderId: _providerId,
                   selectedServices: _selectedServices,
+                  isRu: isRu,
                   onProviderChanged: (value) {
                     setState(() => _providerId = value);
                     _refresh(items);
@@ -285,231 +288,45 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
               Expanded(
                 child: _currentTab == ArtistsTab.favorites
                     ? (displayedFavorites.isEmpty
-                        ? Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(24),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    favoriteItems.isEmpty
-                                        ? Icons.star_border_rounded
-                                        : Icons.person_search_outlined,
-                                    size: 52,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant
-                                        .withValues(alpha: 0.5),
-                                  ),
-                                  const SizedBox(height: 14),
-                                  Text(
-                                    favoriteItems.isEmpty
-                                        ? (isRu
-                                            ? 'Список любимых авторов пуст'
-                                            : 'No favorite artists yet')
-                                        : (isRu
-                                            ? 'Ничего не найдено в избранном'
-                                            : 'No favorites matching filter'),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 24),
-                                    child: Text(
-                                      favoriteItems.isEmpty
-                                          ? (isRu
-                                              ? 'Нажмите на звёздочку ★ на карточке любого автора в каталоге, чтобы быстро возвращаться к его работам.'
-                                              : 'Tap the star ★ icon on any artist in the catalog to add them to your favorites.')
-                                          : (isRu
-                                              ? 'Попробуйте изменить поисковый запрос или сбросить фильтры по платформам.'
-                                              : 'Try clearing the search query or platform filters.'),
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurfaceVariant,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  if (favoriteItems.isEmpty)
-                                    FilledButton.tonalIcon(
-                                      icon: const Icon(Icons.explore_rounded,
-                                          size: 18),
-                                      label: Text(isRu
-                                          ? 'Перейти в каталог'
-                                          : 'Browse catalog'),
-                                      onPressed: () {
-                                        setState(
-                                            () => _currentTab = ArtistsTab.all);
-                                      },
-                                    )
-                                  else if (_selectedServices.isNotEmpty ||
-                                      _search.text.isNotEmpty)
-                                    FilledButton.tonal(
-                                      onPressed: () {
-                                        setState(() {
-                                          _selectedServices.clear();
-                                          _search.clear();
-                                        });
-                                      },
-                                      child: Text(isRu
-                                          ? 'Сбросить фильтры'
-                                          : 'Reset filters'),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          )
-                        : LayoutBuilder(
-                            builder: (context, constraints) {
-                              final columns = Responsive.isMobile(context)
-                                  ? 1
-                                  : constraints.maxWidth >= 1100
-                                      ? 3
-                                      : constraints.maxWidth >= 760
-                                          ? 2
-                                          : 1;
-                              return GridView.builder(
-                                keyboardDismissBehavior:
-                                    ScrollViewKeyboardDismissBehavior.onDrag,
-                                // ignore: deprecated_member_use
-                                cacheExtent: 140.0,
-                                addAutomaticKeepAlives: false,
-                                addRepaintBoundaries: true,
-                                padding: EdgeInsets.fromLTRB(
-                                  16,
-                                  10,
-                                  16,
-                                  150.0 + MediaQuery.paddingOf(context).bottom,
-                                ),
-                                gridDelegate:
-                                    SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: columns,
-                                  crossAxisSpacing: 12,
-                                  mainAxisSpacing: 12,
-                                  mainAxisExtent:
-                                      Responsive.isMobile(context) ? 116 : 124,
-                                ),
-                                itemCount: displayedFavorites.length,
-                                itemBuilder: (context, index) {
-                                  final fav = displayedFavorites[index];
-                                  return RepaintBoundary(
-                                    child: FavoriteArtistCard(
-                                      item: fav,
-                                      onRemove: () =>
-                                          _removeFavoriteItem(settings, fav),
-                                      onTap: () => context.push(
-                                        '/artists/${fav.providerId}/${fav.service}/${fav.id}?name=${Uri.encodeComponent(fav.name)}',
-                                      ),
-                                    ),
-                                  );
-                                },
-                              );
+                        ? ArtistsFavoritesEmpty(
+                            hasAnyFavorites: favoriteItems.isEmpty,
+                            hasActiveFilters: _selectedServices.isNotEmpty ||
+                                _search.text.isNotEmpty,
+                            isRu: isRu,
+                            onBrowseCatalog: () => setState(
+                                () => _currentTab = ArtistsTab.all),
+                            onResetFilters: () {
+                              setState(() {
+                                _selectedServices.clear();
+                                _search.clear();
+                              });
                             },
+                          )
+                        : ArtistsFavoritesView(
+                            favorites: displayedFavorites,
+                            scrollController: _scroll,
+                            onRemove: (fav) =>
+                                _removeFavoriteItem(settings, fav),
                           ))
                     : (_error != null
                         ? ErrorView(
                             message: _friendlyArtistError(_error),
                             onRetry: () => _refresh(items),
                           )
-                        : displayedArtists.isEmpty && !_loading
-                            ? Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(24),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(Icons.person_search_outlined,
-                                          size: 48),
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        isRu
-                                            ? 'Нет авторов по выбранным фильтрам'
-                                            : 'No artists matching selected filters',
-                                        style: const TextStyle(
-                                            fontWeight: FontWeight.w600),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      FilledButton.tonal(
-                                        onPressed: () {
-                                          setState(
-                                              () => _selectedServices.clear());
-                                          _refresh(items);
-                                        },
-                                        child: Text(
-                                          isRu
-                                              ? 'Показать все сервисы'
-                                              : 'Show all services',
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              )
-                            : LayoutBuilder(
-                                builder: (context, constraints) {
-                                  final columns = Responsive.isMobile(context)
-                                      ? 1
-                                      : constraints.maxWidth >= 1100
-                                          ? 3
-                                          : constraints.maxWidth >= 760
-                                              ? 2
-                                              : 1;
-                                  return GridView.builder(
-                                    controller: _scroll,
-                                    keyboardDismissBehavior:
-                                        ScrollViewKeyboardDismissBehavior
-                                            .onDrag,
-                                    // ignore: deprecated_member_use
-                                    cacheExtent: 140.0,
-                                    addAutomaticKeepAlives: false,
-                                    addRepaintBoundaries: true,
-                                    padding: EdgeInsets.fromLTRB(
-                                      16,
-                                      10,
-                                      16,
-                                      150.0 +
-                                          MediaQuery.paddingOf(context).bottom,
-                                    ),
-                                    gridDelegate:
-                                        SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: columns,
-                                      crossAxisSpacing: 12,
-                                      mainAxisSpacing: 12,
-                                      mainAxisExtent:
-                                          Responsive.isMobile(context)
-                                              ? 116
-                                              : 124,
-                                    ),
-                                    itemCount: displayedArtists.length +
-                                        (_loading ? 1 : 0),
-                                    itemBuilder: (context, index) {
-                                      if (index >= displayedArtists.length) {
-                                        return const ArtistSkeletonCard();
-                                      }
-                                      final artist = displayedArtists[index];
-                                      final isFav = favoriteKeys.contains(
-                                          '${artist.providerId}:${artist.service}:${artist.id}');
-                                      return ArtistCard(
-                                        artist: artist,
-                                        isFavorite: isFav,
-                                        onToggleFavorite: () =>
-                                            _toggleFavoriteArtist(
-                                                settings, artist),
-                                        onTap: () => context.push(
-                                          '/artists/${artist.providerId}/${artist.service}/${artist.id}?name=${Uri.encodeComponent(artist.displayName)}',
-                                        ),
-                                      );
-                                    },
-                                  );
-                                },
-                              )),
+                        : ArtistsCatalogView(
+                            artists: displayedArtists,
+                            favoriteKeys: favoriteKeys,
+                            loading: _loading,
+                            showFiltersEmptyState:
+                                displayedArtists.isEmpty && !_loading,
+                            scrollController: _scroll,
+                            onToggleFavorite: (artist) =>
+                                _toggleFavoriteArtist(settings, artist),
+                            onShowAllServices: () {
+                              setState(() => _selectedServices.clear());
+                              _refresh(items);
+                            },
+                          )),
               ),
             ],
           );
@@ -567,7 +384,22 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
       });
     } catch (error) {
       if (!mounted) return;
-      setState(() => _error = error);
+      if (_artists.isEmpty) {
+        // Initial load failed — surface a full-screen error with retry.
+        setState(() => _error = error);
+      } else {
+        // Pagination hiccup — keep the loaded content, notify in place.
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              Localizations.maybeLocaleOf(context)?.languageCode == 'ru'
+                  ? 'Не удалось загрузить ещё авторов'
+                  : 'Failed to load more artists',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }

@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:prisma_app/app/app.dart';
 import 'package:prisma_app/backend/backend.dart';
 import 'package:prisma_app/core/http/app_headers.dart';
-import 'package:prisma_app/features/artists/presentation/widgets/pawchive_accounts_sheet.dart';
+import 'package:prisma_app/features/artists/presentation/widgets/pawchive/pawchive_accounts_sheet.dart';
 import 'package:prisma_app/features/providers/presentation/providers_controller.dart';
 import 'package:prisma_app/features/providers/presentation/providers_screen.dart';
 import 'package:prisma_app/features/providers/presentation/widgets/e621_auth_dialog.dart';
