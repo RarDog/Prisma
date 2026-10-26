@@ -112,12 +112,19 @@ class GelbooruProvider
     return suggestions;
   }
 
+  Map<String, String>? _cachedMediaHeaders;
+
   @override
   Map<String, String> mediaHeaders(Post post) {
-    final host = Uri.tryParse(baseUrl)?.host;
-    return AppHeaders.mediaHeaders(
-      referer: (host != null && host.isNotEmpty) ? '$baseUrl/' : null,
-    );
+    // Constant per provider instance — memoize instead of rebuilding a map
+    // for every image request. Kept per-instance: subclasses override
+    // baseUrl and must not share the cache.
+    return _cachedMediaHeaders ??= () {
+      final host = Uri.tryParse(baseUrl)?.host;
+      return AppHeaders.mediaHeaders(
+        referer: (host != null && host.isNotEmpty) ? '$baseUrl/' : null,
+      );
+    }();
   }
 
   @override

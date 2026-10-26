@@ -66,6 +66,9 @@ class AppSettings {
     this.mangaReadingMode = 'pagedRtl',
     this.mangaVolumeNavigation = true,
     this.mangaInvertVolumeKeys = false,
+    this.novelFontSize = 17.0,
+    this.novelLineHeight = 1.6,
+    this.novelReaderTheme = 'dark',
     this.debugHudEnabled = false,
     this.debugHudShowCpu = true,
     this.debugHudShowRam = true,
@@ -86,6 +89,9 @@ class AppSettings {
   final String mangaReadingMode;
   final bool mangaVolumeNavigation;
   final bool mangaInvertVolumeKeys;
+  final double novelFontSize;
+  final double novelLineHeight;
+  final String novelReaderTheme;
   final bool debugHudEnabled;
   final bool debugHudShowCpu;
   final bool debugHudShowRam;
@@ -206,6 +212,9 @@ class AppSettings {
     mangaReadingMode: 'pagedRtl',
     mangaVolumeNavigation: true,
     mangaInvertVolumeKeys: false,
+    novelFontSize: 17.0,
+    novelLineHeight: 1.6,
+    novelReaderTheme: 'dark',
     desktopNavPosition: 'left',
   );
 
@@ -273,6 +282,9 @@ class AppSettings {
     String? mangaReadingMode,
     bool? mangaVolumeNavigation,
     bool? mangaInvertVolumeKeys,
+    double? novelFontSize,
+    double? novelLineHeight,
+    String? novelReaderTheme,
     bool? debugHudEnabled,
     bool? debugHudShowCpu,
     bool? debugHudShowRam,
@@ -357,10 +369,12 @@ class AppSettings {
       mangaSelectedProviderId:
           mangaSelectedProviderId ?? this.mangaSelectedProviderId,
       mangaReadingMode: mangaReadingMode ?? this.mangaReadingMode,
-      mangaVolumeNavigation:
-          mangaVolumeNavigation ?? this.mangaVolumeNavigation,
+      mangaVolumeNavigation: mangaVolumeNavigation ?? this.mangaVolumeNavigation,
       mangaInvertVolumeKeys:
           mangaInvertVolumeKeys ?? this.mangaInvertVolumeKeys,
+      novelFontSize: novelFontSize ?? this.novelFontSize,
+      novelLineHeight: novelLineHeight ?? this.novelLineHeight,
+      novelReaderTheme: novelReaderTheme ?? this.novelReaderTheme,
       debugHudEnabled: debugHudEnabled ?? this.debugHudEnabled,
       debugHudShowCpu: debugHudShowCpu ?? this.debugHudShowCpu,
       debugHudShowRam: debugHudShowRam ?? this.debugHudShowRam,
@@ -434,6 +448,9 @@ class AppSettings {
         'mangaScrollOffset': mangaScrollOffset,
         'mangaSelectedProviderId': mangaSelectedProviderId,
         'mangaReadingMode': mangaReadingMode,
+        'novelFontSize': novelFontSize,
+        'novelLineHeight': novelLineHeight,
+        'novelReaderTheme': novelReaderTheme,
         'mangaVolumeNavigation': mangaVolumeNavigation,
         'mangaInvertVolumeKeys': mangaInvertVolumeKeys,
         'debugHudEnabled': debugHudEnabled,
@@ -582,6 +599,15 @@ class AppSettings {
             defaults.mangaSelectedProviderId,
         mangaReadingMode:
             (json['mangaReadingMode'] as String?) ?? defaults.mangaReadingMode,
+        novelFontSize:
+            (json['novelFontSize'] as num?)?.toDouble() ??
+                defaults.novelFontSize,
+        novelLineHeight:
+            (json['novelLineHeight'] as num?)?.toDouble() ??
+                defaults.novelLineHeight,
+        novelReaderTheme:
+            (json['novelReaderTheme'] as String?) ??
+                defaults.novelReaderTheme,
         mangaVolumeNavigation: (json['mangaVolumeNavigation'] as bool?) ??
             defaults.mangaVolumeNavigation,
         mangaInvertVolumeKeys: (json['mangaInvertVolumeKeys'] as bool?) ??

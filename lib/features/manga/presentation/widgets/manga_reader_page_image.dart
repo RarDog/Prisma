@@ -27,6 +27,9 @@ class MangaReaderPageImage extends StatelessWidget {
         fit: fit,
         width: fit == BoxFit.fitWidth ? double.infinity : null,
         alignment: Alignment.topCenter,
+        // Match the network path's decode clamp: downloaded pages are often
+        // 1000-1600px wide and decoding them at full size spikes memory.
+        cacheWidth: memWidth,
         errorBuilder: (_, __, ___) => const Center(
           child:
               Icon(Icons.broken_image_rounded, color: Colors.white38, size: 48),

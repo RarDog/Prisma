@@ -54,7 +54,19 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
   List<TagSuggestion> _suggestions = [];
   bool _checkingUpdates = false;
 
-  Future<void> _checkLibraryUpdates() async {
+  /// One quiet update check per app session, triggered the first time the
+  /// user opens the Library tab. Silent: unlike the manual sync button it
+  /// does not show an "all up to date" snackbar — new-chapter badges on the
+  /// cards speak for themselves.
+  static bool _autoUpdateCheckDoneThisSession = false;
+  Future<void> _autoCheckLibraryUpdatesOnce() async {
+    if (_autoUpdateCheckDoneThisSession) return;
+    if (_checkingUpdates) return;
+    _autoUpdateCheckDoneThisSession = true;
+    await _checkLibraryUpdates(showResult: false);
+  }
+
+  Future<void> _checkLibraryUpdates({bool showResult = true}) async {
     if (_checkingUpdates) return;
     setState(() => _checkingUpdates = true);
     final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
@@ -82,7 +94,9 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
         return 0;
       });
 
-      if (mounted) {
+      // The silent per-session auto-check only speaks up when it actually
+      // found new chapters.
+      if (mounted && (showResult || newCount > 0)) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -593,7 +607,10 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
       extendBodyBehindAppBar: true,
       appBar: MangaScreenAppBar(
         selectedTab: _selectedTab,
-        onTabChanged: (tab) => setState(() => _selectedTab = tab),
+        onTabChanged: (tab) {
+          setState(() => _selectedTab = tab);
+          if (tab == MangaTab.library) _autoCheckLibraryUpdatesOnce();
+        },
         selectedRating: _selectedRating,
         onToggleRating: _toggleRating,
         onRefreshCatalog: () => _loadManga(refresh: true),

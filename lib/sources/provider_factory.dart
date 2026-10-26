@@ -27,17 +27,22 @@ import 'package:prisma_app/sources/video/xvideos_provider.dart';
 
 class ProviderFactory {
   /// Upper bound on cached HTTP clients. Each client owns a socket pool, so
-  /// an unbounded cache leaks connections when many provider configs are
-  /// created over the app lifetime (e.g. after repeated edits).
-  static const _maxCachedClients = 8;
+  /// an unbounded cache leaks connections. The bound must comfortably exceed
+  /// the total number of provider configs (19 seeded + customs): with a tight
+  /// bound, a batch of `create()` calls (e.g. a full health-check pass) evicts
+  /// and CLOSES clients still owned by providers created moments earlier,
+  /// instantly killing every request they make.
+  static const _maxCachedClients = 32;
 
   final Map<String, DioClient> _clientCache = {};
+  final Map<String, String> _clientKeyByProviderId = {};
 
   void clearCache() {
     for (final client in _clientCache.values) {
       client.close();
     }
     _clientCache.clear();
+    _clientKeyByProviderId.clear();
   }
 
   void dispose() => clearCache();
@@ -114,6 +119,14 @@ class ProviderFactory {
 
     final clientKey =
         '${config.id}_${config.baseUrl}_${config.timeoutSeconds}_${headers.entries.map((e) => '${e.key}:${e.value}').join(';')}';
+    // When a provider is recreated with an edited config, its previous client
+    // is stale — close it precisely instead of waiting for LRU pressure.
+    final previousKey = _clientKeyByProviderId[config.id];
+    if (previousKey != null && previousKey != clientKey) {
+      final stale = _clientCache.remove(previousKey);
+      stale?.close();
+    }
+    _clientKeyByProviderId[config.id] = clientKey;
     final client = _clientCache.putIfAbsent(
       clientKey,
       () => DioClient(
@@ -302,6 +315,8 @@ class ProviderFactory {
       final staleKey = _clientCache.keys.first;
       final stale = _clientCache.remove(staleKey);
       stale?.close();
+      _clientKeyByProviderId
+          .removeWhere((_, key) => key == staleKey);
     }
   }
 }

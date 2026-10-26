@@ -30,13 +30,6 @@ void main() {
     });
 
     test('XVideosProvider.parseVideoList parses video blocks from HTML', () {
-      final provider = XVideosProvider(
-        id: 'xvideos',
-        name: 'XVideos',
-        baseUrl: 'https://www.xvideos.com',
-        dioClient: DioClient(),
-      );
-
       const sampleHtml = '''
 <div id="content">
   <div class="mozaique cust-nb-cols">
@@ -58,7 +51,12 @@ void main() {
 </div>
 ''';
 
-      final posts = provider.parseVideoList(sampleHtml);
+      final posts = XVideosProvider.parseVideoList(
+        sampleHtml,
+        providerId: 'xvideos',
+        providerName: 'XVideos',
+        baseUrl: 'https://www.xvideos.com',
+      );
       expect(posts.length, equals(1));
 
       final post = posts.first;

@@ -578,9 +578,37 @@ class MangaLibraryService {
   ) async {
     final entries = await getLibraryEntries();
     int totalNew = 0;
-    for (final entry in entries) {
+
+    // Chapter feeds are network requests — fetch them with a small worker
+    // pool instead of one long sequential chain (50 entries at concurrency 1
+    // could take minutes on a slow provider).
+    const concurrency = 4;
+    final results = List<int?>.filled(entries.length, null);
+    var index = 0;
+    Future<void> worker() async {
+      while (index < entries.length) {
+        final current = index++;
+        try {
+          results[current] =
+              await fetchChapterCount(entries[current].providerId,
+                  entries[current].mangaId);
+        } catch (_) {
+          results[current] = null;
+        }
+      }
+    }
+    await Future.wait(
+      List.generate(
+        concurrency.clamp(1, entries.length),
+        (_) => worker(),
+      ),
+    );
+
+    for (var i = 0; i < entries.length; i++) {
+      final entry = entries[i];
+      final count = results[i];
+      if (count == null) continue;
       try {
-        final count = await fetchChapterCount(entry.providerId, entry.mangaId);
         if (count > entry.totalChaptersCount && entry.totalChaptersCount > 0) {
           final diff = count - entry.totalChaptersCount;
           totalNew += diff;

@@ -146,8 +146,27 @@ class MangaLibraryView extends ConsumerWidget {
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Center(
-                child: Text('Ошибка загрузки библиотеки: $err',
-                    style: const TextStyle(color: Colors.redAccent)),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Ошибка загрузки библиотеки: $err',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.redAccent)),
+                    const SizedBox(height: 12),
+                    FilledButton.tonalIcon(
+                      onPressed: () {
+                        if (libraryFilter == 'history') {
+                          ref.invalidate(mangaReadingHistoryProvider);
+                        } else {
+                          ref.invalidate(mangaLibraryEntriesProvider(
+                              libraryFilter == 'all' ? null : libraryFilter));
+                        }
+                      },
+                      icon: const Icon(Icons.refresh_rounded, size: 18),
+                      label: Text(isRu ? 'Повторить' : 'Retry'),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

@@ -47,15 +47,24 @@ class E621Provider
       };
 
   static DateTime _lastRequestTime = DateTime.fromMillisecondsSinceEpoch(0);
+  static Future<void> _throttleQueue = Future<void>.value();
 
-  static Future<void> _throttle() async {
-    final now = DateTime.now();
-    final diff = now.difference(_lastRequestTime);
-    if (diff.inMilliseconds < 500) {
-      final waitMs = 500 - diff.inMilliseconds;
-      await Future<void>.delayed(Duration(milliseconds: waitMs));
-    }
-    _lastRequestTime = DateTime.now();
+  /// Serialized through [_throttleQueue] so concurrent searches cannot all
+  /// read the same stale [_lastRequestTime] and burst past the 500ms window.
+  static Future<void> _throttle() {
+    final job = _throttleQueue.then((_) async {
+      final now = DateTime.now();
+      final diff = now.difference(_lastRequestTime);
+      if (diff.inMilliseconds < 500) {
+        await Future<void>.delayed(
+          Duration(milliseconds: 500 - diff.inMilliseconds),
+        );
+      }
+      _lastRequestTime = DateTime.now();
+    });
+    // Keep the chain alive even if a waiter fails or is cancelled.
+    _throttleQueue = job.then((_) {}, onError: (_) {});
+    return job;
   }
 
   bool get isAuthorized =>

@@ -88,6 +88,9 @@ class MangaLibraryCard extends StatelessWidget {
                           imageUrl: entry.coverUrl,
                           httpHeaders: headers,
                           fit: BoxFit.cover,
+                          // Grid cards never render wider than ~240 logical px;
+                          // decoding the full 512px cover wastes ~4x memory.
+                          memCacheWidth: 480,
                           placeholder: (_, __) => Container(
                             color: isDark ? Colors.grey[900] : Colors.grey[200],
                             child: const Center(

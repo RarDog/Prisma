@@ -67,6 +67,20 @@ class SettingsController extends AsyncNotifier<AppSettings> {
     await saveSettings(updated);
   }
 
+  Future<void> saveNovelReaderSettings({
+    double? fontSize,
+    double? lineHeight,
+    String? theme,
+  }) async {
+    final current = state.valueOrNull ?? AppSettings.defaults;
+    final updated = current.copyWith(
+      novelFontSize: fontSize ?? current.novelFontSize,
+      novelLineHeight: lineHeight ?? current.novelLineHeight,
+      novelReaderTheme: theme ?? current.novelReaderTheme,
+    );
+    await saveSettings(updated);
+  }
+
   Future<void> saveMangaVolumeNavigation({
     required bool enabled,
     bool? invert,

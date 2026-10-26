@@ -341,6 +341,17 @@ class MangaCatalogView extends StatelessWidget {
                       style: theme.textTheme.titleMedium
                           ?.copyWith(fontWeight: FontWeight.bold),
                     ),
+                    if (activeQuery.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      FilledButton.tonal(
+                        onPressed: onClearSearch,
+                        child: Text(
+                          isRu
+                              ? 'Очистить поиск «$activeQuery»'
+                              : 'Clear search "$activeQuery"',
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

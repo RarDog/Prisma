@@ -10,6 +10,7 @@ import 'package:prisma_app/backend/backend.dart';
 import 'package:prisma_app/features/post/presentation/widgets/post_media_viewer.dart';
 import 'package:prisma_app/features/settings/presentation/settings_controller.dart';
 import 'package:prisma_app/shared/widgets/app_shell.dart';
+import 'package:prisma_app/shared/widgets/error_view.dart';
 import 'package:prisma_app/sources/manga/mangadex_provider.dart';
 import '../domain/manga_library_service.dart';
 import '../domain/manga_library_providers.dart';
@@ -52,6 +53,7 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
   int _currentPage = 0;
   List<String> _pageUrls = [];
   bool _loadingPages = true;
+  Object? _loadError;
 
   List<MangaDexChapter> _allChapters = [];
   List<MangaDexChapter> _chapters = [];
@@ -200,12 +202,14 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
         final providerManager = ref.read(providerManagerProvider);
         final provider = await providerManager.getProviderInstance('mangadex');
         if (provider is MangaDexProvider) {
-          final related = await provider.fetchRelatedManga(post.id);
-          final recs = await provider.fetchRecommendations(post);
+          final results = await Future.wait([
+            provider.fetchRelatedManga(post.id),
+            provider.fetchRecommendations(post),
+          ]);
           if (mounted) {
             setState(() {
-              _relatedManga = related;
-              _recommendations = recs;
+              _relatedManga = results[0];
+              _recommendations = results[1];
             });
           }
         }
@@ -318,15 +322,19 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
           _pageUrls = urls;
           _currentPage = 0;
           _loadingPages = false;
+          _loadError = null;
         });
       }
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
         setState(() {
+          // Keep the cover as the preview fallback, but surface the failure
+          // instead of silently rendering an empty chapters list.
           final fallback =
               post.sampleUrl.isNotEmpty ? post.sampleUrl : post.previewUrl;
           _pageUrls = fallback.isNotEmpty ? [fallback] : [];
           _loadingPages = false;
+          if (_allChapters.isEmpty) _loadError = error;
         });
       }
     }
@@ -764,7 +772,13 @@ class _MangaDetailsScreenState extends ConsumerState<MangaDetailsScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    MangaChaptersList(
+                    if (_loadError != null && _allChapters.isEmpty)
+                      ErrorView(
+                        message: _loadError.toString(),
+                        onRetry: _loadMangaData,
+                      )
+                    else
+                      MangaChaptersList(
                       chapters: _chapters,
                       allChapters: _allChapters,
                       availableLanguages: _availableLanguages,

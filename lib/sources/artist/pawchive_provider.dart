@@ -78,8 +78,13 @@ class PawchiveProvider
         mapped.addAll(_postsFromArtistPost(json, query: dummyQuery));
       }
       return mapped;
-    } catch (_) {
-      return const [];
+    } catch (error) {
+      // Re-throw instead of swallowing: an empty list here is indistinguishable
+      // from "no results" and silently ends the artist feed pagination.
+      if (error is DioException && error.type == DioExceptionType.cancel) {
+        return const [];
+      }
+      rethrow;
     }
   }
 

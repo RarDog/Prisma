@@ -763,15 +763,32 @@ class MangaDexProvider
       if (suggestions.length >= 8) break;
     }
 
-    // 2. Query authors & artists from MangaDex
+    // 2 & 3. Query authors and manga titles in parallel — a keystroke should
+    // not pay for two sequential round-trips.
+    final authorFuture = _dio.get<dynamic>(
+      '/author',
+      queryParameters: {
+        'name': clean,
+        'limit': 5,
+      },
+    );
+    final mangaFuture = _dio.get<dynamic>(
+      '/manga',
+      queryParameters: {
+        'title': clean,
+        'limit': 5,
+        'contentRating[]': const [
+          'safe',
+          'suggestive',
+          'erotica',
+          'pornographic'
+        ],
+      },
+    );
+
+    // 2. Authors & artists
     try {
-      final authorRes = await _dio.get<dynamic>(
-        '/author',
-        queryParameters: {
-          'name': clean,
-          'limit': 5,
-        },
-      );
+      final authorRes = await authorFuture;
       if (authorRes.data is Map && authorRes.data['data'] is List) {
         for (final item in authorRes.data['data']) {
           if (item is Map) {
@@ -793,21 +810,9 @@ class MangaDexProvider
       }
     } catch (_) {}
 
-    // 3. Query manga titles from MangaDex
+    // 3. Manga titles
     try {
-      final mangaRes = await _dio.get<dynamic>(
-        '/manga',
-        queryParameters: {
-          'title': clean,
-          'limit': 5,
-          'contentRating[]': const [
-            'safe',
-            'suggestive',
-            'erotica',
-            'pornographic'
-          ],
-        },
-      );
+      final mangaRes = await mangaFuture;
       if (mangaRes.data is Map && mangaRes.data['data'] is List) {
         for (final item in mangaRes.data['data']) {
           if (item is Map) {

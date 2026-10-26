@@ -48,9 +48,14 @@ class DanbooruProvider
   @override
   String postPageUrl(Post post) => '$baseUrl/posts/${post.id}';
 
+  Map<String, String>? _cachedMediaHeaders;
+
   @override
   Map<String, String> mediaHeaders(Post post) {
-    return {
+    // Constant per provider instance — memoize instead of rebuilding a map
+    // for every image request. Kept per-instance: subclasses override
+    // baseUrl and must not share the cache.
+    return _cachedMediaHeaders ??= {
       'User-Agent': AppHeaders.defaultUserAgent,
       'Referer': baseUrl.endsWith('/') ? baseUrl : '$baseUrl/',
     };

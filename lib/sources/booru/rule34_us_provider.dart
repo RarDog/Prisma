@@ -187,8 +187,12 @@ class Rule34UsProvider
         ),
       );
       sw.stop();
+      final body = response.data ?? '';
+      // The site historically misspells the class as "thumbail-container";
+      // accept both spellings so a markup fix doesn't mark us offline.
       final isOk = (response.statusCode ?? 500) < 400 &&
-          (response.data?.contains('thumbail-container') ?? false);
+          (body.contains('thumbail-container') ||
+              body.contains('thumbnail-container'));
       return ProviderHealth(
         providerId: id,
         status: isOk ? ProviderStatus.online : ProviderStatus.offline,

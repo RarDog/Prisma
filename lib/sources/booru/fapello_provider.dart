@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:isolate';
 
 import 'package:dio/dio.dart';
 
@@ -305,7 +306,7 @@ class FapelloProvider
     final html = trimmed.isEmpty
         ? await _getHtml(_modelListPath(page))
         : await _getHtml('/search/${Uri.encodeQueryComponent(trimmed)}/');
-    final cards = _parseModelCards(html);
+    final cards = await _parseModelCards(html);
     // Paging terminates on the first empty page. The `/top-likes/` listing
     // keeps returning new models well past its own `data-max` marker, and
     // eventually 302-redirects to the post feed, which yields no model cards.
@@ -358,7 +359,7 @@ class FapelloProvider
 
     final artistName =
         query.artistName.trim().isNotEmpty ? query.artistName.trim() : slug;
-    final items = _parseMediaItems(html, slug);
+    final items = await _parseMediaItems(html, slug);
     final posts = <Post>[];
     for (final item in items) {
       posts.add(_postFromMediaItem(
@@ -376,7 +377,17 @@ class FapelloProvider
   String _modelListPath(int page) =>
       page <= 1 ? '/top-likes/' : '/top-likes/page-$page/';
 
-  List<ArtistProfile> _parseModelCards(String html) {
+  Future<List<ArtistProfile>> _parseModelCards(String html) {
+    final providerId = id;
+    // Parsing the listing page runs regexes over 100s of KB of HTML — keep
+    // it off the UI thread.
+    return Isolate.run(() => _parseModelCardsHtml(html, providerId));
+  }
+
+  static List<ArtistProfile> _parseModelCardsHtml(
+    String html,
+    String providerId,
+  ) {
     final section = _listingSection(html);
     final seen = <String>{};
     final profiles = <ArtistProfile>[];
@@ -391,7 +402,7 @@ class FapelloProvider
       final displayName = _bareText(row).trim();
       profiles.add(ArtistProfile(
         id: slug,
-        providerId: id,
+        providerId: providerId,
         service: _service,
         name: slug,
         displayName: displayName.isEmpty ? slug : displayName,
@@ -404,7 +415,14 @@ class FapelloProvider
 
   // ------------------------------------------------------------- media grid
 
-  List<_MediaItem> _parseMediaItems(String html, String expectedSlug) {
+  Future<List<_MediaItem>> _parseMediaItems(String html, String expectedSlug) {
+    return Isolate.run(() => _parseMediaItemsHtml(html, expectedSlug));
+  }
+
+  static List<_MediaItem> _parseMediaItemsHtml(
+    String html,
+    String expectedSlug,
+  ) {
     final section = _listingSection(html);
     final items = <_MediaItem>[];
     for (final match in _mediaItemPattern.allMatches(section)) {
@@ -623,7 +641,7 @@ class FapelloProvider
   /// Restricts parsing to the repeating list area when the page wraps it in
   /// `#content`, so navigation, sidebar and footer links can never be mistaken
   /// for items.
-  String _listingSection(String html) {
+  static String _listingSection(String html) {
     final start = html.indexOf('id="content"');
     final body = start >= 0 ? html.substring(start) : html;
     var end = body.length;
@@ -635,7 +653,7 @@ class FapelloProvider
   }
 
   /// Text of the bare `<div>` holding the display name inside a card row.
-  String _bareText(String html) {
+  static String _bareText(String html) {
     String? last;
     for (final match
         in RegExp(r'<div>\s*(.*?)\s*</div>', dotAll: true).allMatches(html)) {
@@ -653,7 +671,7 @@ class FapelloProvider
     return (slug, mediaId);
   }
 
-  String _decodeHtml(String input) {
+  static String _decodeHtml(String input) {
     if (!input.contains('&')) return input;
     return input.replaceAllMapped(
       RegExp(r'&(#x?[0-9a-f]+|[a-z][a-z0-9]+);', caseSensitive: false),

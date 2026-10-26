@@ -75,6 +75,8 @@ class MangaHorizontalList extends StatelessWidget {
                                   imageUrl: coverUrl,
                                   httpHeaders: getPostMediaHeaders(item),
                                   fit: BoxFit.cover,
+                                  // Carousel tiles are ~110 logical px wide.
+                                  memCacheWidth: 240,
                                   placeholder: (_, __) => Container(
                                     color: Colors.white10,
                                     child: const Center(

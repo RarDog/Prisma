@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:isolate';
 
 import 'package:dio/dio.dart';
 import 'package:prisma_app/core/http/app_headers.dart';
@@ -177,10 +178,28 @@ class XVideosProvider
     );
 
     final html = response.data ?? '';
-    return parseVideoList(html, queryTags: effectiveTags);
+    // Snapshot sendable locals — the parse closure must not capture `this`.
+    final providerId = id;
+    final providerName = name;
+    final base = baseUrl;
+    // Parsing 100s of KB of HTML with a dozen regexes janks the UI thread;
+    // run it in a short-lived isolate.
+    return Isolate.run(() => parseVideoList(
+          html,
+          providerId: providerId,
+          providerName: providerName,
+          baseUrl: base,
+          queryTags: effectiveTags,
+        ));
   }
 
-  List<Post> parseVideoList(String html, {String queryTags = ''}) {
+  static List<Post> parseVideoList(
+    String html, {
+    required String providerId,
+    required String providerName,
+    required String baseUrl,
+    String queryTags = '',
+  }) {
     final posts = <Post>[];
     final matches = _blockPattern.allMatches(html);
 
@@ -237,8 +256,8 @@ class XVideosProvider
 
       posts.add(Post(
         id: eid,
-        providerId: id,
-        providerName: name,
+        providerId: providerId,
+        providerName: providerName,
         previewUrl: thumbUrl,
         sampleUrl: thumbUrl,
         fileUrl: thumbUrl,

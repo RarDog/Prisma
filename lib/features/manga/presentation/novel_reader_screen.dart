@@ -7,6 +7,7 @@ import 'package:prisma_app/core/http/app_headers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:prisma_app/backend/backend.dart';
+import 'package:prisma_app/features/settings/presentation/settings_controller.dart';
 import 'package:prisma_app/sources/manga/mangadex_provider.dart';
 import '../domain/manga_library_providers.dart';
 import '../domain/reader_navigation_helper.dart';
@@ -61,6 +62,16 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen>
   void initState() {
     super.initState();
     initReaderFullscreen();
+    // Restore persisted typography so the reading setup survives restarts.
+    final settings =
+        ref.read(settingsControllerProvider).value ?? AppSettings.defaults;
+    _fontSize = settings.novelFontSize;
+    _lineHeight = settings.novelLineHeight;
+    _theme = NovelReaderTheme.values.firstWhere(
+      (t) => t.name == settings.novelReaderTheme,
+      orElse: () => NovelReaderTheme.dark,
+    );
+
     _currentChapter = widget.chapter;
     _currentChapterIndex =
         widget.allChapters.indexWhere((c) => c.id == widget.chapter.id);
@@ -547,6 +558,12 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen>
                             setSheetState(() => _fontSize = val);
                             setState(() => _fontSize = val);
                           },
+                          onChangeEnd: (val) {
+                            // Persist once per drag, not per tick.
+                            ref
+                                .read(settingsControllerProvider.notifier)
+                                .saveNovelReaderSettings(fontSize: val);
+                          },
                         ),
                       ),
                     ],
@@ -568,6 +585,12 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen>
                           onChanged: (val) {
                             setSheetState(() => _lineHeight = val);
                             setState(() => _lineHeight = val);
+                          },
+                          onChangeEnd: (val) {
+                            // Persist once per drag, not per tick.
+                            ref
+                                .read(settingsControllerProvider.notifier)
+                                .saveNovelReaderSettings(lineHeight: val);
                           },
                         ),
                       ),
@@ -591,6 +614,9 @@ class _NovelReaderScreenState extends ConsumerState<NovelReaderScreen>
                         onSelected: (_) {
                           setSheetState(() => _theme = t);
                           setState(() => _theme = t);
+                          ref
+                              .read(settingsControllerProvider.notifier)
+                              .saveNovelReaderSettings(theme: t.name);
                         },
                       );
                     }).toList(),

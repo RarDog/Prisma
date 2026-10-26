@@ -41,23 +41,48 @@ class ProviderManager {
   Stream<ProviderSoftRetryResult> get softRetryResults =>
       _softRetryController.stream;
 
+  /// Short-lived cache of the full provider config list. Every getPost /
+  /// getMediaHeaders / getComments round-trip goes through loadConfigs, which
+  /// is an Isar query + factory churn — a 10s TTL keeps hot paths cheap while
+  /// still seeing config edits almost immediately (CRUD also invalidates).
+  List<ContentProviderConfig>? _configsCache;
+  DateTime? _configsCacheAt;
+  static const _configsCacheTtl = Duration(seconds: 10);
+
   Future<Result<List<ContentProviderConfig>>> loadConfigs({
     bool enabledOnly = true,
   }) async {
+    final cached = _configsCache;
+    final cachedAt = _configsCacheAt;
+    if (cached != null &&
+        cachedAt != null &&
+        DateTime.now().difference(cachedAt) < _configsCacheTtl) {
+      return Success(
+        enabledOnly
+            ? cached.where((config) => config.enabled).toList(growable: false)
+            : cached,
+      );
+    }
     await _repository.ensureSeedProviders();
-    final result = await _repository.getProviders(enabledOnly: enabledOnly);
+    final result = await _repository.getProviders(enabledOnly: false);
     if (result is Error<List<ContentProviderConfig>>) return result;
     final configs = (result as Success<List<ContentProviderConfig>>)
         .data
         .where((config) => !_isLegacyRemovedConfig(config))
         .toList(growable: false);
+    _configsCache = configs;
+    _configsCacheAt = DateTime.now();
     _providerTimeouts.clear();
     for (final config in configs) {
       if (config.timeoutSeconds > 0) {
         _providerTimeouts[config.id] = config.timeoutSeconds;
       }
     }
-    return Success(configs);
+    return Success(
+      enabledOnly
+          ? configs.where((config) => config.enabled).toList(growable: false)
+          : configs,
+    );
   }
 
   Future<Result<List<ContentProviderConfig>>> loadFeedConfigs({
@@ -185,9 +210,11 @@ class ProviderManager {
   }
 
   Future<ContentProvider?> getProviderInstance(String id) async {
-    final result = await _repository.getProvider(id);
-    if (result is Success<ContentProviderConfig?> && result.data != null) {
-      return _factory.create(result.data!);
+    final result = await loadConfigs(enabledOnly: false);
+    if (result is Success<List<ContentProviderConfig>>) {
+      for (final config in result.data) {
+        if (config.id == id) return _factory.create(config);
+      }
     }
     return null;
   }
@@ -453,6 +480,7 @@ class ProviderManager {
             limit: limit,
             rating: rating,
             topPeriod: topPeriod,
+            cancelToken: cancelToken,
           );
         }
         return const <Post>[];
@@ -534,6 +562,12 @@ class ProviderManager {
   /// responses (bad API key, deleted resource) are deterministic and must not
   /// be retried — repeating them only delays the error surfacing to the UI.
   static bool _isRetryableError(Object error) {
+    if (error is BadResponseException ||
+        error is ProviderUnavailableException) {
+      // Deterministic server answers (bad response body, Cloudflare block):
+      // an immediate retry gets the same answer.
+      return false;
+    }
     if (error is DioException) {
       if (error.type == DioExceptionType.connectionError ||
           error.type == DioExceptionType.connectionTimeout ||
@@ -555,7 +589,10 @@ class ProviderManager {
     required int limit,
     required String? rating,
     required TopPeriodFilter topPeriod,
+    CancelToken? cancelToken,
   }) {
+    // The originating search is already gone — don't resurrect it.
+    if (cancelToken?.isCancelled ?? false) return;
     final key = [
       provider.id,
       page,
@@ -566,6 +603,7 @@ class ProviderManager {
     ].join('\u001f');
     if (!_softRetryKeys.add(key)) return;
     unawaited(Future<void>.delayed(const Duration(milliseconds: 900), () async {
+      if (cancelToken?.isCancelled ?? false) return;
       try {
         final posts = await provider.searchPosts(
           tags: tags,
@@ -573,6 +611,7 @@ class ProviderManager {
           limit: limit,
           rating: rating,
           topPeriod: topPeriod,
+          cancelToken: cancelToken,
         );
         await _repository.saveDiagnostics(
           ProviderDiagnostics(
@@ -886,6 +925,8 @@ class ProviderManager {
   void _clearSuggestionCaches() {
     _suggestionCache.clear();
     _suggestionProviderCache = null;
+    _configsCache = null;
+    _configsCacheAt = null;
   }
 
   Future<List<R>> _runLimited<T, R>(

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:isolate';
 
 import 'package:dio/dio.dart';
 import 'package:prisma_app/core/http/app_headers.dart';
@@ -75,7 +76,8 @@ class RealbooruHtmlProvider
       options: Options(responseType: ResponseType.plain),
       cancelToken: cancelToken,
     );
-    return _parseList(response.data ?? '').take(limit).toList(growable: false);
+    final posts = await _parseList(response.data ?? '');
+    return posts.take(limit).toList(growable: false);
   }
 
   @override
@@ -193,16 +195,38 @@ class RealbooruHtmlProvider
     }
   }
 
-  List<Post> _parseList(String html) {
+  Future<List<Post>> _parseList(String html) {
+    // Snapshot sendable locals — the parse closure must not capture `this`.
+    final providerId = id;
+    final providerName = name;
+    final base = baseUrl;
+    // Parsing a full listing page with regexes janks the UI thread; run it
+    // in a short-lived isolate.
+    return Isolate.run(() => _parseListHtml(
+          html,
+          providerId: providerId,
+          providerName: providerName,
+          baseUrl: base,
+        ));
+  }
+
+  static List<Post> _parseListHtml(
+    String html, {
+    required String providerId,
+    required String providerName,
+    required String baseUrl,
+  }) {
     final posts = <Post>[];
     final pattern = RegExp(
-      r'''<div[^>]*class=["'][^"']*\bthumb\b[^"']*["'][^>]*id=["']s(\d+)["'][\s\S]*?<a[^>]+href=["']([^"']*page=post[^"']*s=view[^"']*id=\d+[^"']*)["'][\s\S]*?<img[^>]+src=["']([^"']+)["'][^>]*>''',
+      // [\s\S] blocks are length-bounded: on unexpected markup an unbounded
+      // lazy block can scan the whole page per candidate and stall parsing.
+      r'''<div[^>]*class=["'][^"']*\bthumb\b[^"']*["'][^>]*id=["']s(\d+)["'][\s\S]{0,4000}?<a[^>]+href=["']([^"']*page=post[^"']*s=view[^"']*id=\d+[^"']*)["'][\s\S]{0,4000}?<img[^>]+src=["']([^"']+)["'][^>]*>''',
       caseSensitive: false,
     );
     for (final match in pattern.allMatches(html)) {
       final id = match.group(1) ?? '';
       final imgTag = match.group(0) ?? '';
-      final previewUrl = _absolute(_decode(match.group(3) ?? ''));
+      final previewUrl = _absoluteUrl(_decode(match.group(3) ?? ''), baseUrl);
       final tags = _tags(_attribute(imgTag, 'title'));
       final isVideo = imgTag.contains('#0000ff') ||
           tags.contains('webm') ||
@@ -219,8 +243,8 @@ class RealbooruHtmlProvider
       posts.add(
         Post(
           id: id,
-          providerId: this.id,
-          providerName: name,
+          providerId: providerId,
+          providerName: providerName,
           previewUrl: previewUrl,
           sampleUrl: isVideo
               ? previewUrl
@@ -230,7 +254,7 @@ class RealbooruHtmlProvider
           rating: 'explicit',
           width: 0,
           height: 0,
-          source: postPageUrlById(id),
+          source: '$baseUrl/index.php?page=post&s=view&id=$id',
           createdAt: DateTime.now(),
           fileType: isVideo
               ? 'video'
@@ -402,7 +426,7 @@ class RealbooruHtmlProvider
   String postPageUrlById(String postId) =>
       '$baseUrl/index.php?page=post&s=view&id=$postId';
 
-  String _attribute(String source, String name) {
+  static String _attribute(String source, String name) {
     final match = RegExp(
       '''$name\\s*=\\s*["']([^"']*)["']''',
       caseSensitive: false,
@@ -410,7 +434,7 @@ class RealbooruHtmlProvider
     return _decode(match?.group(1) ?? '');
   }
 
-  List<String> _tags(String value) {
+  static List<String> _tags(String value) {
     return _decode(value)
         .replaceAll(',', ' ')
         .split(RegExp(r'\s+'))
@@ -428,20 +452,24 @@ class RealbooruHtmlProvider
   }
 
   String _absolute(String url) {
+    return _absoluteUrl(url, baseUrl);
+  }
+
+  static String _absoluteUrl(String url, String baseUrl) {
     final value = _decode(url.trim());
     if (value.startsWith('//')) return _normalizeUrl('https:$value');
     if (value.startsWith('/')) return _normalizeUrl('$baseUrl$value');
     return _normalizeUrl(value);
   }
 
-  String _normalizeUrl(String url) {
+  static String _normalizeUrl(String url) {
     final uri = Uri.tryParse(url);
     if (uri == null || !uri.hasScheme || uri.host.isEmpty) return url;
     final normalizedPath = uri.path.replaceFirst(RegExp(r'^/+'), '/');
     return uri.replace(path: normalizedPath).toString();
   }
 
-  String _imageUrlFromThumbnail(
+  static String _imageUrlFromThumbnail(
     String thumbnailUrl, {
     bool gif = false,
     bool video = false,
@@ -585,7 +613,7 @@ class RealbooruHtmlProvider
     return comments;
   }
 
-  String _decode(String value) {
+  static String _decode(String value) {
     var result = value
         .replaceAll('&amp;', '&')
         .replaceAll('&lt;', '<')
@@ -639,7 +667,7 @@ class RealbooruHtmlProvider
   }
 
   List<TagSuggestion> _parseAutocomplete(dynamic data) {
-    final source = data is String ? jsonDecode(data) : data;
+    final source = _decodeJsonBody(data);
     if (source is! List) return const [];
     final suggestions = <TagSuggestion>[];
     final countRegExp = RegExp(r'\((\d+)\)');
@@ -668,7 +696,7 @@ class RealbooruHtmlProvider
   }
 
   List<String> _autocompleteItems(dynamic data) {
-    final source = data is String ? jsonDecode(data) : data;
+    final source = _decodeJsonBody(data);
     if (source is List) {
       return source
           .map((item) => item.toString().trim().replaceAll(' ', '_'))
@@ -677,5 +705,16 @@ class RealbooruHtmlProvider
           .toList(growable: false);
     }
     return const [];
+  }
+
+  /// Autocomplete endpoints can answer with HTML error pages instead of JSON;
+  /// a raw jsonDecode there would crash the suggestion call.
+  dynamic _decodeJsonBody(dynamic data) {
+    if (data is! String) return data;
+    try {
+      return jsonDecode(data);
+    } catch (_) {
+      return null;
+    }
   }
 }
