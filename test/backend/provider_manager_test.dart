@@ -1,15 +1,17 @@
+import 'package:dio/dio.dart';
+
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
-import 'package:gel_rule_app/core/models/post.dart';
-import 'package:gel_rule_app/core/models/provider_diagnostics.dart';
-import 'package:gel_rule_app/core/models/provider_health.dart';
-import 'package:gel_rule_app/core/models/tag_suggestion.dart';
-import 'package:gel_rule_app/core/models/top_period_filter.dart';
-import 'package:gel_rule_app/sources/interfaces/content_provider.dart';
-import 'package:gel_rule_app/sources/provider_factory.dart';
-import 'package:gel_rule_app/sources/provider_manager.dart';
-import 'package:gel_rule_app/features/providers/data/provider_repository.dart';
-import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:prisma_app/features/providers/models/content_provider_config.dart';
+import 'package:prisma_app/core/models/post.dart';
+import 'package:prisma_app/core/models/provider_diagnostics.dart';
+import 'package:prisma_app/core/models/provider_health.dart';
+import 'package:prisma_app/core/models/tag_suggestion.dart';
+import 'package:prisma_app/core/models/top_period_filter.dart';
+import 'package:prisma_app/sources/interfaces/content_provider.dart';
+import 'package:prisma_app/sources/provider_factory.dart';
+import 'package:prisma_app/sources/provider_manager.dart';
+import 'package:prisma_app/features/providers/data/provider_repository.dart';
+import 'package:prisma_app/core/utils/result.dart';
 
 class FakeProviderRepository implements ProviderRepository {
   final configs = <String, ContentProviderConfig>{};
@@ -83,6 +85,7 @@ class FakeProvider implements ContentProvider, TagSuggestionProvider {
     this.name,
     this.posts, {
     this.failSearch = false,
+    this.searchError,
     this.suggestions = const [],
     this.suggestionDelay = Duration.zero,
   });
@@ -100,6 +103,7 @@ class FakeProvider implements ContentProvider, TagSuggestionProvider {
       };
   final List<Post> posts;
   final bool failSearch;
+  final Object? searchError;
   final List<TagSuggestion> suggestions;
   final Duration suggestionDelay;
   int suggestionCalls = 0;
@@ -123,7 +127,9 @@ class FakeProvider implements ContentProvider, TagSuggestionProvider {
     int limit = 50,
     String? rating,
     TopPeriodFilter topPeriod = TopPeriodFilter.none,
+    CancelToken? cancelToken,
   }) async {
+    if (searchError != null) throw searchError!;
     if (failSearch) throw Exception('fail');
     return posts;
   }
@@ -215,9 +221,42 @@ void main() {
     final result = await manager.searchAcrossProviders(tags: [], page: 0)
         as Success<List<Post>>;
     expect(result.data.map((item) => item.providerId).toSet(), {'a', 'b'});
-    expect(repository.health['c']?.status, ProviderStatus.offline);
+    // Generic failures count as transient: provider 'c' gets a soft retry
+    // instead of being marked offline on the first error.
+    expect(repository.health.containsKey('c'), isFalse);
     expect(repository.diagnostics['a']?.lastResultCount, 1);
     expect(repository.diagnostics['c']?.lastErrorMessage, 'Exception: fail');
+  });
+
+  test('deterministic 4xx failure marks provider offline', () async {
+    final repository = FakeProviderRepository()
+      ..configs['a'] = config('a', 0)
+      ..configs['b'] = config('b', 1)
+      ..configs['c'] = config('c', 2);
+    final manager = ProviderManager(
+      repository,
+      FakeProviderFactory({
+        'a': FakeProvider('a', 'a', [post('a', '1')]),
+        'b': FakeProvider('b', 'b', [post('b', '1')]),
+        'c': FakeProvider(
+          'c',
+          'c',
+          [],
+          searchError: DioException(
+            requestOptions: RequestOptions(path: '/api/posts'),
+            response: Response(
+              requestOptions: RequestOptions(path: '/api/posts'),
+              statusCode: 403,
+            ),
+          ),
+        ),
+      }),
+    );
+
+    final result = await manager.searchAcrossProviders(tags: [], page: 0)
+        as Success<List<Post>>;
+    expect(result.data.map((item) => item.providerId).toSet(), {'a', 'b'});
+    expect(repository.health['c']?.status, ProviderStatus.offline);
   });
 
   test('all providers results are naturally mixed without provider blocks',

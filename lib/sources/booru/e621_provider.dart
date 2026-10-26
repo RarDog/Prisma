@@ -1,15 +1,15 @@
 import 'package:dio/dio.dart';
 
-import 'package:gel_rule_app/core/http/dio_client.dart';
-import 'package:gel_rule_app/sources/mappers/e621_mapper.dart';
-import 'package:gel_rule_app/features/artists/models/e621_pool.dart';
-import 'package:gel_rule_app/core/models/post.dart';
-import 'package:gel_rule_app/core/models/post_comment.dart';
-import 'package:gel_rule_app/core/models/post_note.dart';
-import 'package:gel_rule_app/core/models/provider_health.dart';
-import 'package:gel_rule_app/core/models/tag_suggestion.dart';
-import 'package:gel_rule_app/core/models/top_period_filter.dart';
-import 'package:gel_rule_app/sources/interfaces/content_provider.dart';
+import 'package:prisma_app/core/http/dio_client.dart';
+import 'package:prisma_app/sources/mappers/e621_mapper.dart';
+import 'package:prisma_app/features/artists/models/e621_pool.dart';
+import 'package:prisma_app/core/models/post.dart';
+import 'package:prisma_app/core/models/post_comment.dart';
+import 'package:prisma_app/core/models/post_note.dart';
+import 'package:prisma_app/core/models/provider_health.dart';
+import 'package:prisma_app/core/models/tag_suggestion.dart';
+import 'package:prisma_app/core/models/top_period_filter.dart';
+import 'package:prisma_app/sources/interfaces/content_provider.dart';
 
 class E621Provider
     implements
@@ -109,6 +109,7 @@ class E621Provider
     int limit = 50,
     String? rating,
     TopPeriodFilter topPeriod = TopPeriodFilter.none,
+    CancelToken? cancelToken,
   }) async {
     await _throttle();
     final sanitized = sanitizeTags(tags);
@@ -124,6 +125,7 @@ class E621Provider
         ].join(' '),
         ..._queryParameters,
       },
+      cancelToken: cancelToken,
     );
     return E621Mapper.postsFromResponse(
       response.data,

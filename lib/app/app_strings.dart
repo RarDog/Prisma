@@ -46,6 +46,22 @@ class AppStrings {
   String get tryAnotherTag => ru
       ? 'Попробуй другой тег или проверь провайдеры.'
       : 'Try another tag or check providers.';
+  String get feedLoadFailed =>
+      ru ? 'Не удалось загрузить посты' : 'Failed to load posts';
+  String get feedLoadFailedHint => ru
+      ? 'Проверьте подключение или включённые провайдеры и попробуйте снова.'
+      : 'Check your connection or enabled providers and try again.';
+  String retryingProviders(int count) => ru
+      ? 'Повторная попытка: $count провайдер(ов)'
+      : 'Retrying $count provider${count == 1 ? '' : 's'}';
+  String retryAddedPosts(int count) => ru
+      ? 'Повтор удался: +$count постов'
+      : 'Retry added $count posts';
+  String get mangaDetailsFromCache => ru
+      ? 'Не удалось обновить данные — открыто из кеша'
+      : 'Could not refresh details — opened from cache';
+  String get operationFailed =>
+      ru ? 'Не удалось выполнить операцию' : 'Operation failed';
   String get searchTags => ru ? 'Поиск тегов' : 'Search tags';
   String get selected => ru ? 'выбрано' : 'selected';
   String get createCollection => ru ? 'Создать коллекцию' : 'Create collection';

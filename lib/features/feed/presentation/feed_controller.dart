@@ -1,11 +1,12 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart' show CancelToken;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:gel_rule_app/app/app.dart';
-import 'package:gel_rule_app/backend/backend.dart';
-import 'package:gel_rule_app/core/utils/result.dart';
-import 'package:gel_rule_app/features/providers/presentation/providers_controller.dart';
+import 'package:prisma_app/app/app.dart';
+import 'package:prisma_app/backend/backend.dart';
+import 'package:prisma_app/core/utils/result.dart';
+import 'package:prisma_app/features/providers/presentation/providers_controller.dart';
 import 'feed_state.dart';
 
 final feedControllerProvider =
@@ -15,6 +16,7 @@ class FeedController extends AsyncNotifier<FeedState> {
   Timer? _providerDebounce;
   Timer? _suggestionDebounce;
   StreamSubscription<ProviderSoftRetryResult>? _softRetrySubscription;
+  CancelToken? _activeLoadToken;
   int _loadRequestId = 0;
   int _suggestionRequestId = 0;
 
@@ -24,6 +26,7 @@ class FeedController extends AsyncNotifier<FeedState> {
       _providerDebounce?.cancel();
       _suggestionDebounce?.cancel();
       _softRetrySubscription?.cancel();
+      _activeLoadToken?.cancel();
     });
     _softRetrySubscription ??= ref
         .read(providerManagerProvider)
@@ -69,12 +72,18 @@ class FeedController extends AsyncNotifier<FeedState> {
     state = const AsyncLoading();
     final posts = await _load(refresh: true, current: current);
     if (requestId != _loadRequestId) return;
+    final status = await _providerStatus(current);
+    // All selected sources failed and nothing is cached: surface a retryable
+    // error instead of the misleading "no posts" empty state.
+    final loadFailed = posts.isEmpty && status.failedProviders.isNotEmpty;
+    final strings = ref.read(appStringsProvider);
     state = AsyncData(current.copyWith(
       posts: posts,
       hasMore: true,
       emptyPageStreak: 0,
-      clearError: true,
-      providerStatusMessage: await _providerStatusMessage(current),
+      error: loadFailed ? strings.feedLoadFailed : null,
+      clearError: !loadFailed,
+      providerStatusMessage: status.message,
     ));
     // A failed search records an `offline` health entry, so the feed/Artists
     // banners need rebuilding after every load.
@@ -87,12 +96,17 @@ class FeedController extends AsyncNotifier<FeedState> {
     state = AsyncData(current.copyWith(isLoadingMore: true, clearError: true));
     final posts = await _load(refresh: true, current: current);
     if (requestId != _loadRequestId) return;
+    final status = await _providerStatus(current);
+    final loadFailed = posts.isEmpty && status.failedProviders.isNotEmpty;
+    final strings = ref.read(appStringsProvider);
     state = AsyncData(current.copyWith(
       posts: posts,
       isLoadingMore: false,
       hasMore: true,
       emptyPageStreak: 0,
-      providerStatusMessage: await _providerStatusMessage(current),
+      error: loadFailed ? strings.feedLoadFailed : null,
+      clearError: !loadFailed,
+      providerStatusMessage: status.message,
     ));
     ref.invalidate(enabledProviderHealthProvider);
   }
@@ -350,44 +364,48 @@ class FeedController extends AsyncNotifier<FeedState> {
     required FeedState current,
   }) async {
     final service = ref.read(feedServiceProvider);
+    // Abort whatever the previous load still has in flight (e.g. the user
+    // changed tags mid-search); cancelling a finished request is a no-op.
+    _activeLoadToken?.cancel();
+    final cancelToken = CancelToken();
+    _activeLoadToken = cancelToken;
     final providerIds = current.selectedProviderIds.isEmpty
         ? <String?>[null]
         : current.selectedProviderIds;
+    // Fetch every selected provider concurrently — sequential awaits
+    // multiplied the latency of the slowest source by the provider count.
+    final providerResults = await Future.wait(
+      providerIds.map((providerId) async {
+        final result = refresh
+            ? await service.refresh(
+                tags: current.selectedTags,
+                rating: current.ratingFilter,
+                providerId: providerId,
+                topPeriod: current.topPeriodFilter,
+                cancelToken: cancelToken,
+              )
+            : await service.loadNextPage(
+                tags: current.selectedTags,
+                rating: current.ratingFilter,
+                providerId: providerId,
+                topPeriod: current.topPeriodFilter,
+                cancelToken: cancelToken,
+              );
+        return result is Success<List<Post>> ? result.data : const <Post>[];
+      }),
+    );
     final posts = <Post>[];
-    final providerResults = <List<Post>>[];
-    for (final providerId in providerIds) {
-      final result = refresh
-          ? await service.refresh(
-              tags: current.selectedTags,
-              rating: current.ratingFilter,
-              providerId: providerId,
-              topPeriod: current.topPeriodFilter,
-            )
-          : await service.loadNextPage(
-              tags: current.selectedTags,
-              rating: current.ratingFilter,
-              providerId: providerId,
-              topPeriod: current.topPeriodFilter,
-            );
-      if (result is Success<List<Post>>) {
-        providerResults.add(result.data);
-      }
-    }
     final seen = <String>{};
-    if (providerResults.length <= 1) {
-      for (final group in providerResults) {
-        for (final post in group) {
-          if (seen.add(post.cacheKey)) posts.add(post);
-        }
-      }
-      return posts;
-    }
     for (final group in providerResults) {
       for (final post in group) {
         if (seen.add(post.cacheKey)) posts.add(post);
       }
     }
-    _sortMixed(posts);
+    final nonEmptyGroups =
+        providerResults.where((group) => group.isNotEmpty).length;
+    if (nonEmptyGroups > 1) {
+      _sortMixed(posts);
+    }
     return posts;
   }
 
@@ -411,7 +429,8 @@ class FeedController extends AsyncNotifier<FeedState> {
     state = AsyncData(
       current.copyWith(
         posts: combined,
-        providerStatusMessage: 'Retry added ${newPosts.length} posts',
+        providerStatusMessage:
+            ref.read(appStringsProvider).retryAddedPosts(newPosts.length),
       ),
     );
   }
@@ -424,9 +443,13 @@ class FeedController extends AsyncNotifier<FeedState> {
     return true;
   }
 
-  Future<String?> _providerStatusMessage(FeedState current) async {
+  Future<({String? message, Set<String> failedProviders})> _providerStatus(
+    FeedState current,
+  ) async {
     final result = await ref.read(providerRepositoryProvider).getDiagnostics();
-    if (result is! Success<List<ProviderDiagnostics>>) return null;
+    if (result is! Success<List<ProviderDiagnostics>>) {
+      return (message: null, failedProviders: const <String>{});
+    }
     final selected = current.selectedProviderIds.isEmpty
         ? current.providers.map((provider) => provider.id).toSet()
         : current.selectedProviderIds.toSet();
@@ -437,8 +460,13 @@ class FeedController extends AsyncNotifier<FeedState> {
             item.lastErrorMessage!.isNotEmpty)
         .map((item) => item.providerId)
         .toSet();
-    if (failed.isEmpty) return null;
-    return 'Retrying ${failed.length} provider${failed.length == 1 ? '' : 's'}';
+    if (failed.isEmpty) {
+      return (message: null, failedProviders: failed);
+    }
+    return (
+      message: ref.read(appStringsProvider).retryingProviders(failed.length),
+      failedProviders: failed,
+    );
   }
 
   void _sortMixed(List<Post> posts) {

@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
-import 'package:gel_rule_app/core/errors/app_exception.dart';
-import 'package:gel_rule_app/core/http/dio_client.dart';
-import 'package:gel_rule_app/core/models/post.dart';
-import 'package:gel_rule_app/core/models/provider_health.dart';
-import 'package:gel_rule_app/core/models/tag_suggestion.dart';
-import 'package:gel_rule_app/core/models/top_period_filter.dart';
+import 'package:prisma_app/core/errors/app_exception.dart';
+import 'package:prisma_app/core/http/dio_client.dart';
+import 'package:prisma_app/core/models/post.dart';
+import 'package:prisma_app/core/models/provider_health.dart';
+import 'package:prisma_app/core/models/tag_suggestion.dart';
+import 'package:prisma_app/core/models/top_period_filter.dart';
 import 'package:flutter/foundation.dart';
-import 'package:gel_rule_app/sources/interfaces/content_provider.dart';
+import 'package:prisma_app/sources/interfaces/content_provider.dart';
 
 class WallhavenProvider
     implements
@@ -60,6 +60,7 @@ class WallhavenProvider
     int limit = 50,
     String? rating,
     TopPeriodFilter topPeriod = TopPeriodFilter.none,
+    CancelToken? cancelToken,
   }) async {
     // Wallhaven API pages are 1-based (p=1, 2, 3...).
     // Prisma calls searchPosts with page=0 initially; Wallhaven returns 500 if page=0 is sent.
@@ -111,6 +112,7 @@ class WallhavenProvider
       final response = await dioClient.dio.get<Map<String, dynamic>>(
         '/api/v1/search',
         queryParameters: queryParams,
+        cancelToken: cancelToken,
       );
 
       final data = response.data;

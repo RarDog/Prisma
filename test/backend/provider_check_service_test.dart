@@ -1,6 +1,8 @@
+import 'package:dio/dio.dart';
+
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gel_rule_app/backend/backend.dart';
-import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:prisma_app/backend/backend.dart';
+import 'package:prisma_app/core/utils/result.dart';
 
 ContentProviderConfig _config(String id, String apiType) =>
     ContentProviderConfig(
@@ -89,6 +91,7 @@ class _FakeProvider implements ContentProvider {
     int limit = 50,
     String? rating,
     TopPeriodFilter topPeriod = TopPeriodFilter.none,
+    CancelToken? cancelToken,
   }) async =>
       const [];
 

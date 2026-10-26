@@ -1,21 +1,21 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
-import 'package:gel_rule_app/core/errors/app_exception.dart';
-import 'package:gel_rule_app/core/http/app_headers.dart';
-import 'package:gel_rule_app/core/errors/failure.dart';
-import 'package:gel_rule_app/core/utils/result.dart';
-import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
-import 'package:gel_rule_app/core/models/post.dart';
-import 'package:gel_rule_app/core/models/post_comment.dart';
-import 'package:gel_rule_app/core/models/post_note.dart';
-import 'package:gel_rule_app/core/models/provider_diagnostics.dart';
-import 'package:gel_rule_app/core/models/provider_health.dart';
-import 'package:gel_rule_app/core/models/tag_suggestion.dart';
-import 'package:gel_rule_app/core/models/top_period_filter.dart';
-import 'package:gel_rule_app/features/providers/data/provider_repository.dart';
-import 'package:gel_rule_app/sources/interfaces/content_provider.dart';
-import 'package:gel_rule_app/sources/provider_factory.dart';
+import 'package:prisma_app/core/errors/app_exception.dart';
+import 'package:prisma_app/core/http/app_headers.dart';
+import 'package:prisma_app/core/errors/failure.dart';
+import 'package:prisma_app/core/utils/result.dart';
+import 'package:prisma_app/features/providers/models/content_provider_config.dart';
+import 'package:prisma_app/core/models/post.dart';
+import 'package:prisma_app/core/models/post_comment.dart';
+import 'package:prisma_app/core/models/post_note.dart';
+import 'package:prisma_app/core/models/provider_diagnostics.dart';
+import 'package:prisma_app/core/models/provider_health.dart';
+import 'package:prisma_app/core/models/tag_suggestion.dart';
+import 'package:prisma_app/core/models/top_period_filter.dart';
+import 'package:prisma_app/features/providers/data/provider_repository.dart';
+import 'package:prisma_app/sources/interfaces/content_provider.dart';
+import 'package:prisma_app/sources/provider_factory.dart';
 
 class ProviderManager {
   ProviderManager(this._repository, this._factory);
@@ -27,6 +27,12 @@ class ProviderManager {
   final _softRetryController =
       StreamController<ProviderSoftRetryResult>.broadcast();
   _SuggestionProviderCacheEntry? _suggestionProviderCache;
+
+  /// Per-provider search timeout in seconds, refreshed on every config load
+  /// so the per-provider `timeoutSeconds` setting actually governs searches
+  /// instead of a global hardcode.
+  final Map<String, int> _providerTimeouts = {};
+  static const _defaultSearchTimeoutSeconds = 14;
 
   static const _suggestionCacheTtl = Duration(seconds: 45);
   static const _suggestionProviderCacheTtl = Duration(seconds: 60);
@@ -45,6 +51,12 @@ class ProviderManager {
         .data
         .where((config) => !_isLegacyRemovedConfig(config))
         .toList(growable: false);
+    _providerTimeouts.clear();
+    for (final config in configs) {
+      if (config.timeoutSeconds > 0) {
+        _providerTimeouts[config.id] = config.timeoutSeconds;
+      }
+    }
     return Success(configs);
   }
 
@@ -302,6 +314,7 @@ class ProviderManager {
     String? rating,
     String? providerId,
     TopPeriodFilter topPeriod = TopPeriodFilter.none,
+    CancelToken? cancelToken,
   }) async {
     final providersResult = await activeFeedProviders();
     if (providersResult is Error<List<ContentProvider>>) {
@@ -325,6 +338,7 @@ class ProviderManager {
         rating: rating,
         providerId: providerId,
         topPeriod: topPeriod,
+        cancelToken: cancelToken,
       );
     }
 
@@ -340,6 +354,7 @@ class ProviderManager {
         rating: rating,
         providerId: providerId,
         topPeriod: topPeriod,
+        cancelToken: cancelToken,
       );
     }).toList(growable: false);
 
@@ -363,6 +378,7 @@ class ProviderManager {
     required String? rating,
     required String? providerId,
     required TopPeriodFilter topPeriod,
+    CancelToken? cancelToken,
   }) async {
     final cleanTags = tags
         .map((t) => t.trim())
@@ -379,8 +395,12 @@ class ProviderManager {
               limit: limit,
               rating: rating,
               topPeriod: topPeriod,
+              cancelToken: cancelToken,
             )
-            .timeout(const Duration(seconds: 14));
+            .timeout(Duration(
+              seconds: _providerTimeouts[provider.id] ??
+                  _defaultSearchTimeoutSeconds,
+            ));
         unawaited(_repository.saveDiagnostics(
           ProviderDiagnostics(
             providerId: provider.id,
@@ -390,6 +410,13 @@ class ProviderManager {
         ));
         return providerPosts;
       } catch (error) {
+        // User-initiated cancellation is not a provider failure: skip the
+        // offline marking and soft retry entirely.
+        final cancelled = (cancelToken?.isCancelled ?? false) ||
+            (error is DioException && error.type == DioExceptionType.cancel);
+        if (cancelled) {
+          return const <Post>[];
+        }
         final errorMsg = error is AppException
             ? error.message
             : (error is DioException
@@ -403,15 +430,21 @@ class ProviderManager {
             lastErrorMessage: errorMsg,
           ),
         ));
-        unawaited(_repository.saveHealth(
-          ProviderHealth(
-            providerId: provider.id,
-            status: ProviderStatus.offline,
-            pingMs: 0,
-            lastCheckedAt: DateTime.now(),
-            errorMessage: errorMsg,
-          ),
-        ));
+        // A transient failure (timeout, 429/5xx) must not flip the provider
+        // to offline on the first hiccup — the soft retry marks it online
+        // again when it succeeds. Deterministic errors (bad API key, deleted
+        // resource) still surface as offline immediately.
+        if (!_isRetryableError(error)) {
+          unawaited(_repository.saveHealth(
+            ProviderHealth(
+              providerId: provider.id,
+              status: ProviderStatus.offline,
+              pingMs: 0,
+              lastCheckedAt: DateTime.now(),
+              errorMessage: errorMsg,
+            ),
+          ));
+        }
         if (_isRetryableError(error)) {
           _scheduleSoftSearchRetry(
             provider,

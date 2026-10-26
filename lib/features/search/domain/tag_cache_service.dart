@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:path_provider/path_provider.dart';
 
-import 'package:gel_rule_app/core/models/tag_suggestion.dart';
-import 'package:gel_rule_app/core/utils/logger.dart';
+import 'package:prisma_app/core/models/tag_suggestion.dart';
+import 'package:prisma_app/core/utils/logger.dart';
 
 class TagCacheService {
   TagCacheService({String? customPath}) : _customPath = customPath;
@@ -45,8 +46,12 @@ class TagCacheService {
       if (await file.exists()) {
         final content = await file.readAsString();
         if (content.trim().isNotEmpty) {
-          final decoded = jsonDecode(content);
-          if (decoded is List) {
+          // Parse off the main isolate: a full cache file decodes into
+          // thousands of suggestions and would jank startup.
+          final parsed = await Isolate.run(() {
+            final decoded = jsonDecode(content);
+            if (decoded is! List) return <String, TagSuggestion>{};
+            final result = <String, TagSuggestion>{};
             for (final item in decoded) {
               if (item is Map) {
                 final suggestion = TagSuggestion.fromJson(
@@ -54,11 +59,13 @@ class TagCacheService {
                 );
                 final key = suggestion.name.trim().toLowerCase();
                 if (key.isNotEmpty) {
-                  _tags[key] = suggestion;
+                  result[key] = suggestion;
                 }
               }
             }
-          }
+            return result;
+          });
+          _tags.addAll(parsed);
         }
       }
     } catch (e, st) {
@@ -181,8 +188,12 @@ class TagCacheService {
     try {
       final path = await _getCacheFilePath();
       final file = File(path);
-      final list = _tags.values.map((t) => t.toJson()).toList(growable: false);
-      final jsonString = jsonEncode(list);
+      // Snapshot the values first: capturing `this` in the isolate closure
+      // would drag the unsendable debounce Timer across the isolate boundary.
+      final jsonMaps =
+          _tags.values.map((t) => t.toJson()).toList(growable: false);
+      // Serialize off the main isolate for the same reason as init().
+      final jsonString = await Isolate.run(() => jsonEncode(jsonMaps));
       await file.writeAsString(jsonString, flush: true);
     } catch (e, st) {
       AppLogger.log('TagCacheService.flush error', e, st);

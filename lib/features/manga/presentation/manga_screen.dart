@@ -3,10 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:gel_rule_app/backend/backend.dart';
-import 'package:gel_rule_app/core/utils/result.dart';
-import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
-import 'package:gel_rule_app/sources/manga/mangadex_provider.dart';
+import 'package:prisma_app/app/app.dart' show appStringsProvider;
+import 'package:prisma_app/backend/backend.dart';
+import 'package:prisma_app/core/utils/result.dart';
+import 'package:prisma_app/features/settings/presentation/settings_controller.dart';
+import 'package:prisma_app/sources/manga/mangadex_provider.dart';
 import '../domain/manga_library_service.dart';
 import '../domain/manga_library_providers.dart';
 import 'manga_details_screen.dart';
@@ -384,6 +385,7 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
           .resetNewChapters(entry.mangaId));
     }
     Post? post;
+    var fetchFailed = false;
     try {
       final providerManager = ref.read(providerManagerProvider);
       final provider =
@@ -391,7 +393,11 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
       if (provider != null) {
         post = await provider.getPost(entry.mangaId);
       }
-    } catch (_) {}
+    } catch (_) {
+      // A cached fallback post is still built below, but the user should
+      // know the details screen may show stale library data.
+      fetchFailed = true;
+    }
 
     final providerDisplayName = switch (entry.providerId) {
       'mangadex' => 'MangaDex',
@@ -427,6 +433,14 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
     );
 
     if (mounted) {
+      if (fetchFailed) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(ref.read(appStringsProvider).mangaDetailsFromCache),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
       await Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => MangaDetailsScreen(post: post!),

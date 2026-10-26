@@ -1,7 +1,9 @@
+import 'dart:collection';
+
 import 'package:archive/archive.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:gel_rule_app/sources/models/ugoira_metadata.dart';
+import 'package:prisma_app/sources/models/ugoira_metadata.dart';
 
 class _UnpackParams {
   const _UnpackParams(this.zipBytes, this.frames);
@@ -16,13 +18,46 @@ List<UgoiraFrame> _unpackIsolateEntry(_UnpackParams params) {
   );
 }
 
+/// Insertion-ordered cache with an entry cap: re-inserting on access makes
+/// it LRU, so the least recently used decoded frame sets are evicted first.
+/// Without a cap, long viewing sessions of animated posts grow RSS without
+/// bound because each entry holds multi-megabyte decoded frame bytes.
+class _BoundedLruCache<K, V> {
+  _BoundedLruCache(this.maxEntries);
+
+  final int maxEntries;
+  final LinkedHashMap<K, V> _map = LinkedHashMap<K, V>();
+
+  bool containsKey(K key) => _map.containsKey(key);
+
+  V? operator [](K key) {
+    final value = _map.remove(key);
+    if (value != null) {
+      _map[key] = value;
+    }
+    return value;
+  }
+
+  void operator []=(K key, V value) {
+    _map.remove(key);
+    _map[key] = value;
+    while (_map.length > maxEntries) {
+      _map.remove(_map.keys.first);
+    }
+  }
+
+  void clear() => _map.clear();
+}
+
 class UgoiraService {
   UgoiraService({Dio? dio}) : _dio = dio ?? Dio();
 
   final Dio _dio;
-  final Map<String, List<UgoiraFrame>> _memoryCache = {};
-  final Map<String, List<UgoiraFrame>> _postCache = {};
-  final Map<String, UgoiraMetadata> _metaCache = {};
+  // Decoded Ugoira frame bytes are multi-MB per post; a handful of entries
+  // keeps the adjacent-post carousel smooth while bounding memory.
+  final _memoryCache = _BoundedLruCache<String, List<UgoiraFrame>>(4);
+  final _postCache = _BoundedLruCache<String, List<UgoiraFrame>>(8);
+  final _metaCache = _BoundedLruCache<String, UgoiraMetadata>(64);
 
   bool isCached(String key) =>
       _memoryCache.containsKey(key) || _postCache.containsKey(key);

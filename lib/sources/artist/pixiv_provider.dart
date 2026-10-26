@@ -1,16 +1,16 @@
 import 'package:dio/dio.dart';
-import 'package:gel_rule_app/core/http/app_headers.dart';
+import 'package:prisma_app/core/http/app_headers.dart';
 
-import 'package:gel_rule_app/core/errors/app_exception.dart';
-import 'package:gel_rule_app/core/http/dio_client.dart';
-import 'package:gel_rule_app/core/models/post.dart';
-import 'package:gel_rule_app/core/models/post_comment.dart';
-import 'package:gel_rule_app/core/models/provider_health.dart';
-import 'package:gel_rule_app/core/models/tag_suggestion.dart';
-import 'package:gel_rule_app/core/models/top_period_filter.dart';
-import 'package:gel_rule_app/sources/interfaces/content_provider.dart';
-import 'package:gel_rule_app/sources/mappers/pixiv_mapper.dart';
-import 'package:gel_rule_app/sources/models/ugoira_metadata.dart';
+import 'package:prisma_app/core/errors/app_exception.dart';
+import 'package:prisma_app/core/http/dio_client.dart';
+import 'package:prisma_app/core/models/post.dart';
+import 'package:prisma_app/core/models/post_comment.dart';
+import 'package:prisma_app/core/models/provider_health.dart';
+import 'package:prisma_app/core/models/tag_suggestion.dart';
+import 'package:prisma_app/core/models/top_period_filter.dart';
+import 'package:prisma_app/sources/interfaces/content_provider.dart';
+import 'package:prisma_app/sources/mappers/pixiv_mapper.dart';
+import 'package:prisma_app/sources/models/ugoira_metadata.dart';
 
 class PixivProvider
     implements
@@ -84,6 +84,7 @@ class PixivProvider
     int limit = 50,
     String? rating,
     TopPeriodFilter topPeriod = TopPeriodFilter.none,
+    CancelToken? cancelToken,
   }) async {
     String? artworkType;
     String? explicitMode;
@@ -115,7 +116,7 @@ class PixivProvider
       if (cleanedTags.isEmpty) {
         // If authenticated and no explicit ranking mode — use following feed
         if (isAuthenticated && explicitMode == null && topPeriod == TopPeriodFilter.none) {
-          return await _fetchFollowFeed(page: targetPage);
+          return await _fetchFollowFeed(page: targetPage, cancelToken: cancelToken);
         }
 
         String mode;
@@ -154,6 +155,7 @@ class PixivProvider
             ..._queryParameters,
           },
           options: _authOptions,
+          cancelToken: cancelToken,
         );
         _checkResponse(response);
         return PixivMapper.postsFromRankingResponse(
@@ -191,6 +193,7 @@ class PixivProvider
           ..._queryParameters,
         },
         options: _authOptions,
+        cancelToken: cancelToken,
       );
       _checkResponse(response);
       return PixivMapper.postsFromSearchResponse(
@@ -265,7 +268,10 @@ class PixivProvider
 
   /// Fetches "Following" feed for authenticated users
   /// GET /ajax/follow_latest/illust?mode=all&p={page}
-  Future<List<Post>> _fetchFollowFeed({required int page}) async {
+  Future<List<Post>> _fetchFollowFeed({
+    required int page,
+    CancelToken? cancelToken,
+  }) async {
     try {
       final response = await _dio.get<dynamic>(
         '/ajax/follow_latest/illust',
@@ -276,6 +282,7 @@ class PixivProvider
           ..._queryParameters,
         },
         options: _authOptions,
+        cancelToken: cancelToken,
       );
       _checkResponse(response);
       // Follow feed uses body.thumbnails.illust[] structure (different from search)
@@ -295,6 +302,7 @@ class PixivProvider
           ..._queryParameters,
         },
         options: _authOptions,
+        cancelToken: cancelToken,
       );
       _checkResponse(response);
       return PixivMapper.postsFromRankingResponse(

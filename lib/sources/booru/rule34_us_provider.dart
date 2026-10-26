@@ -1,12 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:gel_rule_app/core/http/app_headers.dart';
-import 'package:gel_rule_app/core/http/dio_client.dart';
-import 'package:gel_rule_app/core/models/post.dart';
-import 'package:gel_rule_app/core/models/provider_health.dart';
-import 'package:gel_rule_app/core/models/tag_suggestion.dart';
-import 'package:gel_rule_app/core/models/top_period_filter.dart';
-import 'package:gel_rule_app/sources/interfaces/content_provider.dart';
+import 'package:prisma_app/core/http/app_headers.dart';
+import 'package:prisma_app/core/http/dio_client.dart';
+import 'package:prisma_app/core/models/post.dart';
+import 'package:prisma_app/core/models/provider_health.dart';
+import 'package:prisma_app/core/models/tag_suggestion.dart';
+import 'package:prisma_app/core/models/top_period_filter.dart';
+import 'package:prisma_app/sources/interfaces/content_provider.dart';
 
 class Rule34UsProvider
     implements
@@ -55,6 +55,7 @@ class Rule34UsProvider
     int limit = 50,
     String? rating,
     TopPeriodFilter topPeriod = TopPeriodFilter.none,
+    CancelToken? cancelToken,
   }) async {
     final topTags = switch (topPeriod) {
       TopPeriodFilter.none => const <String>[],
@@ -80,6 +81,7 @@ class Rule34UsProvider
           ..._queryParameters,
         },
         options: Options(responseType: ResponseType.plain),
+        cancelToken: cancelToken,
       );
 
       final html = response.data ?? '';

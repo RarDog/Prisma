@@ -1,10 +1,10 @@
 import 'package:dio/dio.dart';
 
-import 'package:gel_rule_app/core/http/dio_client.dart';
-import 'package:gel_rule_app/core/models/post.dart';
-import 'package:gel_rule_app/core/models/provider_health.dart';
-import 'package:gel_rule_app/core/models/top_period_filter.dart';
-import 'package:gel_rule_app/sources/interfaces/content_provider.dart';
+import 'package:prisma_app/core/http/dio_client.dart';
+import 'package:prisma_app/core/models/post.dart';
+import 'package:prisma_app/core/models/provider_health.dart';
+import 'package:prisma_app/core/models/top_period_filter.dart';
+import 'package:prisma_app/sources/interfaces/content_provider.dart';
 
 class Rule34PahealProvider implements ContentProvider, PostPageProvider {
   Rule34PahealProvider({
@@ -34,6 +34,7 @@ class Rule34PahealProvider implements ContentProvider, PostPageProvider {
     int limit = 50,
     String? rating,
     TopPeriodFilter topPeriod = TopPeriodFilter.none,
+    CancelToken? cancelToken,
   }) async {
     // Paheal's public HTML list ignores common sort/top query parameters and
     // exposes no stable top-period endpoint, so non-latest filters fall back
@@ -48,6 +49,7 @@ class Rule34PahealProvider implements ContentProvider, PostPageProvider {
     final response = await _dio.get<String>(
       path,
       options: Options(responseType: ResponseType.plain),
+      cancelToken: cancelToken,
     );
     return _parseList(response.data ?? '').take(limit).toList(growable: false);
   }

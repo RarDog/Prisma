@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
-import 'package:gel_rule_app/core/errors/app_exception.dart';
-import 'package:gel_rule_app/core/http/dio_client.dart';
-import 'package:gel_rule_app/core/models/post.dart';
-import 'package:gel_rule_app/core/models/provider_health.dart';
-import 'package:gel_rule_app/core/models/tag_suggestion.dart';
-import 'package:gel_rule_app/core/models/top_period_filter.dart';
-import 'package:gel_rule_app/sources/interfaces/content_provider.dart';
+import 'package:prisma_app/core/errors/app_exception.dart';
+import 'package:prisma_app/core/http/dio_client.dart';
+import 'package:prisma_app/core/models/post.dart';
+import 'package:prisma_app/core/models/provider_health.dart';
+import 'package:prisma_app/core/models/tag_suggestion.dart';
+import 'package:prisma_app/core/models/top_period_filter.dart';
+import 'package:prisma_app/sources/interfaces/content_provider.dart';
 
 class ArenaProvider
     implements
@@ -51,6 +51,7 @@ class ArenaProvider
     int limit = 50,
     String? rating,
     TopPeriodFilter topPeriod = TopPeriodFilter.none,
+    CancelToken? cancelToken,
   }) async {
     final query = tags.isNotEmpty ? tags.join(' ') : 'moodboard';
 
@@ -62,6 +63,7 @@ class ArenaProvider
           'page': page,
           'per': 8,
         },
+        cancelToken: cancelToken,
       );
 
       final searchData = searchResp.data;
@@ -82,6 +84,7 @@ class ArenaProvider
           final contentResp = await dioClient.dio.get<Map<String, dynamic>>(
             '/channels/$chId/contents',
             queryParameters: {'per': 15},
+            cancelToken: cancelToken,
           );
           final contents = contentResp.data?['contents'] as List?;
           if (contents == null) return <Post>[];

@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:gel_rule_app/backend/backend.dart';
-import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:prisma_app/backend/backend.dart';
+import 'package:prisma_app/core/utils/result.dart';
 import 'search_state.dart';
 
 final searchControllerProvider =
@@ -168,7 +168,11 @@ class SearchController extends AsyncNotifier<SearchState> {
           }
         }
       }
-    } catch (_) {}
+    } catch (e, st) {
+      // History-tag aggregation is best-effort: keep whatever was gathered
+      // before the failure, but make the failure diagnosable.
+      AppLogger.log('search history aggregation failed', e, st);
+    }
 
     // 2. Gather from search queries
     try {
@@ -197,7 +201,9 @@ class SearchController extends AsyncNotifier<SearchState> {
           }
         }
       }
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.log('recent-search tag aggregation failed', e, st);
+    }
 
     final list = aggregated.values
         .map((a) => HistoryTagItem(

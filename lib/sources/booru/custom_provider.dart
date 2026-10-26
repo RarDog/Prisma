@@ -1,9 +1,11 @@
-import 'package:gel_rule_app/core/errors/app_exception.dart';
-import 'package:gel_rule_app/core/models/post.dart';
-import 'package:gel_rule_app/core/models/post_comment.dart';
-import 'package:gel_rule_app/core/models/provider_health.dart';
-import 'package:gel_rule_app/core/models/top_period_filter.dart';
-import 'package:gel_rule_app/sources/interfaces/content_provider.dart';
+import 'package:dio/dio.dart' show CancelToken;
+
+import 'package:prisma_app/core/errors/app_exception.dart';
+import 'package:prisma_app/core/models/post.dart';
+import 'package:prisma_app/core/models/post_comment.dart';
+import 'package:prisma_app/core/models/provider_health.dart';
+import 'package:prisma_app/core/models/top_period_filter.dart';
+import 'package:prisma_app/sources/interfaces/content_provider.dart';
 
 class CustomProvider implements ContentProvider, CommentProvider {
   CustomProvider(this._delegate);
@@ -27,6 +29,7 @@ class CustomProvider implements ContentProvider, CommentProvider {
     int limit = 50,
     String? rating,
     TopPeriodFilter topPeriod = TopPeriodFilter.none,
+    CancelToken? cancelToken,
   }) =>
       _delegate.searchPosts(
         tags: tags,
@@ -34,6 +37,7 @@ class CustomProvider implements ContentProvider, CommentProvider {
         limit: limit,
         rating: rating,
         topPeriod: topPeriod,
+        cancelToken: cancelToken,
       );
 
   @override
@@ -80,6 +84,7 @@ class UnsupportedCustomProvider implements ContentProvider {
     int limit = 50,
     String? rating,
     TopPeriodFilter topPeriod = TopPeriodFilter.none,
+    CancelToken? cancelToken,
   }) async {
     throw ProviderUnavailableException(
         'Unsupported provider apiType: $apiType');

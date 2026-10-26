@@ -1,13 +1,15 @@
 import 'dart:async';
 
-import 'package:gel_rule_app/core/cache/cache_service.dart';
-import 'package:gel_rule_app/core/utils/result.dart';
-import 'package:gel_rule_app/core/models/post.dart';
-import 'package:gel_rule_app/core/models/top_period_filter.dart';
-import 'package:gel_rule_app/sources/provider_manager.dart';
-import 'package:gel_rule_app/features/viewed/domain/viewed_history_service.dart';
-import 'package:gel_rule_app/core/utils/smart_blacklist.dart';
-import 'package:gel_rule_app/features/settings/domain/settings_service.dart';
+import 'package:dio/dio.dart' show CancelToken;
+
+import 'package:prisma_app/core/cache/cache_service.dart';
+import 'package:prisma_app/core/utils/result.dart';
+import 'package:prisma_app/core/models/post.dart';
+import 'package:prisma_app/core/models/top_period_filter.dart';
+import 'package:prisma_app/sources/provider_manager.dart';
+import 'package:prisma_app/features/viewed/domain/viewed_history_service.dart';
+import 'package:prisma_app/core/utils/smart_blacklist.dart';
+import 'package:prisma_app/features/settings/domain/settings_service.dart';
 
 class FeedService {
   FeedService(
@@ -39,6 +41,7 @@ class FeedService {
     String? providerId,
     TopPeriodFilter topPeriod = TopPeriodFilter.none,
     int limit = 50,
+    CancelToken? cancelToken,
   }) {
     _pages[_key(tags, rating, providerId, topPeriod)] = 0;
     return loadNextPage(
@@ -47,6 +50,7 @@ class FeedService {
       providerId: providerId,
       topPeriod: topPeriod,
       limit: limit,
+      cancelToken: cancelToken,
     );
   }
 
@@ -56,6 +60,7 @@ class FeedService {
     String? providerId,
     TopPeriodFilter topPeriod = TopPeriodFilter.none,
     int limit = 50,
+    CancelToken? cancelToken,
   }) async {
     final key = _key(tags, rating, providerId, topPeriod);
     final page = _pages[key] ?? 0;
@@ -66,6 +71,7 @@ class FeedService {
       rating: rating,
       providerId: providerId,
       topPeriod: topPeriod,
+      cancelToken: cancelToken,
     );
     if (result is Error<List<Post>>) return Error(result.failure);
     final posts = (result as Success<List<Post>>).data;

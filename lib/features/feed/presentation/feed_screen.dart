@@ -7,21 +7,21 @@ import 'package:go_router/go_router.dart';
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 
-import 'package:gel_rule_app/app/app.dart';
-import 'package:gel_rule_app/app/app_navigator.dart';
-import 'package:gel_rule_app/app/responsive.dart';
-import 'package:gel_rule_app/backend/backend.dart';
-import 'package:gel_rule_app/core/utils/result.dart';
-import 'package:gel_rule_app/shared/widgets/adaptive_scaffold.dart';
-import 'package:gel_rule_app/shared/widgets/empty_view.dart';
-import 'package:gel_rule_app/shared/widgets/error_view.dart';
-import 'package:gel_rule_app/shared/widgets/keyboard_shortcut_utils.dart';
-import 'package:gel_rule_app/shared/widgets/post_card.dart';
-import 'package:gel_rule_app/shared/widgets/post_masonry_grid.dart';
-import 'package:gel_rule_app/shared/widgets/provider_health_banner.dart';
-import 'package:gel_rule_app/features/collections/presentation/collection_form_dialog.dart';
-import 'package:gel_rule_app/features/favorites/presentation/favorites_controller.dart';
-import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
+import 'package:prisma_app/app/app.dart';
+import 'package:prisma_app/app/app_navigator.dart';
+import 'package:prisma_app/app/responsive.dart';
+import 'package:prisma_app/backend/backend.dart';
+import 'package:prisma_app/core/utils/result.dart';
+import 'package:prisma_app/shared/widgets/adaptive_scaffold.dart';
+import 'package:prisma_app/shared/widgets/empty_view.dart';
+import 'package:prisma_app/shared/widgets/error_view.dart';
+import 'package:prisma_app/shared/widgets/keyboard_shortcut_utils.dart';
+import 'package:prisma_app/shared/widgets/post_card.dart';
+import 'package:prisma_app/shared/widgets/post_masonry_grid.dart';
+import 'package:prisma_app/shared/widgets/provider_health_banner.dart';
+import 'package:prisma_app/features/collections/presentation/collection_form_dialog.dart';
+import 'package:prisma_app/features/favorites/presentation/favorites_controller.dart';
+import 'package:prisma_app/features/settings/presentation/settings_controller.dart';
 import 'feed_controller.dart';
 import 'widgets/feed_toolbar.dart';
 
@@ -159,6 +159,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
   @override
   Widget build(BuildContext context) {
     final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
+    final strings = ref.watch(appStringsProvider);
     final feed = ref.watch(feedControllerProvider);
     final settings =
         ref.watch(appSettingsProvider).value ?? AppSettings.defaults;
@@ -391,10 +392,17 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                 ),
                 Expanded(
                   child: state.posts.isEmpty && !state.isLoadingMore
-                      ? const EmptyView(
-                          title: 'No posts yet',
-                          message: 'Try another tag or check providers.',
-                        )
+                      ? (state.error != null
+                          ? ErrorView(
+                              message: state.error!,
+                              onRetry: () => ref
+                                  .read(feedControllerProvider.notifier)
+                                  .loadInitial(),
+                            )
+                          : EmptyView(
+                              title: strings.noPostsYet,
+                              message: strings.tryAnotherTag,
+                            ))
                       : RefreshIndicator(
                           onRefresh: () => ref
                               .read(feedControllerProvider.notifier)

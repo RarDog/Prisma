@@ -1,11 +1,11 @@
 import 'package:dio/dio.dart';
-import 'package:gel_rule_app/core/http/app_headers.dart';
+import 'package:prisma_app/core/http/app_headers.dart';
 
-import 'package:gel_rule_app/sources/mappers/rule34_mapper.dart';
-import 'package:gel_rule_app/core/models/post.dart';
-import 'package:gel_rule_app/core/models/tag_suggestion.dart';
-import 'package:gel_rule_app/core/models/top_period_filter.dart';
-import 'package:gel_rule_app/sources/booru/gelbooru_provider.dart';
+import 'package:prisma_app/sources/mappers/rule34_mapper.dart';
+import 'package:prisma_app/core/models/post.dart';
+import 'package:prisma_app/core/models/tag_suggestion.dart';
+import 'package:prisma_app/core/models/top_period_filter.dart';
+import 'package:prisma_app/sources/booru/gelbooru_provider.dart';
 
 class Rule34Provider extends GelbooruProvider {
   Rule34Provider({
@@ -32,6 +32,7 @@ class Rule34Provider extends GelbooruProvider {
     int limit = 50,
     String? rating,
     TopPeriodFilter topPeriod = TopPeriodFilter.none,
+    CancelToken? cancelToken,
   }) async {
     try {
       final response = await dio.get<dynamic>(
@@ -46,6 +47,7 @@ class Rule34Provider extends GelbooruProvider {
             ...topTagsFor(topPeriod),
           ].join(' '),
         }),
+        cancelToken: cancelToken,
       );
       _checkRule34Response(response);
       return Rule34Mapper.postsFromResponse(

@@ -1,15 +1,15 @@
 import 'package:dio/dio.dart';
-import 'package:gel_rule_app/core/http/app_headers.dart';
+import 'package:prisma_app/core/http/app_headers.dart';
 
-import 'package:gel_rule_app/core/errors/app_exception.dart';
-import 'package:gel_rule_app/core/http/dio_client.dart';
-import 'package:gel_rule_app/core/models/post.dart';
-import 'package:gel_rule_app/core/models/provider_health.dart';
-import 'package:gel_rule_app/core/models/tag_suggestion.dart';
-import 'package:gel_rule_app/core/models/top_period_filter.dart';
-import 'package:gel_rule_app/core/utils/logger.dart';
-import 'package:gel_rule_app/sources/manga/mangadex_provider.dart';
-import 'package:gel_rule_app/sources/interfaces/content_provider.dart';
+import 'package:prisma_app/core/errors/app_exception.dart';
+import 'package:prisma_app/core/http/dio_client.dart';
+import 'package:prisma_app/core/models/post.dart';
+import 'package:prisma_app/core/models/provider_health.dart';
+import 'package:prisma_app/core/models/tag_suggestion.dart';
+import 'package:prisma_app/core/models/top_period_filter.dart';
+import 'package:prisma_app/core/utils/logger.dart';
+import 'package:prisma_app/sources/manga/mangadex_provider.dart';
+import 'package:prisma_app/sources/interfaces/content_provider.dart';
 
 class MangaLibProvider
     implements
@@ -78,6 +78,7 @@ class MangaLibProvider
     int limit = 24,
     String? rating,
     TopPeriodFilter topPeriod = TopPeriodFilter.none,
+    CancelToken? cancelToken,
   }) async {
     final targetPage = page + 1; // 1-indexed
     final queryText = tags
@@ -111,6 +112,7 @@ class MangaLibProvider
         options: Options(
           headers: _headers,
         ),
+        cancelToken: cancelToken,
       );
 
       final data = response.data;
