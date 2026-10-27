@@ -80,7 +80,6 @@ void main() {
 
     // Verify segmented button labels with live counts
     expect(find.text('Все (2)'), findsOneWidget);
-    expect(find.text('Офлайн (0)'), findsOneWidget);
     expect(find.text('Авторы (2)'), findsOneWidget);
 
     // Verify media filter chips

@@ -7,7 +7,6 @@ class FavoritesGlassTabBar extends StatelessWidget {
     super.key,
     required this.selectedIndex,
     required this.allCount,
-    required this.offlineCount,
     required this.artistsCount,
     required this.isRu,
     required this.onTabSelected,
@@ -15,7 +14,6 @@ class FavoritesGlassTabBar extends StatelessWidget {
 
   final int selectedIndex;
   final int allCount;
-  final int offlineCount;
   final int artistsCount;
   final bool isRu;
   final ValueChanged<int> onTabSelected;
@@ -74,8 +72,8 @@ class FavoritesGlassTabBar extends StatelessWidget {
                   Expanded(
                     child: FavoritesTabPill(
                       index: 1,
-                      icon: Icons.offline_pin_rounded,
-                      label: '${isRu ? 'Офлайн' : 'Offline'} ($offlineCount)',
+                      icon: Icons.groups_rounded,
+                      label: '${isRu ? 'Авторы' : 'Artists'} ($artistsCount)',
                       isSelected: selectedIndex == 1,
                       onTap: () => onTabSelected(1),
                     ),
@@ -84,21 +82,11 @@ class FavoritesGlassTabBar extends StatelessWidget {
                   Expanded(
                     child: FavoritesTabPill(
                       index: 2,
-                      icon: Icons.groups_rounded,
-                      label: '${isRu ? 'Авторы' : 'Artists'} ($artistsCount)',
-                      isSelected: selectedIndex == 2,
-                      onTap: () => onTabSelected(2),
-                    ),
-                  ),
-                  const SizedBox(width: 3),
-                  Expanded(
-                    child: FavoritesTabPill(
-                      index: 3,
                       icon: Icons.hub_rounded,
                       iconColor: const Color(0xFF0077EE),
                       label: 'e621',
-                      isSelected: selectedIndex == 3,
-                      onTap: () => onTabSelected(3),
+                      isSelected: selectedIndex == 2,
+                      onTap: () => onTabSelected(2),
                     ),
                   ),
                 ],

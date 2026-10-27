@@ -16,7 +16,6 @@ import 'widgets/e621_favorites_view.dart';
 import 'widgets/favorites_artists_view.dart';
 import 'widgets/favorites_filter_bar.dart';
 import 'widgets/favorites_glass_tab_bar.dart';
-import 'widgets/favorites_offline_view.dart';
 import 'widgets/favorites_posts_grid.dart';
 
 export '../models/favorite_enums.dart';
@@ -135,27 +134,12 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
             .value ??
         const <String, DownloadedMedia>{};
 
-    final offlinePosts = allPosts
-        .where((post) => downloaded.containsKey(post.cacheKey))
-        .toList();
     final artistGroups = favoriteArtistAlbums(allPosts);
-    final diskSizeBytes = _tabIndex == 1
-        ? (ref.watch(offlineDiskSizeProvider(downloaded.values)).value ?? 0)
-        : 0;
-    // Watched on every tab: a completed download must rebuild the screen
-    // (and refetch the downloaded map) even if the user is not on the
-    // offline tab when it finishes.
+    // Watched so a completed download refreshes the artists tab's
+    // downloaded badges without a manual reload.
     ref.watch(downloadTasksProvider);
-    final tasks = _tabIndex == 1
-        ? (ref.watch(downloadTasksProvider).value ?? const <DownloadTask>[])
-        : const <DownloadTask>[];
-    final activeTasks = tasks
-        .where((t) =>
-            t.status == DownloadTaskStatus.running ||
-            t.status == DownloadTaskStatus.queued)
-        .toList();
 
-    final targetPostsForFilters = _tabIndex == 1 ? offlinePosts : allPosts;
+    final targetPostsForFilters = allPosts;
     final videoCount = targetPostsForFilters.where(_isVideoPost).length;
     final imageCount = targetPostsForFilters.length - videoCount;
     final availableProviders = targetPostsForFilters
@@ -336,7 +320,6 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
               FavoritesGlassTabBar(
                 selectedIndex: _tabIndex,
                 allCount: allPosts.length,
-                offlineCount: offlinePosts.length,
                 artistsCount: artistGroups.length,
                 isRu: isRu,
                 onTabSelected: (index) {
@@ -347,8 +330,8 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                 },
               ),
 
-              // Media Type & Source Filter Bar (for Tab 0 and Tab 1)
-              if (_tabIndex != 2 && _tabIndex != 3)
+              // Media Type & Source Filter Bar (All tab only)
+              if (_tabIndex == 0)
                 FavoritesFilterBar(
                   currentFilter: _mediaFilter,
                   onFilterChanged: (filter) =>
@@ -367,17 +350,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
               // Main Content
               Expanded(
                 child: switch (_tabIndex) {
-                  1 => FavoritesOfflineView(
-                      offlinePosts: offlinePosts,
-                      allPosts: allPosts,
-                      downloaded: downloaded,
-                      diskSizeBytes: diskSizeBytes,
-                      activeTasks: activeTasks,
-                      settings: settings,
-                      isRu: isRu,
-                      filterPosts: _applyFilters,
-                    ),
-                  2 => FavoritesArtistsView(
+                  1 => FavoritesArtistsView(
                       posts: allPosts,
                       settings: settings,
                       downloadedKeys: downloaded.keys.toSet(),
@@ -388,7 +361,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                       onArtistSelected: (art) =>
                           setState(() => _selectedArtist = art),
                     ),
-                  3 => E621FavoritesView(
+                  2 => E621FavoritesView(
                       settings: settings,
                       isRu: isRu,
                     ),

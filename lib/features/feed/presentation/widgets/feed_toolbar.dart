@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -174,9 +176,8 @@ class _FeedToolbarState extends State<FeedToolbar> {
           if (widget.providerStatusMessage != null) ...[
             Align(
               alignment: Alignment.centerLeft,
-              child: InputChip(
-                avatar: const Icon(Icons.sync_problem_rounded, size: 16),
-                label: Text(widget.providerStatusMessage!),
+              child: _ProviderStatusChip(
+                message: widget.providerStatusMessage!,
               ),
             ),
             const SizedBox(height: 8),
@@ -295,9 +296,8 @@ class _FeedToolbarState extends State<FeedToolbar> {
             const SizedBox(height: 6),
             Align(
               alignment: Alignment.centerLeft,
-              child: InputChip(
-                avatar: const Icon(Icons.sync_problem_rounded, size: 16),
-                label: Text(widget.providerStatusMessage!),
+              child: _ProviderStatusChip(
+                message: widget.providerStatusMessage!,
               ),
             ),
           ],
@@ -749,4 +749,74 @@ Future<RatingFilterResult?> showRatingFilterSheet(
       ],
     ),
   );
+}
+
+/// The "retrying providers" status chip auto-hides after a few seconds with
+/// a fade+collapse animation instead of sitting in the toolbar forever.
+class _ProviderStatusChip extends StatefulWidget {
+  const _ProviderStatusChip({required this.message});
+
+  final String message;
+
+  @override
+  State<_ProviderStatusChip> createState() => _ProviderStatusChipState();
+}
+
+class _ProviderStatusChipState extends State<_ProviderStatusChip> {
+  static const _autoHideAfter = Duration(seconds: 4);
+
+  Timer? _hideTimer;
+  var _visible = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ProviderStatusChip oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.message != widget.message) {
+      setState(() => _visible = true);
+      _startTimer();
+    }
+  }
+
+  void _startTimer() {
+    _hideTimer?.cancel();
+    _hideTimer = Timer(_autoHideAfter, () {
+      if (mounted) setState(() => _visible = false);
+    });
+  }
+
+  @override
+  void dispose() {
+    _hideTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 350),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeIn,
+      transitionBuilder: (child, animation) => FadeTransition(
+        opacity: animation,
+        child: SizeTransition(
+          sizeFactor: animation,
+          alignment: Alignment.topCenter,
+          child: child,
+        ),
+      ),
+      child: _visible
+          ? InputChip(
+              key: const ValueKey('provider-status-chip'),
+              avatar: const Icon(Icons.sync_problem_rounded, size: 16),
+              label: Text(widget.message),
+            )
+          : const SizedBox.shrink(key: ValueKey('provider-status-hidden')),
+    );
+  }
 }
