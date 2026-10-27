@@ -17,6 +17,7 @@ class ArtistsCatalogView extends StatelessWidget {
     required this.scrollController,
     required this.onToggleFavorite,
     required this.onShowAllServices,
+    this.footer,
   });
 
   final List<ArtistProfile> artists;
@@ -27,11 +28,14 @@ class ArtistsCatalogView extends StatelessWidget {
   final ValueChanged<ArtistProfile> onToggleFavorite;
   final VoidCallback onShowAllServices;
 
+  /// Rendered below the last card — the catalog's page bar lives at the end
+  /// of the list, not pinned to the screen.
+  final Widget? footer;
+
   @override
   Widget build(BuildContext context) {
     if (showFiltersEmptyState) {
-      final isRu =
-          Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
+      final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -62,46 +66,59 @@ class ArtistsCatalogView extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final columns = artistGridColumns(context, constraints);
-        return GridView.builder(
+        return CustomScrollView(
           controller: scrollController,
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           // ignore: deprecated_member_use
           cacheExtent: 140.0,
-          addAutomaticKeepAlives: false,
-          addRepaintBoundaries: true,
-          // The shell injects the nav-bar inset into padding.bottom, so the
-          // last card can scroll fully clear of the page bar and glass bar.
-          padding: EdgeInsets.fromLTRB(
-            16,
-            10,
-            16,
-            MediaQuery.paddingOf(context).bottom + 8,
-          ),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: columns,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 10,
-            mainAxisExtent: 104,
-          ),
-          itemCount: artists.length + (loading ? 1 : 0),
-          itemBuilder: (context, index) {
-            if (index >= artists.length) {
-              return const ArtistSkeletonCard();
-            }
-            final artist = artists[index];
-            final isFav = favoriteKeys.contains(
-                '${artist.providerId}:${artist.service}:${artist.id}');
-            return RepaintBoundary(
-              child: ArtistCard(
-                artist: artist,
-                isFavorite: isFav,
-                onToggleFavorite: () => onToggleFavorite(artist),
-                onTap: () => context.push(
-                  '/artists/${artist.providerId}/${artist.service}/${artist.id}?name=${Uri.encodeComponent(artist.displayName)}',
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+              sliver: SliverGrid(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: columns,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 10,
+                  mainAxisExtent: 104,
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  childCount: artists.length + (loading ? 1 : 0),
+                  (context, index) {
+                    if (index >= artists.length) {
+                      return const ArtistSkeletonCard();
+                    }
+                    final artist = artists[index];
+                    final isFav = favoriteKeys.contains(
+                        '${artist.providerId}:${artist.service}:${artist.id}');
+                    return RepaintBoundary(
+                      child: ArtistCard(
+                        artist: artist,
+                        isFavorite: isFav,
+                        onToggleFavorite: () => onToggleFavorite(artist),
+                        onTap: () => context.push(
+                          '/artists/${artist.providerId}/${artist.service}/${artist.id}?name=${Uri.encodeComponent(artist.displayName)}',
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
-            );
-          },
+            ),
+            if (footer != null)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: footer!,
+                ),
+              ),
+            // The shell injects the nav-bar inset into padding.bottom — keep
+            // the footer scrollable clear of the glass bar.
+            SliverPadding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.paddingOf(context).bottom + 24,
+              ),
+            ),
+          ],
         );
       },
     );

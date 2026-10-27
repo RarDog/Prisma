@@ -322,17 +322,18 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
                               setState(() => _selectedServices.clear());
                               _refresh(items);
                             },
+                            // The page bar lives at the end of the list,
+                            // under the last artist.
+                            footer: _ArtistsPageBar(
+                              page: _page,
+                              canGoBack: _page > 1 && !_loading,
+                              canGoForward: _hasMore && !_loading,
+                              isRu: isRu,
+                              onPrev: () => _loadPage(page: _page - 1),
+                              onNext: () => _loadPage(page: _page + 1),
+                            ),
                           )),
               ),
-              if (_currentTab == ArtistsTab.all)
-                _ArtistsPageBar(
-                  page: _page,
-                  canGoBack: _page > 1 && !_loading,
-                  canGoForward: _hasMore && !_loading,
-                  isRu: isRu,
-                  onPrev: () => _loadPage(page: _page - 1),
-                  onNext: () => _loadPage(page: _page + 1),
-                ),
             ],
           );
         },
@@ -510,33 +511,28 @@ class _ArtistsPageBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // The shell injects the nav-bar inset into MediaQuery.padding.bottom,
-    // so a small fixed padding already keeps the bar clear of the glass.
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          IconButton(
-            tooltip: isRu ? 'Предыдущая страница' : 'Previous page',
-            onPressed: canGoBack ? onPrev : null,
-            icon: const Icon(Icons.chevron_left_rounded),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        IconButton(
+          tooltip: isRu ? 'Предыдущая страница' : 'Previous page',
+          onPressed: canGoBack ? onPrev : null,
+          icon: const Icon(Icons.chevron_left_rounded),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          isRu ? 'Стр. $page' : 'Page $page',
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
           ),
-          const SizedBox(width: 8),
-          Text(
-            isRu ? 'Стр. $page' : 'Page $page',
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            tooltip: isRu ? 'Следующая страница' : 'Next page',
-            onPressed: canGoForward ? onNext : null,
-            icon: const Icon(Icons.chevron_right_rounded),
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(width: 8),
+        IconButton(
+          tooltip: isRu ? 'Следующая страница' : 'Next page',
+          onPressed: canGoForward ? onNext : null,
+          icon: const Icon(Icons.chevron_right_rounded),
+        ),
+      ],
     );
   }
 }
