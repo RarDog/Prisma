@@ -31,15 +31,25 @@ class PostRepository {
 
   Future<Result<List<Post>>> getCachedPostsByKeys(Iterable<String> keys) {
     return _databaseService.safeRead((isar) async {
-      final posts = <Post>[];
-      for (final key in keys) {
-        final entity = await isar.cachedPostEntitys
+      // One indexed query per ~64 keys instead of a findFirst round-trip per
+      // key; result order follows the caller's key order.
+      final wanted = keys.toSet();
+      if (wanted.isEmpty) return const [];
+      final byKey = <String, Post>{};
+      for (var i = 0; i < wanted.length; i += 64) {
+        final chunk = wanted.skip(i).take(64).toList();
+        final entities = await isar.cachedPostEntitys
             .filter()
-            .cacheKeyEqualTo(key)
-            .findFirst();
-        if (entity != null) posts.add(entity.toModel());
+            .anyOf(chunk, (q, String key) => q.cacheKeyEqualTo(key))
+            .findAll();
+        for (final entity in entities) {
+          byKey[entity.cacheKey] = entity.toModel();
+        }
       }
-      return posts;
+      return [
+        for (final key in wanted)
+          if (byKey[key] != null) byKey[key]!,
+      ];
     });
   }
 }

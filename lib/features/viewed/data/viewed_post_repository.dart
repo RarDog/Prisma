@@ -10,6 +10,10 @@ class ViewedPostRepository {
 
   final DatabaseService _databaseService;
 
+  /// Growth cap: viewed history used to grow unbounded — every opened post
+  /// added a row forever. Oldest entries beyond the cap are pruned on write.
+  static const _retentionCap = 5000;
+
   Future<Result<void>> markViewed(String providerId, String postId) {
     return _databaseService.safeWrite((isar) async {
       final key = ViewedPost.keyFor(providerId, postId);
@@ -23,6 +27,17 @@ class ViewedPostRepository {
           ),
         ),
       );
+      final count = await isar.viewedPostEntitys.count();
+      if (count <= _retentionCap) return;
+      final staleIds = await isar.viewedPostEntitys
+          .where()
+          .sortByViewedAt()
+          .limit(count - _retentionCap)
+          .isarIdProperty()
+          .findAll();
+      if (staleIds.isNotEmpty) {
+        await isar.viewedPostEntitys.deleteAll(staleIds);
+      }
     });
   }
 

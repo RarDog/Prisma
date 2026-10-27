@@ -13015,6 +13015,19 @@ const ViewedPostEntitySchema = CollectionSchema(
           caseSensitive: true,
         )
       ],
+    ),
+    r'viewedAt': IndexSchema(
+      id: 1541624929386044767,
+      name: r'viewedAt',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'viewedAt',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
     )
   },
   links: {},
@@ -13158,6 +13171,14 @@ extension ViewedPostEntityQueryWhereSort
   QueryBuilder<ViewedPostEntity, ViewedPostEntity, QAfterWhere> anyIsarId() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(const IdWhereClause.any());
+    });
+  }
+
+  QueryBuilder<ViewedPostEntity, ViewedPostEntity, QAfterWhere> anyViewedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'viewedAt'),
+      );
     });
   }
 }
@@ -13364,6 +13385,99 @@ extension ViewedPostEntityQueryWhere
               includeUpper: false,
             ));
       }
+    });
+  }
+
+  QueryBuilder<ViewedPostEntity, ViewedPostEntity, QAfterWhereClause>
+      viewedAtEqualTo(DateTime viewedAt) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'viewedAt',
+        value: [viewedAt],
+      ));
+    });
+  }
+
+  QueryBuilder<ViewedPostEntity, ViewedPostEntity, QAfterWhereClause>
+      viewedAtNotEqualTo(DateTime viewedAt) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'viewedAt',
+              lower: [],
+              upper: [viewedAt],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'viewedAt',
+              lower: [viewedAt],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'viewedAt',
+              lower: [viewedAt],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'viewedAt',
+              lower: [],
+              upper: [viewedAt],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<ViewedPostEntity, ViewedPostEntity, QAfterWhereClause>
+      viewedAtGreaterThan(
+    DateTime viewedAt, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'viewedAt',
+        lower: [viewedAt],
+        includeLower: include,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<ViewedPostEntity, ViewedPostEntity, QAfterWhereClause>
+      viewedAtLessThan(
+    DateTime viewedAt, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'viewedAt',
+        lower: [],
+        upper: [viewedAt],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<ViewedPostEntity, ViewedPostEntity, QAfterWhereClause>
+      viewedAtBetween(
+    DateTime lowerViewedAt,
+    DateTime upperViewedAt, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'viewedAt',
+        lower: [lowerViewedAt],
+        includeLower: includeLower,
+        upper: [upperViewedAt],
+        includeUpper: includeUpper,
+      ));
     });
   }
 }

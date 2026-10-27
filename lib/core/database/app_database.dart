@@ -313,6 +313,7 @@ class ViewedPostEntity {
   @Index(composite: [CompositeIndex('postId')])
   late String providerId;
   late String postId;
+  @Index()
   late DateTime viewedAt;
 
   ViewedPost toModel() => ViewedPost(

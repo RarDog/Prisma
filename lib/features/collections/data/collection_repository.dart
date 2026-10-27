@@ -122,16 +122,26 @@ class CollectionRepository {
           .collectionIdEqualTo(collectionId)
           .findAll();
       links.sort((a, b) => b.addedAt.compareTo(a.addedAt));
-      final posts = <Post>[];
-      for (final link in links) {
-        final entity = await isar.cachedPostEntitys
+      if (links.isEmpty) return const [];
+      // Batched lookup instead of one findFirst per link.
+      final keys = [
+        for (final link in links) '${link.providerId}:${link.postId}',
+      ];
+      final byKey = <String, Post>{};
+      for (var i = 0; i < keys.length; i += 64) {
+        final chunk = keys.sublist(i, (i + 64).clamp(0, keys.length));
+        final entities = await isar.cachedPostEntitys
             .filter()
-            .providerIdEqualTo(link.providerId)
-            .postIdEqualTo(link.postId)
-            .findFirst();
-        if (entity != null) posts.add(entity.toModel());
+            .anyOf(chunk, (q, String key) => q.cacheKeyEqualTo(key))
+            .findAll();
+        for (final entity in entities) {
+          byKey[entity.cacheKey] = entity.toModel();
+        }
       }
-      return posts;
+      return [
+        for (final key in keys)
+          if (byKey[key] != null) byKey[key]!,
+      ];
     });
   }
 }
