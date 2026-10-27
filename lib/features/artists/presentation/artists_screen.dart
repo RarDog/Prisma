@@ -57,8 +57,14 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
   var _hasMore = true;
   var _initialLoaded = false;
   Object? _error;
-  // Current page only — the catalog is paginated, not an accumulating
-  // infinite feed.
+  // Display pages hold only service-filtered artists, but a raw provider
+  // page can contain any service — so raw pages are fetched until a display
+  // page fills up (or the catalog runs out). The buffer grows as the user
+  // pages forward; going back just slices it.
+  static const _pageSize = 30;
+  final List<ArtistProfile> _loadedArtists = <ArtistProfile>[];
+  var _nextRawPage = 1;
+  var _rawExhausted = false;
   List<ArtistProfile> _artists = const [];
 
   Future<void> _toggleFavoriteArtist(
@@ -207,14 +213,7 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
             WidgetsBinding.instance
                 .addPostFrameCallback((_) => _refresh(items));
           }
-          final displayedArtists = _artists.where((a) {
-            final s = a.service.toLowerCase();
-            if (s != 'patreon' && s != 'fanbox') {
-              return false;
-            }
-            if (_selectedServices.isEmpty) return true;
-            return _selectedServices.contains(s);
-          }).toList(growable: false);
+          final displayedArtists = _artists;
 
           final searchQuery = _search.text.trim().toLowerCase();
           final displayedFavorites = favoriteItems.where((fav) {
@@ -355,28 +354,37 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
     return message;
   }
 
+  bool _matchesDisplayFilters(ArtistProfile a) {
+    final s = a.service.toLowerCase();
+    if (s != 'patreon' && s != 'fanbox') return false;
+    if (_selectedServices.isEmpty) return true;
+    return _selectedServices.contains(s);
+  }
+
   Future<void> _refresh(List<ContentProviderConfig> configs) async {
     if (configs.isEmpty) return;
     setState(() {
       _page = 1;
       _hasMore = true;
+      _initialLoaded = false;
+      _rawExhausted = false;
+      _nextRawPage = 1;
+      _loadedArtists.clear();
       _artists = const [];
       _error = null;
     });
     await _loadPage();
   }
 
-  /// Loads one catalog page, replacing the previous one — the catalog is
-  /// page-based, the pagination bar below the list drives navigation.
+  /// Shows one display page of the catalog, fetching raw provider pages
+  /// until the page fills up (the raw feed interleaves services the app
+  /// filters out, so one raw page is rarely one display page).
   Future<void> _loadPage({int? page}) async {
     if (_loading || _providerId == null) return;
     final target = (page ?? _page).clamp(1, 999999);
     setState(() {
       _loading = true;
-      if (page != null) {
-        _page = target;
-        _artists = const [];
-      }
+      _page = target;
       _error = null;
     });
     try {
@@ -386,22 +394,41 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
       final provider = providers.data.firstWhere(
         (item) => (item as ContentProvider).id == _providerId,
       );
-      final next = await provider.searchArtists(
-        _search.text.trim(),
-        services: _selectedServices.isEmpty ? null : _selectedServices.toList(),
-        page: target,
-        limit: 30,
-      );
+      final needed = target * _pageSize;
+      while (_loadedArtists.length < needed && !_rawExhausted) {
+        final next = await provider.searchArtists(
+          _search.text.trim(),
+          services:
+              _selectedServices.isEmpty ? null : _selectedServices.toList(),
+          page: _nextRawPage,
+          limit: _pageSize,
+        );
+        if (!mounted) return;
+        _nextRawPage++;
+        if (next.isEmpty) {
+          _rawExhausted = true;
+          break;
+        }
+        _loadedArtists.addAll(next.where(_matchesDisplayFilters));
+      }
+      final start = (target - 1) * _pageSize;
+      final slice = _loadedArtists.length > start
+          ? _loadedArtists.sublist(
+              start,
+              start + _pageSize > _loadedArtists.length
+                  ? _loadedArtists.length
+                  : start + _pageSize,
+            )
+          : const <ArtistProfile>[];
       if (!mounted) return;
       setState(() {
-        _artists = next;
-        _page = target;
-        _hasMore = next.isNotEmpty;
+        _artists = slice;
+        _hasMore = !_rawExhausted || _loadedArtists.length > target * _pageSize;
         _initialLoaded = true;
       });
     } catch (error) {
       if (!mounted) return;
-      if (_artists.isEmpty && _page == 1) {
+      if (_loadedArtists.isEmpty && target == 1) {
         // Initial load failed — surface a full-screen error with retry.
         setState(() => _error = error);
       } else {
