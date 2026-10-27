@@ -30,6 +30,7 @@ import 'package:gel_rule_app/features/feed/domain/feed_service.dart';
 import 'package:gel_rule_app/features/providers/domain/provider_check_service.dart';
 import 'package:gel_rule_app/features/search/domain/search_service.dart';
 import 'package:gel_rule_app/features/search/domain/tag_cache_service.dart';
+import 'package:gel_rule_app/features/artists/domain/pawchive_accounts_store.dart';
 import 'package:gel_rule_app/features/settings/domain/settings_service.dart';
 import 'package:gel_rule_app/features/settings/domain/update_service.dart';
 import 'package:gel_rule_app/app/app.dart' show appSettingsProvider;
@@ -194,6 +195,10 @@ final favoriteServiceProvider = Provider<FavoriteService>((ref) {
 
 final collectionServiceProvider = Provider<CollectionService>((ref) {
   return CollectionService(ref.watch(collectionRepositoryProvider));
+});
+
+final pawchiveAccountsStoreProvider = Provider<PawchiveAccountsStore>((ref) {
+  return PawchiveAccountsStore(ref.watch(settingsServiceProvider));
 });
 
 final settingsServiceProvider = Provider<SettingsService>((ref) {

@@ -4,12 +4,15 @@ import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:gel_rule_app/core/http/dio_client.dart';
-import 'package:gel_rule_app/features/favorites/models/favorite_artist_item.dart';
-import 'package:gel_rule_app/features/artists/models/pawchive_account.dart';
-import 'package:gel_rule_app/features/settings/domain/settings_service.dart';
+import 'package:gel_rule_app/features/artists/domain/pawchive_accounts_store.dart';
+import 'package:gel_rule_app/backend/backend.dart';
 
 final pawchiveSyncServiceProvider = Provider<PawchiveSyncService>((ref) {
-  return PawchiveSyncService(dio: DioClient().dio);
+  return PawchiveSyncService(
+    dio: DioClient().dio,
+    accountsStore:
+        PawchiveAccountsStore(ref.watch(settingsServiceProvider)),
+  );
 });
 
 class PawchiveSyncResult {
@@ -49,15 +52,25 @@ class PawchivePushResult {
 }
 
 class PawchiveSyncService {
-  PawchiveSyncService({Dio? dio})
+  PawchiveSyncService({Dio? dio, PawchiveAccountsStore? accountsStore})
       : _dio = dio ??
             Dio(BaseOptions(
               connectTimeout: const Duration(seconds: 20),
               receiveTimeout: const Duration(seconds: 30),
               sendTimeout: const Duration(seconds: 20),
-            ));
+            )),
+        _accountsStore = accountsStore;
 
   final Dio _dio;
+  final PawchiveAccountsStore? _accountsStore;
+
+  /// Session cookies live in the keychain, not in the settings blob — merge
+  /// them in before any authenticated call.
+  Future<PawchiveAccount> _withCookie(PawchiveAccount account) async {
+    final store = _accountsStore;
+    if (store == null) return account;
+    return store.resolveCookie(account);
+  }
 
   static String _normalizeCookie(String rawCookie) {
     var c = rawCookie.trim();
@@ -286,6 +299,16 @@ class PawchiveSyncService {
     required AppSettings settings,
     bool? pushLocalPawchiveArtists,
   }) async {
+    account = await _withCookie(account);
+    if (account.sessionCookie.isEmpty) {
+      return PawchiveSyncResult(
+        updatedSettings: settings,
+        newlyAddedToLocal: 0,
+        pushedToRemoteCount: 0,
+        totalSyncedCount: 0,
+        errorMessage: 'Session expired — re-login required',
+      );
+    }
     try {
       final remoteArtists = await fetchRemoteFavoriteArtists(
         baseUrl: account.baseUrl,
@@ -364,8 +387,8 @@ class PawchiveSyncService {
 
       final newSettings = settings.copyWith(
         favoriteArtists: currentFavorites,
-        pawchiveAccounts:
-            updatedAccountsList.map((a) => jsonEncode(a.toJson())).toList(),
+        // Cookies belong to the keychain — never back into settings.
+        pawchiveAccounts: PawchiveAccountsStore.serialize(updatedAccountsList),
       );
 
       return PawchiveSyncResult(
@@ -390,6 +413,15 @@ class PawchiveSyncService {
     required PawchiveAccount account,
     required AppSettings settings,
   }) async {
+    account = await _withCookie(account);
+    if (account.sessionCookie.isEmpty) {
+      return const PawchivePushResult(
+        pushedCount: 0,
+        totalRemoteCount: 0,
+        totalLocalCandidates: 0,
+        errorMessage: 'Session expired — re-login required',
+      );
+    }
     try {
       final remoteArtists = await fetchRemoteFavoriteArtists(
         baseUrl: account.baseUrl,
@@ -437,8 +469,7 @@ class PawchiveSyncService {
       }).toList();
 
       final newSettings = settings.copyWith(
-        pawchiveAccounts:
-            updatedAccountsList.map((a) => jsonEncode(a.toJson())).toList(),
+        pawchiveAccounts: PawchiveAccountsStore.serialize(updatedAccountsList),
       );
 
       return PawchivePushResult(
@@ -462,14 +493,18 @@ class PawchiveSyncService {
     required AppSettings settings,
     bool? pushLocalArtists,
   }) async {
-    final accounts = settings.parsedPawchiveAccounts;
+    final accounts = <PawchiveAccount>[];
+    for (final candidate in settings.parsedPawchiveAccounts) {
+      final resolved = await _withCookie(candidate);
+      if (resolved.sessionCookie.isNotEmpty) accounts.add(resolved);
+    }
     if (accounts.isEmpty) {
       return PawchiveSyncResult(
         updatedSettings: settings,
         newlyAddedToLocal: 0,
         pushedToRemoteCount: 0,
         totalSyncedCount: 0,
-        errorMessage: 'No Pawchive accounts added',
+        errorMessage: 'No Pawchive accounts with an active session',
       );
     }
 
@@ -512,6 +547,8 @@ class PawchiveSyncService {
     required String artistId,
     required bool isFavorite,
   }) async {
+    account = await _withCookie(account);
+    if (account.sessionCookie.isEmpty) return false;
     final cleanCookie = _normalizeCookie(account.sessionCookie);
     final normalizedBase = account.baseUrl.endsWith('/')
         ? account.baseUrl.substring(0, account.baseUrl.length - 1)

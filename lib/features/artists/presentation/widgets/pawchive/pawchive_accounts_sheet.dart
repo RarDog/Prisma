@@ -1,9 +1,9 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:gel_rule_app/app/app.dart';
 import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/features/artists/domain/pawchive_accounts_store.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
 import 'pawchive_account_card.dart';
 import 'pawchive_add_account_card.dart';
@@ -85,10 +85,9 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
         ...existingAccounts.map((a) => a.copyWith(isActive: false)),
       ];
 
-      var newSettings = settings.copyWith(
-        pawchiveAccounts:
-            updatedList.map((a) => jsonEncode(a.toJson())).toList(),
-      );
+      var newSettings = await ref
+          .read(pawchiveAccountsStoreProvider)
+          .persist(settings, updatedList);
 
       // Perform initial sync
       final syncResult = await syncService.syncAccountFavorites(
@@ -359,8 +358,7 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
 
     await ref.read(settingsControllerProvider.notifier).saveSettings(
           settings.copyWith(
-            pawchiveAccounts:
-                updatedList.map((a) => jsonEncode(a.toJson())).toList(),
+            pawchiveAccounts: PawchiveAccountsStore.serialize(updatedList),
           ),
         );
   }
@@ -406,12 +404,12 @@ class _PawchiveAccountsSheetState extends ConsumerState<PawchiveAccountsSheet>
       filtered[0] = filtered[0].copyWith(isActive: true);
     }
 
-    await ref.read(settingsControllerProvider.notifier).saveSettings(
-          settings.copyWith(
-            pawchiveAccounts:
-                filtered.map((a) => jsonEncode(a.toJson())).toList(),
-          ),
-        );
+    final newSettings = await ref
+        .read(pawchiveAccountsStoreProvider)
+        .persist(settings, filtered);
+    await ref
+        .read(settingsControllerProvider.notifier)
+        .saveSettings(newSettings);
   }
 
   @override
