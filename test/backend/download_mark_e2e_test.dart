@@ -15,7 +15,6 @@ import 'package:gel_rule_app/features/downloads/domain/downloaded_media_service.
 import 'package:gel_rule_app/features/downloads/models/downloaded_media.dart';
 import 'package:gel_rule_app/features/downloads/models/download_task.dart';
 import 'package:gel_rule_app/features/settings/domain/settings_service.dart';
-import 'package:gel_rule_app/features/settings/models/app_settings.dart';
 
 class _FakeDownloadService implements DownloadService {
   @override
@@ -40,7 +39,7 @@ class _FakeSettingsService extends Fake implements SettingsService {
       Success(AppSettings.defaults);
 }
 
-Post post(String id) => Post(
+Post post(String id) => const Post(
       id: id,
       providerId: 'rule34',
       providerName: 'Rule34',
