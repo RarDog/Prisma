@@ -771,14 +771,17 @@ class _FullscreenVideoItemState extends State<_FullscreenVideoItem> {
       if (pos > Duration.zero) {
         _networkRetryCount = 0;
       }
-      playbackMemory[widget.post.cacheKey] = VideoPlaybackSnapshot(
-        position: pos,
-        playing: p.state.playing,
-        muted: _muted,
-        halfVolume: _halfVolume,
-        loopVideo: _loopVideo,
-        coverVideo: _coverVideo,
-        volume: _volume,
+      rememberPlayback(
+        widget.post.cacheKey,
+        VideoPlaybackSnapshot(
+          position: pos,
+          playing: p.state.playing,
+          muted: _muted,
+          halfVolume: _halfVolume,
+          loopVideo: _loopVideo,
+          coverVideo: _coverVideo,
+          volume: _volume,
+        ),
       );
     });
 
@@ -888,14 +891,17 @@ class _FullscreenVideoItemState extends State<_FullscreenVideoItem> {
     if (_player != null) {
       final pos = _player!.state.position;
       final isPlaying = _player!.state.playing;
-      playbackMemory[widget.post.cacheKey] = VideoPlaybackSnapshot(
-        position: pos,
-        playing: isPlaying,
-        muted: _muted,
-        halfVolume: _halfVolume,
-        loopVideo: _loopVideo,
-        coverVideo: _coverVideo,
-        volume: _volume,
+      rememberPlayback(
+        widget.post.cacheKey,
+        VideoPlaybackSnapshot(
+          position: pos,
+          playing: isPlaying,
+          muted: _muted,
+          halfVolume: _halfVolume,
+          loopVideo: _loopVideo,
+          coverVideo: _coverVideo,
+          volume: _volume,
+        ),
       );
     }
     _player?.pause();
@@ -1136,6 +1142,10 @@ class _InteractiveFullscreenImageItemState
         : widget.post.fileUrl;
     final isLocal =
         currentUrl.startsWith('/') || currentUrl.startsWith('file://');
+    final mq = MediaQuery.maybeOf(context);
+    final dpr = mq?.devicePixelRatio ?? 1.5;
+    final screenWidth = mq?.size.width ?? 1080;
+    final maxCacheWidth = (screenWidth * dpr * 2.0).round().clamp(1440, 4096);
     final Widget imageWidget;
     if (isLocal) {
       final cleanPath = currentUrl.startsWith('file://')
@@ -1144,16 +1154,15 @@ class _InteractiveFullscreenImageItemState
       imageWidget = Image.file(
         File(cleanPath),
         fit: BoxFit.contain,
+        // Match the network path's decode cap (4096) instead of decoding the
+        // saved original at full resolution.
+        cacheWidth: maxCacheWidth,
         errorBuilder: (_, __, ___) => const Center(
           child:
               Icon(Icons.broken_image_rounded, size: 64, color: Colors.white54),
         ),
       );
     } else {
-      final mq = MediaQuery.maybeOf(context);
-      final dpr = mq?.devicePixelRatio ?? 1.5;
-      final screenWidth = mq?.size.width ?? 1080;
-      final maxCacheWidth = (screenWidth * dpr * 2.0).round().clamp(1440, 4096);
       final isGif = MediaUrlSelector.isGif(widget.post) ||
           currentUrl.toLowerCase().contains('.gif') ||
           widget.post.fileType.toLowerCase() == 'gif';

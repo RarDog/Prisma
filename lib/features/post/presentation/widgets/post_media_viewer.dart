@@ -26,8 +26,20 @@ export 'zoomable_image.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/core/http/app_headers.dart';
 
+/// Remembers playback state per post across screens. LRU-capped: without a
+/// bound it grew one entry per video watched for the whole session.
 final Map<String, VideoPlaybackSnapshot> playbackMemory =
     <String, VideoPlaybackSnapshot>{};
+
+const _playbackMemoryCap = 50;
+
+void rememberPlayback(String cacheKey, VideoPlaybackSnapshot snapshot) {
+  playbackMemory.remove(cacheKey);
+  playbackMemory[cacheKey] = snapshot;
+  while (playbackMemory.length > _playbackMemoryCap) {
+    playbackMemory.remove(playbackMemory.keys.first);
+  }
+}
 
 final isFullscreenViewerActiveProvider = StateProvider<bool>((ref) => false);
 
@@ -569,9 +581,14 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
     if (isLocal) {
       final cleanPath =
           url.startsWith('file://') ? url.replaceFirst('file://', '') : url;
+      final mq = MediaQuery.maybeOf(context);
+      final dpr = mq?.devicePixelRatio ?? 1.5;
+      final screenWidth = mq?.size.width ?? 1080;
+      final memWidth = (screenWidth * dpr * 1.5).round().clamp(1080, 3840);
       image = Image.file(
         File(cleanPath),
         fit: BoxFit.contain,
+        cacheWidth: memWidth,
         errorBuilder: (context, error, stackTrace) => DioImageFallback(
           imageUrl: _imageUrls.length > 1 ? _imageUrls[1] : '',
           headers: headers,
@@ -797,12 +814,12 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
         _networkRetryCount = 0;
       }
       final snapshot = _snapshot();
-      playbackMemory[widget.post.cacheKey] = snapshot;
+      rememberPlayback(widget.post.cacheKey, snapshot);
       _emitPlaybackSnapshotThrottled(snapshot);
     });
     _playingSubscription = _player!.stream.playing.listen((_) {
       final snapshot = _snapshot();
-      playbackMemory[widget.post.cacheKey] = snapshot;
+      rememberPlayback(widget.post.cacheKey, snapshot);
       widget.onPlaybackSnapshot?.call(snapshot);
     });
     _videoParamsSubscription = _player!.stream.videoParams.listen((params) {
@@ -956,7 +973,7 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
     _playingSubscription?.cancel();
     _videoParamsSubscription?.cancel();
     final snapshot = _snapshot();
-    playbackMemory[widget.post.cacheKey] = snapshot;
+    rememberPlayback(widget.post.cacheKey, snapshot);
     widget.onPlaybackSnapshot?.call(snapshot);
     _player?.pause();
     _player?.stop();
@@ -1168,7 +1185,7 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
 
   void _emitPlaybackPreferences() {
     final snapshot = _snapshot();
-    playbackMemory[widget.post.cacheKey] = snapshot;
+    rememberPlayback(widget.post.cacheKey, snapshot);
     widget.onPlaybackPreferencesChanged?.call(snapshot);
   }
 

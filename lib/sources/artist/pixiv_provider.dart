@@ -42,6 +42,9 @@ class PixivProvider
   final Map<String, String> _queryParameters;
   // Auth: PHPSESSID cookie value (optional)
   final String? _phpsessid;
+  // Static, shared across instances — keys MUST be scoped by provider id,
+  // otherwise posts cached by one config get attributed to another (and
+  // survive a PHPSESSID change).
   static final Map<String, UgoiraMetadata> _ugoiraMetaCache = {};
   static final Map<String, List<Post>> _pagesCache = {};
 
@@ -209,8 +212,9 @@ class PixivProvider
   @override
   Future<List<Post>> getPostPages(Post post) async {
     final baseId = post.id.split('_p').first;
-    if (_pagesCache.containsKey(baseId)) {
-      return _pagesCache[baseId]!;
+    final cacheKey = '$id:$baseId';
+    if (_pagesCache.containsKey(cacheKey)) {
+      return _pagesCache[cacheKey]!;
     }
 
     const maxRetries = 3;
@@ -242,7 +246,7 @@ class PixivProvider
             if (_pagesCache.length > 200) {
               _pagesCache.remove(_pagesCache.keys.first);
             }
-            _pagesCache[baseId] = results;
+            _pagesCache[cacheKey] = results;
             return results;
           }
         }
@@ -260,7 +264,7 @@ class PixivProvider
     }
     final synthesized = PixivMapper.synthesizePages(post);
     if (synthesized.length > 1) {
-      _pagesCache[baseId] = synthesized;
+      _pagesCache[cacheKey] = synthesized;
       return synthesized;
     }
     return [post];
@@ -323,8 +327,9 @@ class PixivProvider
         final parent = await getPost(baseId);
         if (parent == null) return null;
 
-        if (_pagesCache.containsKey(baseId)) {
-          final cached = _pagesCache[baseId]!;
+        final cacheKey = '$id:$baseId';
+        if (_pagesCache.containsKey(cacheKey)) {
+          final cached = _pagesCache[cacheKey]!;
           if (pageIndex < cached.length) return cached[pageIndex];
         }
 
@@ -502,8 +507,9 @@ class PixivProvider
     int maxRetries = 3,
   }) async {
     final cleanId = illustId.split('_p').first;
-    if (_ugoiraMetaCache.containsKey(cleanId)) {
-      return _ugoiraMetaCache[cleanId];
+    final cacheKey = '$id:$cleanId';
+    if (_ugoiraMetaCache.containsKey(cacheKey)) {
+      return _ugoiraMetaCache[cacheKey];
     }
 
     for (int attempt = 1; attempt <= maxRetries; attempt++) {
@@ -515,7 +521,7 @@ class PixivProvider
         _checkResponse(response);
         final meta = PixivMapper.ugoiraMetaFromResponse(response.data);
         if (meta != null && meta.frames.isNotEmpty) {
-          _ugoiraMetaCache[cleanId] = meta;
+          _ugoiraMetaCache[cacheKey] = meta;
           return meta;
         }
       } catch (_) {
