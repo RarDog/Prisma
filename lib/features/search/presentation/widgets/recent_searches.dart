@@ -87,8 +87,6 @@ class _RecentSearchesState extends State<RecentSearches> {
 
     final visibleItems =
         _expanded ? uniqueItems : uniqueItems.take(20).toList();
-    final screenW = MediaQuery.sizeOf(context).width;
-    final maxQueryWidth = (screenW - 200).clamp(180.0, 480.0);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,8 +154,11 @@ class _RecentSearchesState extends State<RecentSearches> {
                               : theme.colorScheme.primary,
                         ),
                         const SizedBox(width: 6),
-                        ConstrainedBox(
-                          constraints: BoxConstraints(maxWidth: maxQueryWidth),
+                        // Flexible, not a fixed max width: the query shrinks
+                        // with an ellipsis so the badges and the delete
+                        // button always fit inside the chip (a heuristic
+                        // width used to let long rows overflow the edge).
+                        Flexible(
                           child: Tooltip(
                             message: item.query,
                             waitDuration: const Duration(milliseconds: 600),
