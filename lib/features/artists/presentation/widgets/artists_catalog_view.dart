@@ -69,7 +69,14 @@ class ArtistsCatalogView extends StatelessWidget {
           cacheExtent: 140.0,
           addAutomaticKeepAlives: false,
           addRepaintBoundaries: true,
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+          // The shell injects the nav-bar inset into padding.bottom, so the
+          // last card can scroll fully clear of the page bar and glass bar.
+          padding: EdgeInsets.fromLTRB(
+            16,
+            10,
+            16,
+            MediaQuery.paddingOf(context).bottom + 8,
+          ),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: columns,
             crossAxisSpacing: 12,

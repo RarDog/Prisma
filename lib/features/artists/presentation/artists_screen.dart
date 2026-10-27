@@ -387,6 +387,10 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
       _page = target;
       _error = null;
     });
+    // A new page starts at the top of the list, not mid-scroll.
+    if (_scroll.hasClients) {
+      _scroll.jumpTo(0);
+    }
     try {
       final manager = ref.read(providerManagerProvider);
       final providers = await manager.activeArtistProviders();
@@ -506,10 +510,10 @@ class _ArtistsPageBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // extendBody puts the glass nav bar over the body — keep the bar above it.
+    // The shell injects the nav-bar inset into MediaQuery.padding.bottom,
+    // so a small fixed padding already keeps the bar clear of the glass.
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-          16, 4, 16, 76.0 + MediaQuery.paddingOf(context).bottom),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
