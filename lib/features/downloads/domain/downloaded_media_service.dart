@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/features/downloads/models/downloaded_media.dart';
 import 'package:gel_rule_app/core/models/post.dart';
@@ -10,16 +11,25 @@ class DownloadedMediaService {
 
   final DownloadedMediaRepository _repository;
 
+  /// Bumped whenever the downloaded-media table changes, so FutureProviders
+  /// reading it can re-run (the offline favorites tab resolves its posts
+  /// through this table).
+  final ValueNotifier<int> changeNotifier = ValueNotifier<int>(0);
+
+  void _notify() => changeNotifier.value++;
+
   Future<Result<void>> markDownloaded(
     Post post, {
     required String savedPath,
     required String fileName,
-  }) {
-    return _repository.markDownloaded(
+  }) async {
+    final result = await _repository.markDownloaded(
       post,
       savedPath: savedPath,
       fileName: fileName,
     );
+    if (result is Success<void>) _notify();
+    return result;
   }
 
   Future<Result<DownloadedMedia?>> getByCacheKey(String cacheKey) {
@@ -42,7 +52,9 @@ class DownloadedMediaService {
         await file.delete();
       }
     }
-    return _repository.deleteRecord(cacheKey);
+    final deleted = await _repository.deleteRecord(cacheKey);
+    if (deleted is Success<void>) _notify();
+    return deleted;
   }
 
   Future<Result<void>> clearMissingFiles() => _repository.clearMissingFiles();

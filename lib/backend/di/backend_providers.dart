@@ -225,9 +225,23 @@ final downloadManagerServiceProvider = Provider<DownloadManagerService>((ref) {
   );
 });
 
+/// Bumped by DownloadedMediaService whenever its table changes.
+final _downloadedMediaChangeProvider = StateProvider<int>((ref) {
+  final service = ref.watch(downloadedMediaServiceProvider);
+  void listener() {
+    ref.controller.state = service.changeNotifier.value;
+  }
+
+  service.changeNotifier.addListener(listener);
+  ref.onDispose(() => service.changeNotifier.removeListener(listener));
+  return service.changeNotifier.value;
+});
+
 final downloadedMediaByKeysProvider =
     FutureProvider.family<Map<String, DownloadedMedia>, Iterable<String>>(
         (ref, keys) async {
+  // Re-run whenever a download completes or a record is removed.
+  ref.watch(_downloadedMediaChangeProvider);
   final result =
       await ref.watch(downloadedMediaServiceProvider).allByKeys(keys);
   return result is Success<Map<String, DownloadedMedia>>
