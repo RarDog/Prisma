@@ -39,6 +39,8 @@ class LiquidGlassBottomBarState extends State<LiquidGlassBottomBar>
 
   late final AnimationController _rippleController;
   Offset? _rippleCenter;
+  // Coordinate space the ripple is drawn in (the bar's inner Stack).
+  final GlobalKey _barKey = GlobalKey();
 
   int _fromIndex = 0;
   int _toIndex = 0;
@@ -184,6 +186,7 @@ class LiquidGlassBottomBarState extends State<LiquidGlassBottomBar>
                           ),
                         ),
                         child: Stack(
+                          key: _barKey,
                           alignment: Alignment.centerLeft,
                           children: [
                             // Specular Bevel Highlight on top edge
@@ -274,7 +277,10 @@ class LiquidGlassBottomBarState extends State<LiquidGlassBottomBar>
                                   left = lerpDouble(
                                     xFrom,
                                     xTo,
-                                    _trailAnimation.value,
+                                    // easeOutBack overshoots past 1.0 — the
+                                    // trailing edge must never fly beyond the
+                                    // destination pill.
+                                    _trailAnimation.value.clamp(0.0, 1.0),
                                   )!;
                                   width =
                                       (right - left).clamp(pillWidth, barWidth);
@@ -288,7 +294,7 @@ class LiquidGlassBottomBarState extends State<LiquidGlassBottomBar>
                                   final right = lerpDouble(
                                     xFrom + pillWidth,
                                     xTo + pillWidth,
-                                    _trailAnimation.value,
+                                    _trailAnimation.value.clamp(0.0, 1.0),
                                   )!;
                                   width =
                                       (right - left).clamp(pillWidth, barWidth);
@@ -440,9 +446,18 @@ class LiquidGlassBottomBarState extends State<LiquidGlassBottomBar>
                                             .mobileLabelFor(widget.ru),
                                         isSelected: widget.selectedIndex == i,
                                         isPressed: _pressedIndex == i,
-                                        onTapDown: (localCenter) {
+                                        onTapDown: (tapGlobalPosition) {
                                           setState(() => _pressedIndex = i);
-                                          _spawnRipple(localCenter);
+                                          final stackBox = _barKey
+                                                  .currentContext
+                                                  ?.findRenderObject()
+                                              as RenderBox?;
+                                          _spawnRipple(
+                                            stackBox?.globalToLocal(
+                                                  tapGlobalPosition,
+                                                ) ??
+                                                Offset.zero,
+                                          );
                                         },
                                         onTapUp: () => setState(
                                             () => _pressedIndex = null),
@@ -571,10 +586,8 @@ class _LiquidNavItemState extends State<_LiquidNavItem>
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTapDown: (details) {
-        final box = context.findRenderObject() as RenderBox?;
-        widget.onTapDown(
-          box?.globalToLocal(details.globalPosition) ?? Offset.zero,
-        );
+        // The bar converts global coordinates into its own Stack space.
+        widget.onTapDown(details.globalPosition);
       },
       onTapUp: (_) => widget.onTapUp(),
       onTapCancel: widget.onTapCancel,
