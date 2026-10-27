@@ -23,7 +23,7 @@ class AppDestination {
     if (!ru) return label;
     return switch (id) {
       'feed' => '\u041b\u0435\u043d\u0442\u0430',
-      'search' => '\u0418\u0441\u0442\u043e\u0440\u0438\u044f',
+      'search' => '\u0422\u044d\u0433\u0438',
       'favorites' => '\u0418\u0437\u0431\u0440\u0430\u043d\u043d\u043e\u0435',
       'viewed' => '\u0418\u0441\u0442\u043e\u0440\u0438\u044f',
       'collections' => '\u041a\u043e\u043b\u043b\u0435\u043a\u0446\u0438\u0438',

@@ -80,7 +80,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return AdaptiveScaffold(
-      title: isRu ? 'История' : 'History',
+      title: isRu ? 'Тэги' : 'Tags',
       actions: [
         IconButton(
           tooltip: isRu ? 'Очистить историю' : 'Clear history',
@@ -103,7 +103,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => ErrorView(message: error.toString()),
         data: (data) {
-          final filteredRecent = data.filteredRecent;
+          // Heal legacy duplicates: one row per (query, provider), newest first.
+          final seenKeys = <String>{};
+          final filteredRecent = data.filteredRecent.where((item) {
+            final key =
+                '${item.query.trim().toLowerCase()}\u001f${item.providerId.toLowerCase()}';
+            return seenKeys.add(key);
+          }).toList(growable: false);
 
           // Unique providers found in recent searches
           final availableProviders = <String, String>{};
@@ -121,48 +127,90 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               child: ListView(
                 padding: EdgeInsets.fromLTRB(16, 14, 16, 140 + bottomInset),
                 children: [
-                  // 1. Search Bar for History
+                  // Single merged card: search field, source chips and the
+                  // recent-query list live together.
                   _SearchLiquidCard(
-                    glowColor: theme.colorScheme.primary,
+                    glowColor: const Color(0xFF8B5CF6),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Row(
                           children: [
                             const _SearchIconBadge(
-                              icon: Icons.history_rounded,
-                              color: Color(0xFF6366F1),
+                              icon: Icons.manage_search_rounded,
+                              color: Color(0xFF8B5CF6),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text(
-                                    isRu
-                                        ? 'Поиск по истории'
-                                        : 'Search history',
-                                    style:
-                                        theme.textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 16,
-                                      letterSpacing: -0.2,
+                                  Flexible(
+                                    child: Text(
+                                      isRu
+                                          ? 'Недавний поиск'
+                                          : 'Recent searches',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style:
+                                          theme.textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 16,
+                                        letterSpacing: -0.2,
+                                      ),
                                     ),
                                   ),
-                                  Text(
-                                    isRu
-                                        ? 'Недавние запросы с фильтрацией по источникам'
-                                        : 'Recent queries with provider filtering',
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
+                                  if (filteredRecent.isNotEmpty) ...[
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: theme.colorScheme.primary
+                                            .withValues(alpha: 0.14),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Text(
+                                        '${filteredRecent.length}',
+                                        style: theme.textTheme.labelSmall
+                                            ?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: theme.colorScheme.primary,
+                                        ),
+                                      ),
                                     ),
-                                  ),
+                                  ],
                                 ],
                               ),
                             ),
+                            if (data.recent.isNotEmpty)
+                              TextButton(
+                                style: TextButton.styleFrom(
+                                  visualDensity: VisualDensity.compact,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 4),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                onPressed: () {
+                                  HapticFeedback.selectionClick();
+                                  ref
+                                      .read(searchControllerProvider.notifier)
+                                      .clearHistory();
+                                },
+                                child: Text(
+                                  isRu ? 'Очистить' : 'Clear',
+                                  style: TextStyle(
+                                    color: theme.colorScheme.error,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 12),
                         Container(
                           decoration: BoxDecoration(
                             color: isDark
@@ -257,104 +305,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                             ),
                           ),
                         ],
-                      ],
-                    ),
-                  ),
 
-                  const SizedBox(height: 16),
-
-                  // 2. Recent Search Queries Card
-                  _SearchLiquidCard(
-                    glowColor: const Color(0xFF8B5CF6),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const _SearchIconBadge(
-                              icon: Icons.manage_search_rounded,
-                              color: Color(0xFF8B5CF6),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      isRu
-                                          ? 'Недавний поиск'
-                                          : 'Recent searches',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style:
-                                          theme.textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 16,
-                                        letterSpacing: -0.2,
-                                      ),
-                                    ),
-                                  ),
-                                  if (filteredRecent.isNotEmpty) ...[
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 8, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF8B5CF6)
-                                            .withValues(alpha: 0.16),
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      child: Text(
-                                        '${filteredRecent.length}',
-                                        style: theme.textTheme.labelSmall
-                                            ?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                          color: const Color(0xFF8B5CF6),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                            if (data.recent.isNotEmpty)
-                              TextButton(
-                                style: TextButton.styleFrom(
-                                  visualDensity: VisualDensity.compact,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 4),
-                                  minimumSize: Size.zero,
-                                  tapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
-                                ),
-                                onPressed: () {
-                                  HapticFeedback.selectionClick();
-                                  ref
-                                      .read(searchControllerProvider.notifier)
-                                      .clearHistory();
-                                },
-                                child: Text(
-                                  isRu ? 'Очистить' : 'Clear',
-                                  style: TextStyle(
-                                    color: theme.colorScheme.primary,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          isRu
-                              ? 'Нажмите на запрос, чтобы открыть его сразу с нужным источником'
-                              : 'Tap a query to open it directly with its provider',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
                         const SizedBox(height: 14),
+
                         if (filteredRecent.isEmpty)
                           Padding(
                             padding: const EdgeInsets.symmetric(vertical: 24),

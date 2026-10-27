@@ -43,11 +43,11 @@ class AppShell extends ConsumerStatefulWidget {
     ),
     AppDestination(
       'search',
-      'History',
-      Icons.history_rounded,
+      'Tags',
+      Icons.manage_search_rounded,
       '/search',
-      selectedIcon: Icons.history_rounded,
-      mobileLabel: 'History',
+      selectedIcon: Icons.manage_search_rounded,
+      mobileLabel: 'Tags',
     ),
     AppDestination(
       'favorites',

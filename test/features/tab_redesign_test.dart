@@ -286,7 +286,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     // Verify History Screen components
-    expect(find.text('История'), findsOneWidget);
+    expect(find.text('Тэги'), findsOneWidget);
     expect(find.text('genshin_impact'), findsOneWidget);
     expect(find.text('Недавний поиск'), findsOneWidget);
   });

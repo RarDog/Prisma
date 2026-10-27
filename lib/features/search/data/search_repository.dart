@@ -13,10 +13,13 @@ class SearchRepository {
   Future<Result<void>> save(SearchHistory history, {int maxItems = 500}) {
     return _databaseService.safeWrite((isar) async {
       final norm = history.query.trim().toLowerCase();
-      // Remove any existing duplicate records with same query
+      // Replace this query's row for the same provider only — the same query
+      // on another source is a distinct history entry.
       await isar.searchHistoryEntitys
           .filter()
           .queryEqualTo(norm, caseSensitive: false)
+          .and()
+          .group((q) => q.providerIdEqualTo(history.providerId))
           .deleteAll();
 
       await isar.searchHistoryEntitys.put(

@@ -30,7 +30,7 @@ class TabVisibilityEditor extends StatelessWidget {
       if (!isRu) return defaultLabel;
       return switch (key) {
         'feed' => 'Лента',
-        'search' => 'Поиск',
+        'search' => 'Тэги',
         'favorites' => 'Избранное',
         'viewed' => 'История',
         'collections' => 'Коллекции',
