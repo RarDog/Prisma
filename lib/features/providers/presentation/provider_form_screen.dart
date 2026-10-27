@@ -760,17 +760,28 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
 
     try {
       final now = DateTime.now();
-      final id = widget.initialConfig?.id ??
-          nameText.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_');
 
       Map<String, dynamic> headersJson = {};
-      try {
-        if (_headers.text.trim().isNotEmpty) {
+      if (_headers.text.trim().isNotEmpty) {
+        try {
           headersJson =
               jsonDecode(_headers.text.trim()) as Map<String, dynamic>;
+        } catch (_) {
+          // A silent fallback to {} would drop the user's credentials and
+          // save a broken provider; surface it instead.
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  isRu
+                      ? 'Заголовки: некорректный JSON — исправьте поле'
+                      : 'Headers: invalid JSON — fix the field',
+                ),
+              ),
+            );
+          }
+          return;
         }
-      } catch (_) {
-        // Fallback to empty if parse error
       }
       final customHeaders = Map<String, String>.from(
         headersJson.map((k, v) => MapEntry(k.toString(), v.toString())),
@@ -793,6 +804,27 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
         customHeaders.remove('PHPSESSID');
       }
 
+      // Providers are stored keyed by id: deriving the id from the name
+      // without a collision check would let a new "Danbooru" card silently
+      // overwrite the seeded danbooru provider.
+      final baseId =
+          nameText.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_');
+      var id = widget.initialConfig?.id ?? baseId;
+      var renamed = false;
+      if (widget.initialConfig == null) {
+        final existing =
+            ref.read(providersControllerProvider).value ?? const [];
+        final taken = existing.map((c) => c.id).toSet();
+        if (taken.contains(id)) {
+          var suffix = 2;
+          while (taken.contains('${baseId}_$suffix')) {
+            suffix++;
+          }
+          id = '${baseId}_$suffix';
+          renamed = true;
+        }
+      }
+
       final config = ContentProviderConfig(
         id: id,
         name: nameText,
@@ -808,11 +840,34 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
 
       await ref.read(providersControllerProvider.notifier).save(config);
       if (mounted) {
+        if (renamed) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                isRu
+                    ? 'ID занят — провайдер сохранён как "$id"'
+                    : 'ID taken — provider saved as "$id"',
+              ),
+            ),
+          );
+        }
         if (Navigator.of(context).canPop()) {
           Navigator.of(context).pop();
         } else {
           context.go('/providers');
         }
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isRu
+                  ? 'Не удалось сохранить провайдера: $error'
+                  : 'Failed to save provider: $error',
+            ),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
