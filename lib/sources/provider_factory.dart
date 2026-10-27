@@ -36,6 +36,11 @@ class ProviderFactory {
 
   final Map<String, DioClient> _clientCache = {};
   final Map<String, String> _clientKeyByProviderId = {};
+  /// Memoized providers keyed by the same [clientKey] as their client. The
+  /// manager re-creates providers on every call round-trip, so without this
+  /// every instance-level cache (Pawchive artist list, MangaDex author ids,
+  /// Danbooru/Gelbooru media headers) is dead on arrival.
+  final Map<String, ContentProvider> _instanceCache = {};
 
   void clearCache() {
     for (final client in _clientCache.values) {
@@ -43,6 +48,7 @@ class ProviderFactory {
     }
     _clientCache.clear();
     _clientKeyByProviderId.clear();
+    _instanceCache.clear();
   }
 
   void dispose() => clearCache();
@@ -125,8 +131,11 @@ class ProviderFactory {
     if (previousKey != null && previousKey != clientKey) {
       final stale = _clientCache.remove(previousKey);
       stale?.close();
+      _instanceCache.remove(previousKey);
     }
     _clientKeyByProviderId[config.id] = clientKey;
+    final cachedInstance = _instanceCache[clientKey];
+    if (cachedInstance != null) return cachedInstance;
     final client = _clientCache.putIfAbsent(
       clientKey,
       () => DioClient(
@@ -136,6 +145,16 @@ class ProviderFactory {
       ),
     );
     _evictOldestClient();
+    final provider = _instantiate(config, client, queryParameters);
+    _instanceCache[clientKey] = provider;
+    return provider;
+  }
+
+  ContentProvider _instantiate(
+    ContentProviderConfig config,
+    DioClient client,
+    Map<String, String> queryParameters,
+  ) {
     switch (config.apiType.toLowerCase()) {
       case 'mangadex':
         return MangaDexProvider(
@@ -309,12 +328,14 @@ class ProviderFactory {
   }
 
   /// Evicts the oldest cached client (Map preserves insertion order) once the
-  /// cache grows beyond [_maxCachedClients], closing its socket pool.
+  /// cache grows beyond [_maxCachedClients], closing its socket pool. The
+  /// memoized provider holding that client is dropped with it.
   void _evictOldestClient() {
     while (_clientCache.length > _maxCachedClients) {
       final staleKey = _clientCache.keys.first;
       final stale = _clientCache.remove(staleKey);
       stale?.close();
+      _instanceCache.remove(staleKey);
       _clientKeyByProviderId
           .removeWhere((_, key) => key == staleKey);
     }

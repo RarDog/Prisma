@@ -192,6 +192,20 @@ class RanobeLibProvider
 
       return posts;
     } on DioException catch (e) {
+      // A user cancellation must not be re-wrapped: the manager classifies
+      // BadResponseException as deterministic and would mark the provider
+      // offline in persisted health records.
+      if (e.type == DioExceptionType.cancel) rethrow;
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw RequestTimeoutException('RanobeLib request timed out',
+            details: e.toString());
+      }
+      if (e.type == DioExceptionType.connectionError) {
+        throw NetworkException('RanobeLib network error',
+            details: e.toString());
+      }
       throw BadResponseException(e.message ?? 'RanobeLib API error',
           details: e.toString());
     }
