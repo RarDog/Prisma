@@ -95,7 +95,9 @@ class MangaCatalogView extends StatelessWidget {
           child: Padding(
             padding: EdgeInsets.fromLTRB(
               16,
-              MediaQuery.paddingOf(context).top + 56,
+              // extendBodyBehindAppBar already folds the toolbar height
+              // into padding.top — just a small breathing gap after it.
+              MediaQuery.paddingOf(context).top + 12,
               16,
               6,
             ),
