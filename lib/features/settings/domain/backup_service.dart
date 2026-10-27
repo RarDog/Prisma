@@ -71,6 +71,10 @@ class BackupService {
   DateTime? lastPersistentBackupAt;
   String? lastPersistentBackupPath;
   String? _lastSavedPayloadDigest;
+  // Memoized readPersistentBackup result: startup parses every backup file
+  // twice otherwise (auto-restore + onboarding probe), multi-MB JSON each.
+  String? _persistentBackupCache;
+  bool _persistentBackupCacheFilled = false;
 
   /// Schedules a debounced persistent backup (defaults to 5 seconds).
   void scheduleAutoBackup({Duration delay = const Duration(seconds: 5)}) {
@@ -160,10 +164,15 @@ class BackupService {
           ...collectionPostKeys,
           ...viewedKeys,
         };
-        final cachedPostEntities =
-            await isar.cachedPostEntitys.where().findAll();
-        for (final cp in cachedPostEntities) {
-          if (neededKeys.contains(cp.cacheKey)) {
+        // Chunked indexed lookup instead of loading the whole cache table
+        // (thousands of rows) and filtering in Dart.
+        for (var i = 0; i < neededKeys.length; i += 64) {
+          final chunk = neededKeys.skip(i).take(64).toList();
+          final entities = await isar.cachedPostEntitys
+              .filter()
+              .anyOf(chunk, (q, String key) => q.cacheKeyEqualTo(key))
+              .findAll();
+          for (final cp in entities) {
             favoritePostsData.add(cp.toModel().toJson());
           }
         }
@@ -705,6 +714,8 @@ class BackupService {
       if (anySaved) {
         _lastSavedPayloadDigest = payloadJson;
         lastPersistentBackupAt = DateTime.now();
+        // The files changed on disk — drop the memoized read.
+        _persistentBackupCacheFilled = false;
       }
       return anySaved;
     } catch (e, st) {
@@ -714,8 +725,12 @@ class BackupService {
     }
   }
 
-  /// Reads persistent backup from external persistent storage.
+  /// Reads persistent backup from external persistent storage. The result is
+  /// memoized until the next successful save (the only thing that changes
+  /// the files), so startup's auto-restore and onboarding probe parse the
+  /// candidate files once.
   Future<String?> readPersistentBackup() async {
+    if (_persistentBackupCacheFilled) return _persistentBackupCache;
     try {
       if (Platform.isAndroid) {
         try {
@@ -725,6 +740,8 @@ class BackupService {
           );
           if (content != null && content.trim().isNotEmpty) {
             lastPersistentBackupPath = 'Downloads/Prisma/$backupFileName';
+            _persistentBackupCache = content;
+            _persistentBackupCacheFilled = true;
             return content;
           }
         } catch (e, st) {
@@ -786,11 +803,15 @@ class BackupService {
           return b.$4.compareTo(a.$4);
         });
         lastPersistentBackupPath = candidates.first.$1;
-        return candidates.first.$2;
+        _persistentBackupCache = candidates.first.$2;
+        _persistentBackupCacheFilled = true;
+        return _persistentBackupCache;
       }
     } catch (e, st) {
       AppLogger.log('BackupService.readPersistentBackup error', e, st);
     }
+    _persistentBackupCache = null;
+    _persistentBackupCacheFilled = true;
     return null;
   }
 
@@ -858,16 +879,25 @@ class BackupService {
     for (final dirPath in candidateDirs) {
       try {
         final dir = Directory(dirPath);
-        if (dir.existsSync()) {
-          final files = dir.listSync().whereType<File>().where((f) {
+        // Async file APIs: this runs on the UI isolate from settings
+        // screens, and home dirs can sit on slow storage.
+        if (await dir.exists()) {
+          final entities = await dir.list().toList();
+          final files = entities.whereType<File>().where((f) {
             final name = f.uri.pathSegments.last;
             return name.startsWith('prisma_backup') && name.endsWith('.json');
           }).toList();
           if (files.isNotEmpty) {
-            files.sort(
-                (a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
-            final file = files.first;
-            final stat = file.statSync();
+            final modified = <File, DateTime>{};
+            for (final f in files) {
+              try {
+                modified[f] = await f.lastModified();
+              } catch (_) {}
+            }
+            final sorted = modified.entries.toList()
+              ..sort((a, b) => b.value.compareTo(a.value));
+            final file = sorted.first.key;
+            final stat = await file.stat();
             return {
               'exists': true,
               'path': file.path,
