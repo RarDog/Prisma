@@ -568,6 +568,12 @@ class MangaDexProvider
       } while (offset < total && offset < 2000);
 
       return allChapters;
+    } on AppException {
+      // A dead API must not render as "manga with zero chapters" — let the
+      // caller's error states (details ErrorView, reader error) handle it.
+      rethrow;
+    } on DioException {
+      rethrow;
     } catch (_) {
       return [];
     }
@@ -633,6 +639,10 @@ class MangaDexProvider
         }
       }
       return [];
+    } on AppException {
+      rethrow;
+    } on DioException {
+      rethrow;
     } catch (e) {
       return [];
     }

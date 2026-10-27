@@ -261,6 +261,12 @@ class GelbooruProvider
         queryParameters: dapiQuery('comment', params: {'post_id': postId}),
       );
       return _commentsFromResponse(response.data, postId);
+    } on AppException {
+      // Let the manager surface provider failure instead of rendering it as
+      // "no comments".
+      rethrow;
+    } on DioException {
+      rethrow;
     } catch (_) {
       return const [];
     }
@@ -297,6 +303,10 @@ class GelbooruProvider
           })
           .where((tag) => tag.name.isNotEmpty)
           .toList(growable: false);
+    } on AppException {
+      rethrow;
+    } on DioException {
+      rethrow;
     } catch (_) {
       return const [];
     }
