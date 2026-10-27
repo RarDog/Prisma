@@ -19,6 +19,10 @@ class ArtistCard extends StatelessWidget {
   final bool isFavorite;
   final VoidCallback onToggleFavorite;
 
+  static String _formatCount(int value) => value
+      .toString()
+      .replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ' ');
+
   @override
   Widget build(BuildContext context) {
     final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
@@ -29,11 +33,11 @@ class ArtistCard extends StatelessWidget {
         hasDot: true,
       ),
       if (artist.postCount != null)
-        LiquidMiniBadge(
-          label: '${artist.postCount} ${isRu ? 'постов' : 'posts'}',
-          color: Theme.of(context).brightness == Brightness.dark
-              ? Colors.white70
-              : const Color(0xFF64748B),
+        Text(
+          '${_formatCount(artist.postCount!)} ${isRu ? 'постов' : 'posts'}',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
         ),
     ];
 
@@ -99,8 +103,8 @@ class FavoriteArtistCard extends StatelessWidget {
   }
 }
 
-/// Shared hero layout for catalog and favorite artist cards: large
-/// service-tinted avatar, bold name, badge row and a floating star toggle
+/// Shared compact layout for catalog and favorite artist cards: small
+/// avatar, the name inside a soft plate, one badge line and a star toggle
 /// pinned to the top-right corner.
 class _ArtistHeroCard extends StatelessWidget {
   const _ArtistHeroCard({
@@ -130,29 +134,14 @@ class _ArtistHeroCard extends StatelessWidget {
     final sColor = artistServiceColor(service);
 
     return ArtistsLiquidCard(
-      glowColor: sColor.withValues(alpha: 0.40),
+      glowColor: sColor.withValues(alpha: 0.25),
       padding: EdgeInsets.zero,
       onTap: onTap,
       child: Stack(
         children: [
-          // Service-colored gradient wash behind the content
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [
-                    sColor.withValues(alpha: isDark ? 0.14 : 0.08),
-                    sColor.withValues(alpha: 0.0),
-                  ],
-                ),
-              ),
-            ),
-          ),
           // Right padding keeps the text clear of the floating star
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 52, 12),
+            padding: const EdgeInsets.fromLTRB(12, 10, 52, 10),
             child: Row(
               children: [
                 _HeroAvatar(
@@ -160,23 +149,34 @@ class _ArtistHeroCard extends StatelessWidget {
                   avatarUrl: avatarUrl,
                   accent: sColor,
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 15.5,
-                          letterSpacing: -0.2,
+                      // Compact name plate — normal weight on a soft
+                      // neutral background instead of a giant bold title.
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.07)
+                              : Colors.black.withValues(alpha: 0.045),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 5),
                       Wrap(
                         spacing: 6,
                         runSpacing: 4,
@@ -184,7 +184,7 @@ class _ArtistHeroCard extends StatelessWidget {
                         children: badges,
                       ),
                       if (updatedAt != null) ...[
-                        const SizedBox(height: 5),
+                        const SizedBox(height: 4),
                         _UpdatedLine(
                           updatedAt: updatedAt!,
                           accent: sColor,
@@ -197,14 +197,14 @@ class _ArtistHeroCard extends StatelessWidget {
                 const SizedBox(width: 4),
                 Icon(
                   Icons.chevron_right_rounded,
-                  color: theme.colorScheme.onSurfaceVariant
-                      .withValues(alpha: 0.6),
-                  size: 22,
+                  color:
+                      theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                  size: 20,
                 ),
               ],
             ),
           ),
-          Positioned(top: 6, right: 6, child: trailing),
+          Positioned(top: 8, right: 8, child: trailing),
         ],
       ),
     );
@@ -243,8 +243,8 @@ class _HeroAvatar extends StatelessWidget {
           name.trim().isEmpty
               ? '?'
               : name.trim().characters.first.toUpperCase(),
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w800,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
             color: Colors.white,
           ),
         ),
@@ -252,32 +252,32 @@ class _HeroAvatar extends StatelessWidget {
     );
 
     return Container(
-      width: 72,
-      height: 72,
+      width: 48,
+      height: 48,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isDark
               ? Colors.white.withValues(alpha: 0.20)
               : Colors.white.withValues(alpha: 0.90),
-          width: 1.5,
+          width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: accent.withValues(alpha: 0.30),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
+            color: accent.withValues(alpha: 0.22),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(13),
         child: avatarUrl == null || avatarUrl!.isEmpty
             ? fallback
             : CachedNetworkImage(
                 imageUrl: avatarUrl!,
-                memCacheWidth: 200,
-                memCacheHeight: 200,
+                memCacheWidth: 120,
+                memCacheHeight: 120,
                 fit: BoxFit.cover,
                 placeholder: (_, __) => fallback,
                 errorWidget: (_, __, ___) => fallback,
@@ -295,6 +295,7 @@ class _UpdatedLine extends StatelessWidget {
   });
 
   final DateTime updatedAt;
+  // ignore: unused_field
   final Color accent;
   final bool isRu;
 
@@ -302,18 +303,15 @@ class _UpdatedLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final local = updatedAt.toLocal();
-    final fresh = DateTime.now().difference(local).inDays < 3;
+    // Deliberately neutral: a colored "updated" line reads like an alert.
     return Text(
       '${isRu ? 'Обновлено' : 'Updated'}: '
       '${formatArtistRelativeTime(local, isRu)}',
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: theme.textTheme.bodySmall?.copyWith(
-        color: fresh
-            ? accent.withValues(alpha: 0.95)
-            : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+        color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
         fontSize: 11,
-        fontWeight: fresh ? FontWeight.w600 : FontWeight.w400,
       ),
     );
   }
@@ -341,14 +339,14 @@ class _FavoriteStarButton extends StatelessWidget {
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.all(7),
+          padding: const EdgeInsets.all(5),
           decoration: BoxDecoration(
             color: active
                 ? Colors.amber.withValues(alpha: isDark ? 0.22 : 0.15)
                 : (isDark
                     ? Colors.white.withValues(alpha: 0.05)
                     : Colors.black.withValues(alpha: 0.03)),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: active
                   ? Colors.amber.withValues(alpha: 0.6)
@@ -368,7 +366,7 @@ class _FavoriteStarButton extends StatelessWidget {
           child: Icon(
             active ? Icons.star_rounded : Icons.star_outline_rounded,
             color: active ? Colors.amber : scheme.onSurfaceVariant,
-            size: 22,
+            size: 19,
           ),
         ),
       ),
@@ -462,18 +460,18 @@ class ArtistSkeletonCard extends StatelessWidget {
         : Colors.black.withValues(alpha: 0.06);
 
     return ArtistsLiquidCard(
-      padding: const EdgeInsets.fromLTRB(14, 12, 52, 12),
+      padding: const EdgeInsets.fromLTRB(12, 10, 52, 10),
       child: Row(
         children: [
           Container(
-            width: 72,
-            height: 72,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
               color: blockColor,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(14),
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,

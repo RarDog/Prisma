@@ -69,17 +69,12 @@ class ArtistsCatalogView extends StatelessWidget {
           cacheExtent: 140.0,
           addAutomaticKeepAlives: false,
           addRepaintBoundaries: true,
-          padding: EdgeInsets.fromLTRB(
-            16,
-            10,
-            16,
-            150.0 + MediaQuery.paddingOf(context).bottom,
-          ),
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: columns,
             crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            mainAxisExtent: columns == 1 ? 140 : 148,
+            mainAxisSpacing: 10,
+            mainAxisExtent: 104,
           ),
           itemCount: artists.length + (loading ? 1 : 0),
           itemBuilder: (context, index) {

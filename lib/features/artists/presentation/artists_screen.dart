@@ -55,7 +55,10 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
   var _page = 1;
   var _loading = false;
   var _hasMore = true;
+  var _initialLoaded = false;
   Object? _error;
+  // Current page only — the catalog is paginated, not an accumulating
+  // infinite feed.
   List<ArtistProfile> _artists = const [];
 
   Future<void> _toggleFavoriteArtist(
@@ -121,12 +124,6 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
 
   void _onScroll() {
     final offset = _scroll.offset;
-    if (_scroll.hasClients &&
-        _scroll.position.hasContentDimensions &&
-        _scroll.position.extentAfter < 500) {
-      _loadMore();
-    }
-
     if (offset <= 60) {
       _scrollDeltaAccumulator = 0;
       if (!_headerVisible) setState(() => _headerVisible = true);
@@ -206,7 +203,7 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
             );
           }
           _providerId ??= items.first.id;
-          if (_artists.isEmpty && !_loading && _error == null) {
+          if (!_initialLoaded && !_loading && _error == null) {
             WidgetsBinding.instance
                 .addPostFrameCallback((_) => _refresh(items));
           }
@@ -293,8 +290,8 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
                             hasActiveFilters: _selectedServices.isNotEmpty ||
                                 _search.text.isNotEmpty,
                             isRu: isRu,
-                            onBrowseCatalog: () => setState(
-                                () => _currentTab = ArtistsTab.all),
+                            onBrowseCatalog: () =>
+                                setState(() => _currentTab = ArtistsTab.all),
                             onResetFilters: () {
                               setState(() {
                                 _selectedServices.clear();
@@ -328,6 +325,15 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
                             },
                           )),
               ),
+              if (_currentTab == ArtistsTab.all)
+                _ArtistsPageBar(
+                  page: _page,
+                  canGoBack: _page > 1 && !_loading,
+                  canGoForward: _hasMore && !_loading,
+                  isRu: isRu,
+                  onPrev: () => _loadPage(page: _page - 1),
+                  onNext: () => _loadPage(page: _page + 1),
+                ),
             ],
           );
         },
@@ -357,12 +363,22 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
       _artists = const [];
       _error = null;
     });
-    await _loadMore();
+    await _loadPage();
   }
 
-  Future<void> _loadMore() async {
-    if (_loading || !_hasMore || _providerId == null) return;
-    setState(() => _loading = true);
+  /// Loads one catalog page, replacing the previous one — the catalog is
+  /// page-based, the pagination bar below the list drives navigation.
+  Future<void> _loadPage({int? page}) async {
+    if (_loading || _providerId == null) return;
+    final target = (page ?? _page).clamp(1, 999999);
+    setState(() {
+      _loading = true;
+      if (page != null) {
+        _page = target;
+        _artists = const [];
+      }
+      _error = null;
+    });
     try {
       final manager = ref.read(providerManagerProvider);
       final providers = await manager.activeArtistProviders();
@@ -373,28 +389,29 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
       final next = await provider.searchArtists(
         _search.text.trim(),
         services: _selectedServices.isEmpty ? null : _selectedServices.toList(),
-        page: _page,
+        page: target,
         limit: 30,
       );
       if (!mounted) return;
       setState(() {
-        _artists = [..._artists, ...next];
-        _page++;
+        _artists = next;
+        _page = target;
         _hasMore = next.isNotEmpty;
+        _initialLoaded = true;
       });
     } catch (error) {
       if (!mounted) return;
-      if (_artists.isEmpty) {
+      if (_artists.isEmpty && _page == 1) {
         // Initial load failed — surface a full-screen error with retry.
         setState(() => _error = error);
       } else {
-        // Pagination hiccup — keep the loaded content, notify in place.
+        // Page flip failed — keep whatever is on screen, notify in place.
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               Localizations.maybeLocaleOf(context)?.languageCode == 'ru'
-                  ? 'Не удалось загрузить ещё авторов'
-                  : 'Failed to load more artists',
+                  ? 'Не удалось загрузить страницу'
+                  : 'Failed to load the page',
             ),
             behavior: SnackBarBehavior.floating,
           ),
@@ -437,5 +454,58 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
         );
       }
     }
+  }
+}
+
+/// Bottom pagination bar for the artist catalog: prev/next with the current
+/// page label.
+class _ArtistsPageBar extends StatelessWidget {
+  const _ArtistsPageBar({
+    required this.page,
+    required this.canGoBack,
+    required this.canGoForward,
+    required this.isRu,
+    required this.onPrev,
+    required this.onNext,
+  });
+
+  final int page;
+  final bool canGoBack;
+  final bool canGoForward;
+  final bool isRu;
+  final VoidCallback onPrev;
+  final VoidCallback onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    // extendBody puts the glass nav bar over the body — keep the bar above it.
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+          16, 4, 16, 76.0 + MediaQuery.paddingOf(context).bottom),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            tooltip: isRu ? 'Предыдущая страница' : 'Previous page',
+            onPressed: canGoBack ? onPrev : null,
+            icon: const Icon(Icons.chevron_left_rounded),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            isRu ? 'Стр. $page' : 'Page $page',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            tooltip: isRu ? 'Следующая страница' : 'Next page',
+            onPressed: canGoForward ? onNext : null,
+            icon: const Icon(Icons.chevron_right_rounded),
+          ),
+        ],
+      ),
+    );
   }
 }
