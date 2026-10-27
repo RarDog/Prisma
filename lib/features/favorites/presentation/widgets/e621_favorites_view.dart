@@ -384,11 +384,12 @@ class _E621FavoritesViewState extends ConsumerState<E621FavoritesView> {
             FilledButton.icon(
               onPressed: () async {
                 final configs =
-                    ref.read(providersControllerProvider).value ?? [];
-                final e621Config = configs.firstWhere(
-                  (p) => p.apiType.toLowerCase() == 'e621',
-                  orElse: () => configs.first,
-                );
+                    ref.read(providersControllerProvider).value ?? const [];
+                final e621Configs = configs
+                    .where((p) => p.apiType.toLowerCase() == 'e621')
+                    .toList();
+                if (e621Configs.isEmpty || !mounted) return;
+                final e621Config = e621Configs.first;
                 await E621AuthDialog.show(
                   context,
                   config: e621Config,
@@ -737,7 +738,19 @@ class _E621FavoritesViewState extends ConsumerState<E621FavoritesView> {
                                         await favService.removeFavorite(
                                             post.id, post.providerId);
                                       } else {
-                                        await favService.addFavorite(post);
+                                        // Match the main favorites flow:
+                                        // auto-download-favorites applies
+                                        // here too.
+                                        final settings = ref.read(
+                                            appSettingsProvider).valueOrNull ??
+                                            AppSettings.defaults;
+                                        final downloadManager = ref.read(
+                                            downloadManagerServiceProvider);
+                                        await favService.addFavorite(
+                                          post,
+                                          settings: settings,
+                                          downloadManager: downloadManager,
+                                        );
                                       }
                                       ref.invalidate(favoriteKeysProvider);
                                       ref.invalidate(

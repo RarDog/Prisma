@@ -4,6 +4,7 @@ import 'package:gel_rule_app/app/app.dart';
 import 'package:gel_rule_app/app/app_version.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:gel_rule_app/features/viewed/presentation/viewed_controller.dart';
 
 final settingsControllerProvider =
     AsyncNotifierProvider<SettingsController, AppSettings>(
@@ -110,6 +111,9 @@ class SettingsController extends AsyncNotifier<AppSettings> {
   Future<void> clearViewedHistory() async {
     await ref.read(viewedHistoryServiceProvider).clearHistory();
     ref.invalidate(viewedKeysProvider);
+    // The History screen watches its own controller — without this it kept
+    // rendering the cleared entries.
+    ref.invalidate(viewedControllerProvider);
   }
 
   Future<void> clearHiddenPosts() async {

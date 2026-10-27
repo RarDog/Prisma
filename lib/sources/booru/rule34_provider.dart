@@ -43,7 +43,7 @@ class Rule34Provider extends GelbooruProvider {
           'fields': 'tag_info',
           'tags': [
             ...tags,
-            if (rating != null) 'rating:$rating',
+            if (rating != null && rating.isNotEmpty) 'rating:$rating',
             ...topTagsFor(topPeriod),
           ].join(' '),
         }),

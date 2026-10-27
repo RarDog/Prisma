@@ -1,4 +1,6 @@
 import 'dart:async';
+
+import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'package:dio/dio.dart';
 import 'package:gel_rule_app/core/errors/app_exception.dart';
 import 'package:gel_rule_app/core/http/dio_client.dart';
@@ -50,7 +52,7 @@ class WallhavenProvider
   @override
   Map<String, String> mediaHeaders(Post post) => {
         'Referer': 'https://wallhaven.cc/',
-        'User-Agent': 'Prisma/4.2.0',
+        'User-Agent': AppHeaders.defaultUserAgent,
       };
 
   @override

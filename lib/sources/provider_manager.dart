@@ -415,6 +415,21 @@ class ProviderManager {
     final seen = <String>{};
     final providerFutures = providers.map((provider) async {
       try {
+        final searchTimeout = Duration(
+          seconds: _providerTimeouts[provider.id] ??
+              _defaultSearchTimeoutSeconds,
+        );
+        // Per-provider child token: cancelling it on timeout (or when the
+        // caller cancels) must not abort the sibling providers sharing the
+        // caller's token.
+        final searchToken = CancelToken();
+        if (cancelToken != null) {
+          unawaited(cancelToken.whenCancel.then((_) {
+            if (!searchToken.isCancelled) {
+              searchToken.cancel('parent cancelled');
+            }
+          }));
+        }
         final providerPosts = await provider
             .searchPosts(
               tags: cleanTags,
@@ -422,12 +437,14 @@ class ProviderManager {
               limit: limit,
               rating: rating,
               topPeriod: topPeriod,
-              cancelToken: cancelToken,
+              cancelToken: searchToken,
             )
-            .timeout(Duration(
-              seconds: _providerTimeouts[provider.id] ??
-                  _defaultSearchTimeoutSeconds,
-            ));
+            .timeout(searchTimeout, onTimeout: () {
+          // Abandoning without cancelling left the request running until the
+          // provider's own (longer) timeout, holding sockets.
+          searchToken.cancel('search timeout');
+          return const <Post>[];
+        });
         unawaited(_repository.saveDiagnostics(
           ProviderDiagnostics(
             providerId: provider.id,
@@ -603,7 +620,12 @@ class ProviderManager {
     ].join('\u001f');
     if (!_softRetryKeys.add(key)) return;
     unawaited(Future<void>.delayed(const Duration(milliseconds: 900), () async {
-      if (cancelToken?.isCancelled ?? false) return;
+      if (cancelToken?.isCancelled ?? false) {
+        // The finally below is not reached from this early return — release
+        // the key or the provider+query is blacklisted from retries forever.
+        _softRetryKeys.remove(key);
+        return;
+      }
       try {
         final posts = await provider.searchPosts(
           tags: tags,
