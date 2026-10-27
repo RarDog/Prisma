@@ -85,6 +85,9 @@ class _FavoritesOfflineViewState extends ConsumerState<FavoritesOfflineView> {
     required bool isRu,
   }) {
     final scheme = Theme.of(context).colorScheme;
+    // Diagnostic: raw table row count must match downloadedCount; a
+    // mismatch means rows exist but resolve against different cache keys.
+    final dbRowCount = ref.watch(downloadedMediaCountProvider).value ?? -1;
 
     return FavoritesLiquidCard(
       margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
@@ -128,7 +131,8 @@ class _FavoritesOfflineViewState extends ConsumerState<FavoritesOfflineView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '$downloadedCount ${isRu ? 'из' : 'of'} $totalCount ${isRu ? 'офлайн' : 'saved'}',
+                      '$downloadedCount ${isRu ? 'из' : 'of'} $totalCount ${isRu ? 'офлайн' : 'saved'}'
+                      '${dbRowCount >= 0 && dbRowCount != downloadedCount ? '  (в БД: $dbRowCount)' : ''}',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             letterSpacing: -0.2,

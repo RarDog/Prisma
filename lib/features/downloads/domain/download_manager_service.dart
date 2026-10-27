@@ -172,6 +172,12 @@ class DownloadManagerService {
           AppLogger.error(
               'markDownloaded failed for ${task.post!.cacheKey}',
               marked.failure);
+          final failing = _tasks[task.id];
+          if (failing != null) {
+            _set(failing.copyWith(
+              error: 'state not saved: ${marked.failure.message}',
+            ));
+          }
         }
         // Re-emit AFTER the row is written so listeners (the favorites
         // offline tab) refetch with the record actually in place.

@@ -249,6 +249,15 @@ final downloadedMediaByKeysProvider =
       : const {};
 });
 
+/// Raw row count in the downloaded-media table — a diagnostic that must
+/// match the resolved map size on the offline tab (TODO(prizma): drop once
+/// the offline-marking mystery is closed).
+final downloadedMediaCountProvider = FutureProvider<int>((ref) async {
+  ref.watch(_downloadedMediaChangeProvider);
+  final result = await ref.watch(downloadedMediaServiceProvider).count();
+  return result is Success<int> ? result.data : -1;
+});
+
 final offlineDiskSizeProvider =
     FutureProvider.family<int, Iterable<DownloadedMedia>>((ref, items) {
   return DownloadedMediaService.totalDiskSizeBytes(items);
