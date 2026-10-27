@@ -24,7 +24,12 @@ class DownloadManagerService {
   final Map<String, DownloadTask> _tasks = {};
   final Map<String, CancelToken> _cancelTokens = {};
   final Set<String> _runningTaskIds = {};
+  final Map<String, DateTime> _lastProgressEmitAt = {};
   bool _queuePaused = false;
+
+  /// Parallel transfer cap. Without it the pump started every queued task at
+  /// once, so "download all" opened dozens of sockets and starved each other.
+  static const _maxConcurrentDownloads = 3;
 
   Stream<List<DownloadTask>> get stream => _controller.stream;
   List<DownloadTask> get tasks => List.unmodifiable(_tasks.values);
@@ -66,6 +71,12 @@ class DownloadManagerService {
 
   void pauseQueue() {
     _queuePaused = true;
+    // A pause that leaves active transfers running is not a pause: cancel
+    // them; the error handler requeues them (progress restarts, there is no
+    // byte-range resume yet) until the queue is resumed.
+    for (final taskId in List.of(_runningTaskIds)) {
+      _cancelTokens[taskId]?.cancel('queue-paused');
+    }
     _emit();
   }
 
@@ -163,6 +174,16 @@ class DownloadManagerService {
       if (current == null || current.status == DownloadTaskStatus.canceled) {
         return;
       }
+      if (_queuePaused) {
+        // The transfer was cancelled by pauseQueue(), not failed — put it
+        // back in line instead of reporting a failure.
+        _set(current.copyWith(
+          progress: 0,
+          status: DownloadTaskStatus.queued,
+          error: null,
+        ));
+        return;
+      }
       _set(
         current.copyWith(
           status: DownloadTaskStatus.failed,
@@ -172,6 +193,7 @@ class DownloadManagerService {
     } finally {
       _cancelTokens.remove(task.id);
       _runningTaskIds.remove(task.id);
+      _lastProgressEmitAt.remove(task.id);
       _pumpQueue();
     }
   }
@@ -188,6 +210,7 @@ class DownloadManagerService {
   void _pumpQueue() {
     if (_queuePaused) return;
     for (final task in tasks) {
+      if (_runningTaskIds.length >= _maxConcurrentDownloads) return;
       if (task.status != DownloadTaskStatus.queued) continue;
       if (_runningTaskIds.contains(task.id)) continue;
       unawaited(_run(task));
@@ -200,6 +223,17 @@ class DownloadManagerService {
     if (current == null || current.status == DownloadTaskStatus.canceled) {
       return;
     }
+    // dio reports progress per chunk; throttling to ~5 updates per second
+    // per task keeps the progress UI responsive without rebuilding it on
+    // every socket read.
+    final now = DateTime.now();
+    final last = _lastProgressEmitAt[taskId];
+    if (last != null &&
+        now.difference(last) < const Duration(milliseconds: 200) &&
+        received < total) {
+      return;
+    }
+    _lastProgressEmitAt[taskId] = now;
     _set(current.copyWith(progress: received / total));
   }
 
