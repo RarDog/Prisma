@@ -46,9 +46,3 @@ class DatabaseException extends AppException {
   @override
   String get code => 'database';
 }
-
-class UnknownException extends AppException {
-  const UnknownException(super.message, {super.details});
-  @override
-  String get code => 'unknown';
-}

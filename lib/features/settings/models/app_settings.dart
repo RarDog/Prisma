@@ -7,9 +7,7 @@ class AppSettings {
   const AppSettings({
     required this.enabledProviderIds,
     required this.nsfwEnabled,
-    required this.cacheTtlHours,
     required this.cacheMaxItems,
-    required this.providerPriority,
     required this.themeMode,
     required this.languageCode,
     required this.appSeedColor,
@@ -108,9 +106,7 @@ class AppSettings {
   final bool pawchiveBidirectionalSync;
   final List<String> enabledProviderIds;
   final bool nsfwEnabled;
-  final int cacheTtlHours;
   final int cacheMaxItems;
-  final Map<String, int> providerPriority;
   final String themeMode;
   final String languageCode;
   final int appSeedColor;
@@ -159,9 +155,7 @@ class AppSettings {
   static const defaults = AppSettings(
     enabledProviderIds: ['gelbooru', 'rule34', 'realbooru'],
     nsfwEnabled: true,
-    cacheTtlHours: 24,
     cacheMaxItems: 2000,
-    providerPriority: {'gelbooru': 0, 'rule34': 1, 'realbooru': 2},
     favoriteArtists: [],
     pawchiveAccounts: [],
     pawchiveBidirectionalSync: false,
@@ -221,9 +215,7 @@ class AppSettings {
   AppSettings copyWith({
     List<String>? enabledProviderIds,
     bool? nsfwEnabled,
-    int? cacheTtlHours,
     int? cacheMaxItems,
-    Map<String, int>? providerPriority,
     String? themeMode,
     String? languageCode,
     int? appSeedColor,
@@ -304,9 +296,7 @@ class AppSettings {
           pawchiveBidirectionalSync ?? this.pawchiveBidirectionalSync,
       enabledProviderIds: enabledProviderIds ?? this.enabledProviderIds,
       nsfwEnabled: nsfwEnabled ?? this.nsfwEnabled,
-      cacheTtlHours: cacheTtlHours ?? this.cacheTtlHours,
       cacheMaxItems: cacheMaxItems ?? this.cacheMaxItems,
-      providerPriority: providerPriority ?? this.providerPriority,
       themeMode: themeMode ?? this.themeMode,
       languageCode: languageCode ?? this.languageCode,
       appSeedColor: appSeedColor ?? this.appSeedColor,
@@ -394,9 +384,7 @@ class AppSettings {
         'pawchiveBidirectionalSync': pawchiveBidirectionalSync,
         'enabledProviderIds': enabledProviderIds,
         'nsfwEnabled': nsfwEnabled,
-        'cacheTtlHours': cacheTtlHours,
         'cacheMaxItems': cacheMaxItems,
-        'providerPriority': providerPriority,
         'themeMode': themeMode,
         'languageCode': languageCode,
         'appSeedColor': appSeedColor,
@@ -471,13 +459,8 @@ class AppSettings {
           (json['enabledProviderIds'] as List?) ?? defaults.enabledProviderIds,
         ),
         nsfwEnabled: (json['nsfwEnabled'] as bool?) ?? defaults.nsfwEnabled,
-        cacheTtlHours:
-            (json['cacheTtlHours'] as num?)?.toInt() ?? defaults.cacheTtlHours,
         cacheMaxItems:
             (json['cacheMaxItems'] as num?)?.toInt() ?? defaults.cacheMaxItems,
-        providerPriority: Map<String, int>.from(
-          (json['providerPriority'] as Map?) ?? defaults.providerPriority,
-        ),
         themeMode: (json['themeMode'] as String?) ?? defaults.themeMode,
         languageCode:
             (json['languageCode'] as String?) ?? defaults.languageCode,

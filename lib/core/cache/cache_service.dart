@@ -55,20 +55,6 @@ class CacheService {
     });
   }
 
-  Future<Result<List<Post>>> getCachedPosts({
-    Duration maxAge = const Duration(hours: 24),
-  }) {
-    return _databaseService.safeRead((isar) async {
-      final cutoff = DateTime.now().subtract(maxAge);
-      final entities = await isar.cachedPostEntitys
-          .filter()
-          .cachedAtGreaterThan(cutoff)
-          .findAll();
-      entities.sort((a, b) => b.cachedAt.compareTo(a.cachedAt));
-      return entities.map((entity) => entity.toModel()).toList();
-    });
-  }
-
   Future<Result<void>> prune({
     Duration? olderThan,
     int? maxItems,

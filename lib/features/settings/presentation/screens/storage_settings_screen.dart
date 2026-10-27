@@ -37,7 +37,6 @@ class StorageSettingsScreen extends ConsumerWidget {
       ref.invalidate(viewedControllerProvider);
       ref.invalidate(mangaLibraryEntriesProvider);
       ref.invalidate(mangaReadingHistoryProvider);
-      ref.invalidate(mangaOfflineServiceProvider);
       ref.invalidate(downloadedMediaByKeyProvider);
 
       final parts = <String>[];

@@ -53,7 +53,6 @@ class _OnboardingLanguageStepState
       ref.invalidate(viewedControllerProvider);
       ref.invalidate(mangaLibraryEntriesProvider);
       ref.invalidate(mangaReadingHistoryProvider);
-      ref.invalidate(mangaOfflineServiceProvider);
       ref.invalidate(downloadedMediaByKeyProvider);
 
       await ref.read(onboardingServiceProvider).markCompleted();

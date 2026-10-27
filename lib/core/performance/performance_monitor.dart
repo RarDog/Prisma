@@ -588,10 +588,3 @@ final performanceMonitorServiceProvider =
   ref.onDispose(service.dispose);
   return service;
 });
-
-final performanceMetricsStreamProvider =
-    StreamProvider.autoDispose<PerformanceMetrics>((ref) {
-  final service = ref.watch(performanceMonitorServiceProvider);
-  return Stream.periodic(
-      const Duration(seconds: 1), (_) => service.collectMetrics());
-});

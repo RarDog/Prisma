@@ -305,9 +305,9 @@ void main() {
     final service = CacheService(databaseService);
 
     await service.cachePosts([post('1'), post('2'), post('3')], maxItems: 2);
-    final cached = await service.getCachedPosts() as Success;
+    final count = await service.getCachedPostsCount() as Success;
 
-    expect(cached.data, hasLength(2));
+    expect(count.data, 2);
   });
 
   test('viewed history persists keys and clears history', () async {

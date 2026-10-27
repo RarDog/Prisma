@@ -11,9 +11,7 @@ void main() {
       const initial = AppSettings(
         enabledProviderIds: ['gelbooru'],
         nsfwEnabled: true,
-        cacheTtlHours: 12,
         cacheMaxItems: 500,
-        providerPriority: {'gelbooru': 0},
         themeMode: 'dark',
         languageCode: 'ru',
         appSeedColor: 0xFF112233,

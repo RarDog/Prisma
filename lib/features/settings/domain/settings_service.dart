@@ -79,13 +79,6 @@ class SettingsService {
     return updateResult;
   }
 
-  Future<Result<void>> saveNsfwFilter(bool enabled) async {
-    final result = await getSettings();
-    if (result is Error<AppSettings>) return Error(result.failure);
-    final settings = (result as Success<AppSettings>).data;
-    return updateSettings(settings.copyWith(nsfwEnabled: enabled));
-  }
-
   Future<Result<void>> saveLastActiveLocation(String location) async {
     final result = await getSettings();
     if (result is Error<AppSettings>) return Error(result.failure);
@@ -110,20 +103,6 @@ class SettingsService {
     return updateSettings(updated);
   }
 
-  Future<Result<void>> saveMangaReaderMode({
-    required String readingMode,
-    required bool isRtl,
-  }) async {
-    final result = await getSettings();
-    if (result is Error<AppSettings>) return Error(result.failure);
-    final settings = (result as Success<AppSettings>).data;
-    final updated = settings.copyWith(
-      mangaReadingMode: readingMode,
-      mangaReaderRtl: isRtl,
-    );
-    return updateSettings(updated);
-  }
-
   Future<Result<void>> saveMangaVolumeNavigation({
     required bool enabled,
     bool? invert,
@@ -136,18 +115,6 @@ class SettingsService {
       mangaInvertVolumeKeys: invert ?? settings.mangaInvertVolumeKeys,
     );
     return updateSettings(updated);
-  }
-
-  Future<Result<void>> saveCacheSettings({
-    required int ttlHours,
-    required int maxItems,
-  }) async {
-    final result = await getSettings();
-    if (result is Error<AppSettings>) return Error(result.failure);
-    final settings = (result as Success<AppSettings>).data;
-    return updateSettings(
-      settings.copyWith(cacheTtlHours: ttlHours, cacheMaxItems: maxItems),
-    );
   }
 
   Future<Result<void>> hidePostKey(String cacheKey) async {
@@ -253,19 +220,6 @@ class SettingsService {
     return updateSettings(settings.copyWith(videoPlayerVolume: clamped));
   }
 
-  Future<Result<void>> appendDiagnosticLog(String message) async {
-    final result = await getSettings();
-    if (result is Error<AppSettings>) return Error(result.failure);
-    final settings = (result as Success<AppSettings>).data;
-    final line = '${DateTime.now().toIso8601String()}  $message';
-    final lines = [...settings.diagnosticLogLines, line];
-    return updateSettings(
-      settings.copyWith(
-        diagnosticLogLines:
-            lines.length > 200 ? lines.sublist(lines.length - 200) : lines,
-      ),
-    );
-  }
 
   Future<Result<void>> clearDiagnosticLogs() async {
     final result = await getSettings();
@@ -323,7 +277,6 @@ class SettingsService {
           'mediaQualityMode': settings.mediaQualityMode,
           'motionRefreshMode': settings.motionRefreshMode,
           'autoBatterySaver60Hz': settings.autoBatterySaver60Hz,
-          'cacheTtlHours': settings.cacheTtlHours,
           'cacheMaxItems': settings.cacheMaxItems,
           'hiddenPosts': settings.hiddenPostKeys.length,
           'blacklistRules': settings.smartBlacklistRules.length,

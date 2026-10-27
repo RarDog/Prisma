@@ -1,7 +1,6 @@
-import 'dart:io';
+import 'dart:io' show SocketException;
 
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 
 /// Formats raw system or library errors into user-friendly localized messages.
 String formatUserFriendlyError(Object? error, {bool isRu = true}) {
@@ -95,88 +94,3 @@ String formatUserFriendlyError(Object? error, {bool isRu = true}) {
 
 /// A centralized ErrorBoundary widget for wrapping views or subtrees,
 /// catching render exceptions or cleanly presenting async error states.
-class AppErrorBoundary extends StatefulWidget {
-  const AppErrorBoundary({
-    super.key,
-    required this.child,
-    this.fallbackBuilder,
-    this.onRetry,
-  });
-
-  final Widget child;
-  final Widget Function(
-          BuildContext context, Object error, VoidCallback? onRetry)?
-      fallbackBuilder;
-  final VoidCallback? onRetry;
-
-  @override
-  State<AppErrorBoundary> createState() => _AppErrorBoundaryState();
-}
-
-class _AppErrorBoundaryState extends State<AppErrorBoundary> {
-  Object? _error;
-
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  void _reset() {
-    setState(() => _error = null);
-    widget.onRetry?.call();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_error != null) {
-      if (widget.fallbackBuilder != null) {
-        return widget.fallbackBuilder!(context, _error!, _reset);
-      }
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.redAccent.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.warning_amber_rounded,
-                  color: Colors.redAccent,
-                  size: 32,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Builder(builder: (ctx) {
-                final isRu =
-                    Localizations.maybeLocaleOf(ctx)?.languageCode == 'ru';
-                return Text(
-                  formatUserFriendlyError(_error, isRu: isRu),
-                  textAlign: TextAlign.center,
-                  style: Theme.of(ctx).textTheme.bodyMedium,
-                );
-              }),
-              const SizedBox(height: 16),
-              FilledButton.tonalIcon(
-                onPressed: _reset,
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: Builder(builder: (ctx) {
-                  final isRu =
-                      Localizations.maybeLocaleOf(ctx)?.languageCode == 'ru';
-                  return Text(isRu ? 'Повторить' : 'Retry');
-                }),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return widget.child;
-  }
-}
