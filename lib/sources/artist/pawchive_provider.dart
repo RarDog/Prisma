@@ -52,7 +52,9 @@ class PawchiveProvider
     TopPeriodFilter topPeriod = TopPeriodFilter.none,
     CancelToken? cancelToken,
   }) async {
-    final offset = (page - 1).clamp(0, 999999) * 50;
+    // Callers paginate 0-based; the previous `(page - 1)` offset made pages
+    // 0 and 1 identical. Honor the requested page size as well.
+    final offset = page.clamp(0, 999999) * limit;
     final queryText = tags.join(' ').trim();
     try {
       final response = await _dio.get<dynamic>(

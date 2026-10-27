@@ -156,18 +156,18 @@ class XVideosProvider
     String path;
     final queryParameters = <String, dynamic>{};
 
+    // Callers paginate 0-based and the site's `p`/`/new/N` index is 1-based:
+    // page 0 is the unpaginated first page, page N >= 1 maps to `p=N` /
+    // `/new/N`. The old `page - 1` mapping showed page 0 twice and shifted
+    // every following page by one.
     if (effectiveTags.isNotEmpty) {
       path = '/';
       queryParameters['k'] = effectiveTags;
-      if (page > 1) {
-        queryParameters['p'] = page - 1;
+      if (page > 0) {
+        queryParameters['p'] = page;
       }
     } else {
-      if (page <= 1) {
-        path = '/';
-      } else {
-        path = '/new/$page';
-      }
+      path = page > 0 ? '/new/$page' : '/';
     }
 
     final response = await _dio.get<String>(

@@ -82,6 +82,8 @@ class MoebooruProvider
         '/post/popular_recent.json',
         queryParameters: {
           'period': periodParam,
+          // Without a limit the server default (~20) underfills the feed.
+          'limit': limit.clamp(1, 100),
           ..._queryParameters,
         },
         cancelToken: cancelToken,
@@ -117,16 +119,20 @@ class MoebooruProvider
 
   @override
   Future<Post?> getPost(String id) async {
+    // Moebooru's /post.json silently ignores an `id` parameter — it returns
+    // the newest posts regardless, i.e. the wrong artwork. Query the `id:N`
+    // metatag instead and match by id defensively.
     final response = await _dio.get<dynamic>(
       '/post.json',
-      queryParameters: {'id': id, 'limit': 1, ..._queryParameters},
+      queryParameters: {'tags': 'id:$id', 'limit': 1, ..._queryParameters},
     );
     final posts = MoebooruMapper.postsFromResponse(
       response.data,
       providerId: this.id,
       providerName: name,
     );
-    return posts.isEmpty ? null : posts.first;
+    if (posts.isEmpty) return null;
+    return posts.firstWhere((p) => p.id == id, orElse: () => posts.first);
   }
 
   @override
@@ -229,16 +235,33 @@ class MoebooruProvider
   }
 
   List<String> _topTags(TopPeriodFilter period) {
+    // Without a `date:>` bound, `order:score` alone degrades "top day" into
+    // all-time top-score — mirror the Danbooru implementation.
+    final now = DateTime.now();
     return switch (period) {
-      TopPeriodFilter.allTime ||
-      TopPeriodFilter.day ||
-      TopPeriodFilter.week ||
-      TopPeriodFilter.month ||
-      TopPeriodFilter.year =>
-        const ['order:score'],
+      TopPeriodFilter.day => [
+          'order:score',
+          'date:>${_date(now.subtract(const Duration(days: 1)))}',
+        ],
+      TopPeriodFilter.week => [
+          'order:score',
+          'date:>${_date(now.subtract(const Duration(days: 7)))}',
+        ],
+      TopPeriodFilter.month => [
+          'order:score',
+          'date:>${_date(now.subtract(const Duration(days: 31)))}',
+        ],
+      TopPeriodFilter.year => [
+          'order:score',
+          'date:>${_date(DateTime(now.year - 1, now.month, now.day))}',
+        ],
+      TopPeriodFilter.allTime => const ['order:score'],
       _ => const [],
     };
   }
+
+  String _date(DateTime value) =>
+      '${value.year}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
 
   int _int(dynamic value) {
     if (value is int) return value;
