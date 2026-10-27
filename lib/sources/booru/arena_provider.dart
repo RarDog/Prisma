@@ -63,7 +63,8 @@ class ArenaProvider
         queryParameters: {
           'q': query,
           'page': page,
-          'per': 8,
+          // Honor the caller's page size instead of a fixed 8.
+          'per': limit.clamp(1, 20),
         },
         cancelToken: cancelToken,
       );
@@ -85,7 +86,9 @@ class ArenaProvider
         try {
           final contentResp = await dioClient.dio.get<Map<String, dynamic>>(
             '/channels/$chId/contents',
-            queryParameters: {'per': 15},
+            // Page the channel contents with the search page, or page 2+
+            // of a query resurfaces the same first blocks forever.
+            queryParameters: {'per': 15, 'page': page},
             cancelToken: cancelToken,
           );
           final contents = contentResp.data?['contents'] as List?;

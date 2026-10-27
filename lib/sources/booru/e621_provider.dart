@@ -385,7 +385,9 @@ class E621Provider
   Future<List<TagSuggestion>> suggestTags(String query,
       {int limit = 20}) async {
     if (query.trim().isEmpty) return const [];
-    await _throttle();
+    // No shared throttle here: autocomplete is user-paced and must not
+    // queue behind searches, or it systematically loses the manager's
+    // 1500 ms suggestion budget.
     final response = await _dio.get<dynamic>(
       '/tags.json',
       queryParameters: {

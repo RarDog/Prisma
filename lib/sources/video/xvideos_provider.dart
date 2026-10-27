@@ -307,16 +307,6 @@ class XVideosProvider
         }
       }
 
-      if (response.statusCode == 301 || response.statusCode == 302) {
-        final loc = response.headers.value('location');
-        if (loc != null && loc.isNotEmpty) {
-          response = await _dio.get<String>(
-            loc,
-            options: _htmlOptions.copyWith(followRedirects: true),
-          );
-        }
-      }
-
       final html = response.data ?? '';
       if (html.isEmpty) return null;
 

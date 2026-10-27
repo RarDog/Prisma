@@ -91,21 +91,19 @@ class RanobeLibProvider
     try {
       final queryParams = <String, dynamic>{
         'page': targetPage,
-        'site_id[]': 3, // 3 = ranobelib
+        'site_id[]': 3,
+        // Honor the caller's page size (the API default underfilled feeds).
+        'limit': limit.clamp(1, 100),
       };
 
       if (queryText.isNotEmpty) {
         queryParams['q'] = queryText;
       }
 
-      if (topPeriod == TopPeriodFilter.day ||
-          topPeriod == TopPeriodFilter.week) {
-        queryParams['sort_by'] = 'views';
-        queryParams['sort_type'] = 'desc';
-      } else {
-        queryParams['sort_by'] = 'views';
-        queryParams['sort_type'] = 'desc';
-      }
+      // Top periods are not supported by this API — views-desc is the only
+      // stable ordering available.
+      queryParams['sort_by'] = 'views';
+      queryParams['sort_type'] = 'desc';
 
       final uri = '$_apiBase/manga';
       final response = await _dio.get(

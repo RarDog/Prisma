@@ -29,12 +29,11 @@ class DanbooruMapper {
               : null),
     ).toLowerCase();
 
+    // md5 (the file hash) is the only hash that constructs valid CDN URLs —
+    // pixel_hash differs from it for some assets and would 404.
     final hash = _string(
       json['md5'] ??
-          (json['media_asset'] is Map
-              ? (json['media_asset']['pixel_hash'] ??
-                  json['media_asset']['md5'])
-              : null),
+          (json['media_asset'] is Map ? json['media_asset']['md5'] : null),
     );
 
     String? cdnOriginal;
