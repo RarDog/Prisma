@@ -23,7 +23,6 @@ class ArtistsFavoritesView extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final columns = artistGridColumns(context, constraints);
-        final isMobile = columns == 1;
         return GridView.builder(
           controller: scrollController,
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -31,17 +30,18 @@ class ArtistsFavoritesView extends StatelessWidget {
           cacheExtent: 140.0,
           addAutomaticKeepAlives: false,
           addRepaintBoundaries: true,
+          // Same compact geometry as the catalog grid (104px cards).
           padding: EdgeInsets.fromLTRB(
             16,
             10,
             16,
-            150.0 + MediaQuery.paddingOf(context).bottom,
+            MediaQuery.paddingOf(context).bottom + 24,
           ),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: columns,
             crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            mainAxisExtent: isMobile ? 140 : 148,
+            mainAxisSpacing: 10,
+            mainAxisExtent: 104,
           ),
           itemCount: favorites.length,
           itemBuilder: (context, index) {

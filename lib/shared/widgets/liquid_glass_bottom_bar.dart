@@ -12,6 +12,8 @@ class LiquidGlassBottomBar extends StatefulWidget {
     required this.onDestinationSelected,
     required this.items,
     required this.ru,
+    this.settingsIndex,
+    this.onSettingsTap,
   });
 
   final int selectedIndex;
@@ -19,16 +21,24 @@ class LiquidGlassBottomBar extends StatefulWidget {
   final List<AppDestination> items;
   final bool ru;
 
+  /// When set, tapping this item triggers [onSettingsTap] (circular reveal)
+  /// instead of a branch navigation, and never becomes the selected index.
+  final int? settingsIndex;
+  final void Function(Offset globalCenter)? onSettingsTap;
+
   @override
   State<LiquidGlassBottomBar> createState() => LiquidGlassBottomBarState();
 }
 
 class LiquidGlassBottomBarState extends State<LiquidGlassBottomBar>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   int? _pressedIndex;
   late final AnimationController _pillController;
   late Animation<double> _leadAnimation;
   late Animation<double> _trailAnimation;
+
+  late final AnimationController _rippleController;
+  Offset? _rippleCenter;
 
   int _fromIndex = 0;
   int _toIndex = 0;
@@ -50,6 +60,14 @@ class LiquidGlassBottomBarState extends State<LiquidGlassBottomBar>
       parent: _pillController,
       curve: const Interval(0.12, 1.0, curve: Curves.easeOutBack),
     );
+    _rippleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 450),
+    )..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          if (mounted) setState(() => _rippleCenter = null);
+        }
+      });
   }
 
   @override
@@ -65,7 +83,13 @@ class LiquidGlassBottomBarState extends State<LiquidGlassBottomBar>
   @override
   void dispose() {
     _pillController.dispose();
+    _rippleController.dispose();
     super.dispose();
+  }
+
+  void _spawnRipple(Offset localCenter) {
+    setState(() => _rippleCenter = localCenter);
+    _rippleController.forward(from: 0.0);
   }
 
   @override
@@ -363,27 +387,87 @@ class LiquidGlassBottomBarState extends State<LiquidGlassBottomBar>
                               },
                             ),
 
+                            // Material-3 style ripple expanding from the
+                            // tap point across the glass.
+                            AnimatedBuilder(
+                              animation: _rippleController,
+                              builder: (context, _) {
+                                final center = _rippleCenter;
+                                if (center == null ||
+                                    !_rippleController.isAnimating) {
+                                  return const SizedBox.shrink();
+                                }
+                                final radius = lerpDouble(
+                                  12.0,
+                                  barWidth * 0.75,
+                                  Curves.easeOut
+                                      .transform(_rippleController.value),
+                                )!;
+                                final opacity =
+                                    (1.0 - _rippleController.value) * 0.16;
+                                return Positioned(
+                                  left: center.dx - radius,
+                                  top: center.dy - radius,
+                                  width: radius * 2,
+                                  height: radius * 2,
+                                  child: IgnorePointer(
+                                    child: DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        gradient: RadialGradient(
+                                          colors: [
+                                            Colors.white
+                                                .withValues(alpha: opacity),
+                                            Colors.white.withValues(alpha: 0.0),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+
                             // Navigation item buttons
                             Row(
                               children: [
                                 for (var i = 0; i < count; i++)
                                   Expanded(
-                                    child: _LiquidNavItem(
-                                      destination: widget.items[i],
-                                      label: widget.items[i]
-                                          .mobileLabelFor(widget.ru),
-                                      isSelected: widget.selectedIndex == i,
-                                      isPressed: _pressedIndex == i,
-                                      onTapDown: () =>
-                                          setState(() => _pressedIndex = i),
-                                      onTapUp: () =>
-                                          setState(() => _pressedIndex = null),
-                                      onTapCancel: () =>
-                                          setState(() => _pressedIndex = null),
-                                      onTap: () {
-                                        HapticFeedback.selectionClick();
-                                        widget.onDestinationSelected(i);
-                                      },
+                                    child: Builder(
+                                      builder: (itemContext) => _LiquidNavItem(
+                                        destination: widget.items[i],
+                                        label: widget.items[i]
+                                            .mobileLabelFor(widget.ru),
+                                        isSelected: widget.selectedIndex == i,
+                                        isPressed: _pressedIndex == i,
+                                        onTapDown: (localCenter) {
+                                          setState(() => _pressedIndex = i);
+                                          _spawnRipple(localCenter);
+                                        },
+                                        onTapUp: () => setState(
+                                            () => _pressedIndex = null),
+                                        onTapCancel: () => setState(
+                                            () => _pressedIndex = null),
+                                        onTap: () {
+                                          HapticFeedback.selectionClick();
+                                          if (widget.settingsIndex == i &&
+                                              widget.onSettingsTap != null) {
+                                            final box =
+                                                itemContext.findRenderObject()
+                                                    as RenderBox?;
+                                            final size = box?.size ?? Size.zero;
+                                            final origin = box?.localToGlobal(
+                                                    Offset.zero) ??
+                                                Offset.zero;
+                                            widget.onSettingsTap!(Offset(
+                                              origin.dx + size.width / 2,
+                                              origin.dy + size.height / 2,
+                                            ));
+                                            return;
+                                          }
+                                          widget.onDestinationSelected(i);
+                                        },
+                                      ),
                                     ),
                                   ),
                               ],
@@ -403,7 +487,7 @@ class LiquidGlassBottomBarState extends State<LiquidGlassBottomBar>
   }
 }
 
-class _LiquidNavItem extends StatelessWidget {
+class _LiquidNavItem extends StatefulWidget {
   const _LiquidNavItem({
     required this.destination,
     required this.label,
@@ -419,10 +503,61 @@ class _LiquidNavItem extends StatelessWidget {
   final String label;
   final bool isSelected;
   final bool isPressed;
-  final VoidCallback onTapDown;
+  final ValueChanged<Offset> onTapDown;
   final VoidCallback onTapUp;
   final VoidCallback onTapCancel;
   final VoidCallback onTap;
+
+  @override
+  State<_LiquidNavItem> createState() => _LiquidNavItemState();
+}
+
+class _LiquidNavItemState extends State<_LiquidNavItem>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _wiggleController;
+
+  // Rotation keyframes of the entrance wiggle (radians).
+  late final Animation<double> _wiggleAngle = TweenSequence<double>([
+    TweenSequenceItem(
+      tween: Tween(begin: 0.0, end: -0.16)
+          .chain(CurveTween(curve: Curves.easeOut)),
+      weight: 30,
+    ),
+    TweenSequenceItem(
+      tween: Tween(begin: -0.16, end: 0.10)
+          .chain(CurveTween(curve: Curves.easeInOut)),
+      weight: 35,
+    ),
+    TweenSequenceItem(
+      tween:
+          Tween(begin: 0.10, end: 0.0).chain(CurveTween(curve: Curves.easeOut)),
+      weight: 35,
+    ),
+  ]).animate(_wiggleController);
+
+  @override
+  void initState() {
+    super.initState();
+    _wiggleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 480),
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _LiquidNavItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!oldWidget.isSelected && widget.isSelected) {
+      // Entrance flourish: spring wiggle + one-shot glow behind the icon.
+      _wiggleController.forward(from: 0.0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _wiggleController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -430,19 +565,25 @@ class _LiquidNavItem extends StatelessWidget {
     final scheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
-    final targetScale = isPressed ? 0.88 : (isSelected ? 1.08 : 1.0);
+    final targetScale =
+        widget.isPressed ? 0.88 : (widget.isSelected ? 1.08 : 1.0);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTapDown: (_) => onTapDown(),
-      onTapUp: (_) => onTapUp(),
-      onTapCancel: onTapCancel,
-      onTap: onTap,
+      onTapDown: (details) {
+        final box = context.findRenderObject() as RenderBox?;
+        widget.onTapDown(
+          box?.globalToLocal(details.globalPosition) ?? Offset.zero,
+        );
+      },
+      onTapUp: (_) => widget.onTapUp(),
+      onTapCancel: widget.onTapCancel,
+      onTap: widget.onTap,
       child: Center(
         child: AnimatedScale(
           scale: targetScale,
           duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutBack,
+          curve: Curves.elasticOut,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
@@ -451,54 +592,95 @@ class _LiquidNavItem extends StatelessWidget {
                 height: 31,
                 child: Center(
                   child: AnimatedSlide(
-                    offset: isSelected ? const Offset(0, -0.06) : Offset.zero,
+                    offset: widget.isSelected
+                        ? const Offset(0, -0.06)
+                        : Offset.zero,
                     duration: const Duration(milliseconds: 260),
                     curve: Curves.easeOutBack,
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 220),
-                      switchInCurve: Curves.easeOutBack,
-                      switchOutCurve: Curves.easeInCubic,
-                      transitionBuilder: (child, anim) => FadeTransition(
-                        opacity: anim,
-                        child: ScaleTransition(
-                          scale: Tween<double>(begin: 0.80, end: 1.0)
-                              .animate(anim),
-                          child: child,
+                    child: AnimatedBuilder(
+                      animation: _wiggleController,
+                      builder: (context, child) {
+                        final glow =
+                            math.sin(_wiggleController.value * math.pi);
+                        return Stack(
+                          alignment: Alignment.center,
+                          clipBehavior: Clip.none,
+                          children: [
+                            if (glow > 0.01)
+                              IgnorePointer(
+                                child: Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: scheme.primary
+                                            .withValues(alpha: 0.45 * glow),
+                                        blurRadius: 18,
+                                        spreadRadius: 2,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            Transform.rotate(
+                              angle: _wiggleAngle.value,
+                              child: child,
+                            ),
+                          ],
+                        );
+                      },
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 220),
+                        switchInCurve: Curves.easeOutBack,
+                        switchOutCurve: Curves.easeInCubic,
+                        transitionBuilder: (child, anim) => FadeTransition(
+                          opacity: anim,
+                          child: ScaleTransition(
+                            scale: Tween<double>(begin: 0.80, end: 1.0)
+                                .animate(anim),
+                            child: child,
+                          ),
                         ),
-                      ),
-                      child: Icon(
-                        isSelected
-                            ? destination.effectiveSelectedIcon
-                            : destination.icon,
-                        key: ValueKey('${destination.id}_$isSelected'),
-                        size: isSelected ? 22.0 : 19.5,
-                        color: isSelected
-                            ? scheme.onPrimaryContainer
-                            : (isDark
-                                ? scheme.onSurfaceVariant
-                                    .withValues(alpha: 0.74)
-                                : scheme.onSurfaceVariant
-                                    .withValues(alpha: 0.82)),
+                        child: Icon(
+                          widget.isSelected
+                              ? widget.destination.effectiveSelectedIcon
+                              : widget.destination.icon,
+                          key: ValueKey(
+                              '${widget.destination.id}_${widget.isSelected}'),
+                          size: widget.isSelected ? 22.0 : 19.5,
+                          color: widget.isSelected
+                              ? scheme.onPrimaryContainer
+                              : (isDark
+                                  ? scheme.onSurfaceVariant
+                                      .withValues(alpha: 0.74)
+                                  : scheme.onSurfaceVariant
+                                      .withValues(alpha: 0.82)),
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
               const SizedBox(height: 1),
+              // The label occupies its slot in every tab (stable layout) but
+              // is only visible on the active one.
               AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 220),
                 curve: Curves.easeOutCubic,
                 style: TextStyle(
                   fontSize: 9.5,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected
-                      ? (isDark ? scheme.primary : scheme.primary)
-                      : scheme.onSurfaceVariant.withValues(alpha: 0.72),
-                  letterSpacing: isSelected ? -0.1 : -0.3,
+                  fontWeight:
+                      widget.isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: widget.isSelected
+                      ? scheme.primary
+                      : scheme.primary.withValues(alpha: 0.0),
+                  letterSpacing: widget.isSelected ? -0.1 : -0.3,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                child: Text(label),
+                child: Text(widget.label),
               ),
             ],
           ),

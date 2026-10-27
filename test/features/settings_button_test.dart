@@ -66,8 +66,7 @@ void main() {
     expect(find.byIcon(Icons.settings_rounded), findsOneWidget);
   });
 
-  testWidgets(
-      'LiquidGlassBottomBar and LiquidGlassSettingsButton position correctly on desktop',
+  testWidgets('bar settings tab opens via reveal callback, not navigation',
       (tester) async {
     tester.view.physicalSize = const Size(1024, 768);
     tester.view.devicePixelRatio = 1.0;
@@ -79,23 +78,28 @@ void main() {
     const items = [
       AppDestination('feed', 'Feed', Icons.feed_rounded, '/'),
       AppDestination('search', 'Search', Icons.search_rounded, '/search'),
+      AppDestination(
+        'settings',
+        'Settings',
+        Icons.settings_outlined,
+        '/settings',
+      ),
     ];
 
+    var navigated = 0;
+    var revealRequested = false;
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
           extendBody: true,
           body: const SizedBox.expand(),
-          floatingActionButton: LiquidGlassSettingsButton(
-            ru: true,
-            onTap: () {},
-          ),
-          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
           bottomNavigationBar: LiquidGlassBottomBar(
             selectedIndex: 0,
-            onDestinationSelected: (_) {},
+            onDestinationSelected: (_) => navigated++,
             items: items,
             ru: true,
+            settingsIndex: 2,
+            onSettingsTap: (_) => revealRequested = true,
           ),
         ),
       ),
@@ -103,14 +107,15 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    final gearFinder = find.byIcon(Icons.settings_rounded);
+    // The gear lives inside the bar, at the bottom of the screen.
+    final gearFinder = find.byIcon(Icons.settings_outlined);
     expect(gearFinder, findsOneWidget);
-    final gearOffset = tester.getTopLeft(gearFinder);
-    expect(gearOffset.dy, greaterThan(600));
+    expect(tester.getTopLeft(gearFinder).dy, greaterThan(600));
 
-    final barFinder = find.byType(LiquidGlassBottomBar);
-    expect(barFinder, findsOneWidget);
-    final barOffset = tester.getTopLeft(barFinder);
-    expect(barOffset.dy, greaterThan(650));
+    // Tapping the gear triggers the reveal callback, not a branch switch.
+    await tester.tap(gearFinder);
+    await tester.pumpAndSettle();
+    expect(revealRequested, isTrue);
+    expect(navigated, 0);
   });
 }

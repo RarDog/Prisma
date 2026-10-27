@@ -91,9 +91,9 @@ class MobileShellState extends ConsumerState<MobileShell>
     }
 
     final items = widget.destinations
-        .where((item) =>
-            item.location != '/providers' && item.location != '/settings')
+        .where((item) => item.location != '/providers')
         .toList();
+    final settingsIndex = items.indexWhere((item) => item.id == 'settings');
     final location = GoRouterState.of(context).uri.path;
     final activeBranch =
         widget.currentBranchIndex ?? AppShell.branchIndexForLocation(location);
@@ -123,31 +123,6 @@ class MobileShellState extends ConsumerState<MobileShell>
         },
         child: widget.child,
       ),
-      floatingActionButton: isKeyboardOpen
-          ? null
-          : AnimatedBuilder(
-              animation: _slideAnimation,
-              builder: (context, child) {
-                if (_slideAnimation.value == 0.0) {
-                  return const SizedBox.shrink();
-                }
-                return Transform.translate(
-                  offset: Offset(0, (1.0 - _slideAnimation.value) * 80.0),
-                  child: Opacity(
-                    opacity: _slideAnimation.value.clamp(0.0, 1.0),
-                    child: child,
-                  ),
-                );
-              },
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 0, right: 2),
-                child: LiquidGlassSettingsButton(
-                  ru: widget.ru,
-                  onTapWithCenter: (center) => _openSettingsWithReveal(center),
-                ),
-              ),
-            ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: isKeyboardOpen
           ? null
           : AnimatedBuilder(
@@ -170,9 +145,10 @@ class MobileShellState extends ConsumerState<MobileShell>
                     widget.onNavigate(items[index].location),
                 items: items,
                 ru: widget.ru,
+                settingsIndex: settingsIndex >= 0 ? settingsIndex : null,
+                onSettingsTap: _openSettingsWithReveal,
               ),
             ),
     );
   }
 }
-
