@@ -142,6 +142,10 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     final diskSizeBytes = _tabIndex == 1
         ? (ref.watch(offlineDiskSizeProvider(downloaded.values)).value ?? 0)
         : 0;
+    // Watched on every tab: a completed download must rebuild the screen
+    // (and refetch the downloaded map) even if the user is not on the
+    // offline tab when it finishes.
+    ref.watch(downloadTasksProvider);
     final tasks = _tabIndex == 1
         ? (ref.watch(downloadTasksProvider).value ?? const <DownloadTask>[])
         : const <DownloadTask>[];

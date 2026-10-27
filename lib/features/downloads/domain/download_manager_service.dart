@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
+import 'package:gel_rule_app/core/utils/logger.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/features/downloads/models/download_task.dart';
 import 'package:gel_rule_app/core/models/post.dart';
@@ -162,11 +163,19 @@ class DownloadManagerService {
         ),
       );
       if (task.post != null && saved != null && saved.isNotEmpty) {
-        await _downloadedMediaService?.markDownloaded(
+        final marked = await _downloadedMediaService?.markDownloaded(
           task.post!,
           savedPath: saved,
           fileName: task.fileName,
         );
+        if (marked != null && marked is Error<void>) {
+          AppLogger.error(
+              'markDownloaded failed for ${task.post!.cacheKey}',
+              marked.failure);
+        }
+        // Re-emit AFTER the row is written so listeners (the favorites
+        // offline tab) refetch with the record actually in place.
+        _emit();
       }
       _scheduleAutoRemove(task.id, const Duration(seconds: 6));
     } catch (error) {
