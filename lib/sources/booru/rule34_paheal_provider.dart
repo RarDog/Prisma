@@ -1,3 +1,5 @@
+import 'dart:isolate';
+
 import 'package:dio/dio.dart';
 
 import 'package:gel_rule_app/core/http/dio_client.dart';
@@ -51,7 +53,19 @@ class Rule34PahealProvider implements ContentProvider, PostPageProvider {
       options: Options(responseType: ResponseType.plain),
       cancelToken: cancelToken,
     );
-    return _parseList(response.data ?? '').take(limit).toList(growable: false);
+    final html = response.data ?? '';
+    // Snapshot sendable locals — the parse closure must not capture `this`.
+    final providerId = id;
+    final providerName = name;
+    final base = baseUrl;
+    return (await Isolate.run(() => parseListHtml(
+                html,
+                providerId: providerId,
+                providerName: providerName,
+                baseUrl: base,
+              )))
+        .take(limit)
+        .toList(growable: false);
   }
 
   @override
@@ -60,7 +74,17 @@ class Rule34PahealProvider implements ContentProvider, PostPageProvider {
       '/post/view/$id',
       options: Options(responseType: ResponseType.plain),
     );
-    return _parseSingle(id, response.data ?? '');
+    final html = response.data ?? '';
+    final providerId = id;
+    final providerName = name;
+    final base = baseUrl;
+    return await Isolate.run(() => parseSingleHtml(
+          id,
+          html,
+          providerId: providerId,
+          providerName: providerName,
+          baseUrl: base,
+        ));
   }
 
   @override
@@ -102,7 +126,12 @@ class Rule34PahealProvider implements ContentProvider, PostPageProvider {
   @override
   String postPageUrl(Post post) => '$baseUrl/post/view/${post.id}';
 
-  List<Post> _parseList(String html) {
+  static List<Post> parseListHtml(
+    String html, {
+    required String providerId,
+    required String providerName,
+    required String baseUrl,
+  }) {
     final posts = <Post>[];
     final pattern = RegExp(
       r'''<div[^>]+class=['"][^'"]*\bshm-thumb\b[^'"]*['"][\s\S]*?</div>''',
@@ -117,12 +146,14 @@ class Rule34PahealProvider implements ContentProvider, PostPageProvider {
               caseSensitive: false,
             ).firstMatch(block)?.group(1) ??
             '',
+        baseUrl,
       );
       final previewUrl = _absolute(
         RegExp(r'''<img[^>]+src=['"]([^'"]+)['"]''', caseSensitive: false)
                 .firstMatch(block)
                 ?.group(1) ??
             '',
+        baseUrl,
       );
       if (postId.isEmpty || (fileUrl.isEmpty && previewUrl.isEmpty)) continue;
       final tags = _tags(_attribute(block, 'data-tags'));
@@ -132,8 +163,8 @@ class Rule34PahealProvider implements ContentProvider, PostPageProvider {
       posts.add(
         Post(
           id: postId,
-          providerId: id,
-          providerName: name,
+          providerId: providerId,
+          providerName: providerName,
           previewUrl: previewUrl.isEmpty ? mediaUrl : previewUrl,
           sampleUrl: mediaUrl,
           fileUrl: mediaUrl,
@@ -151,11 +182,22 @@ class Rule34PahealProvider implements ContentProvider, PostPageProvider {
     }
     if (posts.isNotEmpty) return posts;
     final singleId = RegExp(r'''/post/view/(\d+)''').firstMatch(html)?.group(1);
-    final single = singleId == null ? null : _parseSingle(singleId, html);
+    final single = singleId == null
+        ? null
+        : parseSingleHtml(singleId, html,
+            providerId: providerId,
+            providerName: providerName,
+            baseUrl: baseUrl);
     return single == null ? const [] : [single];
   }
 
-  Post? _parseSingle(String postId, String html) {
+  static Post? parseSingleHtml(
+    String postId,
+    String html, {
+    required String providerId,
+    required String providerName,
+    required String baseUrl,
+  }) {
     final fileUrl = _absolute(
       RegExp(
             r'''<a[^>]+href=['"]([^'"]+)['"][^>]*>\s*(?:File|Image) Only\s*</a>''',
@@ -166,6 +208,7 @@ class Rule34PahealProvider implements ContentProvider, PostPageProvider {
             caseSensitive: false,
           ).firstMatch(html)?.group(1) ??
           '',
+      baseUrl,
     );
     final previewUrl = _absolute(
       RegExp(
@@ -173,6 +216,7 @@ class Rule34PahealProvider implements ContentProvider, PostPageProvider {
             caseSensitive: false,
           ).firstMatch(html)?.group(1) ??
           '',
+      baseUrl,
     );
     final tagsText = RegExp(
           r'''<meta[^>]+name=['"]keywords['"][^>]+content=['"]([^'"]+)['"]''',
@@ -184,8 +228,8 @@ class Rule34PahealProvider implements ContentProvider, PostPageProvider {
     final tags = _tags(tagsText);
     return Post(
       id: postId,
-      providerId: id,
-      providerName: name,
+      providerId: providerId,
+      providerName: providerName,
       previewUrl: previewUrl.isEmpty ? mediaUrl : previewUrl,
       sampleUrl: mediaUrl,
       fileUrl: mediaUrl,
@@ -201,7 +245,7 @@ class Rule34PahealProvider implements ContentProvider, PostPageProvider {
     );
   }
 
-  String _attribute(String source, String name) {
+  static String _attribute(String source, String name) {
     return _decode(
       RegExp(
             '''$name\\s*=\\s*['"]([^'"]*)['"]''',
@@ -211,7 +255,7 @@ class Rule34PahealProvider implements ContentProvider, PostPageProvider {
     );
   }
 
-  (int, int) _dimensions(String value) {
+  static (int, int) _dimensions(String value) {
     final match = RegExp(r'(\d+)x(\d+)').firstMatch(value);
     return (
       int.tryParse(match?.group(1) ?? '') ?? 0,
@@ -219,7 +263,7 @@ class Rule34PahealProvider implements ContentProvider, PostPageProvider {
     );
   }
 
-  List<String> _tags(String value) {
+  static List<String> _tags(String value) {
     return _decode(value)
         .replaceAll(',', ' ')
         .split(RegExp(r'\s+'))
@@ -229,7 +273,7 @@ class Rule34PahealProvider implements ContentProvider, PostPageProvider {
         .toList(growable: false);
   }
 
-  String _fileType(String value) {
+  static String _fileType(String value) {
     final lower = value.toLowerCase().split('?').first;
     if (lower.contains('webm') || lower.contains('mp4')) return 'video';
     if (lower.contains('gif')) return 'gif';
@@ -237,7 +281,7 @@ class Rule34PahealProvider implements ContentProvider, PostPageProvider {
     return 'image';
   }
 
-  String _absolute(String url) {
+  static String _absolute(String url, String baseUrl) {
     final value = _decode(url.trim());
     if (value.isEmpty) return '';
     if (value.startsWith('//')) return 'https:$value';
@@ -245,7 +289,7 @@ class Rule34PahealProvider implements ContentProvider, PostPageProvider {
     return value;
   }
 
-  String _decode(String value) {
+  static String _decode(String value) {
     return value
         .replaceAll('&amp;', '&')
         .replaceAll('&lt;', '<')

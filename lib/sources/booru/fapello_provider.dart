@@ -199,7 +199,12 @@ class FapelloProvider
     try {
       final html = await _getHtml('/$slug/$mediaId/');
       if (html.trim().isEmpty) return null;
-      return _postFromDetailPage(slug, mediaId, html);
+      // Snapshot sendable locals — the parse closure must not capture `this`.
+      final providerId = id;
+      final providerName = name;
+      return await Isolate.run(
+          () => _postFromDetailPage(slug, mediaId, html,
+              providerId: providerId, providerName: providerName));
     } catch (_) {
       return null;
     }
@@ -249,7 +254,9 @@ class FapelloProvider
     if (parsed == null) return const [];
     try {
       final html = await _getHtml('/${parsed.$1}/${parsed.$2}/');
-      return _parseComments(html, postId);
+      final providerId = id;
+      return await Isolate.run(
+          () => _parseCommentsHtml(html, postId, providerId: providerId));
     } catch (_) {
       return const [];
     }
@@ -476,7 +483,13 @@ class FapelloProvider
 
   // ------------------------------------------------------------ detail page
 
-  Post? _postFromDetailPage(String slug, String mediaId, String html) {
+  static Post? _postFromDetailPage(
+    String slug,
+    String mediaId,
+    String html, {
+    required String providerId,
+    required String providerName,
+  }) {
     final imageMatch = _fullImagePattern.firstMatch(html);
     if (imageMatch != null) {
       final fileUrl = imageMatch.group(1) ?? '';
@@ -485,6 +498,8 @@ class FapelloProvider
         _imgAltPattern.firstMatch(imageMatch.group(2) ?? '')?.group(1) ?? '',
       );
       return _buildPost(
+        providerId: providerId,
+        providerName: providerName,
         slug: slug,
         mediaId: mediaId,
         previewUrl: _thumbnailFromMediaUrl(fileUrl),
@@ -503,6 +518,8 @@ class FapelloProvider
       final posterUrl =
           poster.isEmpty ? _thumbnailFromMediaUrl(fileUrl) : poster;
       return _buildPost(
+        providerId: providerId,
+        providerName: providerName,
         slug: slug,
         mediaId: mediaId,
         previewUrl: posterUrl,
@@ -515,7 +532,9 @@ class FapelloProvider
     return null;
   }
 
-  Post _buildPost({
+  static Post _buildPost({
+    required String providerId,
+    required String providerName,
     required String slug,
     required String mediaId,
     required String previewUrl,
@@ -532,8 +551,8 @@ class FapelloProvider
     if (tags.isNotEmpty) groups['general'] = tags;
     return Post(
       id: '$slug:$mediaId',
-      providerId: id,
-      providerName: name,
+      providerId: providerId,
+      providerName: providerName,
       previewUrl: previewUrl,
       sampleUrl: previewUrl,
       fileUrl: fileUrl,
@@ -549,17 +568,17 @@ class FapelloProvider
     );
   }
 
-  DateTime _pseudoDate(String mediaId) {
+  static DateTime _pseudoDate(String mediaId) {
     final numeric = int.tryParse(mediaId) ?? 0;
     return DateTime.fromMillisecondsSinceEpoch(
       numeric.clamp(0, 1 << 40) * 1000,
     );
   }
 
-  int _parseLikeCount(String html) =>
+  static int _parseLikeCount(String html) =>
       int.tryParse(_likeCountPattern.firstMatch(html)?.group(1) ?? '') ?? 0;
 
-  List<String> _parseDetailTags(String html) {
+  static List<String> _parseDetailTags(String html) {
     final tags = <String>[];
     for (final match in _detailTagPattern.allMatches(html)) {
       final name = (match.group(2) ?? '').trim();
@@ -568,7 +587,7 @@ class FapelloProvider
     return tags;
   }
 
-  String _pageTitle(String html) {
+  static String _pageTitle(String html) {
     final match =
         RegExp(r'<title>(.*?)</title>', caseSensitive: false).firstMatch(html);
     if (match == null) return '';
@@ -577,7 +596,11 @@ class FapelloProvider
         .trim();
   }
 
-  List<PostComment> _parseComments(String html, String postId) {
+  static List<PostComment> _parseCommentsHtml(
+    String html,
+    String postId, {
+    required String providerId,
+  }) {
     final comments = <PostComment>[];
     var index = 0;
     for (final match in _commentPattern.allMatches(html)) {
@@ -586,7 +609,7 @@ class FapelloProvider
       comments.add(PostComment(
         id: '${postId}_$index',
         postId: postId,
-        providerId: id,
+        providerId: providerId,
         authorName: '',
         body: body,
         createdAt: DateTime.fromMillisecondsSinceEpoch(0),
@@ -599,7 +622,7 @@ class FapelloProvider
   // ------------------------------------------------------------------- urls
 
   /// `..._0009_300px.jpg` -> `..._0009.jpg`
-  String _fullMediaUrl(String thumbnailUrl) {
+  static String _fullMediaUrl(String thumbnailUrl) {
     if (thumbnailUrl.isEmpty) return '';
     final uri = Uri.tryParse(thumbnailUrl);
     if (uri == null) return thumbnailUrl;
@@ -609,7 +632,7 @@ class FapelloProvider
   }
 
   /// `..._0009_300px.jpg` -> mp4 on the dedicated CDN host.
-  String _videoUrl(String thumbnailUrl) {
+  static String _videoUrl(String thumbnailUrl) {
     if (thumbnailUrl.isEmpty) return '';
     final uri = Uri.tryParse(thumbnailUrl);
     if (uri == null) return thumbnailUrl;
@@ -617,7 +640,7 @@ class FapelloProvider
     return uri.replace(host: _mediaCdnHost, path: path).toString();
   }
 
-  String _thumbnailFromMediaUrl(String mediaUrl) {
+  static String _thumbnailFromMediaUrl(String mediaUrl) {
     if (mediaUrl.isEmpty) return '';
     final uri = Uri.tryParse(mediaUrl);
     if (uri == null) return mediaUrl;

@@ -1,3 +1,5 @@
+import 'dart:isolate';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:gel_rule_app/core/http/app_headers.dart';
@@ -85,7 +87,20 @@ class Rule34UsProvider
       );
 
       final html = response.data ?? '';
-      return _parseList(html).take(limit).toList(growable: false);
+      // Snapshot sendable locals — the parse closure must not capture `this`.
+      final providerId = id;
+      final providerName = name;
+      final base = baseUrl;
+      // Parsing 100s of KB of HTML with dozens of regexes janks the UI
+      // thread; run it in a short-lived isolate.
+      return (await Isolate.run(() => parseListHtml(
+            html,
+            providerId: providerId,
+            providerName: providerName,
+            baseUrl: base,
+          )))
+          .take(limit)
+          .toList(growable: false);
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) return const [];
       rethrow;
@@ -105,7 +120,17 @@ class Rule34UsProvider
         options: Options(responseType: ResponseType.plain),
       );
 
-      return _parseDetails(id, response.data ?? '');
+      final html = response.data ?? '';
+      final providerId = id;
+      final providerName = name;
+      final base = baseUrl;
+      return await Isolate.run(() => parseDetailsHtml(
+            id,
+            html,
+            providerId: providerId,
+            providerName: providerName,
+            baseUrl: base,
+          ));
     } catch (_) {
       return null;
     }
@@ -214,12 +239,28 @@ class Rule34UsProvider
   }
 
   @visibleForTesting
-  List<Post> parseList(String html) => _parseList(html);
+  List<Post> parseList(String html) => parseListHtml(
+        html,
+        providerId: id,
+        providerName: name,
+        baseUrl: baseUrl,
+      );
 
   @visibleForTesting
-  Post? parseDetails(String postId, String html) => _parseDetails(postId, html);
+  Post? parseDetails(String postId, String html) => parseDetailsHtml(
+        postId,
+        html,
+        providerId: id,
+        providerName: name,
+        baseUrl: baseUrl,
+      );
 
-  List<Post> _parseList(String html) {
+  static List<Post> parseListHtml(
+    String html, {
+    required String providerId,
+    required String providerName,
+    required String baseUrl,
+  }) {
     final posts = <Post>[];
 
     // Pattern matching post card container in rule34.us
@@ -235,7 +276,7 @@ class Rule34UsProvider
       final linkHref = match.group(3) ?? '';
       final imgAttr = match.group(4) ?? '';
 
-      final previewUrl = _absolute(_attribute(imgAttr, 'src'));
+      final previewUrl = _absolute(_attribute(imgAttr, 'src'), baseUrl);
       if (previewUrl.isEmpty) continue;
 
       final title = _attribute(imgAttr, 'title');
@@ -261,8 +302,8 @@ class Rule34UsProvider
       posts.add(
         Post(
           id: id,
-          providerId: this.id,
-          providerName: name,
+          providerId: providerId,
+          providerName: providerName,
           previewUrl: previewUrl,
           sampleUrl: isVideo ? previewUrl : derivedMedia,
           fileUrl: derivedMedia,
@@ -286,7 +327,13 @@ class Rule34UsProvider
     return posts;
   }
 
-  Post? _parseDetails(String postId, String html) {
+  static Post? parseDetailsHtml(
+    String postId,
+    String html, {
+    required String providerId,
+    required String providerName,
+    required String baseUrl,
+  }) {
     // 1. Original link: <a href="https://.../images/xx/xx/hash.ext"><li class="character-tag" ...>Original</li></a>
     final originalUrl = _absolute(
       RegExp(
@@ -298,6 +345,7 @@ class Rule34UsProvider
             caseSensitive: false,
           ).firstMatch(html)?.group(1) ??
           '',
+      baseUrl,
     );
 
     // 2. Video elements
@@ -306,7 +354,7 @@ class Rule34UsProvider
       caseSensitive: false,
     )
         .allMatches(html)
-        .map((m) => _absolute(m.group(1) ?? ''))
+        .map((m) => _absolute(m.group(1) ?? '', baseUrl))
         .where((u) => u.isNotEmpty)
         .toList();
 
@@ -325,6 +373,7 @@ class Rule34UsProvider
 
     final videoPoster = _absolute(
       _attribute(videoTag ?? '', 'poster'),
+      baseUrl,
     );
 
     // 3. Image tag
@@ -333,7 +382,7 @@ class Rule34UsProvider
       caseSensitive: false,
     ).firstMatch(html)?.group(0);
 
-    final imgSrc = _absolute(_attribute(imgTag ?? '', 'src'));
+    final imgSrc = _absolute(_attribute(imgTag ?? '', 'src'), baseUrl);
     final width = int.tryParse(_attribute(imgTag ?? '', 'width')) ??
         int.tryParse(_attribute(videoTag ?? '', 'width')) ??
         0;
@@ -404,8 +453,8 @@ class Rule34UsProvider
 
     return Post(
       id: postId,
-      providerId: id,
-      providerName: name,
+      providerId: providerId,
+      providerName: providerName,
       previewUrl: previewUrl,
       sampleUrl: sampleUrl,
       fileUrl: fileUrl,
@@ -425,7 +474,7 @@ class Rule34UsProvider
     );
   }
 
-  List<String> _tagsFromTitle(String title) {
+  static List<String> _tagsFromTitle(String title) {
     if (title.isEmpty) return const [];
     return title
         .split(',')
@@ -435,7 +484,7 @@ class Rule34UsProvider
         .toList(growable: false);
   }
 
-  String _deriveMediaUrl(
+  static String _deriveMediaUrl(
     String thumbUrl, {
     required bool isVideo,
     required bool isGif,
@@ -464,7 +513,7 @@ class Rule34UsProvider
     return 'https://img2.rule34.us/images/$d1/$d2/$hash.jpeg';
   }
 
-  String _attribute(String tag, String name) {
+  static String _attribute(String tag, String name) {
     final match = RegExp(
       '''$name\\s*=\\s*["']([^"']*)["']''',
       caseSensitive: false,
@@ -472,7 +521,7 @@ class Rule34UsProvider
     return match?.group(1) ?? '';
   }
 
-  String _absolute(String url) {
+  static String _absolute(String url, String baseUrl) {
     if (url.isEmpty) return '';
     if (url.startsWith('//')) return 'https:$url';
     if (url.startsWith('http://') || url.startsWith('https://')) return url;
@@ -483,7 +532,7 @@ class Rule34UsProvider
     return '$cleanBase$cleanPath';
   }
 
-  String _fileType(String url) {
+  static String _fileType(String url) {
     final lower = url.toLowerCase().split('?').first;
     if (lower.endsWith('.mp4') || lower.endsWith('.webm')) return 'video';
     if (lower.endsWith('.gif')) return 'gif';

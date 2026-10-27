@@ -1,3 +1,5 @@
+import 'dart:isolate';
+
 import 'package:dio/dio.dart';
 import 'package:gel_rule_app/core/http/app_headers.dart';
 
@@ -392,11 +394,13 @@ class RanobeLibProvider
       final chapterData = data['data'] is Map ? data['data'] as Map : data;
       final rawContent = chapterData['content'] ?? chapterData['text'];
 
+      // Chapters run into hundreds of KB with ~20 regex passes: convert
+      // off the UI thread. Decoded JSON (Map/List/String) is sendable.
       String parsed = '';
       if (rawContent is Map || rawContent is List) {
-        parsed = _parseProseMirror(rawContent);
+        parsed = await Isolate.run(() => _parseProseMirror(rawContent));
       } else if (rawContent is String) {
-        parsed = _cleanHtml(rawContent);
+        parsed = await Isolate.run(() => _cleanHtml(rawContent));
       }
 
       // Check if there are attachments (e.g. illustrations)
@@ -429,7 +433,7 @@ class RanobeLibProvider
     }
   }
 
-  String _parseProseMirror(dynamic doc) {
+  static String _parseProseMirror(dynamic doc) {
     if (doc == null) return '';
     final buffer = StringBuffer();
 
@@ -485,7 +489,7 @@ class RanobeLibProvider
     return buffer.toString().replaceAll(RegExp(r'\n{3,}'), '\n\n').trim();
   }
 
-  String _cleanHtml(String html) {
+  static String _cleanHtml(String html) {
     if (html.isEmpty) return '';
     return html
         .replaceAllMapped(

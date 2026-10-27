@@ -87,7 +87,20 @@ class RealbooruHtmlProvider
       queryParameters: {'page': 'post', 's': 'view', 'id': id},
       options: Options(responseType: ResponseType.plain),
     );
-    return _parseDetails(id, response.data ?? '');
+    final html = response.data ?? '';
+    // Snapshot sendable locals — the parse closure must not capture `this`.
+    final providerId = id;
+    final providerName = name;
+    final base = baseUrl;
+    // Detail pages are ~100-200 KB of HTML per dozen regexes: parse off the
+    // UI thread.
+    return await Isolate.run(() => _parseDetailsHtml(
+          id,
+          html,
+          providerId: providerId,
+          providerName: providerName,
+          baseUrl: base,
+        ));
   }
 
   @override
@@ -98,7 +111,13 @@ class RealbooruHtmlProvider
         queryParameters: {'page': 'post', 's': 'view', 'id': postId},
         options: Options(responseType: ResponseType.plain),
       );
-      return _parseComments(postId, response.data ?? '');
+      final html = response.data ?? '';
+      final providerId = id;
+      return await Isolate.run(() => _parseCommentsHtml(
+            postId,
+            html,
+            providerId: providerId,
+          ));
     } catch (_) {
       return const [];
     }
@@ -269,24 +288,31 @@ class RealbooruHtmlProvider
     return posts;
   }
 
-  Post? _parseDetails(String postId, String html) {
+  static Post? _parseDetailsHtml(
+    String postId,
+    String html, {
+    required String providerId,
+    required String providerName,
+    required String baseUrl,
+  }) {
     final imageTag = RegExp(
       r'''<(?:img|video)[^>]+(?:id=["']image["'][^>]*|[^>]*id=["']image["'])''',
       caseSensitive: false,
     ).firstMatch(html)?.group(0);
-    final originalUrl = _absolute(
+    final originalUrl = _absoluteUrl(
       RegExp(
             r'''<a[^>]+href=["']([^"']+)["'][^>]*>\s*Original\s*</a>''',
             caseSensitive: false,
           ).firstMatch(html)?.group(1) ??
           '',
+      baseUrl,
     );
     final videoSources = RegExp(
       r'''<source[^>]+src=["']([^"']+\.(?:webm|mp4)[^"']*)["']''',
       caseSensitive: false,
     )
         .allMatches(html)
-        .map((match) => _absolute(match.group(1) ?? ''))
+        .map((match) => _absoluteUrl(match.group(1) ?? '', baseUrl))
         .where((url) => url.isNotEmpty)
         .toList();
 
@@ -298,7 +324,7 @@ class RealbooruHtmlProvider
       return 0;
     });
 
-    final imageUrl = _absolute(_attribute(imageTag ?? '', 'src'));
+    final imageUrl = _absoluteUrl(_attribute(imageTag ?? '', 'src'), baseUrl);
     final isVideo = videoSources.isNotEmpty ||
         (originalUrl.isNotEmpty && _fileType(originalUrl) == 'video');
 
@@ -406,8 +432,8 @@ class RealbooruHtmlProvider
     if (mediaUrl.isEmpty) return null;
     return Post(
       id: postId,
-      providerId: id,
-      providerName: name,
+      providerId: providerId,
+      providerName: providerName,
       previewUrl: previewUrl,
       sampleUrl: sampleUrl,
       fileUrl: mediaUrl,
@@ -415,7 +441,9 @@ class RealbooruHtmlProvider
       rating: 'explicit',
       width: 0,
       height: 0,
-      source: source.isEmpty ? postPageUrlById(postId) : source,
+      source: source.isEmpty
+          ? '$baseUrl/index.php?page=post&s=view&id=$postId'
+          : source,
       createdAt: createdAt,
       fileType: _fileType(mediaUrl),
       score: score,
@@ -444,15 +472,11 @@ class RealbooruHtmlProvider
         .toList(growable: false);
   }
 
-  String _fileType(String url) {
+  static String _fileType(String url) {
     final lower = url.toLowerCase().split('?').first;
     if (lower.endsWith('.webm') || lower.endsWith('.mp4')) return 'video';
     if (lower.endsWith('.gif')) return 'gif';
     return 'image';
-  }
-
-  String _absolute(String url) {
-    return _absoluteUrl(url, baseUrl);
   }
 
   static String _absoluteUrl(String url, String baseUrl) {
@@ -497,7 +521,7 @@ class RealbooruHtmlProvider
     return uri.replace(path: path, query: null).toString();
   }
 
-  String _thumbnailFromMediaUrl(String mediaUrl) {
+  static String _thumbnailFromMediaUrl(String mediaUrl) {
     final uri = Uri.tryParse(mediaUrl);
     if (uri == null) return mediaUrl;
     final match =
@@ -508,7 +532,7 @@ class RealbooruHtmlProvider
     return uri.replace(path: path, query: null).toString();
   }
 
-  DateTime _parseRealbooruDate(String? raw) {
+  static DateTime _parseRealbooruDate(String? raw) {
     if (raw == null || raw.trim().isEmpty) return DateTime.now();
     final clean = raw.trim().replaceAll(',', '');
     final parts = clean.split(RegExp(r'\s+'));
@@ -538,15 +562,19 @@ class RealbooruHtmlProvider
     return DateTime.tryParse(clean) ?? DateTime.now();
   }
 
-  String _stripTags(String html) => html.replaceAll(RegExp(r'<[^>]+>'), '');
+  static String _stripTags(String html) => html.replaceAll(RegExp(r'<[^>]+>'), '');
 
-  String _cleanCommentBody(String raw) {
+  static String _cleanCommentBody(String raw) {
     var text = raw.replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n');
     text = text.replaceAll(RegExp(r'<[^>]+>'), '');
     return _decode(text).trim();
   }
 
-  List<PostComment> _parseComments(String postId, String html) {
+  static List<PostComment> _parseCommentsHtml(
+    String postId,
+    String html, {
+    required String providerId,
+  }) {
     final comments = <PostComment>[];
     final commentBlockPattern = RegExp(
       r'''<div[^>]*class=["'][^"']*\buserComment\b[^"']*["'][^>]*id=["']c(\d+)["'][^>]*>([\s\S]*?)(?=<div[^>]*class=["'][^"']*\buserComment\b|<div[^>]*id=["']paginator|</body>|$)''',
@@ -602,7 +630,7 @@ class RealbooruHtmlProvider
           PostComment(
             id: commentId,
             postId: postId,
-            providerId: id,
+            providerId: providerId,
             authorName: authorName,
             body: body,
             createdAt: createdAt,
