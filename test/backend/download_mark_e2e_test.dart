@@ -36,10 +36,10 @@ class _FakeDownloadService implements DownloadService {
 class _FakeSettingsService extends Fake implements SettingsService {
   @override
   Future<Result<AppSettings>> getSettings() async =>
-      Success(AppSettings.defaults);
+      const Success(AppSettings.defaults);
 }
 
-Post post(String id) => const Post(
+Post post(String id) => Post(
       id: id,
       providerId: 'rule34',
       providerName: 'Rule34',
