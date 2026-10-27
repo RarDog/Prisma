@@ -1,5 +1,28 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.2.1-rc.3',
+    title:
+        'Третий релиз-кандидат: живая панель навигации, постраничные Артисты и надёжность данных',
+    titleEn:
+        'Third release candidate: lively bottom bar, paginated Artists and data-reliability hardening',
+    bullets: [
+      'Новая панель навигации: жидкая пилюля с риплом от точки нажатия, пружинная анимация иконок, подпись только у активной вкладки, кнопка настроек встроена в бар.',
+      'Артисты: каталог листается страницами по 30 авторов с плашкой номера страницы под списком, карточки стали компактными; избранное — в том же стиле.',
+      'Тэги: история поиска объединена в одну карточку с дедупликацией запросов и фиксом переполнения длинных тегов; вкладка переименована в «Тэги».',
+      'Надёжность данных: избранное, коллекции и история защищены от очистки кэша, инстансы провайдеров мемоизированы, пакетные запросы БД и лимит истории в 5000 записей.',
+      'Загрузки: до трёх параллельных файлов, честная пауза очереди, прогресс без спама событиями, ошибки сохранения видны; вкладка «Оффлайн» убрана.',
+      'Плашка «Повторная попытка» скрывается сама через 4 секунды с плавной анимацией; мелкие фиксы отступов манги и истории, безопасный редактор провайдеров.',
+    ],
+    bulletsEn: [
+      'New bottom navigation: liquid pill with a tap-point ripple, springy icon animations, a label on the active tab only, and a settings button built into the bar.',
+      'Artists: the catalog flips through pages of 30 authors with a page bar under the list, cards are compact; favorites match the new style.',
+      'Tags: search history merged into a single card with query dedupe and a fix for overflowing long tags; the tab is renamed to Tags.',
+      'Data reliability: favorites, collections and history are pinned against cache wipes, provider instances are memoized, batched DB lookups and a 5000-entry history cap.',
+      'Downloads: up to three parallel transfers, a real queue pause, throttled progress events, visible save errors; the Offline tab was removed.',
+      'The "Retrying" plate now auto-hides after 4 seconds with a smooth animation; small manga/history spacing fixes and a safer provider editor.',
+    ],
+  ),
+  PrismaChange(
     version: '4.2.1-rc.2',
     title:
         'Стабильность и скорость: защищённые обновления, редизайн Артистов и ускоренная манга',
