@@ -450,8 +450,8 @@ class StorageSettingsScreen extends ConsumerWidget {
                     iconColor: const Color(0xFFEF4444),
                     title: strings.clearCache,
                     subtitle: isRu
-                        ? 'Удалить временные кэшированные файлы'
-                        : 'Purge all cached thumbnail and image data',
+                        ? 'Удалить кэш постов; избранное, коллекции и история сохранятся'
+                        : 'Purge cached posts; favorites, collections and history are kept',
                     onTap: () async {
                       await ref
                           .read(settingsControllerProvider.notifier)

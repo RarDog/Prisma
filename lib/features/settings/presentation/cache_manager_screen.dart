@@ -228,8 +228,8 @@ class _CacheManagerScreenState extends ConsumerState<CacheManagerScreen> {
                     ? 'Кэш постов (база данных)'
                     : 'Posts cache (DB)',
                 subtitle: strings.ru
-                    ? '${stats.cachedPostsCount} сохраненных постов'
-                    : '${stats.cachedPostsCount} cached posts',
+                    ? '${stats.cachedPostsCount} постов; избранное, коллекции и история не удаляются'
+                    : '${stats.cachedPostsCount} posts; favorites, collections and history are kept',
                 sizeText: _formatBytes(stats.cachedPostsCount * 2048),
                 onClear: _isClearing ? null : _clearPostsCache,
               ),

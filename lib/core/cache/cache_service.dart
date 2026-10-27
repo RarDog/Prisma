@@ -76,10 +76,18 @@ class CacheService {
     return _databaseService.safeWrite((isar) async {
       if (olderThan != null) {
         final cutoff = DateTime.now().subtract(olderThan);
-        await isar.cachedPostEntitys
+        final stale = await isar.cachedPostEntitys
             .filter()
             .cachedAtLessThan(cutoff)
-            .deleteAll();
+            .findAll();
+        final pinned = await _pinnedKeys(isar);
+        final doomedIds = [
+          for (final entity in stale)
+            if (!pinned.contains(entity.cacheKey)) entity.isarId,
+        ];
+        if (doomedIds.isNotEmpty) {
+          await isar.cachedPostEntitys.deleteAll(doomedIds);
+        }
       }
       if (maxItems != null && maxItems > 0) {
         await _evictOverflow(isar, maxItems);
@@ -87,9 +95,23 @@ class CacheService {
     });
   }
 
+  /// Clears the disposable post cache. Rows backing favorites, collections
+  /// and viewed history are pinned and survive the wipe.
   Future<Result<void>> clear() {
     return _databaseService.safeWrite((isar) async {
-      await isar.cachedPostEntitys.clear();
+      final pinned = await _pinnedKeys(isar);
+      if (pinned.isEmpty) {
+        await isar.cachedPostEntitys.clear();
+        return;
+      }
+      final entities = await isar.cachedPostEntitys.where().findAll();
+      final doomedIds = [
+        for (final entity in entities)
+          if (!pinned.contains(entity.cacheKey)) entity.isarId,
+      ];
+      if (doomedIds.isNotEmpty) {
+        await isar.cachedPostEntitys.deleteAll(doomedIds);
+      }
     });
   }
 
@@ -99,16 +121,47 @@ class CacheService {
     });
   }
 
+  /// Cache keys that back user data: favorites, collections and viewed
+  /// history all resolve their posts through `cachedPostEntitys`, so those
+  /// rows are pinned and never treated as disposable cache.
+  Future<Set<String>> _pinnedKeys(Isar isar) async {
+    final favorites = await isar.favoriteEntitys.where().findAll();
+    final collectionPosts = await isar.collectionPostEntitys.where().findAll();
+    final viewedKeys =
+        await isar.viewedPostEntitys.where().viewedKeyProperty().findAll();
+    return {
+      ...favorites.map((f) => f.favoriteKey),
+      ...collectionPosts.map((cp) => '${cp.providerId}:${cp.postId}'),
+      ...viewedKeys,
+    };
+  }
+
   Future<void> _evictOverflow(Isar isar, int maxItems) async {
     final count = await isar.cachedPostEntitys.count();
     if (count <= maxItems) return;
     final toDelete = count - maxItems;
-    final overflowIds = await isar.cachedPostEntitys
-        .where()
-        .sortByCachedAt()
-        .limit(toDelete)
-        .isarIdProperty()
-        .findAll();
-    await isar.cachedPostEntitys.deleteAll(overflowIds);
+    final pinned = await _pinnedKeys(isar);
+    // Walk rows oldest-first and evict the first [toDelete] that no
+    // favorite/collection/viewed entry depends on. Pinned rows are skipped,
+    // so a full cache never destroys user data.
+    final overflowIds = <Id>[];
+    var offset = 0;
+    const pageSize = 256;
+    while (overflowIds.length < toDelete) {
+      final page = await isar.cachedPostEntitys
+          .where()
+          .sortByCachedAt()
+          .offset(offset)
+          .limit(pageSize)
+          .findAll();
+      if (page.isEmpty) break;
+      for (final entity in page) {
+        if (!pinned.contains(entity.cacheKey)) overflowIds.add(entity.isarId);
+      }
+      offset += page.length;
+    }
+    if (overflowIds.isEmpty) return;
+    await isar.cachedPostEntitys
+        .deleteAll(overflowIds.take(toDelete).toList(growable: false));
   }
 }
