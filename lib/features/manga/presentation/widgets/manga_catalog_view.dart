@@ -95,7 +95,7 @@ class MangaCatalogView extends StatelessWidget {
           child: Padding(
             padding: EdgeInsets.fromLTRB(
               16,
-              MediaQuery.paddingOf(context).top + 68,
+              MediaQuery.paddingOf(context).top + 56,
               16,
               6,
             ),

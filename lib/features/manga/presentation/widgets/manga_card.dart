@@ -172,7 +172,11 @@ class MangaCard extends StatelessWidget {
                               ],
                             ),
                           )
-                        else if (rating != null)
+                        // SAFE is the default for everything on the
+                        // catalog — a badge on every card is noise. Warn
+                        // only about the ratings that need warning about.
+                        else if (rating != null &&
+                            rating.toLowerCase() != 'safe')
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 7,

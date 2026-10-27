@@ -169,7 +169,9 @@ class MangaScreenAppBar extends StatelessWidget implements PreferredSizeWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          selectedRating,
+                          selectedRating == 'All'
+                              ? (isRu ? 'Все' : 'All')
+                              : selectedRating,
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
