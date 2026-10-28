@@ -1,0 +1,13 @@
+# Test runner configuration.
+#
+# `network` marks suites that talk to real upstream APIs (booru boards, manga
+# and novel catalogs, release feeds). They are skipped by default so a local or
+# CI run only depends on our own code, never on third-party uptime.
+#
+# Run them explicitly when validating provider integrations:
+#   flutter test --tags network --run-skipped
+#
+# Everything else (the default `flutter test`) stays deterministic.
+tags:
+  network:
+    skip: "Live upstream API test — run with `flutter test --tags network --run-skipped`."
