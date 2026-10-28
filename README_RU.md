@@ -106,20 +106,20 @@
 
 Все скомпилированные установочные пакеты размещены на официальной странице **[Releases](https://github.com/RarDog/Prisma/releases)**.
 
-### 🎯 Релиз-кандидат (`v4.2.1-rc.2`)
+### 🎯 Релиз-кандидат (`v4.2.1-rc.3`)
 
 #### 📱 Android (RC)
 | Пакет | Архитектура | Целевые устройства |
 | :--- | :--- | :--- |
-| **[Prisma-4.2.1-rc.2-arm64-v8a.apk](https://github.com/RarDog/Prisma/releases/download/v4.2.1-rc.2/Prisma-4.2.1-rc.2-arm64-v8a.apk)** | 64-битный ARM (`arm64-v8a`) | Большинство современных смартфонов и планшетов (Android 7.0+) |
-| **[Prisma-4.2.1-rc.2-armeabi-v7a.apk](https://github.com/RarDog/Prisma/releases/download/v4.2.1-rc.2/Prisma-4.2.1-rc.2-armeabi-v7a.apk)** | 32-битный ARM (`armeabi-v7a`) | Старые или ультрабюджетные устройства |
-| **[Prisma-4.2.1-rc.2-x86_64.apk](https://github.com/RarDog/Prisma/releases/download/v4.2.1-rc.2/Prisma-4.2.1-rc.2-x86_64.apk)** | 64-битный x86 (`x86_64`) | Эмуляторы Android, ChromeOS и x86-планшеты |
+| **[Prisma-4.2.1-rc.3-arm64-v8a.apk](https://github.com/RarDog/Prisma/releases/download/v4.2.1-rc.3/Prisma-4.2.1-rc.3-arm64-v8a.apk)** | 64-битный ARM (`arm64-v8a`) | Большинство современных смартфонов и планшетов (Android 7.0+) |
+| **[Prisma-4.2.1-rc.3-armeabi-v7a.apk](https://github.com/RarDog/Prisma/releases/download/v4.2.1-rc.3/Prisma-4.2.1-rc.3-armeabi-v7a.apk)** | 32-битный ARM (`armeabi-v7a`) | Старые или ультрабюджетные устройства |
+| **[Prisma-4.2.1-rc.3-x86_64.apk](https://github.com/RarDog/Prisma/releases/download/v4.2.1-rc.3/Prisma-4.2.1-rc.3-x86_64.apk)** | 64-битный x86 (`x86_64`) | Эмуляторы Android, ChromeOS и x86-планшеты |
 
 #### 🐧 Linux (RC)
 | Пакет | Формат | Особенности |
 | :--- | :--- | :--- |
-| **[Prisma-v4.2.1-rc.2-linux-x86_64.AppImage](https://github.com/RarDog/Prisma/releases/download/v4.2.1-rc.2/Prisma-v4.2.1-rc.2-linux-x86_64.AppImage)** | AppImage | Портативный исполняемый файл (требуется `libmpv`) |
-| **[Prisma-v4.2.1-rc.2-linux-x64.tar.gz](https://github.com/RarDog/Prisma/releases/download/v4.2.1-rc.2/Prisma-v4.2.1-rc.2-linux-x64.tar.gz)** | Архив Tarball | Портативный каталог с бинарными файлами |
+| **[Prisma-v4.2.1-rc.3-linux-x86_64.AppImage](https://github.com/RarDog/Prisma/releases/download/v4.2.1-rc.3/Prisma-v4.2.1-rc.3-linux-x86_64.AppImage)** | AppImage | Портативный исполняемый файл (требуется `libmpv`) |
+| **[Prisma-v4.2.1-rc.3-linux-x64.tar.gz](https://github.com/RarDog/Prisma/releases/download/v4.2.1-rc.3/Prisma-v4.2.1-rc.3-linux-x64.tar.gz)** | Архив Tarball | Портативный каталог с бинарными файлами |
 
 ---
 
@@ -199,6 +199,18 @@ flutter build apk --release --split-per-abi
 
 # 5. Сборка релизной версии под Linux
 flutter build linux --release
+```
+
+### Проверка
+```bash
+# Статический анализ (должен быть без замечаний)
+dart analyze
+
+# Детерминированный набор тестов — live-тесты внешних API пропускаются
+flutter test
+
+# Проверка интеграций с реальными API (по требованию, нужна сеть)
+flutter test --tags network --run-skipped
 ```
 
 ---
