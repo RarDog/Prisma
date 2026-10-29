@@ -1,5 +1,38 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.2.1',
+    title:
+        'Релиз 4.2.1: нативный плеер Pixiv Ugoira, живая навигация, каталог авторов, надёжность данных и оптимизации',
+    titleEn:
+        'Release 4.2.1: Native Pixiv Ugoira player, lively navigation, Artists catalog, hardened data & optimizations',
+    bullets: [
+      'Анимированные иллюстрации Pixiv (Ugoira): нативный движок воспроизведения с авторскими миллисекундными таймингами кадров, фоновая распаковка архивов в изоляте, интерактивная панель управления (пауза, покадровый шаг, таймлайн, скорость 0.5x–2x) и полноэкранный зум.',
+      'Новая панель навигации (Liquid Glass): жидкая пилюля с риплом от точки нажатия, пружинная анимация иконок, подпись только у активной вкладки и кнопка настроек, встроенная в бар.',
+      'Каталог Артистов: постраничная навигация по 30 авторов с плашкой страниц, компактные карточки со свечением в цвете сервиса, живые отметки «обновлено N назад» и удобное избранное.',
+      'Вкладка «Тэги» и история поиска: переименование в «Тэги», объединённая карточка истории поисковых запросов с дедупликацией, защитой от переполнения длинных тегов и быстрым переходом к поиску.',
+      'Новые источники и поиск XVideos: полная интеграция The Big ImageBoard (TBIB) с DAPI JSON, Rule34.us со скрапером видео и топов, возврат Moebooru (Konachan, Yande.re) и переключатель полнотекстового поиска XVideos.',
+      'Надёжность данных и резервное копирование: избранное, коллекции и история защищены от очистки кэша; двухуровневое резервное копирование с сохранением оффлайн-медиа, защита от пустых бэкапов, безопасное сохранение провайдеров и подробная сводка восстановления.',
+      'Умный менеджер загрузок: до трёх одновременных загрузок, честная пауза/возобновление очереди, защита от спама событиями прогресса, вывод ошибок сохранения и автоматическая очистка устаревших задач.',
+      'Безопасность и оптимизация сети: перемещение API-ключей и сессионных куки в системный OS Keychain, проверка SHA-256 контрольных сумм обновлений перед установкой, поддержка Retry-After и отмена неактуальных сетевых запросов.',
+      'Ускорение манги и новелл: ограничение пикового потребления памяти при декодировании обложек и страниц, 4-поточная фоновая проверка обновлений библиотеки для MangaDex, MangaLib и RanobeLib.',
+      'Оптимизация видео и фиксы Booru: предзагрузка видеобуфера в ленте, исправление видеопостов Danbooru и устранение 403-ошибок CDN с генерацией прямых URL-адресов.',
+      'Разработка и дальнейшие планы: активная разработка новых крупных функций временно замедлится, так как все запланированные идеи и оптимизации полностью реализованы, а новых идей на данный момент нет. Проект переходит в стабильный режим поддержки и полировки.',
+    ],
+    bulletsEn: [
+      'Pixiv Ugoira Animations: native playback engine with authentic author millisecond frame delay timings, background isolate ZIP extraction, interactive controls overlay (play/pause, frame step, timeline scrubber, 0.5x–2x speed) and fullscreen zoom.',
+      'Lively Bottom Navigation (Liquid Glass): liquid pill with tap-point ripple physics, springy icon animations, a label on the active tab only, and a settings button integrated directly into the bar.',
+      'Artists Catalog & Redesign: paginated browsing of 30 authors per page with page selector, compact hero cards with service-colored glow, live "updated N ago" timestamps, and sleek favorite pinning.',
+      'Tags Tab & Search History: renamed to "Tags", unified search history card with query deduplication, overflow protection for long tag chips, and instant feed query navigation.',
+      'New Providers & XVideos Search: full integration of The Big ImageBoard (TBIB) via DAPI JSON, Rule34.us with video scraping and top filters, modernized Moebooru engine (Konachan, Yande.re), and freeform search mode toggle for XVideos.',
+      'Hardened Data Reliability & Backups: favorites, collections, and history are pinned against cache eviction; two-generation backup system with offline media persistence, safe provider indexing, and rich restore summaries.',
+      'Smart Download Queue: up to three concurrent downloads, real queue pause/resume, throttled progress updates, explicit disk write error reporting, and automatic task cleanup.',
+      'Security & Network Hardening: API keys and account session cookies moved to the OS Keychain, SHA-256 integrity verification of installer updates, Retry-After header support, and stale request cancellation.',
+      'Faster, Leaner Manga & Novels: memory-bounded decoding for reader pages and covers, alongside automatic 4-worker background update checks for MangaDex, MangaLib, and RanobeLib.',
+      'Video Buffering & Booru Fixes: feed video buffer preloading, resolution of Danbooru video playback and CDN 403 Forbidden errors with direct stream URL reconstruction.',
+      'Future Development: active development of major new features will slow down significantly as all planned features and architecture goals are now complete, with no immediate new ideas on the horizon. The project enters stable maintenance mode.',
+    ],
+  ),
+  PrismaChange(
     version: '4.2.1-rc.3',
     title:
         'Третий релиз-кандидат: живая панель навигации, постраничные Артисты и надёжность данных',
