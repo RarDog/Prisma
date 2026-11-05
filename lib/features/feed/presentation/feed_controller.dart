@@ -13,6 +13,9 @@ final feedControllerProvider =
     AsyncNotifierProvider<FeedController, FeedState>(FeedController.new);
 
 class FeedController extends AsyncNotifier<FeedState> {
+  static const int _targetPageSize = 30;
+  static const int _maxLoadAttempts = 5;
+
   Timer? _providerDebounce;
   Timer? _suggestionDebounce;
   StreamSubscription<ProviderSoftRetryResult>? _softRetrySubscription;
@@ -70,16 +73,20 @@ class FeedController extends AsyncNotifier<FeedState> {
     final current = state.value ?? const FeedState();
     final requestId = ++_loadRequestId;
     state = const AsyncLoading();
-    final posts = await _load(refresh: true, current: current);
+    final batch = await _loadBatch(
+      refresh: true,
+      current: current,
+      requestId: requestId,
+    );
     if (requestId != _loadRequestId) return;
     final status = await _providerStatus(current);
     // All selected sources failed and nothing is cached: surface a retryable
     // error instead of the misleading "no posts" empty state.
-    final loadFailed = posts.isEmpty && status.failedProviders.isNotEmpty;
+    final loadFailed = batch.posts.isEmpty && status.failedProviders.isNotEmpty;
     final strings = ref.read(appStringsProvider);
     state = AsyncData(current.copyWith(
-      posts: posts,
-      hasMore: true,
+      posts: batch.posts,
+      hasMore: batch.hasMore,
       emptyPageStreak: 0,
       error: loadFailed ? strings.feedLoadFailed : null,
       clearError: !loadFailed,
@@ -94,15 +101,19 @@ class FeedController extends AsyncNotifier<FeedState> {
     final current = state.value ?? const FeedState();
     final requestId = ++_loadRequestId;
     state = AsyncData(current.copyWith(isLoadingMore: true, clearError: true));
-    final posts = await _load(refresh: true, current: current);
+    final batch = await _loadBatch(
+      refresh: true,
+      current: current,
+      requestId: requestId,
+    );
     if (requestId != _loadRequestId) return;
     final status = await _providerStatus(current);
-    final loadFailed = posts.isEmpty && status.failedProviders.isNotEmpty;
+    final loadFailed = batch.posts.isEmpty && status.failedProviders.isNotEmpty;
     final strings = ref.read(appStringsProvider);
     state = AsyncData(current.copyWith(
-      posts: posts,
+      posts: batch.posts,
       isLoadingMore: false,
-      hasMore: true,
+      hasMore: batch.hasMore,
       emptyPageStreak: 0,
       error: loadFailed ? strings.feedLoadFailed : null,
       clearError: !loadFailed,
@@ -116,29 +127,65 @@ class FeedController extends AsyncNotifier<FeedState> {
     if (current == null || current.isLoadingMore || !current.hasMore) return;
     final requestId = ++_loadRequestId;
     state = AsyncData(current.copyWith(isLoadingMore: true, clearError: true));
-    final posts = <Post>[];
-    const maxEmptyPageSkips = 3;
-    var attempts = 0;
-    while (posts.isEmpty && attempts < maxEmptyPageSkips) {
-      attempts++;
-      posts.addAll(await _load(refresh: false, current: current));
-      if (requestId != _loadRequestId) return;
-    }
-    if (requestId != _loadRequestId) return;
     final existingKeys = current.posts.map((post) => post.cacheKey).toSet();
-    final newPosts = posts
-        .where((post) => existingKeys.add(post.cacheKey))
-        .toList(growable: false);
-    final emptyPageStreak =
-        newPosts.isEmpty ? current.emptyPageStreak + attempts : 0;
+    final batch = await _loadBatch(
+      refresh: false,
+      current: current,
+      requestId: requestId,
+      existingKeys: existingKeys,
+    );
+    if (requestId != _loadRequestId) return;
+    final emptyPageStreak = batch.hasMore ? 0 : current.emptyPageStreak + 1;
     state = AsyncData(
       current.copyWith(
-        posts: [...current.posts, ...newPosts],
+        posts: [...current.posts, ...batch.posts],
         isLoadingMore: false,
-        hasMore: newPosts.isNotEmpty || emptyPageStreak < maxEmptyPageSkips,
+        hasMore: batch.hasMore,
         emptyPageStreak: emptyPageStreak,
       ),
     );
+  }
+
+  /// Accumulates filtered posts across multiple raw pages until reaching
+  /// at least [_targetPageSize] posts, or until providers are exhausted.
+  Future<({List<Post> posts, bool hasMore})> _loadBatch({
+    required bool refresh,
+    required FeedState current,
+    required int requestId,
+    Set<String>? existingKeys,
+  }) async {
+    final accumulated = <Post>[];
+    final seen = existingKeys != null ? Set<String>.from(existingKeys) : <String>{};
+    var attempts = 0;
+    var consecutiveEmptyBatches = 0;
+
+    while (accumulated.length < _targetPageSize &&
+        attempts < _maxLoadAttempts &&
+        consecutiveEmptyBatches < 3) {
+      attempts++;
+      final isFirstCall = refresh && attempts == 1;
+      final raw = await _load(refresh: isFirstCall, current: current);
+      if (requestId != _loadRequestId) {
+        return (posts: accumulated, hasMore: false);
+      }
+
+      var addedThisBatch = 0;
+      for (final post in raw) {
+        if (seen.add(post.cacheKey)) {
+          accumulated.add(post);
+          addedThisBatch++;
+        }
+      }
+
+      if (addedThisBatch == 0) {
+        consecutiveEmptyBatches++;
+      } else {
+        consecutiveEmptyBatches = 0;
+      }
+    }
+
+    final hasMore = consecutiveEmptyBatches < 3 && accumulated.isNotEmpty;
+    return (posts: accumulated, hasMore: hasMore);
   }
 
   Future<void> search(String query) async {
