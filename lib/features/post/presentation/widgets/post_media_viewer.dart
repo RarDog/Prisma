@@ -1022,14 +1022,24 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
   }
 
   List<String> _buildVideoUrls(Post post) {
+    if (!_isVideo(post) && !_isAudio(post)) {
+      return const [];
+    }
     final list = _isAudio(post)
         ? List<String>.from(MediaUrlSelector.audio(post))
         : List<String>.from(MediaUrlSelector.video(post));
-    final cloudStreams = post.cloudLinks
-        .where((l) => l.isStreamable && l.directStreamUrl != null)
-        .map((l) => l.directStreamUrl!);
-    for (final stream in cloudStreams) {
-      if (!list.contains(stream)) list.add(stream);
+    final hasImages = _buildImageUrls(post).isNotEmpty;
+    if (!hasImages || MediaUrlSelector.isVideo(post)) {
+      final cloudStreams = post.cloudLinks
+          .where((l) =>
+              (l.service == CloudServiceType.genericVideo ||
+                  _isDirectVideoUrl(l.url) ||
+                  _isDirectVideoUrl(l.title)) &&
+              l.directStreamUrl != null)
+          .map((l) => l.directStreamUrl!);
+      for (final stream in cloudStreams) {
+        if (!list.contains(stream)) list.add(stream);
+      }
     }
     final local = widget.localFilePath;
     if (local != null && local.isNotEmpty && File(local).existsSync()) {
@@ -1038,12 +1048,28 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
     return list;
   }
 
+  static bool _isDirectVideoUrl(String url) {
+    final lower = url.toLowerCase();
+    return lower.contains('.mp4') ||
+        lower.contains('.webm') ||
+        lower.contains('.mov') ||
+        lower.contains('.mkv');
+  }
+
   bool _isAudio(Post post) => MediaUrlSelector.isAudio(post);
 
   bool _isVideo(Post post) {
     if (_isAudio(post)) return false;
-    if (post.cloudLinks.any((l) => l.isStreamable)) return true;
-    return MediaUrlSelector.isVideo(post);
+    if (MediaUrlSelector.isVideo(post)) return true;
+    final hasImages = _buildImageUrls(post).isNotEmpty;
+    if (!hasImages &&
+        post.cloudLinks.any((l) =>
+            l.service == CloudServiceType.genericVideo ||
+            (l.isStreamable &&
+                (_isDirectVideoUrl(l.url) || _isDirectVideoUrl(l.title))))) {
+      return true;
+    }
+    return false;
   }
 
   bool _isPlayableMedia(Post post) => _isVideo(post) || _isAudio(post);

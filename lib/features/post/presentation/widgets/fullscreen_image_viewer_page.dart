@@ -50,11 +50,22 @@ class FullscreenImageViewerPage extends ConsumerStatefulWidget {
   final ValueChanged<int>? onPostChanged;
   final VoidCallback? onLoadMore;
 
+  static bool _isDirectVideoUrl(String url) {
+    final lower = url.toLowerCase();
+    return lower.contains('.mp4') ||
+        lower.contains('.webm') ||
+        lower.contains('.mov') ||
+        lower.contains('.mkv');
+  }
+
   static List<String> _urlsForPost(
     Post post,
     MediaQualityMode qualityMode, {
     String? localFilePath,
   }) {
+    if (post.fileType == 'text' || post.fileType == 'link') {
+      return const [];
+    }
     if (localFilePath != null &&
         localFilePath.isNotEmpty &&
         File(localFilePath).existsSync()) {
@@ -387,11 +398,26 @@ class FullscreenImageViewerPageState
                             final isInitial = index == widget.initialIndex;
                             final localPath =
                                 isInitial ? widget.localFilePath : null;
+                            final hasImages =
+                                FullscreenImageViewerPage._urlsForPost(
+                              currentPost,
+                              widget.qualityMode,
+                              localFilePath: localPath,
+                            ).isNotEmpty;
                             final isVideo =
                                 MediaUrlSelector.isVideo(currentPost) ||
                                     MediaUrlSelector.isAudio(currentPost) ||
-                                    currentPost.cloudLinks
-                                        .any((l) => l.isStreamable);
+                                    (!hasImages &&
+                                        currentPost.cloudLinks.any((l) =>
+                                            l.service ==
+                                                CloudServiceType.genericVideo ||
+                                            (l.isStreamable &&
+                                                (FullscreenImageViewerPage
+                                                        ._isDirectVideoUrl(
+                                                            l.url) ||
+                                                    FullscreenImageViewerPage
+                                                        ._isDirectVideoUrl(
+                                                            l.title)))));
 
                             if (isVideo) {
                               return _FullscreenVideoItem(
@@ -842,9 +868,19 @@ class _FullscreenVideoItemState extends State<_FullscreenVideoItem> {
     final list = MediaUrlSelector.isVideo(widget.post)
         ? List<String>.from(MediaUrlSelector.video(widget.post))
         : List<String>.from(MediaUrlSelector.audio(widget.post));
-    final cloudStreams = widget.post.cloudLinks
-        .where((l) => l.isStreamable && l.directStreamUrl != null)
-        .map((l) => l.directStreamUrl!);
+    final hasImages = FullscreenImageViewerPage._urlsForPost(
+      widget.post,
+      MediaQualityMode.auto,
+    ).isNotEmpty;
+    final cloudStreams = (!hasImages || MediaUrlSelector.isVideo(widget.post))
+        ? widget.post.cloudLinks
+            .where((l) =>
+                (l.service == CloudServiceType.genericVideo ||
+                    FullscreenImageViewerPage._isDirectVideoUrl(l.url) ||
+                    FullscreenImageViewerPage._isDirectVideoUrl(l.title)) &&
+                l.directStreamUrl != null)
+            .map((l) => l.directStreamUrl!)
+        : const Iterable<String>.empty();
     for (final stream in cloudStreams) {
       if (!list.contains(stream)) list.add(stream);
     }

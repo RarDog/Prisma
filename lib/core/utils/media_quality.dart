@@ -78,6 +78,9 @@ class MediaUrlSelector {
   }
 
   static List<String> preview(Post post) {
+    if (post.fileType == 'text' || post.fileType == 'link') {
+      return const [];
+    }
     if (_isVideo(post)) {
       return _compact([
         if (!_looksLikeVideoUrl(post.previewUrl)) post.previewUrl,
@@ -95,6 +98,9 @@ class MediaUrlSelector {
     Post post, {
     MediaQualityMode mode = MediaQualityMode.auto,
   }) {
+    if (post.fileType == 'text' || post.fileType == 'link') {
+      return const [];
+    }
     if (_isVideo(post)) {
       return _compact([post.fileUrl, post.sampleUrl, post.previewUrl]);
     }
@@ -257,7 +263,9 @@ class MediaUrlSelector {
     if (type == 'audio' ||
         type == 'photo' ||
         type == 'archive' ||
-        type == 'gif') {
+        type == 'gif' ||
+        type == 'text' ||
+        type == 'link') {
       return false;
     }
 

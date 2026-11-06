@@ -8,6 +8,7 @@ import 'package:gel_rule_app/features/artists/models/artist_link.dart';
 import 'package:gel_rule_app/features/artists/models/artist_profile.dart';
 import 'package:gel_rule_app/features/artists/models/artist_tag.dart';
 import 'package:gel_rule_app/features/artists/models/artist_work_query.dart';
+import 'package:gel_rule_app/core/models/cloud_media_link.dart';
 import 'package:gel_rule_app/core/models/post.dart';
 import 'package:gel_rule_app/core/models/post_comment.dart';
 import 'package:gel_rule_app/core/models/provider_health.dart';
@@ -456,6 +457,10 @@ class PawchiveProvider
       final firstLink = cloudLinks.isNotEmpty ? cloudLinks.first : null;
       final fileUrl = firstStreamable?.directStreamUrl ?? firstLink?.url ?? '';
       final isTextOnly = cloudLinks.isEmpty;
+      final isDirectVideo = firstStreamable != null &&
+          (firstStreamable.service == CloudServiceType.genericVideo ||
+              _fileTypeFor(firstStreamable.url, firstStreamable.title) ==
+                  'video');
       final tags = [
         query.service,
         query.artistName,
@@ -469,14 +474,14 @@ class PawchiveProvider
           providerName: name,
           previewUrl: '',
           sampleUrl: '',
-          fileUrl: fileUrl,
+          fileUrl: isDirectVideo ? fileUrl : '',
           tags: tags,
           rating: 'unknown',
           width: 0,
           height: 0,
           source: postSource,
           createdAt: published,
-          fileType: firstStreamable != null
+          fileType: isDirectVideo
               ? 'video'
               : (isTextOnly ? 'text' : 'link'),
           score: 0,
