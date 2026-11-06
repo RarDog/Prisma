@@ -163,49 +163,6 @@ class ArtistsHeader extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (currentTab == ArtistsTab.all &&
-                    currentPage != null &&
-                    onOpenPagePicker != null) ...[
-                  const SizedBox(width: 6),
-                  InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: onOpenPagePicker,
-                    child: Container(
-                      height: 38,
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? Colors.black.withValues(alpha: 0.3)
-                            : Colors.black.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.1)
-                              : Colors.black.withValues(alpha: 0.08),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.auto_stories_rounded,
-                            size: 15,
-                            color: theme.colorScheme.primary,
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            totalPages != null
-                                ? '$currentPage/$totalPages'
-                                : (isRu ? 'Стр. $currentPage' : 'p. $currentPage'),
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
               ],
             ),
             const SizedBox(height: 8),
@@ -224,6 +181,21 @@ class ArtistsHeader extends StatelessWidget {
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 children: [
+                  // Quick Page Picker Chip
+                  if (currentTab == ArtistsTab.all &&
+                      currentPage != null &&
+                      onOpenPagePicker != null) ...[
+                    _QuickPageChip(
+                      currentPage: currentPage!,
+                      totalPages: totalPages,
+                      isRu: isRu,
+                      isDark: isDark,
+                      accentColor: theme.colorScheme.primary,
+                      onTap: onOpenPagePicker!,
+                    ),
+                    const SizedBox(width: 6),
+                  ],
+
                   // Quick Sort Menu Chip
                   PopupMenuButton<ArtistSortOrder>(
                     tooltip: isRu ? 'Сортировка' : 'Sort order',
@@ -462,6 +434,69 @@ class _QuickServiceChip extends StatelessWidget {
                 color: selected
                     ? (isDark ? Colors.white : Colors.black87)
                     : (isDark ? Colors.white70 : Colors.black54),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickPageChip extends StatelessWidget {
+  const _QuickPageChip({
+    required this.currentPage,
+    required this.totalPages,
+    required this.isRu,
+    required this.isDark,
+    required this.accentColor,
+    required this.onTap,
+  });
+
+  final int currentPage;
+  final int? totalPages;
+  final bool isRu;
+  final bool isDark;
+  final Color accentColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(9),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.black.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(9),
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.12)
+                : Colors.black.withValues(alpha: 0.08),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.auto_stories_rounded,
+              size: 13,
+              color: accentColor,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              totalPages != null
+                  ? (isRu
+                      ? 'Стр. $currentPage/$totalPages'
+                      : 'p. $currentPage/$totalPages')
+                  : (isRu ? 'Стр. $currentPage' : 'p. $currentPage'),
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white : Colors.black87,
               ),
             ),
           ],

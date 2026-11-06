@@ -126,9 +126,10 @@ class _ArtistsPageBarState extends State<ArtistsPageBar> {
             ),
 
             // Swipeable page numbers strip
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 200),
-              child: ListView.builder(
+            Flexible(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 200),
+                child: ListView.builder(
                 controller: _scrollController,
                 scrollDirection: Axis.horizontal,
                 physics: const BouncingScrollPhysics(),
@@ -186,6 +187,7 @@ class _ArtistsPageBarState extends State<ArtistsPageBar> {
                 },
               ),
             ),
+          ),
 
             // Next button
             IconButton(

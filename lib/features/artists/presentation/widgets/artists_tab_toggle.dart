@@ -166,12 +166,16 @@ class _Segment extends StatelessWidget {
             children: [
               child,
               const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  color: selected ? selectedForeground : unselectedForeground,
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected ? selectedForeground : unselectedForeground,
+                  ),
                 ),
               ),
               if (badge != null) ...[
