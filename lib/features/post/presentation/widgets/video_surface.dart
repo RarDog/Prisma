@@ -736,7 +736,7 @@ class VideoSurfaceState extends State<VideoSurface> {
             child: MouseRegion(
               onHover: (_) => widget.onInteract(),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(widget.fullscreen ? 0 : 10),
+                borderRadius: BorderRadius.circular(widget.fullscreen ? 0 : 16),
                 child: widget.fullscreen
                     ? SizedBox.expand(child: child)
                     : AspectRatio(

@@ -247,23 +247,49 @@ class _UgoiraPlayerState extends ConsumerState<UgoiraPlayer> {
         children: [
           // 1. Frame or Placeholder view
           Center(
-            child: InteractiveViewer(
-              minScale: 1.0,
-              maxScale: 4.0,
-              child: hasFrames
-                  ? Image.memory(
-                      _frames[_currentFrameIndex].bytes!,
-                      gaplessPlayback: true,
-                      fit: BoxFit.contain,
-                    )
-                  : CachedNetworkImage(
-                      imageUrl: widget.post.sampleUrl.isNotEmpty
-                          ? widget.post.sampleUrl
-                          : widget.post.previewUrl,
-                      httpHeaders: widget.mediaHeaders,
-                      fit: BoxFit.contain,
+            child: widget.fullscreen
+                ? InteractiveViewer(
+                    minScale: 1.0,
+                    maxScale: 4.0,
+                    child: hasFrames
+                        ? Image.memory(
+                            _frames[_currentFrameIndex].bytes!,
+                            gaplessPlayback: true,
+                            fit: BoxFit.contain,
+                          )
+                        : CachedNetworkImage(
+                            imageUrl: widget.post.sampleUrl.isNotEmpty
+                                ? widget.post.sampleUrl
+                                : widget.post.previewUrl,
+                            httpHeaders: widget.mediaHeaders,
+                            fit: BoxFit.contain,
+                          ),
+                  )
+                : AspectRatio(
+                    aspectRatio: widget.post.width > 0 && widget.post.height > 0
+                        ? (widget.post.width / widget.post.height).clamp(0.2, 5.0)
+                        : 1.0,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: InteractiveViewer(
+                        minScale: 1.0,
+                        maxScale: 4.0,
+                        child: hasFrames
+                            ? Image.memory(
+                                _frames[_currentFrameIndex].bytes!,
+                                gaplessPlayback: true,
+                                fit: BoxFit.contain,
+                              )
+                            : CachedNetworkImage(
+                                imageUrl: widget.post.sampleUrl.isNotEmpty
+                                    ? widget.post.sampleUrl
+                                    : widget.post.previewUrl,
+                                httpHeaders: widget.mediaHeaders,
+                                fit: BoxFit.contain,
+                              ),
+                      ),
                     ),
-            ),
+                  ),
           ),
 
           // 2. Loading / Download Progress Indicator

@@ -629,23 +629,50 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
     final pageCount = widget.pageCount ?? 0;
     final hasMultiPages = pageCount > 1;
 
+    final dynamicDim =
+        ref.watch(postMediaDimensionsProvider(widget.post.cacheKey));
+    final aspect = widget.post.width > 0 && widget.post.height > 0
+        ? (widget.post.width / widget.post.height)
+        : (dynamicDim != null && dynamicDim.height > 0
+            ? dynamicDim.width / dynamicDim.height
+            : null);
+
+    final mediaContent = Stack(
+      fit: StackFit.expand,
+      children: [
+        image,
+        if (widget.showNotes && widget.notes.isNotEmpty)
+          PostNotesOverlay(
+            post: widget.post,
+            notes: widget.notes,
+          ),
+      ],
+    );
+
+    final mediaView = widget.fullscreen
+        ? mediaContent
+        : (aspect != null
+            ? Center(
+                child: AspectRatio(
+                  aspectRatio: aspect.clamp(0.15, 6.0),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: mediaContent,
+                  ),
+                ),
+              )
+            : ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: mediaContent,
+              ));
+
     final child = Stack(
       alignment: Alignment.center,
       children: [
         ZoomableImage(
           onGestureLockChanged: widget.onMediaGestureLockChanged,
           onTap: widget.fullscreen ? null : () => _openFullscreenImage(context),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              image,
-              if (widget.showNotes && widget.notes.isNotEmpty)
-                PostNotesOverlay(
-                  post: widget.post,
-                  notes: widget.notes,
-                ),
-            ],
-          ),
+          child: mediaView,
         ),
         if (hasMultiPages)
           Positioned(
