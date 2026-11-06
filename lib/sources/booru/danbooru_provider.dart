@@ -16,7 +16,8 @@ class DanbooruProvider
         CommentProvider,
         PostPageProvider,
         TagSuggestionProvider,
-        MediaHeadersProvider {
+        MediaHeadersProvider,
+        TagLimitProvider {
   DanbooruProvider({
     required this.id,
     required this.name,
@@ -62,6 +63,9 @@ class DanbooruProvider
   }
 
   @override
+  int get maxSearchTags => 2;
+
+  @override
   Future<List<Post>> searchPosts({
     required List<String> tags,
     required int page,
@@ -70,26 +74,39 @@ class DanbooruProvider
     TopPeriodFilter topPeriod = TopPeriodFilter.none,
     CancelToken? cancelToken,
   }) async {
-    final queryTags = [
-      ...tags,
+    final directives = [
       if (rating != null && rating.isNotEmpty) 'rating:$rating',
       ..._topTags(topPeriod),
     ];
-    final response = await _dio.get<dynamic>(
-      '/posts.json',
-      queryParameters: {
-        'page': page + 1,
-        'limit': limit,
-        'tags': queryTags.join(' '),
-        ..._queryParameters,
-      },
-      cancelToken: cancelToken,
-    );
-    return DanbooruMapper.postsFromResponse(
-      response.data,
-      providerId: id,
-      providerName: name,
-    );
+    final allowedDirectives =
+        directives.take(maxSearchTags).toList(growable: false);
+    final availableForUserTags = maxSearchTags - allowedDirectives.length;
+    final effectiveUserTags =
+        tags.take(availableForUserTags).toList(growable: false);
+    final queryTags = [...effectiveUserTags, ...allowedDirectives];
+
+    try {
+      final response = await _dio.get<dynamic>(
+        '/posts.json',
+        queryParameters: {
+          'page': page + 1,
+          'limit': limit,
+          'tags': queryTags.join(' '),
+          ..._queryParameters,
+        },
+        cancelToken: cancelToken,
+      );
+      return DanbooruMapper.postsFromResponse(
+        response.data,
+        providerId: id,
+        providerName: name,
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 422) {
+        return const <Post>[];
+      }
+      rethrow;
+    }
   }
 
   @override

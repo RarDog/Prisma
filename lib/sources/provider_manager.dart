@@ -430,9 +430,17 @@ class ProviderManager {
             }
           }));
         }
+        final limitProvider =
+            provider is TagLimitProvider ? (provider as TagLimitProvider) : null;
+        final effectiveTags = (limitProvider != null &&
+                cleanTags.length > limitProvider.maxSearchTags)
+            ? cleanTags
+                .take(limitProvider.maxSearchTags)
+                .toList(growable: false)
+            : cleanTags;
         final providerPosts = await provider
             .searchPosts(
-              tags: cleanTags,
+              tags: effectiveTags,
               page: page,
               limit: limit,
               rating: rating,
@@ -478,7 +486,9 @@ class ProviderManager {
         // to offline on the first hiccup — the soft retry marks it online
         // again when it succeeds. Deterministic errors (bad API key, deleted
         // resource) still surface as offline immediately.
-        if (!_isRetryableError(error)) {
+        final isQueryValidationError = error is DioException &&
+            error.response?.statusCode == 422;
+        if (!_isRetryableError(error) && !isQueryValidationError) {
           unawaited(_repository.saveHealth(
             ProviderHealth(
               providerId: provider.id,

@@ -63,6 +63,10 @@ abstract class TagMetadataProvider {
   Future<Map<String, List<String>>> categorizeTags(List<String> tags);
 }
 
+abstract class TagLimitProvider {
+  int get maxSearchTags;
+}
+
 abstract class ArtistProvider {
   Future<List<ArtistProfile>> listArtists({
     String? service,
