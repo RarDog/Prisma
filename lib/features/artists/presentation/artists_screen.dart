@@ -11,6 +11,7 @@ import 'package:gel_rule_app/shared/widgets/empty_view.dart';
 import 'package:gel_rule_app/shared/widgets/error_view.dart';
 import 'package:gel_rule_app/shared/widgets/provider_health_banner.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
+import 'package:gel_rule_app/features/artists/models/artist_sort_order.dart';
 import 'widgets/artist_service_utils.dart';
 import 'widgets/artists_catalog_view.dart';
 import 'widgets/artists_favorites_empty.dart';
@@ -18,8 +19,10 @@ import 'widgets/artists_favorites_view.dart';
 import 'widgets/artists_header.dart';
 import 'widgets/pawchive/pawchive_accounts_sheet.dart';
 
+export 'package:gel_rule_app/features/artists/models/artist_sort_order.dart';
 export 'widgets/artist_card.dart';
 export 'widgets/artist_service_utils.dart';
+export 'widgets/artists_filter_sheet.dart';
 export 'widgets/artists_header.dart';
 export 'widgets/artists_liquid_card.dart';
 export 'widgets/pawchive/pawchive_accounts_sheet.dart';
@@ -51,6 +54,7 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
   final _scroll = ScrollController();
   final Set<String> _selectedServices = <String>{};
   ArtistsTab _currentTab = ArtistsTab.all;
+  ArtistSortOrder _sortOrder = ArtistSortOrder.popularityDesc;
   String? _providerId;
   var _page = 1;
   var _loading = false;
@@ -243,9 +247,14 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
                   providers: items,
                   selectedProviderId: _providerId,
                   selectedServices: _selectedServices,
+                  selectedSort: _sortOrder,
                   isRu: isRu,
                   onProviderChanged: (value) {
                     setState(() => _providerId = value);
+                    _refresh(items);
+                  },
+                  onSortChanged: (sort) {
+                    setState(() => _sortOrder = sort);
                     _refresh(items);
                   },
                   onToggleService: (service) {
@@ -405,6 +414,7 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
           _search.text.trim(),
           services:
               _selectedServices.isEmpty ? null : _selectedServices.toList(),
+          sort: _sortOrder,
           page: _nextRawPage,
           limit: _pageSize,
         );

@@ -3,6 +3,7 @@ import 'package:dio/dio.dart' show CancelToken;
 import 'package:gel_rule_app/features/artists/models/artist_announcement.dart';
 import 'package:gel_rule_app/features/artists/models/artist_link.dart';
 import 'package:gel_rule_app/features/artists/models/artist_profile.dart';
+import 'package:gel_rule_app/features/artists/models/artist_sort_order.dart';
 import 'package:gel_rule_app/features/artists/models/artist_tag.dart';
 import 'package:gel_rule_app/features/artists/models/artist_work_query.dart';
 import 'package:gel_rule_app/core/models/post.dart';
@@ -72,6 +73,7 @@ abstract class ArtistProvider {
     String? service,
     List<String>? services,
     String? query,
+    ArtistSortOrder sort = ArtistSortOrder.popularityDesc,
     int page = 1,
     int limit = 30,
   });
@@ -80,6 +82,7 @@ abstract class ArtistProvider {
     String query, {
     String? service,
     List<String>? services,
+    ArtistSortOrder sort = ArtistSortOrder.popularityDesc,
     int page = 1,
     int limit = 30,
   });

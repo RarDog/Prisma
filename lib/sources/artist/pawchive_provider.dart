@@ -6,6 +6,7 @@ import 'package:gel_rule_app/core/http/dio_client.dart';
 import 'package:gel_rule_app/features/artists/models/artist_announcement.dart';
 import 'package:gel_rule_app/features/artists/models/artist_link.dart';
 import 'package:gel_rule_app/features/artists/models/artist_profile.dart';
+import 'package:gel_rule_app/features/artists/models/artist_sort_order.dart';
 import 'package:gel_rule_app/features/artists/models/artist_tag.dart';
 import 'package:gel_rule_app/features/artists/models/artist_work_query.dart';
 import 'package:gel_rule_app/core/models/cloud_media_link.dart';
@@ -170,6 +171,7 @@ class PawchiveProvider
     String? service,
     List<String>? services,
     String? query,
+    ArtistSortOrder sort = ArtistSortOrder.popularityDesc,
     int page = 1,
     int limit = 30,
   }) async {
@@ -194,7 +196,7 @@ class PawchiveProvider
           artist.id.toLowerCase().contains(queryText);
     }).toList(growable: false);
 
-    final ranked = _rankArtists(filtered, queryText);
+    final ranked = _rankArtists(filtered, queryText, sort);
     final offset = (page - 1).clamp(0, 999999) * limit;
     return ranked.skip(offset).take(limit).toList(growable: false);
   }
@@ -204,6 +206,7 @@ class PawchiveProvider
     String query, {
     String? service,
     List<String>? services,
+    ArtistSortOrder sort = ArtistSortOrder.popularityDesc,
     int page = 1,
     int limit = 30,
   }) {
@@ -211,6 +214,7 @@ class PawchiveProvider
       service: service,
       services: services,
       query: query,
+      sort: sort,
       page: page,
       limit: limit,
     );
@@ -616,7 +620,11 @@ class PawchiveProvider
     return const [];
   }
 
-  List<ArtistProfile> _rankArtists(List<ArtistProfile> artists, String query) {
+  List<ArtistProfile> _rankArtists(
+    List<ArtistProfile> artists,
+    String query, [
+    ArtistSortOrder sort = ArtistSortOrder.popularityDesc,
+  ]) {
     final queryText = query.trim().toLowerCase();
     final ranked = [...artists];
     ranked.sort((a, b) {
@@ -631,12 +639,50 @@ class PawchiveProvider
         if (aStarts && !bStarts) return -1;
         if (!aStarts && bStarts) return 1;
       }
-      final favA = a.postCount ?? 0;
-      final favB = b.postCount ?? 0;
-      if (favA != favB) return favB.compareTo(favA);
-      final updatedA = a.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final updatedB = b.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-      return updatedB.compareTo(updatedA);
+      switch (sort) {
+        case ArtistSortOrder.postsAsc:
+          final pA = a.postCount ?? 0;
+          final pB = b.postCount ?? 0;
+          if (pA != pB) return pA.compareTo(pB);
+          final uA = a.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final uB = b.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          return uA.compareTo(uB);
+
+        case ArtistSortOrder.postsDesc:
+          final pA = a.postCount ?? 0;
+          final pB = b.postCount ?? 0;
+          if (pA != pB) return pB.compareTo(pA);
+          final uA = a.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final uB = b.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          return uB.compareTo(uA);
+
+        case ArtistSortOrder.recentPosts:
+          final uA = a.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final uB = b.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          if (uA != uB) return uB.compareTo(uA);
+          return (b.postCount ?? 0).compareTo(a.postCount ?? 0);
+
+        case ArtistSortOrder.oldestPosts:
+          final uA = a.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final uB = b.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          if (uA != uB) return uA.compareTo(uB);
+          return (a.postCount ?? 0).compareTo(b.postCount ?? 0);
+
+        case ArtistSortOrder.nameAsc:
+          return a.displayName
+              .toLowerCase()
+              .compareTo(b.displayName.toLowerCase());
+
+        case ArtistSortOrder.popularityDesc:
+          final favA = a.postCount ?? 0;
+          final favB = b.postCount ?? 0;
+          if (favA != favB) return favB.compareTo(favA);
+          final updatedA =
+              a.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final updatedB =
+              b.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+          return updatedB.compareTo(updatedA);
+      }
     });
     return ranked;
   }

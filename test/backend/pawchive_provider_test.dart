@@ -1,4 +1,6 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gel_rule_app/features/artists/models/artist_sort_order.dart';
 import 'package:gel_rule_app/features/artists/models/artist_work_query.dart';
 import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
 import 'package:gel_rule_app/core/models/post.dart';
@@ -137,5 +139,74 @@ void main() {
     expect(MediaUrlSelector.isAudio(trickyVideoPost), isFalse);
     expect(MediaUrlSelector.video(trickyVideoPost),
         contains(trickyVideoPost.fileUrl));
+  });
+
+  test(
+      'PawchiveProvider listArtists sorts by postsAsc, recentPosts, and postsDesc',
+      () async {
+    final dio = Dio(BaseOptions(baseUrl: 'https://pawchive.pw'));
+    dio.interceptors.add(InterceptorsWrapper(
+      onRequest: (options, handler) {
+        if (options.path == '/api/v1/creators') {
+          return handler.resolve(Response(
+            requestOptions: options,
+            data: [
+              {
+                'id': 'artist_a',
+                'name': 'Alpha',
+                'service': 'patreon',
+                'favorited': 100,
+                'updated': '2026-01-01T12:00:00Z',
+              },
+              {
+                'id': 'artist_b',
+                'name': 'Beta',
+                'service': 'patreon',
+                'favorited': 5,
+                'updated': '2026-11-05T12:00:00Z',
+              },
+              {
+                'id': 'artist_c',
+                'name': 'Gamma',
+                'service': 'fanbox',
+                'favorited': 50,
+                'updated': '2026-06-01T12:00:00Z',
+              },
+            ],
+          ));
+        }
+        return handler.next(options);
+      },
+    ));
+
+    final provider = PawchiveProvider(
+      id: 'pawchive',
+      name: 'Pawchive',
+      baseUrl: 'https://pawchive.pw',
+      dioClient: DioClient(dio: dio),
+    );
+
+    // 1. postsAsc: least posts first (Beta: 5, Gamma: 50, Alpha: 100)
+    final leastPosts =
+        await provider.listArtists(sort: ArtistSortOrder.postsAsc);
+    expect(leastPosts.map((a) => a.id).toList(),
+        ['artist_b', 'artist_c', 'artist_a']);
+
+    // 2. recentPosts: newest updatedAt first (Beta: Nov 2026, Gamma: June 2026, Alpha: Jan 2026)
+    final recent =
+        await provider.listArtists(sort: ArtistSortOrder.recentPosts);
+    expect(
+        recent.map((a) => a.id).toList(), ['artist_b', 'artist_c', 'artist_a']);
+
+    // 3. postsDesc: most posts first (Alpha: 100, Gamma: 50, Beta: 5)
+    final mostPosts =
+        await provider.listArtists(sort: ArtistSortOrder.postsDesc);
+    expect(
+        mostPosts.map((a) => a.id).toList(), ['artist_a', 'artist_c', 'artist_b']);
+
+    // 4. nameAsc: alphabetical (Alpha, Beta, Gamma)
+    final byName = await provider.listArtists(sort: ArtistSortOrder.nameAsc);
+    expect(
+        byName.map((a) => a.id).toList(), ['artist_a', 'artist_b', 'artist_c']);
   });
 }

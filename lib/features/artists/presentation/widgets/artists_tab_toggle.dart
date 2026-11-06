@@ -23,8 +23,8 @@ class ArtistsTabToggle extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      height: 42,
-      padding: const EdgeInsets.all(3),
+      height: 38,
+      padding: const EdgeInsets.all(2.5),
       decoration: BoxDecoration(
         color: isDark
             ? Colors.black.withValues(alpha: 0.35)

@@ -9,6 +9,7 @@ import 'package:gel_rule_app/core/http/dio_client.dart';
 import 'package:gel_rule_app/features/artists/models/artist_announcement.dart';
 import 'package:gel_rule_app/features/artists/models/artist_link.dart';
 import 'package:gel_rule_app/features/artists/models/artist_profile.dart';
+import 'package:gel_rule_app/features/artists/models/artist_sort_order.dart';
 import 'package:gel_rule_app/features/artists/models/artist_tag.dart';
 import 'package:gel_rule_app/features/artists/models/artist_work_query.dart';
 import 'package:gel_rule_app/core/models/post.dart';
@@ -291,6 +292,7 @@ class FapelloProvider
     String? service,
     List<String>? services,
     String? query,
+    ArtistSortOrder sort = ArtistSortOrder.popularityDesc,
     int page = 1,
     int limit = 30,
   }) async {
@@ -325,6 +327,7 @@ class FapelloProvider
     String query, {
     String? service,
     List<String>? services,
+    ArtistSortOrder sort = ArtistSortOrder.popularityDesc,
     int page = 1,
     int limit = 30,
   }) =>
@@ -332,6 +335,7 @@ class FapelloProvider
         service: service,
         services: services,
         query: query,
+        sort: sort,
         page: page,
         limit: limit,
       );
