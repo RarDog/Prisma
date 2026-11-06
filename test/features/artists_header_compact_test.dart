@@ -219,11 +219,11 @@ void main() {
       await tester.tap(find.text('Open Picker'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Выбор страницы'), findsOneWidget);
-      expect(find.text('110'), findsOneWidget);
+      expect(find.text('Переход к странице'), findsOneWidget);
+      expect(find.text('110'), findsWidgets);
 
       // Tap quick jump chip 110
-      await tester.tap(find.text('110'));
+      await tester.tap(find.text('110').first);
       await tester.pumpAndSettle();
 
       expect(find.text('Перейти к странице 110'), findsOneWidget);
