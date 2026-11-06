@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gel_rule_app/features/artists/models/artist_sort_order.dart';
+import 'package:gel_rule_app/features/artists/presentation/widgets/artist_card.dart';
 import 'package:gel_rule_app/features/artists/presentation/widgets/artist_service_utils.dart';
 import 'package:gel_rule_app/features/artists/presentation/widgets/artists_filter_sheet.dart';
 import 'package:gel_rule_app/features/artists/presentation/widgets/artists_header.dart';
+import 'package:gel_rule_app/features/favorites/models/favorite_artist_item.dart';
 import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
 
 void main() {
@@ -113,6 +116,43 @@ void main() {
 
       expect(appliedSort, ArtistSortOrder.postsAsc);
       expect(appliedServices, contains('patreon'));
+    });
+
+    testWidgets('FavoriteArtistCard renders post count and relative updated line',
+        (tester) async {
+      final now = DateTime.now().subtract(const Duration(hours: 3));
+      final favItem = FavoriteArtistItem(
+        id: '42',
+        service: 'fanbox',
+        providerId: 'pawchive',
+        name: 'MasterArtist',
+        postCount: 5210,
+        updatedAt: now,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('ru'),
+          supportedLocales: const [Locale('ru'), Locale('en')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Scaffold(
+            body: FavoriteArtistCard(
+              item: favItem,
+              onTap: () {},
+              onRemove: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('MasterArtist'), findsOneWidget);
+      expect(find.text('Pixiv Fanbox'), findsOneWidget);
+      expect(find.text('5 210 постов'), findsOneWidget);
+      expect(find.textContaining('Обновлено: 3 часа назад'), findsOneWidget);
     });
   });
 }

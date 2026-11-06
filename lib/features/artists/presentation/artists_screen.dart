@@ -82,6 +82,8 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
       providerId: artist.providerId,
       name: artist.displayName,
       avatarUrl: artist.avatarUrl,
+      postCount: artist.postCount,
+      updatedAt: artist.updatedAt,
     );
     final key = item.key;
     final index = current.indexWhere((e) {
@@ -114,6 +116,77 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
               isFavorite: isAdding,
             ));
       }
+    }
+  }
+
+  bool _isEnrichingFavorites = false;
+  Future<void> _enrichFavorites(List<FavoriteArtistItem> favorites) async {
+    if (_isEnrichingFavorites || favorites.isEmpty || !mounted) return;
+    _isEnrichingFavorites = true;
+    try {
+      final manager = ref.read(providerManagerProvider);
+      final providers = await manager.activeArtistProviders();
+      if (providers is! Success<List<ArtistProvider>>) return;
+      ArtistProvider? provider;
+      for (final item in providers.data) {
+        if ((item as ContentProvider).id == _providerId) {
+          provider = item;
+          break;
+        }
+      }
+      if (provider == null) return;
+
+      bool changed = false;
+      final updatedList = <FavoriteArtistItem>[];
+      for (final fav in favorites) {
+        final profile = await provider.getArtistProfile(fav.service, fav.id);
+        if (profile != null &&
+            (profile.postCount != fav.postCount ||
+                profile.updatedAt != fav.updatedAt ||
+                (fav.avatarUrl == null && profile.avatarUrl != null))) {
+          updatedList.add(fav.copyWith(
+            postCount: profile.postCount,
+            updatedAt: profile.updatedAt,
+            avatarUrl: profile.avatarUrl ?? fav.avatarUrl,
+          ));
+          changed = true;
+        } else {
+          updatedList.add(fav);
+        }
+      }
+
+      if (changed && mounted) {
+        final currentSettings =
+            ref.read(appSettingsProvider).value ?? AppSettings.defaults;
+        final updatedJson =
+            updatedList.map((e) => jsonEncode(e.toJson())).toList();
+        await ref.read(settingsControllerProvider.notifier).saveSettings(
+              currentSettings.copyWith(favoriteArtists: updatedJson),
+            );
+      }
+    } catch (_) {
+      // Ignore enrichment errors (e.g. offline)
+    } finally {
+      _isEnrichingFavorites = false;
+    }
+  }
+
+  void _triggerFavoritesEnrichment() {
+    final settings = ref.read(appSettingsProvider).value;
+    if (settings == null || settings.favoriteArtists.isEmpty) return;
+    final favItems = settings.favoriteArtists
+        .map((e) {
+          try {
+            return FavoriteArtistItem.fromJson(
+                jsonDecode(e) as Map<String, dynamic>);
+          } catch (_) {
+            return null;
+          }
+        })
+        .whereType<FavoriteArtistItem>()
+        .toList();
+    if (favItems.isNotEmpty) {
+      unawaited(_enrichFavorites(favItems));
     }
   }
 
@@ -219,8 +292,26 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
           }
           final displayedArtists = _artists;
 
+          final loadedLookup = <String, ArtistProfile>{
+            for (final a in _loadedArtists)
+              '${a.service.toLowerCase()}:${a.id.toLowerCase()}': a,
+          };
+          final enrichedFavorites = favoriteItems.map((fav) {
+            final key = '${fav.service.toLowerCase()}:${fav.id.toLowerCase()}';
+            final matched = loadedLookup[key];
+            if (matched != null &&
+                (fav.postCount == null || fav.updatedAt == null)) {
+              return fav.copyWith(
+                postCount: fav.postCount ?? matched.postCount,
+                updatedAt: fav.updatedAt ?? matched.updatedAt,
+                avatarUrl: fav.avatarUrl ?? matched.avatarUrl,
+              );
+            }
+            return fav;
+          }).toList();
+
           final searchQuery = _search.text.trim().toLowerCase();
-          final displayedFavorites = favoriteItems.where((fav) {
+          final displayedFavorites = enrichedFavorites.where((fav) {
             final s = fav.service.toLowerCase();
             if (_selectedServices.isNotEmpty &&
                 !_selectedServices.contains(s)) {
@@ -231,7 +322,61 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
               return false;
             }
             return true;
-          }).toList(growable: false);
+          }).toList();
+
+          switch (_sortOrder) {
+            case ArtistSortOrder.recentPosts:
+              displayedFavorites.sort((a, b) {
+                final dateA = a.updatedAt;
+                final dateB = b.updatedAt;
+                if (dateA == null && dateB == null) return 0;
+                if (dateA == null) return 1;
+                if (dateB == null) return -1;
+                return dateB.compareTo(dateA);
+              });
+              break;
+            case ArtistSortOrder.oldestPosts:
+              displayedFavorites.sort((a, b) {
+                final dateA = a.updatedAt;
+                final dateB = b.updatedAt;
+                if (dateA == null && dateB == null) return 0;
+                if (dateA == null) return 1;
+                if (dateB == null) return -1;
+                return dateA.compareTo(dateB);
+              });
+              break;
+            case ArtistSortOrder.postsDesc:
+              displayedFavorites.sort((a, b) {
+                final countA = a.postCount;
+                final countB = b.postCount;
+                if (countA == null && countB == null) return 0;
+                if (countA == null) return 1;
+                if (countB == null) return -1;
+                return countB.compareTo(countA);
+              });
+              break;
+            case ArtistSortOrder.postsAsc:
+              displayedFavorites.sort((a, b) {
+                final countA = a.postCount;
+                final countB = b.postCount;
+                if (countA == null && countB == null) return 0;
+                if (countA == null) return 1;
+                if (countB == null) return -1;
+                return countA.compareTo(countB);
+              });
+              break;
+            case ArtistSortOrder.nameAsc:
+              displayedFavorites.sort((a, b) =>
+                  a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+              break;
+            case ArtistSortOrder.popularityDesc:
+              displayedFavorites.sort((a, b) {
+                final countA = a.postCount ?? -1;
+                final countB = b.postCount ?? -1;
+                return countB.compareTo(countA);
+              });
+              break;
+          }
 
           return Column(
             children: [
@@ -241,6 +386,9 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
                   currentTab: _currentTab,
                   onTabChanged: (tab) {
                     setState(() => _currentTab = tab);
+                    if (tab == ArtistsTab.favorites) {
+                      _triggerFavoritesEnrichment();
+                    }
                   },
                   favoritesCount: favoriteItems.length,
                   searchController: _search,
@@ -255,7 +403,9 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
                   },
                   onSortChanged: (sort) {
                     setState(() => _sortOrder = sort);
-                    _refresh(items);
+                    if (_currentTab == ArtistsTab.all) {
+                      _refresh(items);
+                    }
                   },
                   onToggleService: (service) {
                     setState(() {
@@ -441,6 +591,7 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
         _hasMore = !_rawExhausted || _loadedArtists.length > target * _pageSize;
         _initialLoaded = true;
       });
+      _triggerFavoritesEnrichment();
     } catch (error) {
       if (!mounted) return;
       if (_loadedArtists.isEmpty && target == 1) {

@@ -221,6 +221,25 @@ class PawchiveProvider
   }
 
   @override
+  Future<ArtistProfile?> getArtistProfile(
+    String service,
+    String artistId,
+  ) async {
+    try {
+      final artists = await _ensureArtistsLoaded();
+      final s = service.trim().toLowerCase();
+      final id = artistId.trim().toLowerCase();
+      for (final artist in artists) {
+        if (artist.service.toLowerCase() == s &&
+            artist.id.toLowerCase() == id) {
+          return artist;
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  @override
   Future<List<Post>> getArtistPosts({
     required ArtistWorkQuery query,
     int page = 0,

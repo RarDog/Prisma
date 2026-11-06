@@ -5,6 +5,8 @@ class FavoriteArtistItem {
     required this.providerId,
     required this.name,
     this.avatarUrl,
+    this.postCount,
+    this.updatedAt,
   });
 
   const FavoriteArtistItem.empty()
@@ -12,13 +14,17 @@ class FavoriteArtistItem {
         service = '',
         providerId = '',
         name = '',
-        avatarUrl = null;
+        avatarUrl = null,
+        postCount = null,
+        updatedAt = null;
 
   final String id;
   final String service;
   final String providerId;
   final String name;
   final String? avatarUrl;
+  final int? postCount;
+  final DateTime? updatedAt;
 
   bool get isEmpty => id.isEmpty;
   String get key => '$providerId:$service:$id';
@@ -29,6 +35,8 @@ class FavoriteArtistItem {
         'providerId': providerId,
         'name': name,
         'avatarUrl': avatarUrl,
+        if (postCount != null) 'postCount': postCount,
+        if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
       };
 
   factory FavoriteArtistItem.fromJson(Map<String, dynamic> json) =>
@@ -38,6 +46,12 @@ class FavoriteArtistItem {
         providerId: (json['providerId'] ?? '').toString(),
         name: (json['name'] ?? '').toString(),
         avatarUrl: json['avatarUrl'] as String?,
+        postCount: json['postCount'] is int
+            ? json['postCount'] as int
+            : int.tryParse(json['postCount']?.toString() ?? ''),
+        updatedAt: json['updatedAt'] != null
+            ? DateTime.tryParse(json['updatedAt'].toString())
+            : null,
       );
 
   FavoriteArtistItem copyWith({
@@ -46,6 +60,8 @@ class FavoriteArtistItem {
     String? providerId,
     String? name,
     String? avatarUrl,
+    int? postCount,
+    DateTime? updatedAt,
   }) {
     return FavoriteArtistItem(
       id: id ?? this.id,
@@ -53,6 +69,8 @@ class FavoriteArtistItem {
       providerId: providerId ?? this.providerId,
       name: name ?? this.name,
       avatarUrl: avatarUrl ?? this.avatarUrl,
+      postCount: postCount ?? this.postCount,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 

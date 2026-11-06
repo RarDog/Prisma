@@ -59,6 +59,11 @@ String formatArtistServiceName(String s) {
   }
 }
 
+/// Formats large numbers with thousands spaces (e.g. 12 345).
+String formatArtistPostCount(int value) => value
+    .toString()
+    .replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ' ');
+
 /// Human-friendly "updated" stamp: relative for the last month, absolute
 /// date beyond that.
 String formatArtistRelativeTime(DateTime dt, bool isRu) {

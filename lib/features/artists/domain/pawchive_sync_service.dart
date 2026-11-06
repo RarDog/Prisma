@@ -280,12 +280,27 @@ class PawchiveSyncService {
       if (id.isEmpty || service.isEmpty) continue;
 
       final avatarUrl = '$normalizedBase/icons/$service/$id';
+      final postCount = item['favorited'] is int
+          ? item['favorited'] as int
+          : (item['count'] is int
+              ? item['count'] as int
+              : int.tryParse(item['favorited']?.toString() ??
+                  item['count']?.toString() ??
+                  ''));
+      final updatedAt = item['updated'] != null
+          ? DateTime.tryParse(item['updated'].toString())
+          : (item['updated_at'] != null
+              ? DateTime.tryParse(item['updated_at'].toString())
+              : null);
+
       list.add(FavoriteArtistItem(
         id: id,
         service: service,
         providerId: 'pawchive',
         name: name,
         avatarUrl: avatarUrl,
+        postCount: postCount,
+        updatedAt: updatedAt,
       ));
     }
     return list;

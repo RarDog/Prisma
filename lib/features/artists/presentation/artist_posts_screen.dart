@@ -659,12 +659,33 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
       final avatarUrl = widget.providerId == 'pawchive'
           ? 'https://pawchive.pw/icons/${widget.service}/${widget.artistId}'
           : null;
+      int? postCount;
+      DateTime? updatedAt;
+      try {
+        final manager = ref.read(providerManagerProvider);
+        final providers = await manager.activeArtistProviders();
+        if (providers is Success<List<ArtistProvider>>) {
+          for (final p in providers.data) {
+            if ((p as ContentProvider).id == widget.providerId) {
+              final profile =
+                  await p.getArtistProfile(widget.service, widget.artistId);
+              postCount = profile?.postCount;
+              updatedAt = profile?.updatedAt;
+              break;
+            }
+          }
+        }
+      } catch (_) {}
+      postCount ??= _posts.isNotEmpty ? _posts.length : null;
+
       final item = FavoriteArtistItem(
         id: widget.artistId,
         service: widget.service,
         providerId: widget.providerId,
         name: widget.artistName,
         avatarUrl: avatarUrl,
+        postCount: postCount,
+        updatedAt: updatedAt,
       );
       current.insert(0, jsonEncode(item.toJson()));
     }

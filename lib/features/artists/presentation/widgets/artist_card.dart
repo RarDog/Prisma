@@ -19,22 +19,22 @@ class ArtistCard extends StatelessWidget {
   final bool isFavorite;
   final VoidCallback onToggleFavorite;
 
-  static String _formatCount(int value) => value
-      .toString()
-      .replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ' ');
+  static String formatCount(int value) => formatArtistPostCount(value);
 
   @override
   Widget build(BuildContext context) {
     final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final badges = <Widget>[
       LiquidMiniBadge(
-        label: artist.service.isEmpty ? 'Artist' : artist.service,
+        label: artist.service.isEmpty
+            ? 'Artist'
+            : formatArtistServiceName(artist.service),
         color: artistServiceColor(artist.service),
         hasDot: true,
       ),
       if (artist.postCount != null)
         Text(
-          '${_formatCount(artist.postCount!)} ${isRu ? 'постов' : 'posts'}',
+          '${formatCount(artist.postCount!)} ${isRu ? 'постов' : 'posts'}',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -80,11 +80,19 @@ class FavoriteArtistCard extends StatelessWidget {
         color: artistServiceColor(item.service),
         hasDot: true,
       ),
-      LiquidMiniBadge(
-        label: isRu ? 'В избранном' : 'Favorited',
-        color: Colors.amber,
-        hasDot: false,
-      ),
+      if (item.postCount != null)
+        Text(
+          '${formatArtistPostCount(item.postCount!)} ${isRu ? 'постов' : 'posts'}',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        )
+      else
+        LiquidMiniBadge(
+          label: isRu ? 'В избранном' : 'Favorited',
+          color: Colors.amber,
+          hasDot: false,
+        ),
     ];
 
     return _ArtistHeroCard(
@@ -92,7 +100,7 @@ class FavoriteArtistCard extends StatelessWidget {
       name: item.name,
       avatarUrl: item.avatarUrl,
       badges: badges,
-      updatedAt: null,
+      updatedAt: item.updatedAt,
       isRu: isRu,
       onTap: onTap,
       trailing: _FavoriteStarButton(

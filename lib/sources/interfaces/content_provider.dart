@@ -110,6 +110,12 @@ abstract class ArtistProvider {
   Future<List<ArtistAnnouncement>> getArtistAnnouncements(
           String service, String artistId) async =>
       const [];
+
+  Future<ArtistProfile?> getArtistProfile(
+    String service,
+    String artistId,
+  ) async =>
+      null;
 }
 
 abstract class MangaChapterProvider {

@@ -43,7 +43,33 @@ void main() {
       expect(restored.name, equals('CoolArtist'));
       expect(
           restored.avatarUrl, equals('https://pawchive.pw/icons/fanbox/12345'));
+      expect(restored.postCount, isNull);
+      expect(restored.updatedAt, isNull);
       expect(restored == item, isTrue);
+    });
+
+    test('preserves postCount and updatedAt in serialization and copyWith', () {
+      final updatedDate = DateTime(2026, 11, 6, 12, 30);
+      final item = FavoriteArtistItem(
+        id: '999',
+        service: 'patreon',
+        providerId: 'pawchive',
+        name: 'SuperArtist',
+        postCount: 1420,
+        updatedAt: updatedDate,
+      );
+
+      final json = item.toJson();
+      expect(json['postCount'], equals(1420));
+      expect(json['updatedAt'], equals(updatedDate.toIso8601String()));
+
+      final restored = FavoriteArtistItem.fromJson(json);
+      expect(restored.postCount, equals(1420));
+      expect(restored.updatedAt, equals(updatedDate));
+
+      final copied = restored.copyWith(postCount: 1421);
+      expect(copied.postCount, equals(1421));
+      expect(copied.updatedAt, equals(updatedDate));
     });
 
     test('empty factory behaves correctly', () {

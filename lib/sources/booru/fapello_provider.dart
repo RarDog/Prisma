@@ -356,6 +356,13 @@ class FapelloProvider
       const [];
 
   @override
+  Future<ArtistProfile?> getArtistProfile(
+    String service,
+    String artistId,
+  ) async =>
+      null;
+
+  @override
   Future<List<Post>> getArtistPosts({
     required ArtistWorkQuery query,
     int page = 0,
