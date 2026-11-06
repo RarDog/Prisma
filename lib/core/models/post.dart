@@ -38,6 +38,32 @@ class Post {
 
   String get cacheKey => '$providerId:$id';
 
+  static final RegExp _md5Regex = RegExp(r'([a-fA-F0-9]{32})');
+
+  String? get md5Hash {
+    final direct = tagGroups['md5']?.firstOrNull;
+    if (direct != null && direct.trim().length == 32) {
+      return direct.trim().toLowerCase();
+    }
+    final fileMatch = _md5Regex.firstMatch(fileUrl);
+    if (fileMatch != null) {
+      return fileMatch.group(1)!.toLowerCase();
+    }
+    final sampleMatch = _md5Regex.firstMatch(sampleUrl);
+    if (sampleMatch != null) {
+      return sampleMatch.group(1)!.toLowerCase();
+    }
+    return null;
+  }
+
+  /// Distinct content signature across providers. If an MD5 hash is known,
+  /// two posts from different providers with the same image content match,
+  /// preventing duplicates in cross-provider feeds.
+  String get contentDedupeKey {
+    final hash = md5Hash;
+    return (hash != null && hash.isNotEmpty) ? 'md5:$hash' : cacheKey;
+  }
+
   List<CloudMediaLink> get cloudLinks {
     final list = tagGroups['cloud_links'];
     if (list != null && list.isNotEmpty) {

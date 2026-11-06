@@ -414,7 +414,10 @@ class _PostCardState extends ConsumerState<PostCard>
                     Positioned(
                       left: 8,
                       top: 8,
-                      child: ProviderBadge(name: post.providerName),
+                      child: ProviderBadge(
+                        name: post.providerName,
+                        providerId: post.providerId,
+                      ),
                     ),
                     if (post.isMultiPage ||
                         post.isUgoira ||

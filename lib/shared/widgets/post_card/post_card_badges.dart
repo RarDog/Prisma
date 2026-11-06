@@ -50,37 +50,82 @@ class FavoriteButton extends StatelessWidget {
 }
 
 class ProviderBadge extends StatelessWidget {
-  const ProviderBadge({super.key, required this.name});
+  const ProviderBadge({
+    super.key,
+    required this.name,
+    this.providerId,
+  });
 
   final String name;
+  final String? providerId;
+
+  static Color providerColor(String? id) {
+    if (id == null) return const Color(0xFF64B5F6);
+    final lower = id.toLowerCase();
+    if (lower.contains('danbooru')) return const Color(0xFFE45F34);
+    if (lower.contains('gelbooru')) return const Color(0xFF006FFA);
+    if (lower.contains('rule34')) return const Color(0xFFAAE5A4);
+    if (lower.contains('e621') || lower.contains('e926')) {
+      return const Color(0xFF223C68);
+    }
+    if (lower.contains('safebooru')) return const Color(0xFF4AA3DF);
+    if (lower.contains('realbooru')) return const Color(0xFFD44B38);
+    if (lower.contains('tbib')) return const Color(0xFF5B92E5);
+    if (lower.contains('wallhaven')) return const Color(0xFF888888);
+    if (lower.contains('arena')) return const Color(0xFF444444);
+    if (lower.contains('pixiv')) return const Color(0xFF0096FA);
+    if (lower.contains('xvideos')) return const Color(0xFFE22626);
+    return const Color(0xFF64B5F6);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final accent = providerColor(providerId ?? name);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.65),
+        color: Colors.black.withValues(alpha: 0.68),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.16),
-          width: 0.7,
+          color: accent.withValues(alpha: 0.45),
+          width: 0.8,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
+            color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Text(
-        name,
-        style: const TextStyle(
-          fontSize: 10.5,
-          color: Colors.white,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.2,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 5.5,
+            height: 5.5,
+            decoration: BoxDecoration(
+              color: accent,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: accent.withValues(alpha: 0.6),
+                  blurRadius: 4,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 5.5),
+          Text(
+            name,
+            style: const TextStyle(
+              fontSize: 10.5,
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
       ),
     );
   }

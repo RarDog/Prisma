@@ -127,7 +127,8 @@ class FeedController extends AsyncNotifier<FeedState> {
     if (current == null || current.isLoadingMore || !current.hasMore) return;
     final requestId = ++_loadRequestId;
     state = AsyncData(current.copyWith(isLoadingMore: true, clearError: true));
-    final existingKeys = current.posts.map((post) => post.cacheKey).toSet();
+    final existingKeys =
+        current.posts.map((post) => post.contentDedupeKey).toSet();
     final batch = await _loadBatch(
       refresh: false,
       current: current,
@@ -171,7 +172,7 @@ class FeedController extends AsyncNotifier<FeedState> {
 
       var addedThisBatch = 0;
       for (final post in raw) {
-        if (seen.add(post.cacheKey)) {
+        if (seen.add(post.contentDedupeKey)) {
           accumulated.add(post);
           addedThisBatch++;
         }
@@ -445,7 +446,7 @@ class FeedController extends AsyncNotifier<FeedState> {
     final seen = <String>{};
     for (final group in providerResults) {
       for (final post in group) {
-        if (seen.add(post.cacheKey)) posts.add(post);
+        if (seen.add(post.contentDedupeKey)) posts.add(post);
       }
     }
     final nonEmptyGroups =
@@ -466,13 +467,12 @@ class FeedController extends AsyncNotifier<FeedState> {
         !current.selectedProviderIds.contains(result.providerId)) {
       return;
     }
-    final seen = current.posts.map((post) => post.cacheKey).toSet();
+    final seen = current.posts.map((post) => post.contentDedupeKey).toSet();
     final newPosts = result.posts
-        .where((post) => seen.add(post.cacheKey))
+        .where((post) => seen.add(post.contentDedupeKey))
         .toList(growable: false);
     if (newPosts.isEmpty) return;
     final combined = [...current.posts, ...newPosts];
-    _sortMixed(combined);
     state = AsyncData(
       current.copyWith(
         posts: combined,
