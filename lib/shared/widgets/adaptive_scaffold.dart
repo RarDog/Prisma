@@ -30,9 +30,10 @@ class AdaptiveScaffold extends StatelessWidget {
         (theme.scaffoldBackgroundColor == const Color(0xFF000000) ||
             theme.colorScheme.surface == const Color(0xFF000000));
     final scheme = theme.colorScheme;
-    final blurSigma = isAmoled ? 28.0 : 22.0;
+    final blurSigma = isAmoled ? 24.0 : 18.0;
     final topPadding = MediaQuery.paddingOf(context).top;
-    final barHeight = mobile ? 54.0 : 58.0;
+    final barHeight = mobile ? 44.0 : 48.0;
+    final notchRadius = mobile ? 18.0 : 22.0;
 
     return RepaintBoundary(
       child: Container(
@@ -40,52 +41,52 @@ class AdaptiveScaffold extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(
-                alpha: isAmoled ? 0.60 : (isDark ? 0.40 : 0.10),
+                alpha: isAmoled ? 0.45 : (isDark ? 0.28 : 0.08),
               ),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-              spreadRadius: -4,
+              blurRadius: 14,
+              offset: const Offset(0, 4),
+              spreadRadius: -2,
             ),
             if (isDark)
               BoxShadow(
                 color: scheme.primary.withValues(
-                  alpha: isAmoled ? 0.10 : 0.06,
+                  alpha: isAmoled ? 0.08 : 0.05,
                 ),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
+                blurRadius: 12,
+                offset: const Offset(0, 3),
               ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: const BorderRadius.only(
-            bottomLeft: Radius.circular(24),
-            bottomRight: Radius.circular(24),
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(notchRadius),
+            bottomRight: Radius.circular(notchRadius),
           ),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
             child: Container(
               decoration: BoxDecoration(
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(24),
-                  bottomRight: Radius.circular(24),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(notchRadius),
+                  bottomRight: Radius.circular(notchRadius),
                 ),
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: isAmoled
                       ? [
-                          const Color(0xFF141416).withValues(alpha: 0.85),
-                          const Color(0xFF000000).withValues(alpha: 0.65),
+                          const Color(0xFF141416).withValues(alpha: 0.82),
+                          const Color(0xFF000000).withValues(alpha: 0.60),
                         ]
                       : isDark
                           ? [
                               scheme.surfaceContainerHigh
-                                  .withValues(alpha: 0.72),
-                              scheme.surface.withValues(alpha: 0.52),
+                                  .withValues(alpha: 0.70),
+                              scheme.surface.withValues(alpha: 0.50),
                             ]
                           : [
-                              Colors.white.withValues(alpha: 0.85),
-                              Colors.white.withValues(alpha: 0.60),
+                              Colors.white.withValues(alpha: 0.82),
+                              Colors.white.withValues(alpha: 0.58),
                             ],
                 ),
                 border: Border(
@@ -104,9 +105,9 @@ class AdaptiveScaffold extends StatelessWidget {
                   // Specular Highlight — тонкий световой блик по нижнему скруглению
                   Positioned(
                     bottom: 0,
-                    left: 32,
-                    right: 32,
-                    height: 1.2,
+                    left: 24,
+                    right: 24,
+                    height: 1.0,
                     child: IgnorePointer(
                       child: DecoratedBox(
                         decoration: BoxDecoration(
@@ -154,9 +155,20 @@ class AdaptiveScaffold extends StatelessWidget {
                     child: SizedBox(
                       height: barHeight,
                       child: NavigationToolbar(
-                        leading: leading,
+                        leading: leading != null
+                            ? IconButtonTheme(
+                                data: IconButtonThemeData(
+                                  style: IconButton.styleFrom(
+                                    visualDensity: VisualDensity.compact,
+                                    padding: const EdgeInsets.all(6),
+                                    minimumSize: const Size(36, 36),
+                                  ),
+                                ),
+                                child: leading!,
+                              )
+                            : null,
                         middle: DefaultTextStyle(
-                          style: (theme.textTheme.titleLarge ?? const TextStyle())
+                          style: (theme.textTheme.titleMedium ?? const TextStyle())
                               .copyWith(
                             fontWeight: FontWeight.w700,
                           ),
@@ -164,9 +176,18 @@ class AdaptiveScaffold extends StatelessWidget {
                         ),
                         trailing: actions.isEmpty
                             ? null
-                            : Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: actions,
+                            : IconButtonTheme(
+                                data: IconButtonThemeData(
+                                  style: IconButton.styleFrom(
+                                    visualDensity: VisualDensity.compact,
+                                    padding: const EdgeInsets.all(6),
+                                    minimumSize: const Size(36, 36),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: actions,
+                                ),
                               ),
                         centerMiddle: false,
                         middleSpacing: 8.0,
@@ -186,7 +207,7 @@ class AdaptiveScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final mobile = Responsive.isMobile(context);
     final topPadding = MediaQuery.paddingOf(context).top;
-    final barHeight = mobile ? 54.0 : 58.0;
+    final barHeight = mobile ? 44.0 : 48.0;
     final totalBarHeight = topPadding + barHeight;
 
     return Scaffold(
