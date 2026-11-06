@@ -27,6 +27,9 @@ class ArtistsHeader extends StatelessWidget {
     required this.onSortChanged,
     required this.onSearch,
     required this.isRu,
+    this.currentPage,
+    this.totalPages,
+    this.onOpenPagePicker,
   });
 
   final ArtistsTab currentTab;
@@ -43,6 +46,9 @@ class ArtistsHeader extends StatelessWidget {
   final ValueChanged<ArtistSortOrder> onSortChanged;
   final VoidCallback onSearch;
   final bool isRu;
+  final int? currentPage;
+  final int? totalPages;
+  final VoidCallback? onOpenPagePicker;
 
   @override
   Widget build(BuildContext context) {
@@ -157,6 +163,49 @@ class ArtistsHeader extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (currentTab == ArtistsTab.all &&
+                    currentPage != null &&
+                    onOpenPagePicker != null) ...[
+                  const SizedBox(width: 6),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: onOpenPagePicker,
+                    child: Container(
+                      height: 38,
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.black.withValues(alpha: 0.3)
+                            : Colors.black.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.1)
+                              : Colors.black.withValues(alpha: 0.08),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.auto_stories_rounded,
+                            size: 15,
+                            color: theme.colorScheme.primary,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            totalPages != null
+                                ? '$currentPage/$totalPages'
+                                : (isRu ? 'Стр. $currentPage' : 'p. $currentPage'),
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 8),

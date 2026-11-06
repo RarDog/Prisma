@@ -6,6 +6,8 @@ import 'package:gel_rule_app/features/artists/presentation/widgets/artist_card.d
 import 'package:gel_rule_app/features/artists/presentation/widgets/artist_service_utils.dart';
 import 'package:gel_rule_app/features/artists/presentation/widgets/artists_filter_sheet.dart';
 import 'package:gel_rule_app/features/artists/presentation/widgets/artists_header.dart';
+import 'package:gel_rule_app/features/artists/presentation/widgets/artists_page_bar.dart';
+import 'package:gel_rule_app/features/artists/presentation/widgets/artists_page_picker_sheet.dart';
 import 'package:gel_rule_app/features/favorites/models/favorite_artist_item.dart';
 import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
 
@@ -153,6 +155,84 @@ void main() {
       expect(find.text('Pixiv Fanbox'), findsOneWidget);
       expect(find.text('5 210 постов'), findsOneWidget);
       expect(find.textContaining('Обновлено: 3 часа назад'), findsOneWidget);
+    });
+
+    testWidgets('ArtistsPageBar renders page numbers and navigates on tap',
+        (tester) async {
+      int? selectedPage;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ArtistsPageBar(
+              page: 1,
+              totalPages: 150,
+              canGoBack: false,
+              canGoForward: true,
+              isRu: true,
+              onPageSelected: (p) => selectedPage = p,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('1'), findsWidgets);
+      expect(find.text('2'), findsWidgets);
+
+      // Tap on page 2
+      await tester.tap(find.text('2').first);
+      await tester.pumpAndSettle();
+
+      expect(selectedPage, 2);
+    });
+
+    testWidgets('ArtistsPagePickerSheet lets user pick page and confirm',
+        (tester) async {
+      int? confirmedPage;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('ru'),
+          supportedLocales: const [Locale('ru'), Locale('en')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                child: const Text('Open Picker'),
+                onPressed: () => ArtistsPagePickerSheet.show(
+                  context,
+                  currentPage: 1,
+                  totalPages: 160,
+                  isRu: true,
+                  onPageSelected: (p) => confirmedPage = p,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Picker'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Выбор страницы'), findsOneWidget);
+      expect(find.text('110'), findsOneWidget);
+
+      // Tap quick jump chip 110
+      await tester.tap(find.text('110'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Перейти к странице 110'), findsOneWidget);
+
+      // Confirm
+      await tester.tap(find.text('Перейти к странице 110'));
+      await tester.pumpAndSettle();
+
+      expect(confirmedPage, 110);
     });
   });
 }

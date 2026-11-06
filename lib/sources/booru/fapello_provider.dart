@@ -363,6 +363,14 @@ class FapelloProvider
       null;
 
   @override
+  Future<int?> getArtistsCount({
+    String? service,
+    List<String>? services,
+    String? query,
+  }) async =>
+      null;
+
+  @override
   Future<List<Post>> getArtistPosts({
     required ArtistWorkQuery query,
     int page = 0,

@@ -240,6 +240,39 @@ class PawchiveProvider
   }
 
   @override
+  Future<int?> getArtistsCount({
+    String? service,
+    List<String>? services,
+    String? query,
+  }) async {
+    try {
+      final allArtists = await _ensureArtistsLoaded();
+      final queryText = (query ?? '').trim().toLowerCase();
+      final activeServices = services != null && services.isNotEmpty
+          ? services.map((s) => s.trim().toLowerCase()).toSet()
+          : null;
+      final filtered = allArtists.where((artist) {
+        final artistService = artist.service.toLowerCase();
+        if (artistService != 'patreon' && artistService != 'fanbox') {
+          return false;
+        }
+        final matchService = activeServices != null
+            ? activeServices.contains(artistService)
+            : service == null ||
+                service.isEmpty ||
+                artistService == service.toLowerCase();
+        if (!matchService) return false;
+        if (queryText.isEmpty) return true;
+        return artist.displayName.toLowerCase().contains(queryText) ||
+            artist.id.toLowerCase().contains(queryText);
+      });
+      return filtered.length;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
   Future<List<Post>> getArtistPosts({
     required ArtistWorkQuery query,
     int page = 0,

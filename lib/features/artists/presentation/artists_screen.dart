@@ -17,6 +17,8 @@ import 'widgets/artists_catalog_view.dart';
 import 'widgets/artists_favorites_empty.dart';
 import 'widgets/artists_favorites_view.dart';
 import 'widgets/artists_header.dart';
+import 'widgets/artists_page_bar.dart';
+import 'widgets/artists_page_picker_sheet.dart';
 import 'widgets/pawchive/pawchive_accounts_sheet.dart';
 
 export 'package:gel_rule_app/features/artists/models/artist_sort_order.dart';
@@ -57,19 +59,25 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
   ArtistSortOrder _sortOrder = ArtistSortOrder.popularityDesc;
   String? _providerId;
   var _page = 1;
+  int? _totalArtistsCount;
+  int? _totalPages;
   var _loading = false;
   var _hasMore = true;
   var _initialLoaded = false;
   Object? _error;
-  // Display pages hold only service-filtered artists, but a raw provider
-  // page can contain any service — so raw pages are fetched until a display
-  // page fills up (or the catalog runs out). The buffer grows as the user
-  // pages forward; going back just slices it.
   static const _pageSize = 30;
   final List<ArtistProfile> _loadedArtists = <ArtistProfile>[];
-  var _nextRawPage = 1;
-  var _rawExhausted = false;
   List<ArtistProfile> _artists = const [];
+
+  void _openPagePicker() {
+    ArtistsPagePickerSheet.show(
+      context,
+      currentPage: _page,
+      totalPages: _totalPages,
+      isRu: Localizations.maybeLocaleOf(context)?.languageCode == 'ru',
+      onPageSelected: (p) => _loadPage(page: p),
+    );
+  }
 
   Future<void> _toggleFavoriteArtist(
     AppSettings settings,
@@ -396,6 +404,9 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
                   selectedProviderId: _providerId,
                   selectedServices: _selectedServices,
                   selectedSort: _sortOrder,
+                  currentPage: _page,
+                  totalPages: _totalPages,
+                  onOpenPagePicker: _openPagePicker,
                   isRu: isRu,
                   onProviderChanged: (value) {
                     setState(() => _providerId = value);
@@ -481,15 +492,15 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
                               setState(() => _selectedServices.clear());
                               _refresh(items);
                             },
-                            // The page bar lives at the end of the list,
+                            // The interactive page bar lives at the end of the list,
                             // under the last artist.
-                            footer: _ArtistsPageBar(
+                            footer: ArtistsPageBar(
                               page: _page,
+                              totalPages: _totalPages,
                               canGoBack: _page > 1 && !_loading,
                               canGoForward: _hasMore && !_loading,
                               isRu: isRu,
-                              onPrev: () => _loadPage(page: _page - 1),
-                              onNext: () => _loadPage(page: _page + 1),
+                              onPageSelected: (p) => _loadPage(page: p),
                             ),
                           )),
               ),
@@ -527,21 +538,18 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
       _page = 1;
       _hasMore = true;
       _initialLoaded = false;
-      _rawExhausted = false;
-      _nextRawPage = 1;
+      _totalArtistsCount = null;
+      _totalPages = null;
       _loadedArtists.clear();
       _artists = const [];
       _error = null;
     });
-    await _loadPage();
+    await _loadPage(page: 1);
   }
 
-  /// Shows one display page of the catalog, fetching raw provider pages
-  /// until the page fills up (the raw feed interleaves services the app
-  /// filters out, so one raw page is rarely one display page).
   Future<void> _loadPage({int? page}) async {
     if (_loading || _providerId == null) return;
-    final target = (page ?? _page).clamp(1, 999999);
+    final target = (page ?? _page).clamp(1, _totalPages ?? 999999);
     setState(() {
       _loading = true;
       _page = target;
@@ -555,46 +563,54 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
       final manager = ref.read(providerManagerProvider);
       final providers = await manager.activeArtistProviders();
       if (providers is! Success<List<ArtistProvider>>) return;
-      final provider = providers.data.firstWhere(
-        (item) => (item as ContentProvider).id == _providerId,
-      );
-      final needed = target * _pageSize;
-      while (_loadedArtists.length < needed && !_rawExhausted) {
-        final next = await provider.searchArtists(
-          _search.text.trim(),
-          services:
-              _selectedServices.isEmpty ? null : _selectedServices.toList(),
-          sort: _sortOrder,
-          page: _nextRawPage,
-          limit: _pageSize,
-        );
-        if (!mounted) return;
-        _nextRawPage++;
-        if (next.isEmpty) {
-          _rawExhausted = true;
+      ArtistProvider? provider;
+      for (final item in providers.data) {
+        if ((item as ContentProvider).id == _providerId) {
+          provider = item;
           break;
         }
-        _loadedArtists.addAll(next.where(_matchesDisplayFilters));
       }
-      final start = (target - 1) * _pageSize;
-      final slice = _loadedArtists.length > start
-          ? _loadedArtists.sublist(
-              start,
-              start + _pageSize > _loadedArtists.length
-                  ? _loadedArtists.length
-                  : start + _pageSize,
-            )
-          : const <ArtistProfile>[];
+      if (provider == null) return;
+
+      // Update total artists count if not yet known
+      if (_totalArtistsCount == null) {
+        final count = await provider.getArtistsCount(
+          services:
+              _selectedServices.isEmpty ? null : _selectedServices.toList(),
+          query: _search.text.trim(),
+        );
+        if (mounted && count != null) {
+          setState(() {
+            _totalArtistsCount = count;
+            _totalPages = (count / _pageSize).ceil();
+          });
+        }
+      }
+
+      final pageResults = await provider.searchArtists(
+        _search.text.trim(),
+        services:
+            _selectedServices.isEmpty ? null : _selectedServices.toList(),
+        sort: _sortOrder,
+        page: target,
+        limit: _pageSize,
+      );
       if (!mounted) return;
+
+      final filtered = pageResults.where(_matchesDisplayFilters).toList();
+      _loadedArtists.addAll(filtered);
+
       setState(() {
-        _artists = slice;
-        _hasMore = !_rawExhausted || _loadedArtists.length > target * _pageSize;
+        _artists = filtered;
+        _hasMore = _totalPages != null
+            ? target < _totalPages!
+            : pageResults.length >= _pageSize;
         _initialLoaded = true;
       });
       _triggerFavoritesEnrichment();
     } catch (error) {
       if (!mounted) return;
-      if (_loadedArtists.isEmpty && target == 1) {
+      if (_artists.isEmpty && target == 1) {
         // Initial load failed — surface a full-screen error with retry.
         setState(() => _error = error);
       } else {
@@ -647,53 +663,5 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
         );
       }
     }
-  }
-}
-
-/// Bottom pagination bar for the artist catalog: prev/next with the current
-/// page label.
-class _ArtistsPageBar extends StatelessWidget {
-  const _ArtistsPageBar({
-    required this.page,
-    required this.canGoBack,
-    required this.canGoForward,
-    required this.isRu,
-    required this.onPrev,
-    required this.onNext,
-  });
-
-  final int page;
-  final bool canGoBack;
-  final bool canGoForward;
-  final bool isRu;
-  final VoidCallback onPrev;
-  final VoidCallback onNext;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        IconButton(
-          tooltip: isRu ? 'Предыдущая страница' : 'Previous page',
-          onPressed: canGoBack ? onPrev : null,
-          icon: const Icon(Icons.chevron_left_rounded),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          isRu ? 'Стр. $page' : 'Page $page',
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(width: 8),
-        IconButton(
-          tooltip: isRu ? 'Следующая страница' : 'Next page',
-          onPressed: canGoForward ? onNext : null,
-          icon: const Icon(Icons.chevron_right_rounded),
-        ),
-      ],
-    );
   }
 }

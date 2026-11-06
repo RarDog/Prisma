@@ -116,6 +116,13 @@ abstract class ArtistProvider {
     String artistId,
   ) async =>
       null;
+
+  Future<int?> getArtistsCount({
+    String? service,
+    List<String>? services,
+    String? query,
+  }) async =>
+      null;
 }
 
 abstract class MangaChapterProvider {
