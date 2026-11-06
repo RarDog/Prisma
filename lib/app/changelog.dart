@@ -1,5 +1,34 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.2.2-beta.1',
+    title:
+        'Бета 4.2.2-beta.1: свайп страниц авторов, 3D-выбор страницы, фильтры Pawchive, дедупликация ленты и исправления медиа',
+    titleEn:
+        'Beta 4.2.2-beta.1: Swipeable artist pagination, 3D wheel picker, Pawchive sorting, feed deduplication & media fixes',
+    bullets: [
+      'Каталог Артистов: плавный свайп номеров страниц пальцем в нижней капсуле Liquid Glass с мягким затуханием краёв (ShaderMask) и неоновым свечением активной страницы.',
+      'Шторка выбора страницы: 3D-барабан колеса (ListWheelScrollView) без лишнего визуального шума, динамический Hero-бейдж текущей и максимальной страницы, слайдер и быстрые кнопки (+10, +50, первая страница).',
+      'Произвольный доступ к страницам: оптимизирован переход на любую удалённую страницу (например, 110-ю) в один прямой запрос к API без последовательного перебора всех предыдущих страниц.',
+      'Фильтрация и сортировка авторов: добавлены режимы сортировки по популярности, по количеству постов (по убыванию и возрастанию) и по дате последнего обновления.',
+      'Избранные авторы: отображение точного количества постов и относительного времени последнего обновления («X назад»), аналогично основному каталогу.',
+      'Компактный мобильный интерфейс: переработана верхняя панель вкладки «Авторы» — компактная строка поиска, кнопка фильтров со шторкой настроек и горизонтальная лента быстрых фильтров.',
+      'Исправление ложного видео-режима: фото-посты со ссылками на Mega или Google Drive в описании больше не перехватываются видео-плеером и корректно открываются в галерее изображений.',
+      'Отказоустойчивость ленты: автоматическая дедупликация постов между источниками, накопление целевого размера страницы и мягкий перезапуск без ложного перехода в офлайн.',
+      'Безопасность запросов: поддержка интерфейса TagLimitProvider с автоматическим усечением запросов тегов для предотвращения ошибок 422 Unprocessable Entity.',
+    ],
+    bulletsEn: [
+      'Artists Catalog: smooth horizontal swipe gesture for page numbers in a Liquid Glass capsule with edge gradient fade (ShaderMask) and subtle active page glow.',
+      'Wheel Page Picker Sheet: clean 3D wheel cylinder (ListWheelScrollView) free of repetitive labels, live Hero counter badge, slider, and quick-jump pills (+10, +50, first page).',
+      'Random-Access Pagination: instant jumping to any distant page (e.g., page 110) in a single direct API request without sequential pagination bottlenecks.',
+      'Author Filtering & Sorting: added sorting modes by popularity, post count descending, post count ascending, and last updated date.',
+      'Favorite Artists Metadata: cards now display total post count and relative update timestamps ("X ago"), matching catalog cards.',
+      'Compact Mobile Header: redesigned header with compact search bar, dedicated filter sheet button, and scrollable quick-filter chips.',
+      'Cloud Link Media Fix: photo posts with Mega or Google Drive cloud links in their descriptions are no longer mistaken for video streams and render properly in the image viewer.',
+      'Feed Engine Resilience: cross-provider content deduplication, adaptive accumulation of target page sizes, and stable soft retry without false-offline flips.',
+      'Tag Safety Guards: TagLimitProvider interface integration that automatically trims excessive tag queries to avoid HTTP 422 Unprocessable Entity errors.',
+    ],
+  ),
+  PrismaChange(
     version: '4.2.1',
     title:
         'Релиз 4.2.1: нативный плеер Pixiv Ugoira, живая навигация, каталог авторов, надёжность данных и оптимизации',
