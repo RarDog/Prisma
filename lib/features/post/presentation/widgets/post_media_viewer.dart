@@ -22,6 +22,7 @@ export 'post_content_heroes.dart';
 export 'video_player_controls.dart';
 export 'video_surface.dart';
 export 'zoomable_image.dart';
+export 'fullscreen/fullscreen_media_helpers.dart' show resolveFullscreenPosts;
 
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/core/http/app_headers.dart';
@@ -45,32 +46,6 @@ final isFullscreenViewerActiveProvider = StateProvider<bool>((ref) => false);
 
 final postMediaDimensionsProvider =
     StateProvider.autoDispose.family<Size?, String>((ref, cacheKey) => null);
-
-/// Decides which list a fullscreen gallery should page through.
-///
-/// The gallery owns its list ([posts]); the only reason to prefer the live
-/// feed is that the gallery was opened from the feed, where `onLoadMore`
-/// appends to it. Everything else — Artists, Favorites, collections, search —
-/// must keep its own list, otherwise the gallery silently shows whatever the
-/// global feed happens to hold.
-///
-/// [useLiveFeed] is the caller's explicit statement of origin, so it never
-/// has to be inferred from list sizes: an unrelated feed that is merely
-/// larger than the given one must never win.
-List<Post> resolveFullscreenPosts({
-  required List<Post> posts,
-  required List<Post>? liveFeed,
-  required int currentIndex,
-  required bool useLiveFeed,
-}) {
-  if (!useLiveFeed) return posts;
-  if (liveFeed == null || liveFeed.isEmpty) return posts;
-  if (currentIndex < 0 || currentIndex >= posts.length) return posts;
-  // Still on a post that belongs to the live feed, so swapping the list in
-  // keeps `onLoadMore` appending instead of resetting the gallery.
-  final current = posts[currentIndex];
-  return liveFeed.any((p) => p.cacheKey == current.cacheKey) ? liveFeed : posts;
-}
 
 Map<String, String> getMediaUrlHeaders({
   String? providerId,
