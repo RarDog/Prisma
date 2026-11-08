@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:gel_rule_app/features/artists/models/pawchive_account.dart';
+import 'package:gel_rule_app/features/settings/models/post_card_badge_config.dart';
 
 class AppSettings {
   const AppSettings({
@@ -20,6 +21,7 @@ class AppSettings {
     required this.autoDownloadFavorites,
     required this.selectedFeedProviderIds,
     required this.showPostBadges,
+    this.cardBadgeConfig = const PostCardBadgeConfig(),
     required this.defaultTopPeriodFilter,
     required this.blacklistedTags,
     required this.whitelistedTags,
@@ -119,6 +121,7 @@ class AppSettings {
   final bool autoDownloadFavorites;
   final List<String> selectedFeedProviderIds;
   final bool showPostBadges;
+  final PostCardBadgeConfig cardBadgeConfig;
   final String defaultTopPeriodFilter;
   final List<String> blacklistedTags;
   final List<String> whitelistedTags;
@@ -171,6 +174,7 @@ class AppSettings {
     autoDownloadFavorites: true,
     selectedFeedProviderIds: [],
     showPostBadges: true,
+    cardBadgeConfig: PostCardBadgeConfig(),
     defaultTopPeriodFilter: 'none',
     blacklistedTags: [],
     whitelistedTags: [],
@@ -228,6 +232,7 @@ class AppSettings {
     bool? autoDownloadFavorites,
     List<String>? selectedFeedProviderIds,
     bool? showPostBadges,
+    PostCardBadgeConfig? cardBadgeConfig,
     String? defaultTopPeriodFilter,
     List<String>? blacklistedTags,
     List<String>? whitelistedTags,
@@ -312,6 +317,7 @@ class AppSettings {
       selectedFeedProviderIds:
           selectedFeedProviderIds ?? this.selectedFeedProviderIds,
       showPostBadges: showPostBadges ?? this.showPostBadges,
+      cardBadgeConfig: cardBadgeConfig ?? this.cardBadgeConfig,
       defaultTopPeriodFilter:
           defaultTopPeriodFilter ?? this.defaultTopPeriodFilter,
       blacklistedTags: blacklistedTags ?? this.blacklistedTags,
@@ -397,6 +403,7 @@ class AppSettings {
         'autoDownloadFavorites': autoDownloadFavorites,
         'selectedFeedProviderIds': selectedFeedProviderIds,
         'showPostBadges': showPostBadges,
+        'cardBadgeConfig': cardBadgeConfig.toJson(),
         'defaultTopPeriodFilter': defaultTopPeriodFilter,
         'blacklistedTags': blacklistedTags,
         'whitelistedTags': whitelistedTags,
@@ -486,6 +493,10 @@ class AppSettings {
         ),
         showPostBadges:
             (json['showPostBadges'] as bool?) ?? defaults.showPostBadges,
+        cardBadgeConfig: json['cardBadgeConfig'] is Map
+            ? PostCardBadgeConfig.fromJson(
+                Map<String, dynamic>.from(json['cardBadgeConfig'] as Map))
+            : defaults.cardBadgeConfig,
         defaultTopPeriodFilter: (json['defaultTopPeriodFilter'] as String?) ??
             defaults.defaultTopPeriodFilter,
         blacklistedTags: List<String>.from(

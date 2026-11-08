@@ -6,11 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:gel_rule_app/app/app.dart';
 import 'package:gel_rule_app/app/motion.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/core/performance/performance_monitor.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/features/post/presentation/widgets/post_media_viewer.dart';
+import 'package:gel_rule_app/features/settings/models/post_card_badge_config.dart';
 import 'blur_content.dart';
 import 'loading_skeleton.dart';
 import 'rating_badge.dart';
@@ -40,12 +42,14 @@ class PostCard extends ConsumerStatefulWidget {
     this.selectionMode = false,
     this.selected = false,
     this.forceSquare = false,
+    this.badgeConfig,
     super.key,
   });
 
   final Post post;
   final bool blurExplicit;
   final bool showBadges;
+  final PostCardBadgeConfig? badgeConfig;
   final bool isFavorite;
   final bool isViewed;
   final bool isDownloaded;
@@ -170,6 +174,119 @@ class _PostCardState extends ConsumerState<PostCard>
     final mobile = MediaQuery.sizeOf(context).width < 700;
     final urls = _feedUrls(post, mobile: mobile);
     final imageUrl = urls.isEmpty ? post.previewUrl : urls.first;
+
+    PostCardBadgeConfig badgeConfig =
+        widget.badgeConfig ?? const PostCardBadgeConfig();
+    if (widget.badgeConfig == null) {
+      try {
+        badgeConfig = ref.watch(appSettingsProvider).value?.cardBadgeConfig ??
+            const PostCardBadgeConfig();
+      } catch (_) {
+        badgeConfig = const PostCardBadgeConfig();
+      }
+    }
+
+    final Map<String, List<Widget>> cornerWidgets = {
+      'topLeft': [],
+      'topRight': [],
+      'bottomLeft': [],
+      'bottomRight': [],
+    };
+
+    if (widget.showBadges) {
+      if (badgeConfig.showProvider) {
+        cornerWidgets[badgeConfig.providerPosition]?.add(
+          ProviderBadge(
+            name: post.providerName,
+            providerId: post.providerId,
+          ),
+        );
+      }
+      if (badgeConfig.showMediaType) {
+        final hasMedia = post.isMultiPage ||
+            post.isUgoira ||
+            post.fileType.toLowerCase().contains('video') ||
+            post.fileType.toLowerCase().contains('webm') ||
+            post.fileType.toLowerCase().contains('mp4') ||
+            post.fileType.toLowerCase().contains('gif') ||
+            isVideoPost ||
+            isAudioPost ||
+            isTextPost;
+        if (hasMedia ||
+            post.tagGroups['duration_text']?.isNotEmpty == true) {
+          cornerWidgets[badgeConfig.mediaTypePosition]?.add(
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (post.isMultiPage)
+                  PageCountBadge(count: post.pageCount),
+                if (post.isMultiPage &&
+                    (post.isUgoira ||
+                        post.fileType.toLowerCase().contains('video') ||
+                        post.fileType.toLowerCase().contains('webm') ||
+                        post.fileType.toLowerCase().contains('mp4') ||
+                        post.fileType.toLowerCase().contains('gif') ||
+                        isVideoPost ||
+                        isAudioPost ||
+                        isTextPost))
+                  const SizedBox(width: 4),
+                if (post.tagGroups['duration_text']?.isNotEmpty == true) ...[
+                  DurationBadge(
+                      duration: post.tagGroups['duration_text']!.first),
+                  const SizedBox(width: 4),
+                ],
+                if (post.isUgoira ||
+                    post.fileType.toLowerCase().contains('video') ||
+                    post.fileType.toLowerCase().contains('webm') ||
+                    post.fileType.toLowerCase().contains('mp4') ||
+                    post.fileType.toLowerCase().contains('gif') ||
+                    isVideoPost ||
+                    isAudioPost ||
+                    isTextPost)
+                  MediaBadge(
+                    fileType: post.isUgoira
+                        ? 'ugoira'
+                        : (isAudioPost
+                            ? 'audio'
+                            : (isTextPost
+                                ? 'text'
+                                : (isVideoPost ? 'video' : post.fileType))),
+                  ),
+              ],
+            ),
+          );
+        }
+      }
+      if (badgeConfig.showStatus &&
+          (widget.isViewed || widget.isDownloaded)) {
+        cornerWidgets[badgeConfig.statusPosition]?.add(
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (widget.isViewed) const SeenBadge(),
+              if (widget.isViewed && widget.isDownloaded)
+                const SizedBox(width: 4),
+              if (widget.isDownloaded) const DownloadedBadge(),
+            ],
+          ),
+        );
+      }
+      if (badgeConfig.showRating) {
+        cornerWidgets[badgeConfig.ratingPosition]?.add(
+          RatingBadge(rating: post.rating),
+        );
+      }
+    }
+
+    if (mobile && badgeConfig.showFavorite) {
+      cornerWidgets[badgeConfig.favoritePosition]?.add(
+        FavoriteButton(
+          isFavorite: widget.isFavorite,
+          onPressed: widget.onFavorite,
+        ),
+      );
+    }
+
     return MouseRegion(
       onEnter: (_) {
         setState(() => _hovered = true);
@@ -413,66 +530,41 @@ class _PostCardState extends ConsumerState<PostCard>
                         ),
                       ),
                     ),
-                  if (widget.showBadges) ...[
+                  if (cornerWidgets['topLeft']!.isNotEmpty)
                     Positioned(
                       left: 8,
                       top: 8,
-                      child: ProviderBadge(
-                        name: post.providerName,
-                        providerId: post.providerId,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (int i = 0;
+                              i < cornerWidgets['topLeft']!.length;
+                              i++) ...[
+                            if (i > 0) const SizedBox(height: 4),
+                            cornerWidgets['topLeft']![i],
+                          ],
+                        ],
                       ),
                     ),
-                    if (post.isMultiPage ||
-                        post.isUgoira ||
-                        post.fileType.toLowerCase().contains('video') ||
-                        post.fileType.toLowerCase().contains('webm') ||
-                        post.fileType.toLowerCase().contains('mp4') ||
-                        post.fileType.toLowerCase().contains('gif') ||
-                        isVideoPost ||
-                        isAudioPost ||
-                        isTextPost)
-                      Positioned(
-                        right: 8,
-                        top: 8,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (post.isMultiPage)
-                              PageCountBadge(count: post.pageCount),
-                            if (post.isMultiPage &&
-                                (post.isUgoira ||
-                                    post.fileType.toLowerCase().contains('video') ||
-                                    post.fileType.toLowerCase().contains('webm') ||
-                                    post.fileType.toLowerCase().contains('mp4') ||
-                                    post.fileType.toLowerCase().contains('gif') ||
-                                    isVideoPost ||
-                                    isAudioPost ||
-                                    isTextPost))
-                              const SizedBox(width: 4),
-                            if (post.tagGroups['duration_text']?.isNotEmpty == true) ...[
-                              DurationBadge(duration: post.tagGroups['duration_text']!.first),
-                              const SizedBox(width: 4),
-                            ],
-                            if (post.isUgoira ||
-                                post.fileType.toLowerCase().contains('video') ||
-                                post.fileType.toLowerCase().contains('webm') ||
-                                post.fileType.toLowerCase().contains('mp4') ||
-                                post.fileType.toLowerCase().contains('gif') ||
-                                isVideoPost ||
-                                isAudioPost ||
-                                isTextPost)
-                              MediaBadge(
-                                fileType: post.isUgoira
-                                    ? 'ugoira'
-                                    : (isAudioPost
-                                        ? 'audio'
-                                        : (isTextPost
-                                            ? 'text'
-                                            : (isVideoPost ? 'video' : post.fileType))),
-                              ),
+                  if (cornerWidgets['topRight']!.isNotEmpty)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (int i = 0;
+                              i < cornerWidgets['topRight']!.length;
+                              i++) ...[
+                            if (i > 0) const SizedBox(height: 4),
+                            cornerWidgets['topRight']![i],
                           ],
-                        ),
+                        ],
                       ),
+                    ),
+                  if (cornerWidgets['bottomLeft']!.isNotEmpty)
                     Positioned(
                       left: 8,
                       bottom: 8,
@@ -480,24 +572,32 @@ class _PostCardState extends ConsumerState<PostCard>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (widget.isViewed || widget.isDownloaded) ...[
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (widget.isViewed) const SeenBadge(),
-                                if (widget.isViewed && widget.isDownloaded)
-                                  const SizedBox(width: 4),
-                                if (widget.isDownloaded)
-                                  const DownloadedBadge(),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
+                          for (int i = 0;
+                              i < cornerWidgets['bottomLeft']!.length;
+                              i++) ...[
+                            if (i > 0) const SizedBox(height: 4),
+                            cornerWidgets['bottomLeft']![i],
                           ],
-                          RatingBadge(rating: post.rating),
                         ],
                       ),
                     ),
-                  ],
+                  if (cornerWidgets['bottomRight']!.isNotEmpty)
+                    Positioned(
+                      right: 8,
+                      bottom: 8,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (int i = 0;
+                              i < cornerWidgets['bottomRight']!.length;
+                              i++) ...[
+                            if (i > 0) const SizedBox(height: 4),
+                            cornerWidgets['bottomRight']![i],
+                          ],
+                        ],
+                      ),
+                    ),
                   if (widget.selected)
                     Positioned.fill(
                       child: DecoratedBox(
@@ -519,15 +619,6 @@ class _PostCardState extends ConsumerState<PostCard>
                             child: Icon(Icons.check_circle_rounded),
                           ),
                         ),
-                      ),
-                    ),
-                  if (mobile)
-                    Positioned(
-                      right: 8,
-                      bottom: 8,
-                      child: FavoriteButton(
-                        isFavorite: widget.isFavorite,
-                        onPressed: widget.onFavorite,
                       ),
                     ),
                   // Double-tap heart animation overlay

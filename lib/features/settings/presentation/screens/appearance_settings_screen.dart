@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gel_rule_app/app/app.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
+import 'package:gel_rule_app/features/settings/presentation/widgets/card_badges_customizer_sheet.dart';
 import 'package:gel_rule_app/features/settings/presentation/widgets/settings_shared_widgets.dart';
 
 class AppearanceSettingsScreen extends ConsumerWidget {
@@ -105,6 +106,19 @@ class AppearanceSettingsScreen extends ConsumerWidget {
                     value: settings.showPostBadges,
                     onChanged: (val) =>
                         _update(ref, settings.copyWith(showPostBadges: val)),
+                  ),
+                  const SettingsDivider(),
+                  SettingsTile(
+                    icon: Icons.dashboard_customize_rounded,
+                    iconColor: const Color(0xFFF59E0B),
+                    title: isRu
+                        ? 'Настройка подписей и позиций'
+                        : 'Customize Badges & Positions',
+                    subtitle: isRu
+                        ? 'Выбор видимых меток и их углов с живым превью'
+                        : 'Choose visible badges and corner positions with live preview',
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => CardBadgesCustomizerSheet.show(context),
                   ),
                 ],
               ),

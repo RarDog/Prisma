@@ -8,6 +8,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:gel_rule_app/app/responsive.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/features/post/presentation/widgets/post_media_viewer.dart';
+import 'package:gel_rule_app/features/settings/models/post_card_badge_config.dart';
 import 'loading_skeleton.dart';
 import 'post_card.dart';
 
@@ -17,6 +18,7 @@ class PostMasonryGrid extends StatelessWidget {
     required this.columns,
     required this.blurExplicit,
     required this.showBadges,
+    this.badgeConfig,
     required this.nsfwEnabled,
     required this.mediaQualityMode,
     required this.onOpen,
@@ -41,6 +43,7 @@ class PostMasonryGrid extends StatelessWidget {
   final int columns;
   final bool blurExplicit;
   final bool showBadges;
+  final PostCardBadgeConfig? badgeConfig;
   final bool nsfwEnabled;
   final MediaQualityMode mediaQualityMode;
   final ValueChanged<Post> onOpen;
@@ -78,6 +81,7 @@ class PostMasonryGrid extends StatelessWidget {
           post: post,
           blurExplicit: blurExplicit && !nsfwEnabled,
           showBadges: showBadges,
+          badgeConfig: badgeConfig,
           isFavorite: favoriteKeys.contains(post.cacheKey),
           isViewed: viewedKeys.contains(post.cacheKey),
           isDownloaded: downloadedKeys.contains(post.cacheKey),
