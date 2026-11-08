@@ -9,6 +9,9 @@ import 'package:go_router/go_router.dart';
 
 import 'package:gel_rule_app/backend/backend.dart';
 import 'providers_controller.dart';
+import 'widgets/form/provider_auth_section.dart';
+import 'widgets/form/provider_form_controls.dart';
+import 'widgets/form/provider_form_presets.dart';
 
 class ProviderFormScreen extends ConsumerStatefulWidget {
   const ProviderFormScreen({this.initialConfig, super.key});
@@ -146,157 +149,17 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
             ),
             children: [
               // Presets bar if creating a new provider
-              if (!isEdit) ...[
-                Text(
-                  isRu ? 'Быстрые пресеты' : 'Quick Presets',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: theme.colorScheme.onSurfaceVariant,
-                    letterSpacing: -0.1,
+              if (!isEdit)
+                ProviderPresetsBar(
+                  onPresetSelected: (preset) => _applyPreset(
+                    name: preset.name,
+                    baseUrl: preset.baseUrl,
+                    apiType: preset.apiType,
                   ),
                 ),
-                const SizedBox(height: 8),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _PresetChip(
-                        name: 'Gelbooru',
-                        color: const Color(0xFF10B981),
-                        onTap: () => _applyPreset(
-                          name: 'Gelbooru',
-                          baseUrl: 'https://gelbooru.com',
-                          apiType: 'gelbooru',
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      _PresetChip(
-                        name: 'Rule34',
-                        color: const Color(0xFF84CC16),
-                        onTap: () => _applyPreset(
-                          name: 'Rule34',
-                          baseUrl: 'https://api.rule34.xxx',
-                          apiType: 'rule34',
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      _PresetChip(
-                        name: 'Safebooru',
-                        color: const Color(0xFF0284C7),
-                        onTap: () => _applyPreset(
-                          name: 'Safebooru',
-                          baseUrl: 'https://safebooru.org',
-                          apiType: 'safebooru',
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      _PresetChip(
-                        name: 'TBIB',
-                        color: const Color(0xFF2563EB),
-                        onTap: () => _applyPreset(
-                          name: 'TBIB',
-                          baseUrl: 'https://tbib.org',
-                          apiType: 'tbib',
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      _PresetChip(
-                        name: 'Rule34.us',
-                        color: const Color(0xFFE11D48),
-                        onTap: () => _applyPreset(
-                          name: 'Rule34.us',
-                          baseUrl: 'https://rule34.us',
-                          apiType: 'rule34_us',
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      _PresetChip(
-                        name: 'Danbooru',
-                        color: const Color(0xFF3B82F6),
-                        onTap: () => _applyPreset(
-                          name: 'Danbooru',
-                          baseUrl: 'https://danbooru.donmai.us',
-                          apiType: 'danbooru',
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      _PresetChip(
-                        name: 'e621',
-                        color: const Color(0xFFF59E0B),
-                        onTap: () => _applyPreset(
-                          name: 'e621',
-                          baseUrl: 'https://e621.net',
-                          apiType: 'e621',
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      _PresetChip(
-                        name: 'Yande.re',
-                        color: const Color(0xFF8B5CF6),
-                        onTap: () => _applyPreset(
-                          name: 'Yande.re',
-                          baseUrl: 'https://yande.re',
-                          apiType: 'moebooru',
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      _PresetChip(
-                        name: 'Konachan',
-                        color: const Color(0xFFEC4899),
-                        onTap: () => _applyPreset(
-                          name: 'Konachan',
-                          baseUrl: 'https://konachan.net',
-                          apiType: 'moebooru',
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      _PresetChip(
-                        name: 'Paheal',
-                        color: const Color(0xFFF97316),
-                        onTap: () => _applyPreset(
-                          name: 'Rule34 Paheal',
-                          baseUrl: 'https://rule34.paheal.net',
-                          apiType: 'paheal',
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      _PresetChip(
-                        name: 'Pixiv',
-                        color: const Color(0xFF0096FA),
-                        onTap: () => _applyPreset(
-                          name: 'Pixiv',
-                          baseUrl: 'https://www.pixiv.net',
-                          apiType: 'pixiv',
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      _PresetChip(
-                        name: 'nHentai',
-                        color: const Color(0xFFED2553),
-                        onTap: () => _applyPreset(
-                          name: 'nHentai',
-                          baseUrl: 'https://nhentai.net',
-                          apiType: 'nhentai',
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      _PresetChip(
-                        name: 'MangaDex',
-                        color: const Color(0xFFFF6740),
-                        onTap: () => _applyPreset(
-                          name: 'MangaDex',
-                          baseUrl: 'https://api.mangadex.org',
-                          apiType: 'mangadex',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
 
               // Section 1: General Parameters
-              _FormLiquidCard(
+              FormLiquidCard(
                 icon: Icons.tune_rounded,
                 accentColor: const Color(0xFF6366F1),
                 title: isRu ? 'Основные параметры' : 'General Configuration',
@@ -306,14 +169,14 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _GlassTextField(
+                    GlassTextField(
                       controller: _name,
                       label: isRu ? 'Название источника' : 'Provider Name',
                       hint: 'e.g. Gelbooru, Rule34',
                       icon: Icons.label_rounded,
                     ),
                     const SizedBox(height: 14),
-                    _GlassTextField(
+                    GlassTextField(
                       controller: _baseUrl,
                       label: isRu ? 'Базовый URL (Base URL)' : 'Base URL',
                       hint: 'https://example.com',
@@ -321,7 +184,7 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
                     ),
                     const SizedBox(height: 14),
                     // Dropdown API Type
-                    _GlassDropdown(
+                    GlassDropdown(
                       label: isRu ? 'Тип API движка' : 'API Engine Type',
                       value: _apiType,
                       onChanged: (val) {
@@ -448,7 +311,7 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
               const SizedBox(height: 18),
 
               // Section 2: Priority & Timeout
-              _FormLiquidCard(
+              FormLiquidCard(
                 icon: Icons.speed_rounded,
                 accentColor: const Color(0xFF10B981),
                 title: isRu
@@ -460,7 +323,7 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
                 child: Row(
                   children: [
                     Expanded(
-                      child: _GlassTextField(
+                      child: GlassTextField(
                         controller: _priority,
                         label: isRu ? 'Приоритет (Priority)' : 'Priority',
                         hint: '10',
@@ -470,7 +333,7 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: _GlassTextField(
+                      child: GlassTextField(
                         controller: _timeout,
                         label: isRu ? 'Таймаут (сек)' : 'Timeout (s)',
                         hint: '20',
@@ -485,160 +348,31 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
               const SizedBox(height: 18),
 
               // Section 3: Credentials & API Keys
-              _FormLiquidCard(
-                icon: Icons.vpn_key_rounded,
-                accentColor: const Color(0xFFF59E0B),
-                title: isRu
-                    ? 'Ключи доступа и аккаунт'
-                    : 'API Keys & Authentication',
-                subtitle: isRu
-                    ? 'Необходимы для снятия ограничений на поиск и теги'
-                    : 'Required for unrestricted queries and higher limits',
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Info Notice
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 14),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF59E0B)
-                            .withValues(alpha: isDark ? 0.14 : 0.08),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: const Color(0xFFF59E0B)
-                              .withValues(alpha: isDark ? 0.35 : 0.22),
-                        ),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(
-                            Icons.info_outline_rounded,
-                            size: 18,
-                            color: Color(0xFFF59E0B),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              isRu
-                                  ? 'Для Gelbooru и Rule34: User ID и API Key можно найти в настройках профиля (Account -> Options).'
-                                  : 'For Gelbooru & Rule34: Find your User ID and API Key in Account -> Options.',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: theme.colorScheme.onSurfaceVariant,
-                                height: 1.35,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    _GlassTextField(
-                      controller: _apiKey,
-                      label: 'API Key',
-                      hint: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-                      icon: Icons.key_rounded,
-                      obscureText: _obscureApiKey,
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscureApiKey
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
-                          size: 18,
-                        ),
-                        onPressed: () =>
-                            setState(() => _obscureApiKey = !_obscureApiKey),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    _GlassTextField(
-                      controller: _userId,
-                      label: 'User ID',
-                      hint: '123456',
-                      icon: Icons.badge_outlined,
-                      keyboardType: TextInputType.number,
-                    ),
-                    const SizedBox(height: 14),
-                    _GlassTextField(
-                      controller: _login,
-                      label: isRu ? 'Логин (Login)' : 'Login Username',
-                      hint: 'username',
-                      icon: Icons.account_circle_outlined,
-                    ),
-                    // PHPSESSID — only for Pixiv
-                    if (_apiType == 'pixiv') ...[
-                      const SizedBox(height: 14),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        margin: const EdgeInsets.only(bottom: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0096FA)
-                              .withValues(alpha: isDark ? 0.14 : 0.08),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: const Color(0xFF0096FA)
-                                .withValues(alpha: isDark ? 0.35 : 0.22),
-                          ),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Icon(
-                              Icons.cookie_outlined,
-                              size: 18,
-                              color: Color(0xFF0096FA),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                isRu
-                                    ? 'Для Pixiv: откройте DevTools в браузере → Application → Cookies → pixiv.net и скопируйте значение PHPSESSID. Даёт доступ к ленте подписок.'
-                                    : 'For Pixiv: open DevTools → Application → Cookies → pixiv.net and copy the PHPSESSID value. Enables following feed.',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                  height: 1.35,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      _GlassTextField(
-                        controller: _phpsessid,
-                        label: 'PHPSESSID (Pixiv Cookie)',
-                        hint: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-                        icon: Icons.vpn_lock_rounded,
-                        obscureText: _obscurePhpsessid,
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePhpsessid
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
-                            size: 18,
-                          ),
-                          onPressed: () => setState(
-                              () => _obscurePhpsessid = !_obscurePhpsessid),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+              ProviderAuthSection(
+                apiKeyController: _apiKey,
+                userIdController: _userId,
+                loginController: _login,
+                phpsessidController: _phpsessid,
+                apiType: _apiType,
+                obscureApiKey: _obscureApiKey,
+                onToggleObscureApiKey: () =>
+                    setState(() => _obscureApiKey = !_obscureApiKey),
+                obscurePhpsessid: _obscurePhpsessid,
+                onToggleObscurePhpsessid: () =>
+                    setState(() => _obscurePhpsessid = !_obscurePhpsessid),
               ),
 
               const SizedBox(height: 18),
 
               // Section 4: Custom Headers JSON
-              _FormLiquidCard(
+              FormLiquidCard(
                 icon: Icons.terminal_rounded,
                 accentColor: const Color(0xFF06B6D4),
                 title: isRu ? 'Заголовки JSON' : 'Custom Headers (JSON)',
                 subtitle: isRu
                     ? 'Дополнительные HTTP заголовки в формате JSON'
                     : 'Optional custom request headers in JSON map format',
-                child: _GlassTextField(
+                child: GlassTextField(
                   controller: _headers,
                   label: isRu ? 'Пользовательские заголовки' : 'Headers JSON',
                   hint: '{"User-Agent": "Prisma/3.0"}',
@@ -878,335 +612,5 @@ class _ProviderFormScreenState extends ConsumerState<ProviderFormScreen> {
     return Map<String, String>.from(headers)
       ..removeWhere((key, _) =>
           key.startsWith('query.') || key.toLowerCase() == 'phpsessid');
-  }
-}
-
-class _PresetChip extends StatelessWidget {
-  const _PresetChip({
-    required this.name,
-    required this.color,
-    required this.onTap,
-  });
-
-  final String name;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: isDark ? 0.16 : 0.10),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: color.withValues(alpha: isDark ? 0.40 : 0.28),
-              width: 1,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                name,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: color,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _FormLiquidCard extends StatelessWidget {
-  const _FormLiquidCard({
-    required this.icon,
-    required this.accentColor,
-    required this.title,
-    required this.subtitle,
-    required this.child,
-  });
-
-  final IconData icon;
-  final Color accentColor;
-  final String title;
-  final String subtitle;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: isDark
-                ? Colors.black.withValues(alpha: 0.30)
-                : accentColor.withValues(alpha: 0.08),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-            spreadRadius: -2,
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isDark
-                  ? [
-                      theme.colorScheme.surfaceContainerHigh
-                          .withValues(alpha: 0.65),
-                      theme.colorScheme.surfaceContainerLow
-                          .withValues(alpha: 0.40),
-                    ]
-                  : [
-                      Colors.white.withValues(alpha: 0.90),
-                      Colors.white.withValues(alpha: 0.75),
-                    ],
-            ),
-            border: Border.all(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.14)
-                  : Colors.white.withValues(alpha: 0.85),
-              width: 1.1,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header
-              Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          accentColor,
-                          accentColor.withValues(alpha: 0.80),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(11),
-                      boxShadow: [
-                        BoxShadow(
-                          color: accentColor.withValues(alpha: 0.32),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Icon(icon, size: 18, color: Colors.white),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          subtitle,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              child,
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _GlassTextField extends StatelessWidget {
-  const _GlassTextField({
-    required this.controller,
-    required this.label,
-    required this.hint,
-    required this.icon,
-    this.keyboardType,
-    this.obscureText = false,
-    this.suffixIcon,
-    this.minLines = 1,
-    this.maxLines = 1,
-    this.isMonospace = false,
-  });
-
-  final TextEditingController controller;
-  final String label;
-  final String hint;
-  final IconData icon;
-  final TextInputType? keyboardType;
-  final bool obscureText;
-  final Widget? suffixIcon;
-  final int minLines;
-  final int maxLines;
-  final bool isMonospace;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      obscureText: obscureText,
-      minLines: minLines,
-      maxLines: maxLines,
-      style: TextStyle(
-        fontSize: 14,
-        fontFamily: isMonospace ? 'monospace' : null,
-      ),
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        hintStyle: TextStyle(
-          fontSize: 13,
-          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-        ),
-        prefixIcon: Icon(icon, size: 18),
-        suffixIcon: suffixIcon,
-        filled: true,
-        fillColor: isDark
-            ? Colors.black.withValues(alpha: 0.22)
-            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.10)
-                : Colors.black.withValues(alpha: 0.08),
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.10)
-                : Colors.black.withValues(alpha: 0.08),
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(
-            color: theme.colorScheme.primary,
-            width: 1.4,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _GlassDropdown extends StatelessWidget {
-  const _GlassDropdown({
-    required this.label,
-    required this.value,
-    required this.items,
-    required this.onChanged,
-  });
-
-  final String label;
-  final String value;
-  final List<DropdownMenuItem<String>> items;
-  final ValueChanged<String?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return DropdownButtonFormField<String>(
-      isExpanded: true,
-      initialValue: value,
-      items: items,
-      onChanged: onChanged,
-      dropdownColor:
-          isDark ? theme.colorScheme.surfaceContainerHighest : Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: const Icon(Icons.hub_outlined, size: 18),
-        filled: true,
-        fillColor: isDark
-            ? Colors.black.withValues(alpha: 0.22)
-            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.10)
-                : Colors.black.withValues(alpha: 0.08),
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.10)
-                : Colors.black.withValues(alpha: 0.08),
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(
-            color: theme.colorScheme.primary,
-            width: 1.4,
-          ),
-        ),
-      ),
-    );
   }
 }
