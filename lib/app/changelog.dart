@@ -1,5 +1,34 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.2.2-beta.2',
+    title:
+        'Бета 4.2.2-beta.2: оптимизация 60/120 FPS, свайп и переключатель тулбаров, кастомизация бейджей карточек',
+    titleEn:
+        'Beta 4.2.2-beta.2: 60/120 FPS performance overhaul, swipeable toolbar collapse & toggle, custom card badge layout',
+    bullets: [
+      'Плавность 60/120 FPS в Настройках: устранены тяжёлые BackdropFilter-эффекты из карточек настроек, добавлен 64 мс дебаунс состояний нажатия и изоляция через RepaintBoundary, полностью ликвидировавшие рывки при быстром скролле.',
+      'Оптимизация вкладки Авторов: удалён ImageFiltered блюр с фоновых баннеров, оптимизирован размер декодирования аватаров (memCacheWidth), увеличен cacheExtent каталога для превентивной подгрузки и облегчена плашка пагинации.',
+      'Сворачивание тулбаров свайпом: добавлен интуитивный жест свайпа вверх по панелям поиска и фильтров как в Ленте, так и во вкладке Авторов для мгновенного скрытия.',
+      'Интерактивные заголовки со стрелкой: нажатие на заголовок в AppBar («Prisma Лента» / «Prisma Авторы») плавно сворачивает или раскрывает панель с анимацией поворота стрелки и тактильным откликом.',
+      'Настройка автоскрытия тулбара: в настройки Ленты добавлен переключатель автоматического скрытия панелей при скролле (autoHideFeedToolbar).',
+      'Очистка интерфейса: убран лишний плавающий индикатор при свернутом тулбаре для сохранения максимальной полезной площади экрана.',
+      'Кастомизация бейджей карточек: новый интерактивный визуальный редактор в настройках ленты с живым предпросмотром расположения бейджей (разрешение, провайдер, тип медиа, закладки).',
+      'Оптимизация рендеринга ленты: отслеживание скролла переведено на ValueNotifier, предотвращая лишние перерисовки виджетов при смене направления прокрутки.',
+      'Производительность системного монитора: фоновый опрос CPU и сети изолирован от UI-потока, снижая паразитную нагрузку на процессор.',
+    ],
+    bulletsEn: [
+      '60/120 FPS Settings Smoothness: eliminated heavy BackdropFilter passes from settings cards, debounced tap interactions by 64 ms, and wrapped sections in RepaintBoundary to eliminate scroll stutters.',
+      'Artists Tab Performance Polish: removed ImageFiltered blur from background banners, tuned avatar decode resolution (memCacheWidth), increased catalog cacheExtent for proactive element caching, and lightened the pagination bar.',
+      'Swipe-to-Collapse Toolbars: intuitive upward swipe gesture on feed and artist search/filter toolbars to instantly dismiss them.',
+      'Interactive Header Toggles: tapping the app bar header ("Prisma Feed" / "Prisma Artists") smoothly toggles the toolbar with an animated 180° arrow rotation and haptic feedback.',
+      'Toolbar Auto-Hide Toggle: added a dedicated feed setting switch to customize whether toolbars automatically retract on scroll (autoHideFeedToolbar).',
+      'Clean Viewport: eliminated the persistent floating pill indicator when toolbars are collapsed for a cleaner, distraction-free viewing experience.',
+      'Card Badge Layout Customizer: interactive visual settings editor allowing full customization of card badge positions with live previews.',
+      'Feed Scroll State Optimization: migrated scroll visibility state to ValueNotifier, preventing full-screen rebuilds on scroll direction changes.',
+      'Performance Monitor Offloading: isolated background CPU and network telemetry from the UI thread, eliminating background frame drops.',
+    ],
+  ),
+  PrismaChange(
     version: '4.2.2-beta.1',
     title:
         'Бета 4.2.2-beta.1: свайп страниц авторов, 3D-выбор страницы, фильтры Pawchive, дедупликация ленты и исправления медиа',
