@@ -39,8 +39,8 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
   final _scrollController = ScrollController();
   final Set<String> _selectedKeys = {};
   bool _selectionMode = false;
-  bool _showScrollToTop = false;
-  bool _toolbarVisible = true;
+  final _showScrollToTop = ValueNotifier<bool>(false);
+  final _toolbarVisible = ValueNotifier<bool>(true);
   double _lastScrollOffset = 0;
   double _scrollDeltaAccumulator = 0;
   String? _appliedInitialQuery;
@@ -58,31 +58,30 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
       }
       _lastKnownScrollOffset = offset;
       final shouldShow = _scrollController.hasClients && offset > 1200;
-      if (shouldShow != _showScrollToTop) {
-        setState(() => _showScrollToTop = shouldShow);
+      if (shouldShow != _showScrollToTop.value) {
+        _showScrollToTop.value = shouldShow;
       }
 
-      // Smooth responsive scroll:
+      // Smooth responsive scroll without triggering full-screen setState():
       // When near top (<= 60px), always keep toolbar fully expanded.
       if (offset <= 60) {
         _scrollDeltaAccumulator = 0;
-        if (!_toolbarVisible) setState(() => _toolbarVisible = true);
+        if (!_toolbarVisible.value) _toolbarVisible.value = true;
       } else {
         final delta = offset - _lastScrollOffset;
-        // Direction change resets accumulator for instant responsiveness
         if ((delta > 0 && _scrollDeltaAccumulator < 0) ||
             (delta < 0 && _scrollDeltaAccumulator > 0)) {
           _scrollDeltaAccumulator = 0;
         }
         _scrollDeltaAccumulator += delta;
 
-        // Downward scroll: requires 50px of deliberate downward movement to collapse
-        if (_scrollDeltaAccumulator > 50) {
-          if (_toolbarVisible) setState(() => _toolbarVisible = false);
+        // Downward scroll: requires 55px of deliberate downward movement to collapse
+        if (_scrollDeltaAccumulator > 55) {
+          if (_toolbarVisible.value) _toolbarVisible.value = false;
         }
-        // Upward scroll: requires only 14px of upward movement to quickly reveal toolbar
-        else if (_scrollDeltaAccumulator < -14) {
-          if (!_toolbarVisible) setState(() => _toolbarVisible = true);
+        // Upward scroll: requires 30px of deliberate upward movement to reveal
+        else if (_scrollDeltaAccumulator < -30) {
+          if (!_toolbarVisible.value) _toolbarVisible.value = true;
         }
       }
       _lastScrollOffset = offset;
@@ -133,6 +132,8 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
     WidgetsBinding.instance.removeObserver(this);
     _scrollSaveDebounce?.cancel();
     _scrollController.dispose();
+    _showScrollToTop.dispose();
+    _toolbarVisible.dispose();
     super.dispose();
   }
 
@@ -269,19 +270,23 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
               onPressed: () => _cycleGridMode(settings),
             ),
           ],
-          floatingActionButton: _showScrollToTop
-              ? FloatingActionButton.small(
-                  tooltip: isRu ? 'Наверх' : 'Scroll to top',
-                  onPressed: () {
-                    _scrollController.animateTo(
-                      0,
-                      duration: const Duration(milliseconds: 450),
-                      curve: Curves.easeOutCubic,
-                    );
-                  },
-                  child: const Icon(Icons.arrow_upward_rounded),
-                )
-              : null,
+          floatingActionButton: ValueListenableBuilder<bool>(
+            valueListenable: _showScrollToTop,
+            builder: (context, show, _) {
+              if (!show) return const SizedBox.shrink();
+              return FloatingActionButton.small(
+                tooltip: isRu ? 'Наверх' : 'Scroll to top',
+                onPressed: () {
+                  _scrollController.animateTo(
+                    0,
+                    duration: const Duration(milliseconds: 450),
+                    curve: Curves.easeOutCubic,
+                  );
+                },
+                child: const Icon(Icons.arrow_upward_rounded),
+              );
+            },
+          ),
           body: feed.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, _) => ErrorView(
@@ -293,8 +298,20 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
               children: [
                 // --- Offline sources notice ---
                 const ProviderHealthBanner(),
-                AnimatedCrossFade(
-                  firstChild: Column(
+                ValueListenableBuilder<bool>(
+                  valueListenable: _toolbarVisible,
+                  builder: (context, visible, child) {
+                    return AnimatedCrossFade(
+                      firstChild: child!,
+                      secondChild: const SizedBox.shrink(),
+                      crossFadeState: visible
+                          ? CrossFadeState.showFirst
+                          : CrossFadeState.showSecond,
+                      duration: const Duration(milliseconds: 160),
+                      sizeCurve: Curves.fastOutSlowIn,
+                    );
+                  },
+                  child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (settings.searchPresets.isNotEmpty)
@@ -383,12 +400,6 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                       ),
                     ],
                   ),
-                  secondChild: const SizedBox.shrink(),
-                  crossFadeState: _toolbarVisible
-                      ? CrossFadeState.showFirst
-                      : CrossFadeState.showSecond,
-                  duration: const Duration(milliseconds: 220),
-                  sizeCurve: Curves.easeInOutCubic,
                 ),
                 Expanded(
                   child: state.posts.isEmpty && !state.isLoadingMore
