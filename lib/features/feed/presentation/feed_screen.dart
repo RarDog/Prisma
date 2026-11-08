@@ -314,61 +314,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                   builder: (context, visible, child) {
                     return AnimatedCrossFade(
                       firstChild: child!,
-                      secondChild: Center(
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(12),
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            _toolbarVisible.value = true;
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 3.5),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHigh
-                                    .withValues(alpha: 0.8),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .outlineVariant
-                                      .withValues(alpha: 0.35),
-                                  width: 0.8,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.keyboard_arrow_down_rounded,
-                                    size: 16,
-                                    color: Theme.of(context).colorScheme.primary,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    isRu
-                                        ? 'Поиск и фильтры'
-                                        : 'Search & filters',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelSmall
-                                        ?.copyWith(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurfaceVariant,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
+                      secondChild: const SizedBox.shrink(),
                       crossFadeState: visible
                           ? CrossFadeState.showFirst
                           : CrossFadeState.showSecond,
