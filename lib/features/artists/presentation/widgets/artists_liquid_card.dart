@@ -95,33 +95,31 @@ class ArtistsLiquidCard extends StatelessWidget {
             children: [
               if (hasBackground)
                 Positioned.fill(
-                  child: CachedNetworkImage(
-                    imageUrl: backgroundImageUrl!,
-                    httpHeaders: backgroundHeaders,
-                    memCacheWidth: 800,
-                    fit: BoxFit.cover,
-                    fadeInDuration: const Duration(milliseconds: 250),
-                    fadeOutDuration: const Duration(milliseconds: 150),
-                    placeholder: (_, __) => const SizedBox.shrink(),
-                    errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                  child: ImageFiltered(
+                    imageFilter: ImageFilter.blur(sigmaX: 2.0, sigmaY: 2.0),
+                    child: CachedNetworkImage(
+                      imageUrl: backgroundImageUrl!,
+                      httpHeaders: backgroundHeaders,
+                      memCacheWidth: 800,
+                      fit: BoxFit.cover,
+                      fadeInDuration: const Duration(milliseconds: 250),
+                      fadeOutDuration: const Duration(milliseconds: 150),
+                      placeholder: (_, __) => const SizedBox.shrink(),
+                      errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                    ),
                   ),
                 ),
-              BackdropFilter(
-                filter: ImageFilter.blur(
-                  sigmaX: hasBackground ? 1.5 : 18,
-                  sigmaY: hasBackground ? 1.5 : 18,
-                ),
-                child: onTap != null
-                    ? Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: r,
-                          onTap: onTap,
-                          child: cardContent,
-                        ),
-                      )
-                    : cardContent,
-              ),
+              if (onTap != null)
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: r,
+                    onTap: onTap,
+                    child: cardContent,
+                  ),
+                )
+              else
+                cardContent,
             ],
           ),
         ),

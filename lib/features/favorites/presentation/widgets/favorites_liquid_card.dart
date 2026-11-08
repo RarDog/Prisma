@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 
 class FavoritesLiquidCard extends StatelessWidget {
@@ -21,30 +20,29 @@ class FavoritesLiquidCard extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final accent = glowColor ?? theme.colorScheme.primary;
 
-    return Container(
-      margin: margin,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: isDark
-                ? Colors.black.withValues(alpha: 0.30)
-                : accent.withValues(alpha: 0.07),
-            blurRadius: 16,
-            offset: const Offset(0, 5),
-            spreadRadius: -2,
-          ),
-          BoxShadow(
-            color: accent.withValues(alpha: isDark ? 0.05 : 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+    return RepaintBoundary(
+      child: Container(
+        margin: margin,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [
+            BoxShadow(
+              color: isDark
+                  ? Colors.black.withValues(alpha: 0.30)
+                  : accent.withValues(alpha: 0.07),
+              blurRadius: 16,
+              offset: const Offset(0, 5),
+              spreadRadius: -2,
+            ),
+            BoxShadow(
+              color: accent.withValues(alpha: isDark ? 0.05 : 0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(22),
           child: Container(
             padding: padding ?? const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -55,13 +53,13 @@ class FavoritesLiquidCard extends StatelessWidget {
                 colors: isDark
                     ? [
                         theme.colorScheme.surfaceContainerHigh
-                            .withValues(alpha: 0.60),
+                            .withValues(alpha: 0.72),
                         theme.colorScheme.surfaceContainerLow
-                            .withValues(alpha: 0.38),
+                            .withValues(alpha: 0.48),
                       ]
                     : [
-                        Colors.white.withValues(alpha: 0.88),
-                        Colors.white.withValues(alpha: 0.72),
+                        Colors.white.withValues(alpha: 0.92),
+                        Colors.white.withValues(alpha: 0.80),
                       ],
               ),
               border: Border.all(

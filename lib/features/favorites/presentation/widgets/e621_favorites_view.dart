@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -544,24 +543,20 @@ class _E621FavoritesViewState extends ConsumerState<E621FavoritesView> {
               _currentLogin!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(18),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? const Color(0xFF131A26).withValues(alpha: 0.85)
-                          : Colors.white.withValues(alpha: 0.85),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: isDark
-                            ? const Color(0xFF0055AA).withValues(alpha: 0.35)
-                            : const Color(0xFF0055AA).withValues(alpha: 0.20),
-                      ),
-                    ),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? const Color(0xFF131A26).withValues(alpha: 0.85)
+                      : Colors.white.withValues(alpha: 0.85),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: isDark
+                        ? const Color(0xFF0055AA).withValues(alpha: 0.35)
+                        : const Color(0xFF0055AA).withValues(alpha: 0.20),
+                  ),
+                ),
                     child: Row(
                       children: [
                         Container(
@@ -656,8 +651,6 @@ class _E621FavoritesViewState extends ConsumerState<E621FavoritesView> {
                       ],
                     ),
                   ),
-                ),
-              ),
             ),
 
           // Content

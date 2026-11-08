@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -264,40 +263,38 @@ class ArtistCard extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(22),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(22),
-              onTap: () {
-                HapticFeedback.selectionClick();
-                onTap();
-              },
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(22),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: isDark
-                        ? [
-                            scheme.surfaceContainerHigh.withValues(alpha: 0.58),
-                            scheme.surfaceContainerLow.withValues(alpha: 0.36),
-                          ]
-                        : [
-                            Colors.white.withValues(alpha: 0.88),
-                            Colors.white.withValues(alpha: 0.72),
-                          ],
-                  ),
-                  border: Border.all(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.13)
-                        : Colors.white.withValues(alpha: 0.85),
-                    width: 1.1,
-                  ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(22),
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onTap();
+            },
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(22),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isDark
+                      ? [
+                          scheme.surfaceContainerHigh.withValues(alpha: 0.70),
+                          scheme.surfaceContainerLow.withValues(alpha: 0.45),
+                        ]
+                      : [
+                          Colors.white.withValues(alpha: 0.90),
+                          Colors.white.withValues(alpha: 0.75),
+                        ],
                 ),
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.13)
+                      : Colors.white.withValues(alpha: 0.85),
+                  width: 1.1,
+                ),
+              ),
                 child: Row(
                   children: [
                     // Artist Squircle Avatar
@@ -433,7 +430,6 @@ class ArtistCard extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 }
