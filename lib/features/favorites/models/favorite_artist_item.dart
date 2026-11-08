@@ -5,6 +5,7 @@ class FavoriteArtistItem {
     required this.providerId,
     required this.name,
     this.avatarUrl,
+    this.bannerUrl,
     this.postCount,
     this.updatedAt,
   });
@@ -15,6 +16,7 @@ class FavoriteArtistItem {
         providerId = '',
         name = '',
         avatarUrl = null,
+        bannerUrl = null,
         postCount = null,
         updatedAt = null;
 
@@ -23,6 +25,7 @@ class FavoriteArtistItem {
   final String providerId;
   final String name;
   final String? avatarUrl;
+  final String? bannerUrl;
   final int? postCount;
   final DateTime? updatedAt;
 
@@ -35,6 +38,7 @@ class FavoriteArtistItem {
         'providerId': providerId,
         'name': name,
         'avatarUrl': avatarUrl,
+        if (bannerUrl != null) 'bannerUrl': bannerUrl,
         if (postCount != null) 'postCount': postCount,
         if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
       };
@@ -46,6 +50,7 @@ class FavoriteArtistItem {
         providerId: (json['providerId'] ?? '').toString(),
         name: (json['name'] ?? '').toString(),
         avatarUrl: json['avatarUrl'] as String?,
+        bannerUrl: json['bannerUrl'] as String?,
         postCount: json['postCount'] is int
             ? json['postCount'] as int
             : int.tryParse(json['postCount']?.toString() ?? ''),
@@ -60,6 +65,7 @@ class FavoriteArtistItem {
     String? providerId,
     String? name,
     String? avatarUrl,
+    String? bannerUrl,
     int? postCount,
     DateTime? updatedAt,
   }) {
@@ -69,6 +75,7 @@ class FavoriteArtistItem {
       providerId: providerId ?? this.providerId,
       name: name ?? this.name,
       avatarUrl: avatarUrl ?? this.avatarUrl,
+      bannerUrl: bannerUrl ?? this.bannerUrl,
       postCount: postCount ?? this.postCount,
       updatedAt: updatedAt ?? this.updatedAt,
     );

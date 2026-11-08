@@ -32,6 +32,7 @@ void main() {
         providerId: 'pawchive',
         name: 'CoolArtist',
         avatarUrl: 'https://pawchive.pw/icons/fanbox/12345',
+        bannerUrl: 'https://pawchive.pw/banners/fanbox/12345',
       );
 
       expect(item.key, equals('pawchive:fanbox:12345'));
@@ -43,6 +44,8 @@ void main() {
       expect(restored.name, equals('CoolArtist'));
       expect(
           restored.avatarUrl, equals('https://pawchive.pw/icons/fanbox/12345'));
+      expect(
+          restored.bannerUrl, equals('https://pawchive.pw/banners/fanbox/12345'));
       expect(restored.postCount, isNull);
       expect(restored.updatedAt, isNull);
       expect(restored == item, isTrue);

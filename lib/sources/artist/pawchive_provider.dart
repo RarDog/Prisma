@@ -452,6 +452,7 @@ class PawchiveProvider
           (json['name'] ?? json['display_name'] ?? json['username'] ?? artistId)
               .toString();
       final iconUrl = '$baseUrl/icons/$service/$artistId';
+      final bannerUrl = '$baseUrl/banners/$service/$artistId';
       return ArtistProfile(
         id: artistId,
         providerId: id,
@@ -459,6 +460,7 @@ class PawchiveProvider
         name: name,
         displayName: name,
         avatarUrl: iconUrl,
+        bannerUrl: bannerUrl,
         updatedAt: _dateFromAny(json['updated']),
         postCount: (json['favorited'] as num?)?.toInt(),
         url: '$baseUrl/$service/user/$artistId',

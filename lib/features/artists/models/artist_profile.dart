@@ -7,6 +7,7 @@ class ArtistProfile {
     required this.displayName,
     required this.url,
     this.avatarUrl,
+    this.bannerUrl,
     this.updatedAt,
     this.postCount,
   });
@@ -17,6 +18,7 @@ class ArtistProfile {
   final String name;
   final String displayName;
   final String? avatarUrl;
+  final String? bannerUrl;
   final DateTime? updatedAt;
   final int? postCount;
   final String url;

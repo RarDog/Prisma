@@ -1,9 +1,15 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/core/http/app_headers.dart';
 
 import 'artist_service_utils.dart';
 import 'artists_liquid_card.dart';
+
+Map<String, String> get _pawchiveHeaders => {
+      'User-Agent': AppHeaders.defaultUserAgent,
+      'Referer': 'https://pawchive.pw/',
+    };
 
 class ArtistCard extends StatelessWidget {
   const ArtistCard({
@@ -24,6 +30,7 @@ class ArtistCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final badges = <Widget>[
       LiquidMiniBadge(
         label: artist.service.isEmpty
@@ -36,7 +43,10 @@ class ArtistCard extends StatelessWidget {
         Text(
           '${formatCount(artist.postCount!)} ${isRu ? 'постов' : 'posts'}',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.82)
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
               ),
         ),
     ];
@@ -45,6 +55,7 @@ class ArtistCard extends StatelessWidget {
       service: artist.service,
       name: artist.name,
       avatarUrl: artist.avatarUrl,
+      bannerUrl: artist.bannerUrl,
       badges: badges,
       updatedAt: artist.updatedAt,
       isRu: isRu,
@@ -72,6 +83,7 @@ class FavoriteArtistCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final badges = <Widget>[
       LiquidMiniBadge(
         label: item.service.isEmpty
@@ -84,7 +96,10 @@ class FavoriteArtistCard extends StatelessWidget {
         Text(
           '${formatArtistPostCount(item.postCount!)} ${isRu ? 'постов' : 'posts'}',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.82)
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
               ),
         )
       else
@@ -99,6 +114,7 @@ class FavoriteArtistCard extends StatelessWidget {
       service: item.service,
       name: item.name,
       avatarUrl: item.avatarUrl,
+      bannerUrl: item.bannerUrl,
       badges: badges,
       updatedAt: item.updatedAt,
       isRu: isRu,
@@ -119,6 +135,7 @@ class _ArtistHeroCard extends StatelessWidget {
     required this.service,
     required this.name,
     required this.avatarUrl,
+    this.bannerUrl,
     required this.badges,
     required this.updatedAt,
     required this.isRu,
@@ -129,6 +146,7 @@ class _ArtistHeroCard extends StatelessWidget {
   final String service;
   final String name;
   final String? avatarUrl;
+  final String? bannerUrl;
   final List<Widget> badges;
   final DateTime? updatedAt;
   final bool isRu;
@@ -140,9 +158,12 @@ class _ArtistHeroCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final sColor = artistServiceColor(service);
+    final hasBanner = bannerUrl != null && bannerUrl!.trim().isNotEmpty;
 
     return ArtistsLiquidCard(
       glowColor: sColor.withValues(alpha: 0.25),
+      backgroundImageUrl: bannerUrl,
+      backgroundHeaders: _pawchiveHeaders,
       padding: EdgeInsets.zero,
       onTap: onTap,
       child: Stack(
@@ -170,9 +191,17 @@ class _ArtistHeroCard extends StatelessWidget {
                             horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
                           color: isDark
-                              ? Colors.white.withValues(alpha: 0.07)
-                              : Colors.black.withValues(alpha: 0.045),
+                              ? Colors.black.withValues(
+                                  alpha: hasBanner ? 0.38 : 0.20)
+                              : Colors.white.withValues(
+                                  alpha: hasBanner ? 0.65 : 0.45),
                           borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.12)
+                                : Colors.black.withValues(alpha: 0.06),
+                            width: 0.8,
+                          ),
                         ),
                         child: Text(
                           name,
@@ -181,6 +210,7 @@ class _ArtistHeroCard extends StatelessWidget {
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
+                            color: isDark ? Colors.white : null,
                           ),
                         ),
                       ),
@@ -197,6 +227,7 @@ class _ArtistHeroCard extends StatelessWidget {
                           updatedAt: updatedAt!,
                           accent: sColor,
                           isRu: isRu,
+                          hasBanner: hasBanner,
                         ),
                       ],
                     ],
@@ -205,8 +236,9 @@ class _ArtistHeroCard extends StatelessWidget {
                 const SizedBox(width: 4),
                 Icon(
                   Icons.chevron_right_rounded,
-                  color:
-                      theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.65)
+                      : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                   size: 20,
                 ),
               ],
@@ -284,6 +316,7 @@ class _HeroAvatar extends StatelessWidget {
             ? fallback
             : CachedNetworkImage(
                 imageUrl: avatarUrl!,
+                httpHeaders: _pawchiveHeaders,
                 memCacheWidth: 120,
                 memCacheHeight: 120,
                 fit: BoxFit.cover,
@@ -300,16 +333,19 @@ class _UpdatedLine extends StatelessWidget {
     required this.updatedAt,
     required this.accent,
     required this.isRu,
+    this.hasBanner = false,
   });
 
   final DateTime updatedAt;
   // ignore: unused_field
   final Color accent;
   final bool isRu;
+  final bool hasBanner;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final local = updatedAt.toLocal();
     // Deliberately neutral: a colored "updated" line reads like an alert.
     return Text(
@@ -318,7 +354,11 @@ class _UpdatedLine extends StatelessWidget {
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: theme.textTheme.bodySmall?.copyWith(
-        color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+        color: isDark
+            ? (hasBanner
+                ? Colors.white.withValues(alpha: 0.72)
+                : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8))
+            : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.85),
         fontSize: 11,
       ),
     );
@@ -373,7 +413,11 @@ class _FavoriteStarButton extends StatelessWidget {
           ),
           child: Icon(
             active ? Icons.star_rounded : Icons.star_outline_rounded,
-            color: active ? Colors.amber : scheme.onSurfaceVariant,
+            color: active
+                ? Colors.amber
+                : (isDark
+                    ? Colors.white.withValues(alpha: 0.75)
+                    : scheme.onSurfaceVariant),
             size: 19,
           ),
         ),

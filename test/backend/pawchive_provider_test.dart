@@ -193,6 +193,8 @@ void main() {
         await provider.listArtists(sort: ArtistSortOrder.postsAsc);
     expect(leastPosts.map((a) => a.id).toList(),
         ['artist_b', 'artist_c', 'artist_a']);
+    expect(leastPosts.first.bannerUrl,
+        'https://pawchive.pw/banners/patreon/artist_b');
 
     // 2. recentPosts: newest updatedAt first (Beta: Nov 2026, Gamma: June 2026, Alpha: Jan 2026)
     final recent =

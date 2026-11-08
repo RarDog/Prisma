@@ -280,6 +280,7 @@ class PawchiveSyncService {
       if (id.isEmpty || service.isEmpty) continue;
 
       final avatarUrl = '$normalizedBase/icons/$service/$id';
+      final bannerUrl = '$normalizedBase/banners/$service/$id';
       final postCount = item['favorited'] is int
           ? item['favorited'] as int
           : (item['count'] is int
@@ -299,6 +300,7 @@ class PawchiveSyncService {
         providerId: 'pawchive',
         name: name,
         avatarUrl: avatarUrl,
+        bannerUrl: bannerUrl,
         postCount: postCount,
         updatedAt: updatedAt,
       ));

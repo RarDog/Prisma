@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 class ArtistsLiquidCard extends StatelessWidget {
@@ -8,12 +9,16 @@ class ArtistsLiquidCard extends StatelessWidget {
     this.padding,
     this.glowColor,
     this.onTap,
+    this.backgroundImageUrl,
+    this.backgroundHeaders,
   });
 
   final Widget child;
   final EdgeInsetsGeometry? padding;
   final Color? glowColor;
   final VoidCallback? onTap;
+  final String? backgroundImageUrl;
+  final Map<String, String>? backgroundHeaders;
 
   @override
   Widget build(BuildContext context) {
@@ -21,6 +26,8 @@ class ArtistsLiquidCard extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final accent = glowColor ?? theme.colorScheme.primary;
     final r = BorderRadius.circular(22);
+    final hasBackground =
+        backgroundImageUrl != null && backgroundImageUrl!.trim().isNotEmpty;
 
     final cardContent = Container(
       padding: padding ?? const EdgeInsets.all(14),
@@ -30,19 +37,30 @@ class ArtistsLiquidCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isDark
-              ? [
-                  theme.colorScheme.surfaceContainerHigh
-                      .withValues(alpha: 0.62),
-                  theme.colorScheme.surfaceContainerLow.withValues(alpha: 0.40),
-                ]
-              : [
-                  Colors.white.withValues(alpha: 0.88),
-                  Colors.white.withValues(alpha: 0.72),
-                ],
+              ? (hasBackground
+                  ? [
+                      Colors.black.withValues(alpha: 0.52),
+                      Colors.black.withValues(alpha: 0.78),
+                    ]
+                  : [
+                      theme.colorScheme.surfaceContainerHigh
+                          .withValues(alpha: 0.62),
+                      theme.colorScheme.surfaceContainerLow
+                          .withValues(alpha: 0.40),
+                    ])
+              : (hasBackground
+                  ? [
+                      Colors.white.withValues(alpha: 0.76),
+                      Colors.white.withValues(alpha: 0.88),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.88),
+                      Colors.white.withValues(alpha: 0.72),
+                    ]),
         ),
         border: Border.all(
           color: isDark
-              ? Colors.white.withValues(alpha: 0.14)
+              ? Colors.white.withValues(alpha: hasBackground ? 0.20 : 0.14)
               : Colors.white.withValues(alpha: 0.85),
           width: 1.2,
         ),
@@ -72,18 +90,39 @@ class ArtistsLiquidCard extends StatelessWidget {
         ),
         child: ClipRRect(
           borderRadius: r,
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-            child: onTap != null
-                ? Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: r,
-                      onTap: onTap,
-                      child: cardContent,
-                    ),
-                  )
-                : cardContent,
+          child: Stack(
+            fit: StackFit.passthrough,
+            children: [
+              if (hasBackground)
+                Positioned.fill(
+                  child: CachedNetworkImage(
+                    imageUrl: backgroundImageUrl!,
+                    httpHeaders: backgroundHeaders,
+                    memCacheWidth: 800,
+                    fit: BoxFit.cover,
+                    fadeInDuration: const Duration(milliseconds: 250),
+                    fadeOutDuration: const Duration(milliseconds: 150),
+                    placeholder: (_, __) => const SizedBox.shrink(),
+                    errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                  ),
+                ),
+              BackdropFilter(
+                filter: ImageFilter.blur(
+                  sigmaX: hasBackground ? 1.5 : 18,
+                  sigmaY: hasBackground ? 1.5 : 18,
+                ),
+                child: onTap != null
+                    ? Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: r,
+                          onTap: onTap,
+                          child: cardContent,
+                        ),
+                      )
+                    : cardContent,
+              ),
+            ],
           ),
         ),
       ),

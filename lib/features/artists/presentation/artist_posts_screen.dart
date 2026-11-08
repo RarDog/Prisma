@@ -659,6 +659,9 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
       final avatarUrl = widget.providerId == 'pawchive'
           ? 'https://pawchive.pw/icons/${widget.service}/${widget.artistId}'
           : null;
+      final bannerUrl = widget.providerId == 'pawchive'
+          ? 'https://pawchive.pw/banners/${widget.service}/${widget.artistId}'
+          : null;
       int? postCount;
       DateTime? updatedAt;
       try {
@@ -684,6 +687,7 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
         providerId: widget.providerId,
         name: widget.artistName,
         avatarUrl: avatarUrl,
+        bannerUrl: bannerUrl,
         postCount: postCount,
         updatedAt: updatedAt,
       );

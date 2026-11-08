@@ -90,6 +90,7 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
       providerId: artist.providerId,
       name: artist.displayName,
       avatarUrl: artist.avatarUrl,
+      bannerUrl: artist.bannerUrl,
       postCount: artist.postCount,
       updatedAt: artist.updatedAt,
     );
