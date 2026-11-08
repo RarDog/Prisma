@@ -1,28 +1,30 @@
-import 'dart:convert';
+import 'dart:async';
 import 'dart:math';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:async';
-import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:gel_rule_app/app/app.dart';
 import 'package:gel_rule_app/app/app_navigator.dart';
 import 'package:gel_rule_app/app/responsive.dart';
 import 'package:gel_rule_app/backend/backend.dart';
-import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/shared/widgets/adaptive_scaffold.dart';
 import 'package:gel_rule_app/shared/widgets/empty_view.dart';
 import 'package:gel_rule_app/shared/widgets/error_view.dart';
 import 'package:gel_rule_app/shared/widgets/keyboard_shortcut_utils.dart';
-import 'package:gel_rule_app/shared/widgets/post_card.dart';
 import 'package:gel_rule_app/shared/widgets/post_masonry_grid.dart';
 import 'package:gel_rule_app/shared/widgets/provider_health_banner.dart';
-import 'package:gel_rule_app/features/collections/presentation/collection_form_dialog.dart';
 import 'package:gel_rule_app/features/favorites/presentation/favorites_controller.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
 import 'feed_controller.dart';
+import 'widgets/feed_batch_action_bar.dart';
+import 'widgets/feed_intents.dart';
+import 'widgets/feed_post_action_coordinator.dart';
+import 'widgets/feed_search_presets_bar.dart';
+import 'widgets/feed_title.dart';
 import 'widgets/feed_toolbar.dart';
 
 class FeedScreen extends ConsumerStatefulWidget {
@@ -185,25 +187,25 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
 
     return Shortcuts(
       shortcuts: {
-        LogicalKeySet(LogicalKeyboardKey.keyR): const _RandomPostIntent(),
+        LogicalKeySet(LogicalKeyboardKey.keyR): const FeedRandomPostIntent(),
         LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyR):
-            const _RefreshIntent(),
-        LogicalKeySet(LogicalKeyboardKey.f5): const _RefreshIntent(),
-        LogicalKeySet(LogicalKeyboardKey.keyV): const _ToggleSelectionIntent(),
-        LogicalKeySet(LogicalKeyboardKey.escape): const _ClearSelectionIntent(),
-        LogicalKeySet(LogicalKeyboardKey.delete): const _ClearSelectionIntent(),
+            const FeedRefreshIntent(),
+        LogicalKeySet(LogicalKeyboardKey.f5): const FeedRefreshIntent(),
+        LogicalKeySet(LogicalKeyboardKey.keyV): const FeedToggleSelectionIntent(),
+        LogicalKeySet(LogicalKeyboardKey.escape): const FeedClearSelectionIntent(),
+        LogicalKeySet(LogicalKeyboardKey.delete): const FeedClearSelectionIntent(),
         LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyA):
-            const _SelectVisibleIntent(),
+            const FeedSelectVisibleIntent(),
       },
       child: Actions(
         actions: {
-          _RefreshIntent: NonTextInputAction<_RefreshIntent>(
+          FeedRefreshIntent: NonTextInputAction<FeedRefreshIntent>(
             onInvoke: (_) {
               ref.read(feedControllerProvider.notifier).refresh();
               return null;
             },
           ),
-          _RandomPostIntent: NonTextInputAction<_RandomPostIntent>(
+          FeedRandomPostIntent: NonTextInputAction<FeedRandomPostIntent>(
             onInvoke: (_) {
               final posts = feed.value?.posts;
               if (posts != null && posts.isNotEmpty) {
@@ -212,7 +214,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
               return null;
             },
           ),
-          _ToggleSelectionIntent: NonTextInputAction<_ToggleSelectionIntent>(
+          FeedToggleSelectionIntent: NonTextInputAction<FeedToggleSelectionIntent>(
             onInvoke: (_) {
               setState(() {
                 _selectionMode = !_selectionMode;
@@ -221,13 +223,13 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
               return null;
             },
           ),
-          _ClearSelectionIntent: NonTextInputAction<_ClearSelectionIntent>(
+          FeedClearSelectionIntent: NonTextInputAction<FeedClearSelectionIntent>(
             onInvoke: (_) {
               _clearSelection();
               return null;
             },
           ),
-          _SelectVisibleIntent: NonTextInputAction<_SelectVisibleIntent>(
+          FeedSelectVisibleIntent: NonTextInputAction<FeedSelectVisibleIntent>(
             onInvoke: (_) {
               final state = feed.value;
               if (state != null) {
@@ -244,7 +246,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
         },
         child: AdaptiveScaffold(
           title: 'Feed',
-          titleWidget: _FeedTitle(
+          titleWidget: FeedTitle(
             toolbarVisible: _toolbarVisible,
             onToggle: () {
               HapticFeedback.lightImpact();
@@ -272,8 +274,8 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
               IconButton(
                 icon: const Icon(Icons.bookmark_add_rounded),
                 tooltip: isRu ? 'Сохранить пресет' : 'Save preset',
-                onPressed: () => _saveCurrentPreset(
-                    context, feed.value!.selectedTags, settings),
+                onPressed: () => saveCurrentSearchPreset(
+                    context, ref, feed.value!.selectedTags, settings),
               ),
             IconButton(
               icon: Icon(_gridModeIcon(settings.gridMode)),
@@ -335,11 +337,11 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                       mainAxisSize: MainAxisSize.min,
                     children: [
                       if (settings.searchPresets.isNotEmpty)
-                        _SearchPresetsBar(
+                        FeedSearchPresetsBar(
                           presets: settings.searchPresets,
                           currentTags: state.selectedTags,
                           onApply: (preset) {
-                            final decoded = _decodePreset(preset);
+                            final decoded = decodeSearchPreset(preset);
                             _submitSearch(decoded['tags'] ?? '');
                           },
                           onDelete: (preset) async {
@@ -479,26 +481,33 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                                 onToggleSelected: (post) =>
                                     _toggleSelected(post),
                                 onFavorite: (post) =>
-                                    _toggleFavorite(ref, post, favoriteKeys),
+                                    FeedPostActionCoordinator.toggleFavorite(
+                                        ref, post, favoriteKeys),
                                 onAddToCollection: (post) =>
-                                    _addToCollection(context, ref, post),
-                                onHide: (post) => _hidePost(context, ref, post),
+                                    FeedPostActionCoordinator.addToCollection(
+                                        context, ref, post),
+                                onHide: (post) =>
+                                    FeedPostActionCoordinator.hidePost(
+                                        context, ref, post),
                               );
                             },
                           ),
                         ),
                 ),
                 if (_selectionMode && _selectedKeys.isNotEmpty)
-                  _BatchActionBar(
+                  FeedBatchActionBar(
                     count: _selectedKeys.length,
-                    onFavorite: () => _favoriteSelected(
+                    onFavorite: () =>
+                        FeedPostActionCoordinator.favoriteSelected(
                       ref,
-                      state.posts,
+                      _selectedPosts(state.posts),
                     ),
-                    onCollection: () => _addSelectedToCollection(
+                    onCollection: () =>
+                        FeedPostActionCoordinator.addSelectedToCollection(
                       context,
                       ref,
-                      state.posts,
+                      _selectedPosts(state.posts),
+                      onDone: _clearSelection,
                     ),
                     onClear: _clearSelection,
                   ),
@@ -582,47 +591,6 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
         .toList();
   }
 
-  Future<void> _favoriteSelected(
-    WidgetRef ref,
-    List<Post> posts, [
-    Set<String>? favoriteKeys,
-  ]) async {
-    final keys =
-        favoriteKeys ?? ref.read(favoriteKeysProvider).value ?? <String>{};
-    for (final post in _selectedPosts(posts)) {
-      if (!keys.contains(post.cacheKey)) {
-        await ref.read(favoriteServiceProvider).addFavorite(post);
-        await _maybeAutoDownloadFavorite(ref, post);
-      }
-    }
-    ref.invalidate(favoriteKeysProvider);
-    ref.invalidate(favoritesControllerProvider);
-    _clearSelection();
-  }
-
-  Future<void> _addSelectedToCollection(
-    BuildContext context,
-    WidgetRef ref,
-    List<Post> posts,
-  ) async {
-    final selectedPosts = _selectedPosts(posts);
-    final result = await ref.read(collectionServiceProvider).getCollections();
-    final collections =
-        result is Success<List<Collection>> ? result.data : <Collection>[];
-    if (!context.mounted) return;
-    await showAddToCollectionPicker(
-      context,
-      collections: collections,
-      onSelected: (collection) async {
-        await ref
-            .read(collectionServiceProvider)
-            .addPostsToCollection(collection.id, selectedPosts);
-        _clearSelection();
-      },
-      onCreate: () => showCollectionFormDialog(context, ref),
-    );
-  }
-
   Future<void> _showPreview(BuildContext context, Post post) {
     final imageUrl = MediaUrlSelector.preview(post).firstOrNull;
     final child = imageUrl == null
@@ -650,75 +618,6 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
     );
   }
 
-  Future<void> _addToCollection(
-    BuildContext context,
-    WidgetRef ref,
-    Post post,
-  ) async {
-    final result = await ref.read(collectionServiceProvider).getCollections();
-    final collections =
-        result is Success<List<Collection>> ? result.data : <Collection>[];
-    if (!context.mounted) return;
-    await showAddToCollectionPicker(
-      context,
-      collections: collections,
-      onSelected: (collection) {
-        ref
-            .read(collectionServiceProvider)
-            .addPostToCollection(collection.id, post);
-      },
-      onCreate: () => showCollectionFormDialog(context, ref),
-    );
-  }
-
-  Future<void> _toggleFavorite(
-    WidgetRef ref,
-    Post post,
-    Set<String> favoriteKeys,
-  ) async {
-    if (favoriteKeys.contains(post.cacheKey)) {
-      await ref
-          .read(favoriteServiceProvider)
-          .removeFavorite(post.id, post.providerId);
-    } else {
-      await ref.read(favoriteServiceProvider).addFavorite(post);
-      await _maybeAutoDownloadFavorite(ref, post);
-    }
-    ref.invalidate(favoriteKeysProvider);
-    ref.invalidate(favoritesControllerProvider);
-  }
-
-  Future<void> _hidePost(
-    BuildContext context,
-    WidgetRef ref,
-    Post post,
-  ) async {
-    await ref.read(feedControllerProvider.notifier).hidePost(post);
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Post hidden locally'),
-        action: SnackBarAction(
-          label: 'Undo',
-          onPressed: () async {
-            await ref
-                .read(settingsServiceProvider)
-                .unhidePostKey(post.cacheKey);
-            ref.invalidate(appSettingsProvider);
-            unawaited(ref.read(feedControllerProvider.notifier).refresh());
-          },
-        ),
-      ),
-    );
-  }
-
-  Future<void> _maybeAutoDownloadFavorite(WidgetRef ref, Post post) async {
-    final settings =
-        ref.read(appSettingsProvider).value ?? AppSettings.defaults;
-    if (!settings.autoDownloadFavorites || !settings.allowDownloads) return;
-    await ref.read(downloadManagerServiceProvider).start(post);
-  }
-
   // ── Grid mode helpers ────────────────────────────────────────────
   IconData _gridModeIcon(String mode) {
     return switch (mode) {
@@ -737,296 +636,4 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
         .saveSettings(settings.copyWith(gridMode: next));
   }
 
-  // ── Search preset helpers ─────────────────────────────────────────
-  Map<String, String> _decodePreset(String raw) {
-    try {
-      final map = jsonDecode(raw) as Map<String, dynamic>;
-      return {'name': map['name'] as String, 'tags': map['tags'] as String};
-    } catch (_) {
-      return {'name': raw, 'tags': raw};
-    }
-  }
-
-  Future<String?> _showSavePresetDialog(
-      BuildContext context, String tags) async {
-    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
-    final ctrl = TextEditingController(text: tags);
-    return showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(isRu ? 'Сохранить пресет' : 'Save preset'),
-        content: TextField(
-          controller: ctrl,
-          decoration: InputDecoration(
-            labelText: isRu ? 'Название пресета' : 'Preset name',
-          ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(isRu ? 'Отмена' : 'Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-            child: Text(isRu ? 'Сохранить' : 'Save'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _saveCurrentPreset(
-      BuildContext context, List<String> tags, AppSettings settings) async {
-    if (tags.isEmpty) return;
-    final tagsStr = tags.join(' ');
-    final name = await _showSavePresetDialog(context, tagsStr);
-    if (name == null || name.isEmpty || !context.mounted) return;
-    final preset = jsonEncode({'name': name, 'tags': tagsStr});
-    final updated = [...settings.searchPresets, preset];
-    await ref
-        .read(settingsControllerProvider.notifier)
-        .saveSettings(settings.copyWith(searchPresets: updated));
-  }
-}
-
-class _RefreshIntent extends Intent {
-  const _RefreshIntent();
-}
-
-class _FeedTitle extends StatelessWidget {
-  const _FeedTitle({
-    required this.toolbarVisible,
-    required this.onToggle,
-  });
-
-  final ValueNotifier<bool> toolbarVisible;
-  final VoidCallback onToggle;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onToggle,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Prisma',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.3,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Consumer(
-                builder: (context, ref, _) => Text(
-                  ref.watch(appStringsProvider).feed,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 4),
-              ValueListenableBuilder<bool>(
-                valueListenable: toolbarVisible,
-                builder: (context, visible, _) {
-                  return Tooltip(
-                    message: visible
-                        ? (isRu ? 'Свернуть панель' : 'Collapse toolbar')
-                        : (isRu ? 'Развернуть панель' : 'Expand toolbar'),
-                    child: AnimatedRotation(
-                      turns: visible ? 0.0 : 0.5,
-                      duration: const Duration(milliseconds: 200),
-                      curve: Curves.easeInOutCubic,
-                      child: Icon(
-                        Icons.keyboard_arrow_up_rounded,
-                        size: 20,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ClearSelectionIntent extends Intent {
-  const _ClearSelectionIntent();
-}
-
-class _SelectVisibleIntent extends Intent {
-  const _SelectVisibleIntent();
-}
-
-class _RandomPostIntent extends Intent {
-  const _RandomPostIntent();
-}
-
-class _ToggleSelectionIntent extends Intent {
-  const _ToggleSelectionIntent();
-}
-
-class _BatchActionBar extends StatelessWidget {
-  const _BatchActionBar({
-    required this.count,
-    required this.onFavorite,
-    required this.onCollection,
-    required this.onClear,
-  });
-
-  final int count;
-  final VoidCallback onFavorite;
-  final VoidCallback onCollection;
-  final VoidCallback onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: const [
-              BoxShadow(color: Colors.black26, blurRadius: 16),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              children: [
-                Text('$count selected',
-                    style: Theme.of(context).textTheme.titleMedium),
-                const Spacer(),
-                IconButton.filledTonal(
-                  tooltip: 'Favorite selected',
-                  onPressed: onFavorite,
-                  icon: const Icon(Icons.favorite_rounded),
-                ),
-                const SizedBox(width: 8),
-                FilledButton.tonalIcon(
-                  onPressed: onCollection,
-                  icon: const Icon(Icons.add_rounded),
-                  label: const Text('Collection'),
-                ),
-                IconButton(
-                  tooltip: 'Clear',
-                  onPressed: onClear,
-                  icon: const Icon(Icons.close_rounded),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── Search Presets Bar ─────────────────────────────────────────────────────
-class _SearchPresetsBar extends StatelessWidget {
-  const _SearchPresetsBar({
-    required this.presets,
-    required this.currentTags,
-    required this.onApply,
-    required this.onDelete,
-  });
-
-  final List<String> presets;
-  final List<String> currentTags;
-  final ValueChanged<String> onApply;
-  final ValueChanged<String> onDelete;
-
-  Map<String, String> _decode(String raw) {
-    try {
-      final map = jsonDecode(raw) as Map<String, dynamic>;
-      return {'name': map['name'] as String, 'tags': map['tags'] as String};
-    } catch (_) {
-      return {'name': raw, 'tags': raw};
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return SizedBox(
-      height: 40,
-      child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        scrollDirection: Axis.horizontal,
-        itemCount: presets.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (context, i) {
-          final raw = presets[i];
-          final decoded = _decode(raw);
-          final name = decoded['name'] ?? raw;
-          final tags = decoded['tags'] ?? raw;
-          final active = currentTags.join(' ') == tags;
-          return GestureDetector(
-            onLongPress: () {
-              final isRu =
-                  Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
-              showDialog<void>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: Text('«$name»'),
-                  content: Text('${isRu ? "Теги" : "Tags"}: $tags'),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        onDelete(raw);
-                      },
-                      child: Text(
-                        isRu ? 'Удалить' : 'Delete',
-                        style: const TextStyle(color: Colors.red),
-                      ),
-                    ),
-                    FilledButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: Text(isRu ? 'Закрыть' : 'Close'),
-                    ),
-                  ],
-                ),
-              );
-            },
-            child: FilterChip(
-              avatar: Icon(
-                active ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                size: 15,
-                color: active ? scheme.primary : scheme.onSurfaceVariant,
-              ),
-              label: Text(name),
-              selected: active,
-              onSelected: (_) => onApply(raw),
-              selectedColor: scheme.primaryContainer.withValues(alpha: 0.8),
-              checkmarkColor: scheme.onPrimaryContainer,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              labelStyle: TextStyle(
-                color: active ? scheme.onPrimaryContainer : scheme.onSurface,
-                fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
 }
