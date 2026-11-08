@@ -459,10 +459,12 @@ class PerformanceMonitorService {
     _initFpsMonitoring();
   }
 
-  static void init() {
+  static void init({bool enableHttpTracking = false}) {
     try {
-      final existing = HttpOverrides.current;
-      HttpOverrides.global = PerformanceHttpOverrides(fallback: existing);
+      if (enableHttpTracking) {
+        final existing = HttpOverrides.current;
+        HttpOverrides.global = PerformanceHttpOverrides(fallback: existing);
+      }
       SmartMemoryManager.instance.init();
     } catch (e) {
       AppLogger.error('PerformanceMonitorService: init failed', e);
@@ -503,39 +505,46 @@ class PerformanceMonitorService {
     }
   }
 
-  double _sampleCpu() {
-    if (!Platform.isAndroid && !Platform.isLinux) return 0.0;
-    try {
-      final statContent = File('/proc/self/stat').readAsStringSync();
+  double _lastSampledCpu = 0.0;
+  bool _cpuSamplingInProgress = false;
+
+  void _triggerAsyncCpuSample() {
+    if (_cpuSamplingInProgress || (!Platform.isAndroid && !Platform.isLinux)) {
+      return;
+    }
+    _cpuSamplingInProgress = true;
+    File('/proc/self/stat').readAsString().then((statContent) {
+      _cpuSamplingInProgress = false;
       final closeParenIndex = statContent.lastIndexOf(')');
-      if (closeParenIndex == -1) return 0.0;
+      if (closeParenIndex == -1) return;
 
       final rest = statContent.substring(closeParenIndex + 2).trim().split(' ');
-      if (rest.length < 13) return 0.0;
+      if (rest.length < 13) return;
 
-      final utime = int.parse(rest[11]);
-      final stime = int.parse(rest[12]);
+      final utime = int.tryParse(rest[11]) ?? 0;
+      final stime = int.tryParse(rest[12]) ?? 0;
       final totalTicks = utime + stime;
       final now = DateTime.now();
 
       if (_prevCpuTicks == 0) {
         _prevCpuTicks = totalTicks;
         _prevCpuTime = now;
-        return 0.0;
+        return;
       }
 
       final elapsedMs = now.difference(_prevCpuTime).inMilliseconds;
-      if (elapsedMs <= 0) return 0.0;
+      if (elapsedMs <= 0) return;
 
       final deltaTicks = totalTicks - _prevCpuTicks;
       _prevCpuTicks = totalTicks;
       _prevCpuTime = now;
 
       final percent = (deltaTicks / (elapsedMs / 1000.0 * 100.0)) * 100.0;
-      return percent.clamp(0.0, (Platform.numberOfProcessors * 100).toDouble());
-    } catch (_) {
-      return 0.0;
-    }
+      _lastSampledCpu =
+          percent.clamp(0.0, (Platform.numberOfProcessors * 100).toDouble());
+    }).catchError((_) {
+      _cpuSamplingInProgress = false;
+    });
   }
 
   PerformanceMetrics collectMetrics() {
@@ -565,7 +574,8 @@ class PerformanceMonitorService {
       imageCacheBytes: imageCacheBytes,
     );
 
-    final cpu = _sampleCpu();
+    _triggerAsyncCpuSample();
+    final cpu = _lastSampledCpu;
 
     return PerformanceMetrics(
       rssBytes: rss,
