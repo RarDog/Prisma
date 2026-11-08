@@ -88,6 +88,7 @@ class _PostCardState extends ConsumerState<PostCard>
 
   bool _hovered = false;
   bool _pressed = false;
+  Timer? _pressTimer;
   bool _videoHoverActive = false;
   Timer? _videoHoverTimer;
   Post? _resolvedPost;
@@ -139,6 +140,7 @@ class _PostCardState extends ConsumerState<PostCard>
 
   @override
   void dispose() {
+    _pressTimer?.cancel();
     _videoHoverTimer?.cancel();
     _heartController?.dispose();
     super.dispose();
@@ -313,9 +315,20 @@ class _PostCardState extends ConsumerState<PostCard>
         });
       },
       child: GestureDetector(
-        onTapDown: (_) => setState(() => _pressed = true),
-        onTapUp: (_) => setState(() => _pressed = false),
-        onTapCancel: () => setState(() => _pressed = false),
+        onTapDown: (_) {
+          _pressTimer?.cancel();
+          _pressTimer = Timer(const Duration(milliseconds: 64), () {
+            if (mounted) setState(() => _pressed = true);
+          });
+        },
+        onTapUp: (_) {
+          _pressTimer?.cancel();
+          if (_pressed) setState(() => _pressed = false);
+        },
+        onTapCancel: () {
+          _pressTimer?.cancel();
+          if (_pressed) setState(() => _pressed = false);
+        },
         onTap: () {
           if (widget.selectionMode) {
             widget.onToggleSelected?.call();
