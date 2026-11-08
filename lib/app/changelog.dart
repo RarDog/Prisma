@@ -1,5 +1,28 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.2.2-beta.3',
+    title:
+        'Бета 4.2.2-beta.3: возвращение Fapello через Cronet на Android, улучшенные карточки и статистика моделей, баннеры и комментарии',
+    titleEn:
+        'Beta 4.2.2-beta.3: Fapello revival via Cronet on Android, enhanced model profiles, card banners & discussions',
+    bullets: [
+      'Возвращение Fapello на Android: интеграция сетевого адаптера Google Cronet (NativeAdapter) позволила обойти проверку Cloudflare TLS JA3/JA4 fingerprinting на уровне системного сетевого стека Chromium.',
+      'Человекочитаемые имена моделей: автоматическое форматирование технических слагов в аккуратный Title Case с очисткой дефисов и подчёркиваний («soyisabelasalar» → «Soyisabelasalar», «suzy-cortez» → «Suzy Cortez»).',
+      'Баннеры карточек авторов: парсинг обложек моделей из сетки топа и поддержка корректных Referer-заголовков для бесшовной загрузки превью и аватаров.',
+      'Статистика профиля автора (getArtistProfile): загрузка счётчиков публикаций (Media), лайков и аватаров, что обогащает карточки авторов и избранное точным числом постов.',
+      'Обсуждения и комментарии: поддержка тредов обсуждений со страницы модели (/discussion/) с автоматическим фоллбэком при отсутствии комментариев у конкретного медиа.',
+      'Теги и псевдонимы из описаний: извлечение альтернативных имён и ключевых слов модели из описания публикаций в теги поста.',
+    ],
+    bulletsEn: [
+      'Fapello Revival on Android: integrated Google Cronet engine via NativeAdapter to bypass Cloudflare TLS JA3/JA4 fingerprint challenge on Android using the native Chromium network stack.',
+      'Human-Readable Model Names: automatic beautification of technical slugs into clean Title Case with punctuation cleanup ("soyisabelasalar" → "Soyisabelasalar", "suzy-cortez" → "Suzy Cortez").',
+      'Artist Card Banners: banner image extraction from the top-likes grid and dedicated Referer header handling for reliable banner and avatar image loading.',
+      'Model Profile Stats (getArtistProfile): parsed media counts (Media), likes, and avatars, enriching artist cards and favorites with accurate post totals.',
+      'Discussion Threads & Comments: model community discussion threads (/discussion/) support with seamless fallback when individual posts have no comments.',
+      'Description Tags & Aliases: extraction of model aliases and keywords from post descriptions directly into post tags.',
+    ],
+  ),
+  PrismaChange(
     version: '4.2.2-beta.2',
     title:
         'Бета 4.2.2-beta.2: оптимизация 60/120 FPS, свайп и переключатель тулбаров, кастомизация бейджей карточек',
