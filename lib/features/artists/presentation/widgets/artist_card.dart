@@ -302,13 +302,6 @@ class _HeroAvatar extends StatelessWidget {
               : Colors.white.withValues(alpha: 0.90),
           width: 1.2,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: accent.withValues(alpha: 0.22),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(13),

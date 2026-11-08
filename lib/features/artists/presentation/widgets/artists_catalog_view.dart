@@ -70,7 +70,7 @@ class ArtistsCatalogView extends StatelessWidget {
           controller: scrollController,
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           // ignore: deprecated_member_use
-          cacheExtent: 140.0,
+          cacheExtent: 500.0,
           slivers: [
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),

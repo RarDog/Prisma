@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import 'artists_page_picker_sheet.dart';
@@ -92,18 +91,14 @@ class _ArtistsPageBarState extends State<ArtistsPageBar> {
         (widget.totalPages ?? (widget.page + 20)).clamp(1, 99999);
 
     return Center(
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Container(
-            height: 48,
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF16161A).withValues(alpha: 0.85)
-                  : Colors.white.withValues(alpha: 0.88),
+      child: Container(
+        height: 48,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        decoration: BoxDecoration(
+          color: isDark
+              ? const Color(0xFF16161A).withValues(alpha: 0.90)
+              : Colors.white.withValues(alpha: 0.92),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
                 color: isDark
@@ -283,8 +278,6 @@ class _ArtistsPageBarState extends State<ArtistsPageBar> {
               ],
             ),
           ),
-        ),
-      ),
-    );
+        );
   }
 }

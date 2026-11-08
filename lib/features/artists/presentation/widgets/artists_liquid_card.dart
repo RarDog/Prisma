@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
@@ -75,16 +74,11 @@ class ArtistsLiquidCard extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: isDark
-                  ? Colors.black.withValues(alpha: 0.32)
-                  : accent.withValues(alpha: 0.08),
-              blurRadius: 16,
-              offset: const Offset(0, 5),
-              spreadRadius: -2,
-            ),
-            BoxShadow(
-              color: accent.withValues(alpha: isDark ? 0.06 : 0.03),
+                  ? Colors.black.withValues(alpha: 0.28)
+                  : accent.withValues(alpha: 0.06),
               blurRadius: 10,
-              offset: const Offset(0, 2),
+              offset: const Offset(0, 3),
+              spreadRadius: -1,
             ),
           ],
         ),
@@ -95,18 +89,15 @@ class ArtistsLiquidCard extends StatelessWidget {
             children: [
               if (hasBackground)
                 Positioned.fill(
-                  child: ImageFiltered(
-                    imageFilter: ImageFilter.blur(sigmaX: 2.0, sigmaY: 2.0),
-                    child: CachedNetworkImage(
-                      imageUrl: backgroundImageUrl!,
-                      httpHeaders: backgroundHeaders,
-                      memCacheWidth: 800,
-                      fit: BoxFit.cover,
-                      fadeInDuration: const Duration(milliseconds: 250),
-                      fadeOutDuration: const Duration(milliseconds: 150),
-                      placeholder: (_, __) => const SizedBox.shrink(),
-                      errorWidget: (_, __, ___) => const SizedBox.shrink(),
-                    ),
+                  child: CachedNetworkImage(
+                    imageUrl: backgroundImageUrl!,
+                    httpHeaders: backgroundHeaders,
+                    memCacheWidth: 480,
+                    fit: BoxFit.cover,
+                    fadeInDuration: const Duration(milliseconds: 200),
+                    fadeOutDuration: const Duration(milliseconds: 150),
+                    placeholder: (_, __) => const SizedBox.shrink(),
+                    errorWidget: (_, __, ___) => const SizedBox.shrink(),
                   ),
                 ),
               if (onTap != null)

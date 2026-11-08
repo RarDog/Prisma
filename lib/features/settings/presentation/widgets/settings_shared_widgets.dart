@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -68,26 +67,25 @@ class SettingsCardGroup extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return Container(
-      key: sectionKey,
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: isDark
-                ? Colors.black.withValues(alpha: 0.35)
-                : accentColor.withValues(alpha: 0.07),
-            blurRadius: 18,
-            offset: const Offset(0, 5),
-            spreadRadius: -2,
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+    return RepaintBoundary(
+      child: Container(
+        key: sectionKey,
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [
+            BoxShadow(
+              color: isDark
+                  ? Colors.black.withValues(alpha: 0.35)
+                  : accentColor.withValues(alpha: 0.07),
+              blurRadius: 18,
+              offset: const Offset(0, 5),
+              spreadRadius: -2,
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(22),
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(22),
@@ -97,13 +95,13 @@ class SettingsCardGroup extends StatelessWidget {
                 colors: isDark
                     ? [
                         theme.colorScheme.surfaceContainerHigh
-                            .withValues(alpha: 0.62),
+                            .withValues(alpha: 0.72),
                         theme.colorScheme.surfaceContainerLow
-                            .withValues(alpha: 0.45),
+                            .withValues(alpha: 0.50),
                       ]
                     : [
-                        Colors.white.withValues(alpha: 0.92),
-                        Colors.white.withValues(alpha: 0.76),
+                        Colors.white.withValues(alpha: 0.94),
+                        Colors.white.withValues(alpha: 0.82),
                       ],
               ),
               border: Border.all(

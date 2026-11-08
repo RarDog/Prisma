@@ -1,4 +1,4 @@
-import 'dart:ui';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -27,6 +27,13 @@ class SettingsCategoryCard extends StatefulWidget {
 
 class _SettingsCategoryCardState extends State<SettingsCategoryCard> {
   bool _pressed = false;
+  Timer? _pressTimer;
+
+  @override
+  void dispose() {
+    _pressTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,9 +44,20 @@ class _SettingsCategoryCardState extends State<SettingsCategoryCard> {
       padding: const EdgeInsets.only(bottom: 11),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTapDown: (_) => setState(() => _pressed = true),
-        onTapUp: (_) => setState(() => _pressed = false),
-        onTapCancel: () => setState(() => _pressed = false),
+        onTapDown: (_) {
+          _pressTimer?.cancel();
+          _pressTimer = Timer(const Duration(milliseconds: 64), () {
+            if (mounted) setState(() => _pressed = true);
+          });
+        },
+        onTapUp: (_) {
+          _pressTimer?.cancel();
+          if (_pressed) setState(() => _pressed = false);
+        },
+        onTapCancel: () {
+          _pressTimer?.cancel();
+          if (_pressed) setState(() => _pressed = false);
+        },
         onTap: () {
           HapticFeedback.lightImpact();
           widget.onTap();
@@ -48,24 +66,23 @@ class _SettingsCategoryCardState extends State<SettingsCategoryCard> {
           scale: _pressed ? 0.982 : 1.0,
           duration: const Duration(milliseconds: 140),
           curve: Curves.easeOutCubic,
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: isDark
-                      ? Colors.black.withValues(alpha: 0.35)
-                      : widget.color.withValues(alpha: 0.08),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                  spreadRadius: -2,
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: RepaintBoundary(
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: isDark
+                        ? Colors.black.withValues(alpha: 0.35)
+                        : widget.color.withValues(alpha: 0.08),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                    spreadRadius: -2,
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
                 child: Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -77,13 +94,13 @@ class _SettingsCategoryCardState extends State<SettingsCategoryCard> {
                       colors: isDark
                           ? [
                               theme.colorScheme.surfaceContainerHigh
-                                  .withValues(alpha: 0.65),
+                                  .withValues(alpha: 0.76),
                               theme.colorScheme.surfaceContainer
-                                  .withValues(alpha: 0.45),
+                                  .withValues(alpha: 0.56),
                             ]
                           : [
-                              Colors.white.withValues(alpha: 0.92),
-                              Colors.white.withValues(alpha: 0.76),
+                              Colors.white.withValues(alpha: 0.94),
+                              Colors.white.withValues(alpha: 0.82),
                             ],
                     ),
                     border: Border.all(
