@@ -116,13 +116,17 @@ class ProviderBadge extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 5.5),
-          Text(
-            name,
-            style: const TextStyle(
-              fontSize: 10.5,
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.2,
+          Flexible(
+            child: Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 10.5,
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.2,
+              ),
             ),
           ),
         ],

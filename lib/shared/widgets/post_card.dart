@@ -43,6 +43,7 @@ class PostCard extends ConsumerStatefulWidget {
     this.selected = false,
     this.forceSquare = false,
     this.badgeConfig,
+    this.customPlaceholder,
     super.key,
   });
 
@@ -50,6 +51,7 @@ class PostCard extends ConsumerStatefulWidget {
   final bool blurExplicit;
   final bool showBadges;
   final PostCardBadgeConfig? badgeConfig;
+  final Widget? customPlaceholder;
   final bool isFavorite;
   final bool isViewed;
   final bool isDownloaded;
@@ -214,27 +216,22 @@ class _PostCardState extends ConsumerState<PostCard>
             isTextPost;
         if (hasMedia ||
             post.tagGroups['duration_text']?.isNotEmpty == true) {
+          final isRightSide = badgeConfig.mediaTypePosition == 'topRight' ||
+              badgeConfig.mediaTypePosition == 'bottomRight';
           cornerWidgets[badgeConfig.mediaTypePosition]?.add(
-            Row(
-              mainAxisSize: MainAxisSize.min,
+            Wrap(
+              alignment:
+                  isRightSide ? WrapAlignment.end : WrapAlignment.start,
+              runAlignment:
+                  isRightSide ? WrapAlignment.end : WrapAlignment.start,
+              spacing: 4,
+              runSpacing: 4,
               children: [
                 if (post.isMultiPage)
                   PageCountBadge(count: post.pageCount),
-                if (post.isMultiPage &&
-                    (post.isUgoira ||
-                        post.fileType.toLowerCase().contains('video') ||
-                        post.fileType.toLowerCase().contains('webm') ||
-                        post.fileType.toLowerCase().contains('mp4') ||
-                        post.fileType.toLowerCase().contains('gif') ||
-                        isVideoPost ||
-                        isAudioPost ||
-                        isTextPost))
-                  const SizedBox(width: 4),
-                if (post.tagGroups['duration_text']?.isNotEmpty == true) ...[
+                if (post.tagGroups['duration_text']?.isNotEmpty == true)
                   DurationBadge(
                       duration: post.tagGroups['duration_text']!.first),
-                  const SizedBox(width: 4),
-                ],
                 if (post.isUgoira ||
                     post.fileType.toLowerCase().contains('video') ||
                     post.fileType.toLowerCase().contains('webm') ||
@@ -259,13 +256,17 @@ class _PostCardState extends ConsumerState<PostCard>
       }
       if (badgeConfig.showStatus &&
           (widget.isViewed || widget.isDownloaded)) {
+        final isRightSide = badgeConfig.statusPosition == 'topRight' ||
+            badgeConfig.statusPosition == 'bottomRight';
         cornerWidgets[badgeConfig.statusPosition]?.add(
-          Row(
-            mainAxisSize: MainAxisSize.min,
+          Wrap(
+            alignment: isRightSide ? WrapAlignment.end : WrapAlignment.start,
+            runAlignment:
+                isRightSide ? WrapAlignment.end : WrapAlignment.start,
+            spacing: 4,
+            runSpacing: 4,
             children: [
               if (widget.isViewed) const SeenBadge(),
-              if (widget.isViewed && widget.isDownloaded)
-                const SizedBox(width: 4),
               if (widget.isDownloaded) const DownloadedBadge(),
             ],
           ),
@@ -407,6 +408,9 @@ class _PostCardState extends ConsumerState<PostCard>
                       enabled: widget.blurExplicit && sensitive,
                       child: LayoutBuilder(
                         builder: (context, constraints) {
+                          if (widget.customPlaceholder != null) {
+                            return widget.customPlaceholder!;
+                          }
                           if (isTextPost) {
                             return TextPostCardPreview(
                               post: post,

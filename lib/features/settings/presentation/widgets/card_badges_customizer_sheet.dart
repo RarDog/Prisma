@@ -14,6 +14,7 @@ class CardBadgesCustomizerSheet extends ConsumerStatefulWidget {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      showDragHandle: false,
       backgroundColor: theme.colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -37,9 +38,9 @@ class _CardBadgesCustomizerSheetState
     id: 'sample_preview_card',
     providerId: 'safebooru',
     providerName: 'Safebooru',
-    previewUrl: 'https://safebooru.org/samples/4000/sample_4000000.jpg',
-    sampleUrl: 'https://safebooru.org/samples/4000/sample_4000000.jpg',
-    fileUrl: 'https://safebooru.org/images/4000/4000000.jpg',
+    previewUrl: '',
+    sampleUrl: '',
+    fileUrl: '',
     tags: const ['sample', 'preview', 'customization'],
     rating: 'general',
     width: 600,
@@ -98,7 +99,7 @@ class _CardBadgesCustomizerSheetState
       builder: (context, scrollController) {
         return Column(
           children: [
-            // Drag handle & Header
+            // Single clean drag handle & Header
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
               child: Column(
@@ -176,8 +177,8 @@ class _CardBadgesCustomizerSheetState
                   // LIVE PREVIEW CARD
                   Center(
                     child: Container(
-                      width: 200,
-                      height: 270,
+                      width: 220,
+                      height: 295,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(18),
                         boxShadow: [
@@ -199,6 +200,7 @@ class _CardBadgesCustomizerSheetState
                           isFavorite: _isSampleFavorite,
                           isViewed: true,
                           isDownloaded: true,
+                          customPlaceholder: const _SampleArtworkPlaceholder(),
                           mediaQualityMode: MediaQualityMode.auto,
                           onOpen: () {},
                           onFavorite: () {
@@ -343,6 +345,14 @@ class _BadgeConfigTile extends StatelessWidget {
   final ValueChanged<bool> onToggle;
   final ValueChanged<String> onPositionChanged;
 
+  String _positionLabel(String pos) => switch (pos) {
+        'topLeft' => isRu ? 'Вверху слева' : 'Top Left',
+        'topRight' => isRu ? 'Вверху справа' : 'Top Right',
+        'bottomLeft' => isRu ? 'Внизу слева' : 'Bottom Left',
+        'bottomRight' => isRu ? 'Внизу справа' : 'Bottom Right',
+        _ => pos,
+      };
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -415,81 +425,208 @@ class _BadgeConfigTile extends StatelessWidget {
             ],
           ),
           if (enabled) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Text(
-                  isRu ? 'Позиция:' : 'Corner:',
+                  isRu ? 'Расположение:' : 'Corner:',
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(width: 8),
-                Expanded(
-                  child: SegmentedButton<String>(
-                    segments: [
-                      ButtonSegment<String>(
-                        value: 'topLeft',
-                        icon: const Icon(Icons.north_west_rounded, size: 15),
-                        label: Text(
-                          isRu ? 'Вверху Сл' : 'Top L',
-                          style: const TextStyle(fontSize: 10.5),
-                        ),
-                        tooltip:
-                            isRu ? 'Вверху слева' : 'Top Left corner',
-                      ),
-                      ButtonSegment<String>(
-                        value: 'topRight',
-                        icon: const Icon(Icons.north_east_rounded, size: 15),
-                        label: Text(
-                          isRu ? 'Вверху Спр' : 'Top R',
-                          style: const TextStyle(fontSize: 10.5),
-                        ),
-                        tooltip:
-                            isRu ? 'Вверху справа' : 'Top Right corner',
-                      ),
-                      ButtonSegment<String>(
-                        value: 'bottomLeft',
-                        icon: const Icon(Icons.south_west_rounded, size: 15),
-                        label: Text(
-                          isRu ? 'Внизу Сл' : 'Bottom L',
-                          style: const TextStyle(fontSize: 10.5),
-                        ),
-                        tooltip:
-                            isRu ? 'Внизу слева' : 'Bottom Left corner',
-                      ),
-                      ButtonSegment<String>(
-                        value: 'bottomRight',
-                        icon: const Icon(Icons.south_east_rounded, size: 15),
-                        label: Text(
-                          isRu ? 'Внизу Спр' : 'Bottom R',
-                          style: const TextStyle(fontSize: 10.5),
-                        ),
-                        tooltip:
-                            isRu ? 'Внизу справа' : 'Bottom Right corner',
-                      ),
-                    ],
-                    selected: {position},
-                    onSelectionChanged: (set) {
-                      if (set.isNotEmpty) {
-                        onPositionChanged(set.first);
-                      }
-                    },
-                    style: ButtonStyle(
-                      visualDensity: VisualDensity.compact,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      padding: WidgetStateProperty.all(
-                        const EdgeInsets.symmetric(horizontal: 4),
-                      ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: accentColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    _positionLabel(position),
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: accentColor,
                     ),
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<String>(
+                showSelectedIcon: false,
+                segments: [
+                  ButtonSegment<String>(
+                    value: 'topLeft',
+                    icon: const Icon(Icons.north_west_rounded, size: 18),
+                    tooltip: isRu ? 'Вверху слева' : 'Top Left corner',
+                  ),
+                  ButtonSegment<String>(
+                    value: 'topRight',
+                    icon: const Icon(Icons.north_east_rounded, size: 18),
+                    tooltip: isRu ? 'Вверху справа' : 'Top Right corner',
+                  ),
+                  ButtonSegment<String>(
+                    value: 'bottomLeft',
+                    icon: const Icon(Icons.south_west_rounded, size: 18),
+                    tooltip: isRu ? 'Внизу слева' : 'Bottom Left corner',
+                  ),
+                  ButtonSegment<String>(
+                    value: 'bottomRight',
+                    icon: const Icon(Icons.south_east_rounded, size: 18),
+                    tooltip: isRu ? 'Внизу справа' : 'Bottom Right corner',
+                  ),
+                ],
+                selected: {position},
+                onSelectionChanged: (set) {
+                  if (set.isNotEmpty) {
+                    onPositionChanged(set.first);
+                  }
+                },
+                style: ButtonStyle(
+                  visualDensity: VisualDensity.compact,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  padding: WidgetStateProperty.all(
+                    const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                ),
+              ),
             ),
           ],
         ],
       ),
     );
   }
+}
+
+class _SampleArtworkPlaceholder extends StatelessWidget {
+  const _SampleArtworkPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFF0F0B1E),
+            Color(0xFF1F1147),
+            Color(0xFF4A148C),
+            Color(0xFF7B1FA2),
+            Color(0xFFE91E63),
+            Color(0xFFFF7043),
+            Color(0xFFFFB74D),
+          ],
+          stops: [0.0, 0.22, 0.45, 0.62, 0.78, 0.90, 1.0],
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: 40,
+            right: 32,
+            child: Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    Colors.white,
+                    const Color(0xFFFFE082).withValues(alpha: 0.9),
+                    const Color(0xFFFF8A80).withValues(alpha: 0.4),
+                    Colors.transparent,
+                  ],
+                  stops: const [0.0, 0.45, 0.75, 1.0],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFF80AB).withValues(alpha: 0.45),
+                    blurRadius: 24,
+                    spreadRadius: 4,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            top: 28,
+            left: 28,
+            child: Icon(
+              Icons.auto_awesome_rounded,
+              color: Colors.white.withValues(alpha: 0.8),
+              size: 14,
+            ),
+          ),
+          Positioned(
+            top: 72,
+            left: 54,
+            child: Icon(
+              Icons.star_rounded,
+              color: Colors.white.withValues(alpha: 0.5),
+              size: 8,
+            ),
+          ),
+          Positioned(
+            top: 50,
+            left: 110,
+            child: Icon(
+              Icons.star_rounded,
+              color: Colors.white.withValues(alpha: 0.65),
+              size: 10,
+            ),
+          ),
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 90,
+            child: CustomPaint(
+              painter: _MountainSilhouettePainter(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MountainSilhouettePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final backPaint = Paint()
+      ..color = const Color(0xFF24103C).withValues(alpha: 0.65)
+      ..style = PaintingStyle.fill;
+    final backPath = Path()
+      ..moveTo(0, size.height)
+      ..lineTo(0, size.height * 0.45)
+      ..lineTo(size.width * 0.35, size.height * 0.15)
+      ..lineTo(size.width * 0.70, size.height * 0.55)
+      ..lineTo(size.width, size.height * 0.25)
+      ..lineTo(size.width, size.height)
+      ..close();
+    canvas.drawPath(backPath, backPaint);
+
+    final frontPaint = Paint()
+      ..color = const Color(0xFF100720)
+      ..style = PaintingStyle.fill;
+    final frontPath = Path()
+      ..moveTo(0, size.height)
+      ..lineTo(0, size.height * 0.65)
+      ..lineTo(size.width * 0.25, size.height * 0.50)
+      ..lineTo(size.width * 0.60, size.height * 0.20)
+      ..lineTo(size.width * 0.85, size.height * 0.60)
+      ..lineTo(size.width, size.height * 0.45)
+      ..lineTo(size.width, size.height)
+      ..close();
+    canvas.drawPath(frontPath, frontPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
