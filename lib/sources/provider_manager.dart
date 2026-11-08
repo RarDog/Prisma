@@ -1,45 +1,44 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
-import 'package:gel_rule_app/core/errors/app_exception.dart';
-import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'package:gel_rule_app/core/errors/failure.dart';
-import 'package:gel_rule_app/core/utils/result.dart';
-import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
+import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'package:gel_rule_app/core/models/post.dart';
 import 'package:gel_rule_app/core/models/post_comment.dart';
 import 'package:gel_rule_app/core/models/post_note.dart';
-import 'package:gel_rule_app/core/models/provider_diagnostics.dart';
 import 'package:gel_rule_app/core/models/provider_health.dart';
 import 'package:gel_rule_app/core/models/tag_suggestion.dart';
 import 'package:gel_rule_app/core/models/top_period_filter.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/features/providers/data/provider_repository.dart';
+import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
 import 'package:gel_rule_app/sources/interfaces/content_provider.dart';
+import 'package:gel_rule_app/sources/manager/provider_config_classifier.dart';
+import 'package:gel_rule_app/sources/manager/provider_search_coordinator.dart';
+import 'package:gel_rule_app/sources/manager/provider_soft_retry_result.dart';
+import 'package:gel_rule_app/sources/manager/tag_group_splitter.dart';
+import 'package:gel_rule_app/sources/manager/tag_suggestion_aggregator.dart';
 import 'package:gel_rule_app/sources/provider_factory.dart';
 
+export 'manager/provider_soft_retry_result.dart';
+
 class ProviderManager {
-  ProviderManager(this._repository, this._factory);
+  ProviderManager(this._repository, this._factory)
+      : _searchCoordinator = ProviderSearchCoordinator(_repository),
+        _suggestionAggregator = TagSuggestionAggregator();
 
   final ProviderRepository _repository;
   final ProviderFactory _factory;
-  final Map<String, _SuggestionCacheEntry> _suggestionCache = {};
-  final Set<String> _softRetryKeys = {};
-  final _softRetryController =
-      StreamController<ProviderSoftRetryResult>.broadcast();
-  _SuggestionProviderCacheEntry? _suggestionProviderCache;
+  final ProviderSearchCoordinator _searchCoordinator;
+  final TagSuggestionAggregator _suggestionAggregator;
 
   /// Per-provider search timeout in seconds, refreshed on every config load
   /// so the per-provider `timeoutSeconds` setting actually governs searches
   /// instead of a global hardcode.
   final Map<String, int> _providerTimeouts = {};
-  static const _defaultSearchTimeoutSeconds = 14;
-
-  static const _suggestionCacheTtl = Duration(seconds: 45);
-  static const _suggestionProviderCacheTtl = Duration(seconds: 60);
-  static const _suggestionTimeout = Duration(milliseconds: 1500);
 
   Stream<ProviderSoftRetryResult> get softRetryResults =>
-      _softRetryController.stream;
+      _searchCoordinator.softRetryResults;
 
   /// Short-lived cache of the full provider config list. Every getPost /
   /// getMediaHeaders / getComments round-trip goes through loadConfigs, which
@@ -68,7 +67,7 @@ class ProviderManager {
     if (result is Error<List<ContentProviderConfig>>) return result;
     final configs = (result as Success<List<ContentProviderConfig>>)
         .data
-        .where((config) => !_isLegacyRemovedConfig(config))
+        .where((config) => !ProviderConfigClassifier.isLegacyRemovedConfig(config))
         .toList(growable: false);
     _configsCache = configs;
     _configsCacheAt = DateTime.now();
@@ -94,7 +93,7 @@ class ProviderManager {
     }
     final configs = (result as Success<List<ContentProviderConfig>>)
         .data
-        .where(_isFeedConfig)
+        .where(ProviderConfigClassifier.isFeedConfig)
         .toList()
       ..sort((a, b) => a.priority.compareTo(b.priority));
     return Success(configs);
@@ -109,7 +108,7 @@ class ProviderManager {
     }
     final configs = (result as Success<List<ContentProviderConfig>>)
         .data
-        .where(_isArtistConfig)
+        .where(ProviderConfigClassifier.isArtistConfig)
         .toList()
       ..sort((a, b) => a.priority.compareTo(b.priority));
     return Success(configs);
@@ -156,7 +155,7 @@ class ProviderManager {
     }
     final configs = (result as Success<List<ContentProviderConfig>>)
         .data
-        .where(_isMangaConfig)
+        .where(ProviderConfigClassifier.isMangaConfig)
         .toList()
       ..sort((a, b) => a.priority.compareTo(b.priority));
     return Success(configs);
@@ -263,76 +262,8 @@ class ProviderManager {
     return Success(results);
   }
 
-  static List<List<String>> splitTagGroups(List<String> rawTags) {
-    final segments = <List<String>>[];
-    List<String> current = [];
-
-    for (final raw in rawTags) {
-      var token = raw.trim();
-      if (token.isEmpty) continue;
-
-      // Only strip parentheses if they are grouping delimiters (unbalanced in the token, e.g. '(cat' or 'dog)')
-      // but preserve tags that have internal paired parentheses like 'tyson_(password)'.
-      if (token.startsWith('(') && !token.contains(')')) {
-        token = token.substring(1).trim();
-      }
-      if (token.endsWith(')') && !token.contains('(')) {
-        token = token.substring(0, token.length - 1).trim();
-      }
-      if (token.isEmpty) continue;
-
-      if (token.toLowerCase() == 'and') {
-        if (current.isNotEmpty) {
-          segments.add(current);
-          current = [];
-        }
-      } else {
-        current.add(token);
-      }
-    }
-
-    if (current.isNotEmpty) {
-      segments.add(current);
-    }
-
-    if (segments.isEmpty) {
-      return [const []];
-    }
-
-    if (segments.length == 1) {
-      return segments;
-    }
-
-    // Multiple segments separated by 'and'
-    // If the last segment has trailing tags after the branch tag (e.g. 'cat and dog anthro'):
-    // The trailing tags apply as common modifier tags to ALL branches!
-    final lastSegment = segments.last;
-    final prevSegment = segments[segments.length - 2];
-    final branchLen = prevSegment.length.clamp(1, lastSegment.length);
-
-    if (lastSegment.length > branchLen) {
-      final commonTail = lastSegment.sublist(branchLen);
-      final adjustedSegments = <List<String>>[];
-
-      for (int i = 0; i < segments.length; i++) {
-        final seg = i == segments.length - 1
-            ? lastSegment
-            : [...segments[i], ...commonTail];
-
-        final seen = <String>{};
-        final deduped = <String>[];
-        for (final t in seg) {
-          if (seen.add(t.toLowerCase())) {
-            deduped.add(t);
-          }
-        }
-        adjustedSegments.add(deduped);
-      }
-      return adjustedSegments;
-    }
-
-    return segments;
-  }
+  static List<List<String>> splitTagGroups(List<String> rawTags) =>
+      TagGroupSplitter.split(rawTags);
 
   Future<Result<List<Post>>> searchAcrossProviders({
     required List<String> tags,
@@ -347,350 +278,18 @@ class ProviderManager {
     if (providersResult is Error<List<ContentProvider>>) {
       return Error(providersResult.failure);
     }
-    var providers = (providersResult as Success<List<ContentProvider>>).data;
-    if (providerId != null) {
-      providers =
-          providers.where((provider) => provider.id == providerId).toList();
-    }
-
-    final tagGroups = splitTagGroups(tags);
-
-    if (tagGroups.length <= 1) {
-      final effectiveTags = tagGroups.isEmpty ? tags : tagGroups.first;
-      return _searchForTagGroup(
-        providers: providers,
-        tags: effectiveTags,
-        page: page,
-        limit: limit,
-        rating: rating,
-        providerId: providerId,
-        topPeriod: topPeriod,
-        cancelToken: cancelToken,
-      );
-    }
-
-    // Multiple independent tag groups: query each tag group as if other tags are not present, then interleave
-    final seen = <String>{};
-    final groupPerLimit = (limit / tagGroups.length).ceil().clamp(10, 50);
-    final groupFutures = tagGroups.map((groupTags) {
-      return _searchForTagGroup(
-        providers: providers,
-        tags: groupTags,
-        page: page,
-        limit: groupPerLimit,
-        rating: rating,
-        providerId: providerId,
-        topPeriod: topPeriod,
-        cancelToken: cancelToken,
-      );
-    }).toList(growable: false);
-
-    final results = await Future.wait(groupFutures);
-    final validGroupPosts = <List<Post>>[];
-    for (final res in results) {
-      if (res is Success<List<Post>>) {
-        validGroupPosts.add(res.data);
-      }
-    }
-
-    final interleaved = _interleaveTagGroupResults(validGroupPosts, seen);
-    return Success(interleaved);
-  }
-
-  Future<Result<List<Post>>> _searchForTagGroup({
-    required List<ContentProvider> providers,
-    required List<String> tags,
-    required int page,
-    required int limit,
-    required String? rating,
-    required String? providerId,
-    required TopPeriodFilter topPeriod,
-    CancelToken? cancelToken,
-  }) async {
-    final cleanTags = tags
-        .map((t) => t.trim())
-        .where((t) => t.isNotEmpty && t.toLowerCase() != 'and')
-        .toList(growable: false);
-
-    final seen = <String>{};
-    final providerFutures = providers.map((provider) async {
-      try {
-        final searchTimeout = Duration(
-          seconds: _providerTimeouts[provider.id] ??
-              _defaultSearchTimeoutSeconds,
-        );
-        // Per-provider child token: cancelling it on timeout (or when the
-        // caller cancels) must not abort the sibling providers sharing the
-        // caller's token.
-        final searchToken = CancelToken();
-        if (cancelToken != null) {
-          unawaited(cancelToken.whenCancel.then((_) {
-            if (!searchToken.isCancelled) {
-              searchToken.cancel('parent cancelled');
-            }
-          }));
-        }
-        final limitProvider =
-            provider is TagLimitProvider ? (provider as TagLimitProvider) : null;
-        final effectiveTags = (limitProvider != null &&
-                cleanTags.length > limitProvider.maxSearchTags)
-            ? cleanTags
-                .take(limitProvider.maxSearchTags)
-                .toList(growable: false)
-            : cleanTags;
-        final providerPosts = await provider
-            .searchPosts(
-              tags: effectiveTags,
-              page: page,
-              limit: limit,
-              rating: rating,
-              topPeriod: topPeriod,
-              cancelToken: searchToken,
-            )
-            .timeout(searchTimeout, onTimeout: () {
-          // Abandoning without cancelling left the request running until the
-          // provider's own (longer) timeout, holding sockets.
-          searchToken.cancel('search timeout');
-          return const <Post>[];
-        });
-        unawaited(_repository.saveDiagnostics(
-          ProviderDiagnostics(
-            providerId: provider.id,
-            lastSearchAt: DateTime.now(),
-            lastResultCount: providerPosts.length,
-          ),
-        ));
-        return providerPosts;
-      } catch (error) {
-        // User-initiated cancellation is not a provider failure: skip the
-        // offline marking and soft retry entirely.
-        final cancelled = (cancelToken?.isCancelled ?? false) ||
-            (error is DioException && error.type == DioExceptionType.cancel);
-        if (cancelled) {
-          return const <Post>[];
-        }
-        final errorMsg = error is AppException
-            ? error.message
-            : (error is DioException
-                ? (error.message ?? error.toString())
-                : error.toString());
-        unawaited(_repository.saveDiagnostics(
-          ProviderDiagnostics(
-            providerId: provider.id,
-            lastSearchAt: DateTime.now(),
-            lastResultCount: 0,
-            lastErrorMessage: errorMsg,
-          ),
-        ));
-        // A transient failure (timeout, 429/5xx) must not flip the provider
-        // to offline on the first hiccup — the soft retry marks it online
-        // again when it succeeds. Deterministic errors (bad API key, deleted
-        // resource) still surface as offline immediately.
-        final isQueryValidationError = error is DioException &&
-            error.response?.statusCode == 422;
-        if (!_isRetryableError(error) && !isQueryValidationError) {
-          unawaited(_repository.saveHealth(
-            ProviderHealth(
-              providerId: provider.id,
-              status: ProviderStatus.offline,
-              pingMs: 0,
-              lastCheckedAt: DateTime.now(),
-              errorMessage: errorMsg,
-            ),
-          ));
-        }
-        if (_isRetryableError(error)) {
-          _scheduleSoftSearchRetry(
-            provider,
-            tags: tags,
-            page: page,
-            limit: limit,
-            rating: rating,
-            topPeriod: topPeriod,
-            cancelToken: cancelToken,
-          );
-        }
-        return const <Post>[];
-      }
-    }).toList(growable: false);
-
-    final rawResults = await Future.wait(providerFutures);
-    final providerResults =
-        rawResults.where((list) => list.isNotEmpty).toList(growable: false);
-    final posts = providerId == null
-        ? _interleaveProviderResults(providerResults, seen)
-        : _flattenProviderResults(providerResults, seen);
-    return Success(posts);
-  }
-
-  List<Post> _interleaveTagGroupResults(
-      List<List<Post>> groupResults, Set<String> seen) {
-    final combined = <Post>[];
-    var hasMore = true;
-    var index = 0;
-
-    while (hasMore) {
-      hasMore = false;
-      for (final group in groupResults) {
-        if (index < group.length) {
-          hasMore = true;
-          final post = group[index];
-          if (seen.add(post.cacheKey)) {
-            combined.add(post);
-          }
-        }
-      }
-      index++;
-    }
-
-    return combined;
-  }
-
-  List<Post> _flattenProviderResults(
-      List<List<Post>> results, Set<String> seen) {
-    final posts = <Post>[];
-    for (final providerPosts in results) {
-      for (final post in providerPosts) {
-        if (seen.add(post.cacheKey)) posts.add(post);
-      }
-    }
-    return posts;
-  }
-
-  List<Post> _interleaveProviderResults(
-    List<List<Post>> results,
-    Set<String> seen,
-  ) {
-    final posts = <Post>[];
-    for (final providerPosts in results) {
-      for (final post in providerPosts) {
-        if (seen.add(post.cacheKey)) posts.add(post);
-      }
-    }
-    posts.sort((a, b) => _mixKey(a).compareTo(_mixKey(b)));
-    return posts;
-  }
-
-  // Deterministic rank used to interleave results from different providers:
-  // FNV-1a over cacheKey yields a stable, provider-agnostic shuffle that is
-  // consistent across paginated refreshes, so users don't see blocks from a
-  // single provider grouped together.
-  int _mixKey(Post post) {
-    var hash = 0x811c9dc5;
-    for (final code in post.cacheKey.codeUnits) {
-      hash ^= code;
-      hash = (hash * 0x01000193) & 0x7fffffff;
-    }
-    return hash;
-  }
-
-  /// Returns true when re-sending the same request could plausibly succeed.
-  /// Timeouts, connection failures and 429/5xx are transient; other 4xx
-  /// responses (bad API key, deleted resource) are deterministic and must not
-  /// be retried — repeating them only delays the error surfacing to the UI.
-  static bool _isRetryableError(Object error) {
-    if (error is BadResponseException ||
-        error is ProviderUnavailableException) {
-      // Deterministic server answers (bad response body, Cloudflare block):
-      // an immediate retry gets the same answer.
-      return false;
-    }
-    if (error is DioException) {
-      if (error.type == DioExceptionType.connectionError ||
-          error.type == DioExceptionType.connectionTimeout ||
-          error.type == DioExceptionType.sendTimeout ||
-          error.type == DioExceptionType.receiveTimeout) {
-        return true;
-      }
-      final status = error.response?.statusCode;
-      if (status == null) return true;
-      return status == 429 || status >= 500;
-    }
-    return true;
-  }
-
-  void _scheduleSoftSearchRetry(
-    ContentProvider provider, {
-    required List<String> tags,
-    required int page,
-    required int limit,
-    required String? rating,
-    required TopPeriodFilter topPeriod,
-    CancelToken? cancelToken,
-  }) {
-    // The originating search is already gone — don't resurrect it.
-    if (cancelToken?.isCancelled ?? false) return;
-    final key = [
-      provider.id,
-      page,
-      limit,
-      rating ?? '',
-      topPeriod.name,
-      ...tags,
-    ].join('\u001f');
-    if (!_softRetryKeys.add(key)) return;
-    unawaited(Future<void>.delayed(const Duration(milliseconds: 900), () async {
-      if (cancelToken?.isCancelled ?? false) {
-        // The finally below is not reached from this early return — release
-        // the key or the provider+query is blacklisted from retries forever.
-        _softRetryKeys.remove(key);
-        return;
-      }
-      try {
-        final posts = await provider.searchPosts(
-          tags: tags,
-          page: page,
-          limit: limit,
-          rating: rating,
-          topPeriod: topPeriod,
-          cancelToken: cancelToken,
-        );
-        await _repository.saveDiagnostics(
-          ProviderDiagnostics(
-            providerId: provider.id,
-            lastSearchAt: DateTime.now(),
-            lastResultCount: posts.length,
-          ),
-        );
-        await _repository.saveHealth(
-          ProviderHealth(
-            providerId: provider.id,
-            status: ProviderStatus.online,
-            pingMs: 0,
-            lastCheckedAt: DateTime.now(),
-          ),
-        );
-        if (posts.isNotEmpty) {
-          _softRetryController.add(
-            ProviderSoftRetryResult(
-              providerId: provider.id,
-              tags: tags,
-              page: page,
-              limit: limit,
-              rating: rating,
-              topPeriod: topPeriod,
-              posts: posts,
-            ),
-          );
-        }
-      } catch (error) {
-        final errorMsg = error is AppException
-            ? error.message
-            : (error is DioException
-                ? (error.message ?? error.toString())
-                : error.toString());
-        await _repository.saveDiagnostics(
-          ProviderDiagnostics(
-            providerId: provider.id,
-            lastSearchAt: DateTime.now(),
-            lastResultCount: 0,
-            lastErrorMessage: 'Search failed after retry: $errorMsg',
-          ),
-        );
-      } finally {
-        _softRetryKeys.remove(key);
-      }
-    }));
+    final providers = (providersResult as Success<List<ContentProvider>>).data;
+    return _searchCoordinator.searchAcrossProviders(
+      activeFeedProviders: providers,
+      providerTimeouts: _providerTimeouts,
+      tags: tags,
+      page: page,
+      limit: limit,
+      rating: rating,
+      providerId: providerId,
+      topPeriod: topPeriod,
+      cancelToken: cancelToken,
+    );
   }
 
   Future<Result<List<PostComment>>> getComments(
@@ -856,107 +455,20 @@ class ProviderManager {
   Future<Result<List<TagSuggestion>>> suggestTags(
     String query, {
     int limit = 20,
-  }) async {
-    final normalizedQuery = query.trim().toLowerCase();
-    if (normalizedQuery.isEmpty) return const Success([]);
-    final providersResult = await activeSuggestionProviders();
-    if (providersResult is Error<List<ContentProvider>>) {
-      return Error(providersResult.failure);
-    }
-    final providers = (providersResult as Success<List<ContentProvider>>).data;
-    if (providers.isEmpty) return const Success([]);
+  }) =>
+      _suggestionAggregator.suggestTags(
+        query,
+        getActiveSuggestionProviders: activeSuggestionProviders,
+        limit: limit,
+      );
 
-    final cappedLimit = limit.clamp(1, 50);
-    final providerIds = providers.map((provider) => provider.id).join(',');
-    final cacheKey = '$normalizedQuery|$providerIds|$cappedLimit';
-    final cached = _suggestionCache[cacheKey];
-    if (cached != null &&
-        DateTime.now().difference(cached.createdAt) < _suggestionCacheTtl) {
-      return Success(cached.items.take(cappedLimit).toList(growable: false));
-    }
-
-    final providerResults = await Future.wait(
-      providers.map(
-        (provider) => _suggestionsFromProvider(
-          provider as TagSuggestionProvider,
-          normalizedQuery,
-          cappedLimit,
-        ),
-      ),
-    );
-    final suggestions = <String, TagSuggestion>{};
-    for (final items in providerResults) {
-      for (final item in items) {
-        final nameKey = item.name.trim().toLowerCase();
-        if (nameKey.isEmpty) continue;
-        final current = suggestions[nameKey];
-        if (current == null || item.postCount > current.postCount) {
-          suggestions[nameKey] = item;
-        }
-      }
-    }
-    final values = suggestions.values.toList()
-      ..sort((a, b) {
-        final count = b.postCount.compareTo(a.postCount);
-        return count != 0 ? count : a.name.compareTo(b.name);
-      });
-    _suggestionCache[cacheKey] = _SuggestionCacheEntry(
-      DateTime.now(),
-      values,
-    );
-    _pruneSuggestionCache();
-    return Success(values.take(cappedLimit).toList());
-  }
-
-  Future<List<TagSuggestion>> _suggestionsFromProvider(
-    TagSuggestionProvider provider,
-    String query,
-    int limit,
-  ) async {
-    try {
-      return await provider
-          .suggestTags(query, limit: limit)
-          .timeout(_suggestionTimeout);
-    } catch (_) {
-      // Suggestions are non-critical; a failed provider should not affect UI.
-      return const [];
-    }
-  }
-
-  void _pruneSuggestionCache() {
-    final now = DateTime.now();
-    _suggestionCache.removeWhere(
-      (_, entry) => now.difference(entry.createdAt) >= _suggestionCacheTtl,
-    );
-  }
-
-  Future<Result<List<ContentProvider>>> activeSuggestionProviders() async {
-    final cached = _suggestionProviderCache;
-    if (cached != null &&
-        DateTime.now().difference(cached.createdAt) <
-            _suggestionProviderCacheTtl) {
-      return Success(cached.providers);
-    }
-
-    final providersResult = await activeFeedProviders();
-    if (providersResult is Error<List<ContentProvider>>) {
-      return Error(providersResult.failure);
-    }
-    final providers = <ContentProvider>[
-      for (final provider
-          in (providersResult as Success<List<ContentProvider>>).data)
-        if (provider is TagSuggestionProvider) provider,
-    ];
-    _suggestionProviderCache = _SuggestionProviderCacheEntry(
-      DateTime.now(),
-      providers,
-    );
-    return Success(providers);
-  }
+  Future<Result<List<ContentProvider>>> activeSuggestionProviders() =>
+      _suggestionAggregator.activeSuggestionProviders(
+        getActiveFeedProviders: activeFeedProviders,
+      );
 
   void _clearSuggestionCaches() {
-    _suggestionCache.clear();
-    _suggestionProviderCache = null;
+    _suggestionAggregator.clearCaches();
     _configsCache = null;
     _configsCacheAt = null;
   }
@@ -981,65 +493,4 @@ class ProviderManager {
     );
     return results;
   }
-
-  /// apiType values that expose the `ArtistProvider` capability and therefore
-  /// feed the Artists tab instead of the post feed.
-  static const _artistApiTypes = <String>{'pawchive', 'fapello'};
-
-  static bool _isArtistConfig(ContentProviderConfig config) {
-    return _artistApiTypes.contains(config.apiType.toLowerCase());
-  }
-
-  static bool _isMangaConfig(ContentProviderConfig config) {
-    final type = config.apiType.toLowerCase();
-    return type == 'mangadex' || type == 'mangalib' || type == 'ranobelib';
-  }
-
-  static bool _isFeedConfig(ContentProviderConfig config) {
-    return !_isArtistConfig(config) && !_isMangaConfig(config);
-  }
-
-  static bool _isLegacyRemovedConfig(ContentProviderConfig config) {
-    final id = config.id.toLowerCase();
-    final type = config.apiType.toLowerCase();
-    return id == 'cosbooru' ||
-        type == 'kemono' ||
-        type == 'coomer' ||
-        id == 'kemono' ||
-        id == 'coomer';
-  }
-}
-
-class _SuggestionCacheEntry {
-  const _SuggestionCacheEntry(this.createdAt, this.items);
-
-  final DateTime createdAt;
-  final List<TagSuggestion> items;
-}
-
-class _SuggestionProviderCacheEntry {
-  const _SuggestionProviderCacheEntry(this.createdAt, this.providers);
-
-  final DateTime createdAt;
-  final List<ContentProvider> providers;
-}
-
-class ProviderSoftRetryResult {
-  const ProviderSoftRetryResult({
-    required this.providerId,
-    required this.tags,
-    required this.page,
-    required this.limit,
-    required this.topPeriod,
-    required this.posts,
-    this.rating,
-  });
-
-  final String providerId;
-  final List<String> tags;
-  final int page;
-  final int limit;
-  final TopPeriodFilter topPeriod;
-  final String? rating;
-  final List<Post> posts;
 }

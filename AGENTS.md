@@ -77,7 +77,9 @@ lib/
 │   ├── mappers/                # Per-source JSON → Post mappers
 │   ├── models/                 # ugoira_metadata.dart
 │   ├── provider_factory.dart   # apiType → provider instance (+ memoized clients/providers)
-│   └── provider_manager.dart   # Registry, fan-out search, retries, health, suggestions
+│   ├── provider_manager.dart   # Registry, fan-out search, retries, health, suggestions (facade)
+│   └── manager/                # provider_search_coordinator, tag_suggestion_aggregator,
+│                               # tag_group_splitter, provider_config_classifier, provider_soft_retry_result
 └── shared/widgets/             # Reusable UI: app_shell, liquid_glass_bottom_bar, post_card(.dart),
                                 # post_masonry_grid, adaptive_scaffold, tag_chip, error_view, …
     ├── post_card/              # previews, badges, inline video preview
@@ -252,6 +254,6 @@ flutter build apk --split-per-abi
 
 * Paths from older documentation are wrong: there is no `lib/backend/repositories/`, no `lib/core/result/`, no `lib/features/history/`. Repositories live in `<feature>/data/`, `Result` in `lib/core/utils/result.dart`, history in `features/viewed/`.
 * `features/downloads/` has **no** `presentation/*_screen.dart` — only `presentation/widgets/` (Dynamic Island + related).
-* `provider_manager.dart` (1035 lines) and `app_settings.dart` (639 lines, most of it the hand-written `copyWith` + JSON mapping) are the largest files; add focused helpers instead of growing them further.
+* `app_settings.dart` (639 lines, most of it the hand-written `copyWith` + JSON mapping) is one of the largest remaining files; add focused helpers instead of growing it further. `provider_manager.dart` is decomposed into focused helpers under `lib/sources/manager/`.
 * Adding a branch to the router without updating the index mappers silently breaks tab restoration and `lastActiveLocation`.
 * e621 and e926 share `apiType: 'e621'`; anything keyed by apiType treats them as one source.
