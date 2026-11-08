@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:gel_rule_app/app/app.dart';
@@ -199,7 +200,7 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
     }
   }
 
-  bool _headerVisible = true;
+  final _headerVisible = ValueNotifier<bool>(true);
   double _lastScrollOffset = 0;
   double _scrollDeltaAccumulator = 0;
 
@@ -216,21 +217,26 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
 
   void _onScroll() {
     final offset = _scroll.offset;
-    if (offset <= 60) {
-      _scrollDeltaAccumulator = 0;
-      if (!_headerVisible) setState(() => _headerVisible = true);
-    } else {
-      final delta = offset - _lastScrollOffset;
-      if ((delta > 0 && _scrollDeltaAccumulator < 0) ||
-          (delta < 0 && _scrollDeltaAccumulator > 0)) {
-        _scrollDeltaAccumulator = 0;
-      }
-      _scrollDeltaAccumulator += delta;
+    final autoHide =
+        ref.read(appSettingsProvider).value?.autoHideFeedToolbar ?? true;
 
-      if (_scrollDeltaAccumulator > 50) {
-        if (_headerVisible) setState(() => _headerVisible = false);
-      } else if (_scrollDeltaAccumulator < -14) {
-        if (!_headerVisible) setState(() => _headerVisible = true);
+    if (autoHide) {
+      if (offset <= 60) {
+        _scrollDeltaAccumulator = 0;
+        if (!_headerVisible.value) _headerVisible.value = true;
+      } else {
+        final delta = offset - _lastScrollOffset;
+        if ((delta > 0 && _scrollDeltaAccumulator < 0) ||
+            (delta < 0 && _scrollDeltaAccumulator > 0)) {
+          _scrollDeltaAccumulator = 0;
+        }
+        _scrollDeltaAccumulator += delta;
+
+        if (_scrollDeltaAccumulator > 55) {
+          if (_headerVisible.value) _headerVisible.value = false;
+        } else if (_scrollDeltaAccumulator < -30) {
+          if (!_headerVisible.value) _headerVisible.value = true;
+        }
       }
     }
     _lastScrollOffset = offset;
@@ -239,7 +245,9 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
   @override
   void dispose() {
     _search.dispose();
+    _scroll.removeListener(_onScroll);
     _scroll.dispose();
+    _headerVisible.dispose();
     super.dispose();
   }
 
@@ -265,6 +273,13 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
 
     return AdaptiveScaffold(
       title: isRu ? 'Авторы' : 'Artists',
+      titleWidget: _ArtistsTitle(
+        headerVisible: _headerVisible,
+        onToggle: () {
+          HapticFeedback.lightImpact();
+          _headerVisible.value = !_headerVisible.value;
+        },
+      ),
       resizeToAvoidBottomInset: false,
       actions: [
         IconButton(
@@ -390,67 +405,83 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
           return Column(
             children: [
               const ProviderHealthBanner(),
-              AnimatedCrossFade(
-                firstChild: ArtistsHeader(
-                  currentTab: _currentTab,
-                  onTabChanged: (tab) {
-                    setState(() => _currentTab = tab);
-                    if (tab == ArtistsTab.favorites) {
-                      _triggerFavoritesEnrichment();
+              ValueListenableBuilder<bool>(
+                valueListenable: _headerVisible,
+                builder: (context, visible, child) {
+                  return AnimatedCrossFade(
+                    firstChild: child!,
+                    secondChild: const SizedBox.shrink(),
+                    crossFadeState: visible
+                        ? CrossFadeState.showFirst
+                        : CrossFadeState.showSecond,
+                    duration: const Duration(milliseconds: 200),
+                    sizeCurve: Curves.easeInOutCubic,
+                  );
+                },
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onVerticalDragEnd: (details) {
+                    if (details.primaryVelocity != null &&
+                        details.primaryVelocity! < -180) {
+                      HapticFeedback.lightImpact();
+                      _headerVisible.value = false;
                     }
                   },
-                  favoritesCount: favoriteItems.length,
-                  searchController: _search,
-                  providers: items,
-                  selectedProviderId: _providerId,
-                  selectedServices: _selectedServices,
-                  selectedSort: _sortOrder,
-                  currentPage: _page,
-                  totalPages: _totalPages,
-                  onOpenPagePicker: _openPagePicker,
-                  isRu: isRu,
-                  onProviderChanged: (value) {
-                    setState(() => _providerId = value);
-                    _refresh(items);
-                  },
-                  onSortChanged: (sort) {
-                    setState(() => _sortOrder = sort);
-                    if (_currentTab == ArtistsTab.all) {
-                      _refresh(items);
-                    }
-                  },
-                  onToggleService: (service) {
-                    setState(() {
-                      if (_selectedServices.contains(service)) {
-                        _selectedServices.remove(service);
-                      } else {
-                        _selectedServices.add(service);
+                  child: ArtistsHeader(
+                    currentTab: _currentTab,
+                    onTabChanged: (tab) {
+                      setState(() => _currentTab = tab);
+                      if (tab == ArtistsTab.favorites) {
+                        _triggerFavoritesEnrichment();
                       }
-                    });
-                    if (_currentTab == ArtistsTab.all) {
+                    },
+                    favoritesCount: favoriteItems.length,
+                    searchController: _search,
+                    providers: items,
+                    selectedProviderId: _providerId,
+                    selectedServices: _selectedServices,
+                    selectedSort: _sortOrder,
+                    currentPage: _page,
+                    totalPages: _totalPages,
+                    onOpenPagePicker: _openPagePicker,
+                    isRu: isRu,
+                    onProviderChanged: (value) {
+                      setState(() => _providerId = value);
                       _refresh(items);
-                    }
-                  },
-                  onClearServices: () {
-                    setState(() => _selectedServices.clear());
-                    if (_currentTab == ArtistsTab.all) {
-                      _refresh(items);
-                    }
-                  },
-                  onSearch: () {
-                    if (_currentTab == ArtistsTab.all) {
-                      _refresh(items);
-                    } else {
-                      setState(() {});
-                    }
-                  },
+                    },
+                    onSortChanged: (sort) {
+                      setState(() => _sortOrder = sort);
+                      if (_currentTab == ArtistsTab.all) {
+                        _refresh(items);
+                      }
+                    },
+                    onToggleService: (service) {
+                      setState(() {
+                        if (_selectedServices.contains(service)) {
+                          _selectedServices.remove(service);
+                        } else {
+                          _selectedServices.add(service);
+                        }
+                      });
+                      if (_currentTab == ArtistsTab.all) {
+                        _refresh(items);
+                      }
+                    },
+                    onClearServices: () {
+                      setState(() => _selectedServices.clear());
+                      if (_currentTab == ArtistsTab.all) {
+                        _refresh(items);
+                      }
+                    },
+                    onSearch: () {
+                      if (_currentTab == ArtistsTab.all) {
+                        _refresh(items);
+                      } else {
+                        setState(() {});
+                      }
+                    },
+                  ),
                 ),
-                secondChild: const SizedBox.shrink(),
-                crossFadeState: _headerVisible
-                    ? CrossFadeState.showFirst
-                    : CrossFadeState.showSecond,
-                duration: const Duration(milliseconds: 220),
-                sizeCurve: Curves.easeInOutCubic,
               ),
               Expanded(
                 child: _currentTab == ArtistsTab.favorites
@@ -664,5 +695,72 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
         );
       }
     }
+  }
+}
+
+class _ArtistsTitle extends StatelessWidget {
+  const _ArtistsTitle({
+    required this.headerVisible,
+    required this.onToggle,
+  });
+
+  final ValueNotifier<bool> headerVisible;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onToggle,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Prisma',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isRu ? 'Авторы' : 'Artists',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 4),
+              ValueListenableBuilder<bool>(
+                valueListenable: headerVisible,
+                builder: (context, visible, _) {
+                  return Tooltip(
+                    message: visible
+                        ? (isRu ? 'Свернуть панель' : 'Collapse toolbar')
+                        : (isRu ? 'Развернуть панель' : 'Expand toolbar'),
+                    child: AnimatedRotation(
+                      turns: visible ? 0.0 : 0.5,
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeInOutCubic,
+                      child: Icon(
+                        Icons.keyboard_arrow_up_rounded,
+                        size: 20,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
