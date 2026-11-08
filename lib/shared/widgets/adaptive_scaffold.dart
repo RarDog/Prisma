@@ -30,7 +30,7 @@ class AdaptiveScaffold extends StatelessWidget {
         (theme.scaffoldBackgroundColor == const Color(0xFF000000) ||
             theme.colorScheme.surface == const Color(0xFF000000));
     final scheme = theme.colorScheme;
-    final blurSigma = isAmoled ? 24.0 : 18.0;
+    final blurSigma = isAmoled ? 12.0 : 10.0;
     final topPadding = MediaQuery.paddingOf(context).top;
     final barHeight = mobile ? 44.0 : 48.0;
     final notchRadius = mobile ? 18.0 : 22.0;
@@ -41,10 +41,10 @@ class AdaptiveScaffold extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(
-                alpha: isAmoled ? 0.45 : (isDark ? 0.28 : 0.08),
+                alpha: isAmoled ? 0.38 : (isDark ? 0.24 : 0.07),
               ),
-              blurRadius: 14,
-              offset: const Offset(0, 4),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
               spreadRadius: -2,
             ),
             if (isDark)
