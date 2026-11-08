@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 
+import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'package:gel_rule_app/core/http/dio_client.dart';
 import 'package:gel_rule_app/features/artists/models/artist_announcement.dart';
 import 'package:gel_rule_app/features/artists/models/artist_link.dart';
@@ -18,7 +19,11 @@ import 'package:gel_rule_app/core/utils/cloud_link_extractor.dart';
 import 'package:gel_rule_app/sources/interfaces/content_provider.dart';
 
 class PawchiveProvider
-    implements ContentProvider, ArtistProvider, CommentProvider {
+    implements
+        ContentProvider,
+        ArtistProvider,
+        CommentProvider,
+        MediaHeadersProvider {
   PawchiveProvider({
     required this.id,
     required this.name,
@@ -35,6 +40,14 @@ class PawchiveProvider
 
   @override
   final String baseUrl;
+
+  @override
+  Map<String, String> mediaHeaders(Post post) {
+    return {
+      'User-Agent': AppHeaders.defaultUserAgent,
+      'Referer': 'https://pawchive.pw/',
+    };
+  }
 
   final Dio _dio;
   List<ArtistProfile>? _cachedArtists;
@@ -571,6 +584,7 @@ class PawchiveProvider
         .map((fileMap) {
           final rawPath = (fileMap['path'] ?? '').toString();
           final fileName = (fileMap['name'] ?? '').toString();
+          final server = (fileMap['server'] ?? '').toString();
           final previewOnly = fileMap['preview_only'] == true;
 
           final type = _fileTypeFor(rawPath, fileName);
@@ -582,8 +596,8 @@ class PawchiveProvider
               isPhoto ? _thumbnailUrl(rawPath) : (postCoverUrl ?? '');
 
           final fileUrl = previewOnly
-              ? (isPhoto ? previewUrl : _fileDownloadUrl(rawPath, fileName))
-              : _fileDownloadUrl(rawPath, fileName);
+              ? (isPhoto ? previewUrl : _fileDownloadUrl(rawPath, fileName, server))
+              : _fileDownloadUrl(rawPath, fileName, server);
 
           final stableId =
               '${query.service}:${query.artistId}:$postId:${index++}';
@@ -599,7 +613,7 @@ class PawchiveProvider
             providerId: id,
             providerName: name,
             previewUrl: previewUrl,
-            sampleUrl: previewUrl,
+            sampleUrl: type == 'gif' ? fileUrl : previewUrl,
             fileUrl: fileUrl,
             tags: tags,
             rating: 'unknown',
@@ -622,16 +636,31 @@ class PawchiveProvider
         .toList(growable: false);
   }
 
-  String _thumbnailUrl(String path) {
+  String _normalizeThumbnailPath(String path) {
     if (path.isEmpty) return '';
-    final trimmed = path.startsWith('/') ? path : '/$path';
-    return 'https://img.pawchive.pw/thumbnail/data$trimmed';
+    final clean = path.split('?').first.split('#').first.trim();
+    final filename = clean.split('/').last;
+    if (filename.length >= 4) {
+      final p1 = filename.substring(0, 2);
+      final p2 = filename.substring(2, 4);
+      return '/$p1/$p2/$filename';
+    }
+    return clean.startsWith('/') ? clean : '/$clean';
   }
 
-  String _fileDownloadUrl(String path, String fileName) {
+  String _thumbnailUrl(String path) {
+    if (path.isEmpty) return '';
+    final normalized = _normalizeThumbnailPath(path);
+    return 'https://img.pawchive.pw/thumbnail/data$normalized';
+  }
+
+  String _fileDownloadUrl(String path, String fileName, [String server = '']) {
     if (path.isEmpty) return '';
     final trimmed = path.startsWith('/') ? path : '/$path';
-    final base = 'https://file.pawchive.pw/data$trimmed';
+    final host = server.isNotEmpty && server.startsWith('http')
+        ? server.replaceAll(RegExp(r'/+$'), '')
+        : 'https://file.pawchive.pw';
+    final base = '$host/data$trimmed';
     if (fileName.isEmpty) return base;
     return '$base?f=${Uri.encodeComponent(fileName)}';
   }

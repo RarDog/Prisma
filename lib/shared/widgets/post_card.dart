@@ -348,11 +348,14 @@ class _PostCardState extends ConsumerState<PostCard>
                               cacheWidth: cacheWidth,
                             );
                           }
+                          final isGif = MediaUrlSelector.isGif(post) ||
+                              post.fileType.toLowerCase().contains('gif') ||
+                              imageUrl.toLowerCase().contains('.gif');
                           return CachedNetworkImage(
                             imageUrl: imageUrl,
                             httpHeaders: headers,
-                            memCacheWidth: memCacheWidth,
-                            maxWidthDiskCache: maxDiskWidth,
+                            memCacheWidth: isGif ? null : memCacheWidth,
+                            maxWidthDiskCache: isGif ? null : maxDiskWidth,
                             fit: BoxFit.cover,
                             placeholder: (context, url) =>
                                 const LoadingSkeleton(),

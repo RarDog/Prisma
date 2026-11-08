@@ -7,7 +7,9 @@ import 'package:gel_rule_app/core/models/post.dart';
 import 'package:gel_rule_app/sources/artist/pawchive_provider.dart';
 import 'package:gel_rule_app/sources/provider_factory.dart';
 import 'package:gel_rule_app/core/utils/media_quality.dart';
+import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'package:gel_rule_app/core/http/dio_client.dart';
+import 'package:gel_rule_app/sources/interfaces/content_provider.dart';
 
 void main() {
   test('ProviderFactory creates PawchiveProvider', () {
@@ -208,5 +210,44 @@ void main() {
     final byName = await provider.listArtists(sort: ArtistSortOrder.nameAsc);
     expect(
         byName.map((a) => a.id).toList(), ['artist_a', 'artist_b', 'artist_c']);
+  });
+
+  test('PawchiveProvider implements MediaHeadersProvider with defaultUserAgent',
+      () {
+    final client = DioClient(baseUrl: 'https://pawchive.pw');
+    final provider = PawchiveProvider(
+      id: 'pawchive',
+      name: 'Pawchive',
+      baseUrl: 'https://pawchive.pw',
+      dioClient: client,
+    );
+
+    expect(provider, isA<MediaHeadersProvider>());
+    final gifPost = Post(
+      id: 'patreon:123:456:0',
+      providerId: 'pawchive',
+      providerName: 'Pawchive',
+      previewUrl:
+          'https://img.pawchive.pw/thumbnail/data/c0/65/c0653d96c842464c759fd7ebace9130ec51219f6fd751860536ac84cd9c2a761.gif',
+      sampleUrl:
+          'https://file.pawchive.pw/data/2c0/65/c0653d96c842464c759fd7ebace9130ec51219f6fd751860536ac84cd9c2a761.gif',
+      fileUrl:
+          'https://file.pawchive.pw/data/2c0/65/c0653d96c842464c759fd7ebace9130ec51219f6fd751860536ac84cd9c2a761.gif?f=animation.gif',
+      tags: const ['patreon', 'artist'],
+      rating: 'unknown',
+      width: 500,
+      height: 500,
+      createdAt: DateTime.now(),
+      fileType: 'gif',
+      score: 0,
+    );
+
+    final headers = provider.mediaHeaders(gifPost);
+    expect(headers['User-Agent'], equals(AppHeaders.defaultUserAgent));
+    expect(headers['Referer'], equals('https://pawchive.pw/'));
+
+    expect(MediaUrlSelector.isGif(gifPost), isTrue);
+    final feedUrls = MediaUrlSelector.feed(gifPost);
+    expect(feedUrls.first, equals(gifPost.fileUrl));
   });
 }

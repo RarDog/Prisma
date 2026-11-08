@@ -122,6 +122,8 @@ Map<String, String> getMediaUrlHeaders({
     defaultReferer = 'https://mangalib.me/';
   } else if (pid.contains('ranobelib') || u.contains('ranobelib.me')) {
     defaultReferer = 'https://ranobelib.me/';
+  } else if (pid.contains('pawchive') || u.contains('pawchive.pw')) {
+    defaultReferer = 'https://pawchive.pw/';
   } else if (pid.contains('hitomi') ||
       u.contains('hitomi.la') ||
       u.contains('gold-usergeneratedcontent.net')) {
@@ -139,8 +141,11 @@ Map<String, String> getMediaUrlHeaders({
     }
   }
 
-  final isDanbooru = pid.contains('danbooru') || u.contains('donmai.us');
-  final userAgent = isDanbooru
+  final isDanbooruOrPawchive = pid.contains('danbooru') ||
+      u.contains('donmai.us') ||
+      pid.contains('pawchive') ||
+      u.contains('pawchive.pw');
+  final userAgent = isDanbooruOrPawchive
       ? AppHeaders.defaultUserAgent
       : AppHeaders.desktopChromeUserAgent;
 

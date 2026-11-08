@@ -65,6 +65,13 @@ class MediaUrlSelector {
             : _compact([nonVideoSample, nonVideoPreview, post.previewUrl]),
       };
     }
+    if (_isGif(post)) {
+      return switch (mode) {
+        MediaQualityMode.dataSaver =>
+          _compact([post.sampleUrl, post.previewUrl, post.fileUrl]),
+        _ => _compact([post.fileUrl, post.sampleUrl, post.previewUrl]),
+      };
+    }
     return switch (mode) {
       MediaQualityMode.dataSaver => _compact([post.previewUrl, post.sampleUrl]),
       MediaQualityMode.highQuality =>
@@ -286,7 +293,13 @@ class MediaUrlSelector {
     final fileExt = _extractExtension(post.fileUrl);
     if (fileExt == '.gif') return true;
     final sampleExt = _extractExtension(post.sampleUrl);
-    return sampleExt == '.gif';
+    if (sampleExt == '.gif') return true;
+    final previewExt = _extractExtension(post.previewUrl);
+    if (previewExt == '.gif') return true;
+    if (post.tags.contains('animated_gif') || post.tags.contains('gif')) {
+      return true;
+    }
+    return false;
   }
 
   static bool _looksLikeVideoUrl(String url) {
