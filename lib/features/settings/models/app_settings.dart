@@ -58,6 +58,7 @@ class AppSettings {
     this.tagCacheLimit = 5000,
     this.lastActiveLocation = '/',
     this.showProviderHealthBanner = true,
+    this.autoHideFeedToolbar = true,
     this.hasCompletedOnboarding = false,
     this.mangaReaderRtl = true,
     this.mangaSelectedRating = 'All',
@@ -154,6 +155,7 @@ class AppSettings {
   final int searchHistoryLimit;
   final int tagCacheLimit;
   final bool showProviderHealthBanner;
+  final bool autoHideFeedToolbar;
 
   static const defaults = AppSettings(
     enabledProviderIds: ['gelbooru', 'rule34', 'realbooru'],
@@ -202,6 +204,7 @@ class AppSettings {
     searchHistoryLimit: 500,
     tagCacheLimit: 5000,
     lastActiveLocation: '/',
+    autoHideFeedToolbar: true,
     hasCompletedOnboarding: false,
     mangaReaderRtl: true,
     mangaSelectedRating: 'All',
@@ -270,6 +273,7 @@ class AppSettings {
     int? searchHistoryLimit,
     int? tagCacheLimit,
     bool? showProviderHealthBanner,
+    bool? autoHideFeedToolbar,
     String? lastActiveLocation,
     bool? hasCompletedOnboarding,
     bool? mangaReaderRtl,
@@ -357,6 +361,7 @@ class AppSettings {
       tagCacheLimit: tagCacheLimit ?? this.tagCacheLimit,
       showProviderHealthBanner:
           showProviderHealthBanner ?? this.showProviderHealthBanner,
+      autoHideFeedToolbar: autoHideFeedToolbar ?? this.autoHideFeedToolbar,
       hasCompletedOnboarding:
           hasCompletedOnboarding ?? this.hasCompletedOnboarding,
       mangaReaderRtl: mangaReaderRtl ?? this.mangaReaderRtl,
@@ -436,6 +441,7 @@ class AppSettings {
         'searchHistoryLimit': searchHistoryLimit,
         'tagCacheLimit': tagCacheLimit,
         'showProviderHealthBanner': showProviderHealthBanner,
+        'autoHideFeedToolbar': autoHideFeedToolbar,
         'lastActiveLocation': lastActiveLocation,
         'hasCompletedOnboarding': hasCompletedOnboarding,
         'mangaReaderRtl': mangaReaderRtl,
@@ -579,6 +585,8 @@ class AppSettings {
             (json['tagCacheLimit'] as num?)?.toInt() ?? defaults.tagCacheLimit,
         showProviderHealthBanner: (json['showProviderHealthBanner'] as bool?) ??
             defaults.showProviderHealthBanner,
+        autoHideFeedToolbar: (json['autoHideFeedToolbar'] as bool?) ??
+            defaults.autoHideFeedToolbar,
         lastActiveLocation: (json['lastActiveLocation'] as String?) ??
             defaults.lastActiveLocation,
         hasCompletedOnboarding:

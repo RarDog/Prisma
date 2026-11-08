@@ -62,26 +62,31 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
         _showScrollToTop.value = shouldShow;
       }
 
-      // Smooth responsive scroll without triggering full-screen setState():
-      // When near top (<= 60px), always keep toolbar fully expanded.
-      if (offset <= 60) {
-        _scrollDeltaAccumulator = 0;
-        if (!_toolbarVisible.value) _toolbarVisible.value = true;
-      } else {
-        final delta = offset - _lastScrollOffset;
-        if ((delta > 0 && _scrollDeltaAccumulator < 0) ||
-            (delta < 0 && _scrollDeltaAccumulator > 0)) {
-          _scrollDeltaAccumulator = 0;
-        }
-        _scrollDeltaAccumulator += delta;
+      final autoHide =
+          ref.read(appSettingsProvider).value?.autoHideFeedToolbar ?? true;
 
-        // Downward scroll: requires 55px of deliberate downward movement to collapse
-        if (_scrollDeltaAccumulator > 55) {
-          if (_toolbarVisible.value) _toolbarVisible.value = false;
-        }
-        // Upward scroll: requires 30px of deliberate upward movement to reveal
-        else if (_scrollDeltaAccumulator < -30) {
+      if (autoHide) {
+        // Smooth responsive scroll without triggering full-screen setState():
+        // When near top (<= 60px), always keep toolbar fully expanded.
+        if (offset <= 60) {
+          _scrollDeltaAccumulator = 0;
           if (!_toolbarVisible.value) _toolbarVisible.value = true;
+        } else {
+          final delta = offset - _lastScrollOffset;
+          if ((delta > 0 && _scrollDeltaAccumulator < 0) ||
+              (delta < 0 && _scrollDeltaAccumulator > 0)) {
+            _scrollDeltaAccumulator = 0;
+          }
+          _scrollDeltaAccumulator += delta;
+
+          // Downward scroll: requires 55px of deliberate downward movement to collapse
+          if (_scrollDeltaAccumulator > 55) {
+            if (_toolbarVisible.value) _toolbarVisible.value = false;
+          }
+          // Upward scroll: requires 30px of deliberate upward movement to reveal
+          else if (_scrollDeltaAccumulator < -30) {
+            if (!_toolbarVisible.value) _toolbarVisible.value = true;
+          }
         }
       }
       _lastScrollOffset = offset;
@@ -239,7 +244,13 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
         },
         child: AdaptiveScaffold(
           title: 'Feed',
-          titleWidget: const _FeedTitle(),
+          titleWidget: _FeedTitle(
+            toolbarVisible: _toolbarVisible,
+            onToggle: () {
+              HapticFeedback.lightImpact();
+              _toolbarVisible.value = !_toolbarVisible.value;
+            },
+          ),
           actions: [
             IconButton(
               icon: Icon(
@@ -303,7 +314,61 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                   builder: (context, visible, child) {
                     return AnimatedCrossFade(
                       firstChild: child!,
-                      secondChild: const SizedBox.shrink(),
+                      secondChild: Center(
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            _toolbarVisible.value = true;
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 3.5),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHigh
+                                    .withValues(alpha: 0.8),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .outlineVariant
+                                      .withValues(alpha: 0.35),
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.keyboard_arrow_down_rounded,
+                                    size: 16,
+                                    color: Theme.of(context).colorScheme.primary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    isRu
+                                        ? 'Поиск и фильтры'
+                                        : 'Search & filters',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall
+                                        ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                       crossFadeState: visible
                           ? CrossFadeState.showFirst
                           : CrossFadeState.showSecond,
@@ -311,8 +376,17 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                       sizeCurve: Curves.fastOutSlowIn,
                     );
                   },
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onVerticalDragEnd: (details) {
+                      if (details.primaryVelocity != null &&
+                          details.primaryVelocity! < -180) {
+                        HapticFeedback.lightImpact();
+                        _toolbarVisible.value = false;
+                      }
+                    },
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                     children: [
                       if (settings.searchPresets.isNotEmpty)
                         _SearchPresetsBar(
@@ -401,6 +475,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                     ],
                   ),
                 ),
+              ),
                 Expanded(
                   child: state.posts.isEmpty && !state.isLoadingMore
                       ? (state.error != null
@@ -774,33 +849,70 @@ class _RefreshIntent extends Intent {
 }
 
 class _FeedTitle extends StatelessWidget {
-  const _FeedTitle();
+  const _FeedTitle({
+    required this.toolbarVisible,
+    required this.onToggle,
+  });
+
+  final ValueNotifier<bool> toolbarVisible;
+  final VoidCallback onToggle;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          'Prisma',
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w800,
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onToggle,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Prisma',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Consumer(
+                builder: (context, ref, _) => Text(
+                  ref.watch(appStringsProvider).feed,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              ValueListenableBuilder<bool>(
+                valueListenable: toolbarVisible,
+                builder: (context, visible, _) {
+                  return Tooltip(
+                    message: visible
+                        ? (isRu ? 'Свернуть панель' : 'Collapse toolbar')
+                        : (isRu ? 'Развернуть панель' : 'Expand toolbar'),
+                    child: AnimatedRotation(
+                      turns: visible ? 0.0 : 0.5,
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeInOutCubic,
+                      child: Icon(
+                        Icons.keyboard_arrow_up_rounded,
+                        size: 20,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
         ),
-        const SizedBox(width: 12),
-        Builder(builder: (context) {
-          return Consumer(
-            builder: (context, ref, _) => Text(
-              ref.watch(appStringsProvider).feed,
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          );
-        }),
-      ],
+      ),
     );
   }
 }

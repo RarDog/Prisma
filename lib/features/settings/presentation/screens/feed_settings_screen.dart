@@ -127,6 +127,22 @@ class FeedSettingsScreen extends ConsumerWidget {
                       settings.copyWith(showProviderHealthBanner: val),
                     ),
                   ),
+                  const SettingsDivider(),
+                  SettingsSwitchTile(
+                    icon: Icons.unfold_more_rounded,
+                    iconColor: const Color(0xFF6366F1),
+                    title: isRu
+                        ? 'Автоскрытие панели поиска при скролле'
+                        : 'Auto-hide search toolbar on scroll',
+                    subtitle: isRu
+                        ? 'Если выключено, панель сворачивается свайпом вверх по ней или кликом по стрелке в шапке'
+                        : 'If disabled, collapse manually with swipe up or by tapping header arrow',
+                    value: settings.autoHideFeedToolbar,
+                    onChanged: (val) => _update(
+                      ref,
+                      settings.copyWith(autoHideFeedToolbar: val),
+                    ),
+                  ),
                 ],
               ),
 
