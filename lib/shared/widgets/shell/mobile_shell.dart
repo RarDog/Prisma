@@ -1,5 +1,3 @@
-import 'dart:ui' show lerpDouble;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -100,27 +98,17 @@ class MobileShellState extends ConsumerState<MobileShell>
     final selected = items.indexWhere(
       (item) => AppShell.branchIndexForLocation(item.location) == activeBranch,
     );
-    final isKeyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final media = MediaQuery.of(context);
+    final isKeyboardOpen = media.viewInsets.bottom > 0;
+    final bottomInset = isKeyboardOpen ? 0.0 : (76.0 + media.padding.bottom);
 
     return Scaffold(
       extendBody: true,
-      body: AnimatedBuilder(
-        animation: _slideAnimation,
-        builder: (context, child) {
-          final maxInset = 76.0 + MediaQuery.paddingOf(context).bottom;
-          final currentBottomInset = isKeyboardOpen
-              ? 0.0
-              : lerpDouble(0.0, maxInset, _slideAnimation.value)!;
-          return MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              viewInsets: MediaQuery.of(context).viewInsets.copyWith(bottom: 0),
-              padding: MediaQuery.of(context).padding.copyWith(
-                    bottom: currentBottomInset,
-                  ),
-            ),
-            child: child!,
-          );
-        },
+      body: MediaQuery(
+        data: media.copyWith(
+          viewInsets: media.viewInsets.copyWith(bottom: 0),
+          padding: media.padding.copyWith(bottom: bottomInset),
+        ),
         child: widget.child,
       ),
       bottomNavigationBar: isKeyboardOpen
