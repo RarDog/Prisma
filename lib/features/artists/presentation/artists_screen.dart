@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -41,7 +42,12 @@ final artistProviderConfigsProvider =
       .loadArtistConfigs(enabledOnly: true);
   if (result is! Success<List<ContentProviderConfig>>) return const [];
   return result.data
-      .where((c) => c.id != 'fapello' && c.apiType != 'fapello')
+      .where((c) {
+        if (!kIsWeb && defaultTargetPlatform != TargetPlatform.android) {
+          return c.id != 'fapello' && c.apiType != 'fapello';
+        }
+        return true;
+      })
       .toList();
 });
 
@@ -446,7 +452,10 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
                     onOpenPagePicker: _openPagePicker,
                     isRu: isRu,
                     onProviderChanged: (value) {
-                      setState(() => _providerId = value);
+                      setState(() {
+                        _providerId = value;
+                        _selectedServices.clear();
+                      });
                       _refresh(items);
                     },
                     onSortChanged: (sort) {
@@ -559,6 +568,10 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
 
   bool _matchesDisplayFilters(ArtistProfile a) {
     final s = a.service.toLowerCase();
+    if (_providerId == 'fapello' || s == 'fapello') {
+      if (_selectedServices.isEmpty) return true;
+      return _selectedServices.contains('fapello');
+    }
     if (s != 'patreon' && s != 'fanbox') return false;
     if (_selectedServices.isEmpty) return true;
     return _selectedServices.contains(s);

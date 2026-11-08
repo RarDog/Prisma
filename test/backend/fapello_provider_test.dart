@@ -233,6 +233,63 @@ const _imageDetailPage = '''
 </body></html>
 ''';
 
+const _profilePage = '''
+<html><head><title>Suzy Cortez Nude Leaks - Fapello</title></head><body>
+<div class="container pro-container m-auto">
+  <div class="flex lg:flex-row flex-col items-center lg:py-8 lg:space-x-8">
+    <div>
+      <div class="bg-gradient-to-tr from-yellow-600 to-pink-600 p-1 rounded-full m-0.5 mr-2 w-56 h-56 relative overflow-hidden uk-transition-toggle">
+        <a href="https://fapello.com/suzy-cortez/"><img src="https://fapello.com/content/s/u/suzy-cortez/1000/suzy-cortez_0291.jpg" class="bg-gray-200 border-4 border-white rounded-full w-full h-full"></a>
+      </div>
+    </div>
+    <div class="flex-1 flex flex-col">
+      <h2 class="font-semibold lg:text-2xl text-lg mb-2 mt-4">Suzy Cortez</h2>
+      <p class="flex font-semibold mb-3 space-x-2">SuzyCortez_, suzycortez</p>
+      <div class="grid grid-cols-2 mt-3">
+        <div class="flex"> 287 <strong class="lg:pl-2">Media</strong></div>
+        <div class="flex" id="count_likes_19445"> 638 <strong class="lg:pl-2">Likes</strong></div>
+      </div>
+    </div>
+  </div>
+  <div id="content">
+    <div>
+      <a href="https://fapello.com/suzy-cortez/289/">
+        <img src="https://fapello.com/content/s/u/suzy-cortez/1000/suzy-cortez_0289_300px.jpg">
+      </a>
+    </div>
+  </div>
+</div>
+</body></html>
+''';
+
+const _discussionPage = '''
+<html><body>
+<div class="flex">
+  <div class="w-10 h-10 rounded-full relative flex-shrink-0">
+    <img src="https://fapello.com/data/avatars/default/318823.png">
+  </div>
+  <div class="text-gray-700 py-2 px-3 rounded-md bg-gray-100">
+    <p class="leading-6">Super body and sexy</p>
+  </div>
+</div>
+</body></html>
+''';
+
+const _detailPageWithAliases = '''
+<html><head><title>Suzy Cortez Photo #289 - Fapello</title></head><body>
+<div id="content">
+  <a href="https://fapello.com/content/s/u/suzy-cortez/1000/suzy-cortez_0289.jpg" target="_blank">
+    <img src="https://fapello.com/content/s/u/suzy-cortez/1000/suzy-cortez_0289.jpg" alt="Suzy Cortez Photo #289">
+  </a>
+  <div class="flex space-x-5 py-2 px-5 border-b">
+    <div class="flex-1">
+      <p class="text-base"> SuzyCortez_, suzycortez, suzycortezfan </p>
+    </div>
+  </div>
+</div>
+</body></html>
+''';
+
 const _videoDetailPage = '''
 <html><head><title>Mikatanaka869 Video #9  - Fapello</title></head><body>
 <div id="content">
@@ -317,7 +374,12 @@ void main() {
       final first = artists.first;
       expect(first.service, 'fapello');
       expect(first.providerId, 'fapello');
-      expect(first.displayName, 'soyisabelasalar');
+      expect(first.displayName, 'Soyisabelasalar');
+      expect(
+        first.bannerUrl,
+        'https://fapello.com/content/s/o/soyisabelasalar/1000/'
+        'soyisabelasalar_0080_300px.jpg',
+      );
       expect(first.url, 'https://fapello.com/soyisabelasalar/');
       expect(
         first.avatarUrl,
@@ -724,6 +786,66 @@ void main() {
       );
       expect(comments.map((c) => c.postId),
           ['africangonwild:102', 'africangonwild:102']);
+    });
+
+    test('getComments falls back to /<slug>/discussion/ when media comments are empty',
+        () async {
+      final dio = Dio();
+      dio.httpClientAdapter = _FakeAdapter((options) async {
+        if (options.path == '/suzy-cortez/289/') {
+          return _html(_detailPageWithAliases);
+        } else if (options.path == '/suzy-cortez/discussion/') {
+          return _html(_discussionPage);
+        }
+        return ResponseBody.fromString('not found', 404);
+      });
+      final provider = _providerWith(dio);
+
+      final comments = await provider.getComments('suzy-cortez:289');
+      expect(comments.length, 1);
+      expect(comments.first.body, 'Super body and sexy');
+    });
+  });
+
+  group('FapelloProvider artist profile & tags', () {
+    late Dio dio;
+
+    setUp(() => dio = Dio());
+
+    test('getArtistProfile parses stats, avatar, banner, and beautified name',
+        () async {
+      dio.httpClientAdapter = _FakeAdapter((options) async {
+        expect(options.path, '/suzy-cortez/');
+        return _html(_profilePage);
+      });
+      final provider = _providerWith(dio);
+
+      final profile = await provider.getArtistProfile('fapello', 'suzy-cortez');
+      expect(profile, isNotNull);
+      expect(profile!.id, 'suzy-cortez');
+      expect(profile.name, 'Suzy Cortez');
+      expect(profile.displayName, 'Suzy Cortez');
+      expect(profile.postCount, 287);
+      expect(
+        profile.avatarUrl,
+        'https://fapello.com/content/s/u/suzy-cortez/1000/suzy-cortez_0291.jpg',
+      );
+      expect(
+        profile.bannerUrl,
+        'https://fapello.com/content/s/u/suzy-cortez/1000/suzy-cortez_0289_300px.jpg',
+      );
+    });
+
+    test('parses post tags and aliases from description', () async {
+      dio.httpClientAdapter = _FakeAdapter((options) async {
+        expect(options.path, '/suzy-cortez/289/');
+        return _html(_detailPageWithAliases);
+      });
+      final provider = _providerWith(dio);
+
+      final post = await provider.getPost('suzy-cortez:289');
+      expect(post, isNotNull);
+      expect(post!.tags, ['SuzyCortez_', 'suzycortez', 'suzycortezfan']);
     });
   });
 

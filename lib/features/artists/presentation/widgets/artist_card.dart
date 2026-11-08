@@ -6,10 +6,19 @@ import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'artist_service_utils.dart';
 import 'artists_liquid_card.dart';
 
-Map<String, String> get _pawchiveHeaders => {
-      'User-Agent': AppHeaders.defaultUserAgent,
-      'Referer': 'https://pawchive.pw/',
+Map<String, String> _artistHeaders(String service) {
+  if (service.toLowerCase() == 'fapello') {
+    return {
+      'User-Agent': AppHeaders.desktopChromeUserAgent,
+      'Referer': 'https://fapello.com/',
+      'Accept': '*/*',
     };
+  }
+  return {
+    'User-Agent': AppHeaders.defaultUserAgent,
+    'Referer': 'https://pawchive.pw/',
+  };
+}
 
 class ArtistCard extends StatelessWidget {
   const ArtistCard({
@@ -51,9 +60,12 @@ class ArtistCard extends StatelessWidget {
         ),
     ];
 
+    final displayName = artist.displayName.isNotEmpty
+        ? artist.displayName
+        : artist.name;
     return _ArtistHeroCard(
       service: artist.service,
-      name: artist.name,
+      name: displayName,
       avatarUrl: artist.avatarUrl,
       bannerUrl: artist.bannerUrl,
       badges: badges,
@@ -163,7 +175,7 @@ class _ArtistHeroCard extends StatelessWidget {
     return ArtistsLiquidCard(
       glowColor: sColor.withValues(alpha: 0.25),
       backgroundImageUrl: bannerUrl,
-      backgroundHeaders: _pawchiveHeaders,
+      backgroundHeaders: _artistHeaders(service),
       padding: EdgeInsets.zero,
       onTap: onTap,
       child: Stack(
@@ -174,6 +186,7 @@ class _ArtistHeroCard extends StatelessWidget {
             child: Row(
               children: [
                 _HeroAvatar(
+                  service: service,
                   name: name,
                   avatarUrl: avatarUrl,
                   accent: sColor,
@@ -253,11 +266,13 @@ class _ArtistHeroCard extends StatelessWidget {
 
 class _HeroAvatar extends StatelessWidget {
   const _HeroAvatar({
+    required this.service,
     required this.name,
     required this.avatarUrl,
     required this.accent,
   });
 
+  final String service;
   final String name;
   final String? avatarUrl;
   final Color accent;
@@ -309,7 +324,7 @@ class _HeroAvatar extends StatelessWidget {
             ? fallback
             : CachedNetworkImage(
                 imageUrl: avatarUrl!,
-                httpHeaders: _pawchiveHeaders,
+                httpHeaders: _artistHeaders(service),
                 memCacheWidth: 120,
                 memCacheHeight: 120,
                 fit: BoxFit.cover,

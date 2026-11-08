@@ -656,10 +656,10 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
         }
       });
     } else {
-      final avatarUrl = widget.providerId == 'pawchive'
+      String? avatarUrl = widget.providerId == 'pawchive'
           ? 'https://pawchive.pw/icons/${widget.service}/${widget.artistId}'
           : null;
-      final bannerUrl = widget.providerId == 'pawchive'
+      String? bannerUrl = widget.providerId == 'pawchive'
           ? 'https://pawchive.pw/banners/${widget.service}/${widget.artistId}'
           : null;
       int? postCount;
@@ -674,6 +674,14 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
                   await p.getArtistProfile(widget.service, widget.artistId);
               postCount = profile?.postCount;
               updatedAt = profile?.updatedAt;
+              if (profile?.avatarUrl != null &&
+                  profile!.avatarUrl!.trim().isNotEmpty) {
+                avatarUrl = profile.avatarUrl;
+              }
+              if (profile?.bannerUrl != null &&
+                  profile!.bannerUrl!.trim().isNotEmpty) {
+                bannerUrl = profile.bannerUrl;
+              }
               break;
             }
           }

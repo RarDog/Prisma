@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -110,7 +111,12 @@ class OnboardingSourcesStep extends ConsumerWidget {
     final providersAsync = ref.watch(providersControllerProvider);
     final allProviders = providersAsync.value ?? [];
     final providers = allProviders
-        .where((p) => p.apiType != 'fapello' && p.id != 'fapello')
+        .where((p) {
+          if (!kIsWeb && defaultTargetPlatform != TargetPlatform.android) {
+            return p.apiType != 'fapello' && p.id != 'fapello';
+          }
+          return true;
+        })
         .toList();
     final activeCount = providers.where((p) => p.enabled).length;
 

@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
+import 'package:native_dio_adapter/native_dio_adapter.dart';
 
 import 'package:gel_rule_app/core/http/app_headers.dart';
 
@@ -16,14 +17,26 @@ class DioClient {
     Dio? dio,
   }) : dio = dio ?? Dio(_options(baseUrl, timeout, headers)) {
     if (dio == null && !kIsWeb) {
-      this.dio.httpClientAdapter = IOHttpClientAdapter(
-        createHttpClient: () {
-          final client = io.HttpClient();
-          client.idleTimeout = const Duration(seconds: 120);
-          client.maxConnectionsPerHost = 15;
-          return client;
-        },
-      );
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+        this.dio.httpClientAdapter = NativeAdapter(
+          createCupertinoConfiguration: () =>
+              throw UnsupportedError('Not supported on Android'),
+          createCronetEngine: () => CronetEngine.build(
+            cacheMode: CacheMode.memory,
+            enableHttp2: true,
+            enableQuic: true,
+          ),
+        );
+      } else {
+        this.dio.httpClientAdapter = IOHttpClientAdapter(
+          createHttpClient: () {
+            final client = io.HttpClient();
+            client.idleTimeout = const Duration(seconds: 120);
+            client.maxConnectionsPerHost = 15;
+            return client;
+          },
+        );
+      }
     }
     this.dio.interceptors.add(_RetryInterceptor(this.dio));
     if (kDebugMode) {

@@ -238,16 +238,18 @@ class ArtistsHeader extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
 
-                  // Quick service chips (Patreon, Fanbox)
-                  for (final service in const ['patreon', 'fanbox']) ...[
-                    _QuickServiceChip(
-                      label: formatArtistServiceName(service),
-                      serviceColor: artistServiceColor(service),
-                      selected: selectedServices.contains(service),
-                      isDark: isDark,
-                      onTap: () => onToggleService(service),
-                    ),
-                    const SizedBox(width: 6),
+                  // Quick service chips (Patreon, Fanbox) for Pawchive
+                  if (selectedProviderId != 'fapello') ...[
+                    for (final service in const ['patreon', 'fanbox']) ...[
+                      _QuickServiceChip(
+                        label: formatArtistServiceName(service),
+                        serviceColor: artistServiceColor(service),
+                        selected: selectedServices.contains(service),
+                        isDark: isDark,
+                        onTap: () => onToggleService(service),
+                      ),
+                      const SizedBox(width: 6),
+                    ],
                   ],
 
                   if (selectedServices.isNotEmpty ||

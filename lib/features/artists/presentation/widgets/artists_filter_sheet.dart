@@ -198,39 +198,42 @@ class _ArtistsFilterSheetState extends State<ArtistsFilterSheet> {
 
                     const SizedBox(height: 22),
 
-                    // Platforms section
-                    _SectionTitle(
-                      title: isRu ? 'Платформы' : 'Platforms',
-                      icon: Icons.apps_rounded,
-                    ),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _ChoiceChipItem(
-                          label: isRu ? 'Все платформы' : 'All platforms',
-                          selected: _services.isEmpty,
-                          onTap: () => setState(() => _services.clear()),
-                        ),
-                        for (final s in _availableServices)
+                    // Platforms section (Pawchive)
+                    if (_providerId != 'fapello') ...[
+                      _SectionTitle(
+                        title: isRu ? 'Платформы' : 'Platforms',
+                        icon: Icons.apps_rounded,
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
                           _ChoiceChipItem(
-                            label: formatArtistServiceName(s),
-                            dotColor: artistServiceColor(s),
-                            selected: _services.contains(s),
-                            selectedColor: artistServiceColor(s),
-                            onTap: () {
-                              setState(() {
-                                if (_services.contains(s)) {
-                                  _services.remove(s);
-                                } else {
-                                  _services.add(s);
-                                }
-                              });
-                            },
+                            label: isRu ? 'Все платформы' : 'All platforms',
+                            selected: _services.isEmpty,
+                            onTap: () => setState(() => _services.clear()),
                           ),
-                      ],
-                    ),
+                          for (final s in _availableServices)
+                            _ChoiceChipItem(
+                              label: formatArtistServiceName(s),
+                              dotColor: artistServiceColor(s),
+                              selected: _services.contains(s),
+                              selectedColor: artistServiceColor(s),
+                              onTap: () {
+                                setState(() {
+                                  if (_services.contains(s)) {
+                                    _services.remove(s);
+                                  } else {
+                                    _services.add(s);
+                                  }
+                                });
+                              },
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 22),
+                    ],
 
                     // Providers section if multiple
                     if (widget.providers.length > 1) ...[

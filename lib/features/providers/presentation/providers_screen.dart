@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -248,11 +249,13 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
         error: (error, _) => ErrorView(message: error.toString()),
         data: (rawItems) {
           final items = rawItems
-              .where((p) =>
-                  p.apiType != 'fapello' &&
-                  p.id != 'fapello' &&
-                  p.id.toLowerCase() != 'e621' &&
-                  p.id.toLowerCase() != 'e926')
+              .where((p) {
+                if (!kIsWeb && defaultTargetPlatform != TargetPlatform.android) {
+                  if (p.apiType == 'fapello' || p.id == 'fapello') return false;
+                }
+                return p.id.toLowerCase() != 'e621' &&
+                    p.id.toLowerCase() != 'e926';
+              })
               .toList();
           final activeCount = items.where((p) => p.enabled).length;
           final booruCount = items.where((p) => _isBooru(p.apiType)).length;

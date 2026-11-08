@@ -38,6 +38,8 @@ dependencies:
   share_plus: ^10.0.0
   dynamic_color: ^1.7.0
   flutter_markdown_plus: ^1.0.12
+  cronet_http: ^1.10.1
+  native_dio_adapter: ^1.8.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

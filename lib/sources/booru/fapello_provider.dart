@@ -137,6 +137,33 @@ class FapelloProvider
     dotAll: true,
   );
 
+  static final _cardBannerPattern = RegExp(
+    r'''<a\s[^>]*href=["']https://fapello\.com/([a-z0-9][a-z0-9._-]*)/?["'][^>]*>\s*<img\s[^>]*?(?:src=["']([^"']+)["'][^>]*?class=["'][^"']*object-cover[^"']*|class=["'][^"']*object-cover[^"']*[^>]*?src=["']([^"']+)["'])''',
+    caseSensitive: false,
+  );
+
+  static final _profileAvatarPattern = RegExp(
+    r'''<div class=["'][^"']*rounded-full[^"']*w-56 h-56[^"']*["'][^>]*>.*?<img\s[^>]*src=["']([^"']+)["']''',
+    caseSensitive: false,
+    dotAll: true,
+  );
+
+  static final _profileNamePattern = RegExp(
+    r'''<h2 class=["'][^"']*font-semibold[^"']*["'][^>]*>\s*(.*?)\s*</h2>''',
+    caseSensitive: false,
+  );
+
+  static final _mediaCountPattern = RegExp(
+    r'''([0-9,]+)\s*<strong[^>]*>Media</strong>''',
+    caseSensitive: false,
+  );
+
+  static final _descriptionAliasesPattern = RegExp(
+    r'''<div class=["'][^"']*flex space-x-5 py-2 px-5 border-b[^"']*["'][^>]*>\s*<div class=["']flex-1["']>\s*<p class=["']text-base["']>\s*(.*?)\s*</p>''',
+    caseSensitive: false,
+    dotAll: true,
+  );
+
   static final _thumbnailSuffixPattern =
       RegExp(r'_300px\.[a-z0-9]+$', caseSensitive: false);
 
@@ -253,11 +280,23 @@ class FapelloProvider
   Future<List<PostComment>> getComments(String postId) async {
     final parsed = _parseMediaId(postId);
     if (parsed == null) return const [];
+    final (slug, mediaId) = parsed;
     try {
-      final html = await _getHtml('/${parsed.$1}/${parsed.$2}/');
+      final html = await _getHtml('/$slug/$mediaId/');
       final providerId = id;
-      return await Isolate.run(
+      final comments = await Isolate.run(
           () => _parseCommentsHtml(html, postId, providerId: providerId));
+      if (comments.isNotEmpty) return comments;
+
+      // Many Fapello posts have no per-post comments; fall back to the model's
+      // discussion thread so users can still see community commentary.
+      try {
+        final discHtml = await _getHtml('/$slug/discussion/');
+        return await Isolate.run(
+            () => _parseCommentsHtml(discHtml, postId, providerId: providerId));
+      } catch (_) {
+        return const [];
+      }
     } catch (_) {
       return const [];
     }
@@ -359,8 +398,20 @@ class FapelloProvider
   Future<ArtistProfile?> getArtistProfile(
     String service,
     String artistId,
-  ) async =>
-      null;
+  ) async {
+    final slug = artistId.trim();
+    if (slug.isEmpty) return null;
+    try {
+      final html = await _getHtml('/$slug/');
+      if (html.trim().isEmpty) return null;
+      final providerId = id;
+      return await Isolate.run(
+        () => _parseProfilePageHtml(html, slug, providerId: providerId),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
 
   @override
   Future<int?> getArtistsCount({
@@ -415,6 +466,17 @@ class FapelloProvider
     String providerId,
   ) {
     final section = _listingSection(html);
+    final bannersBySlug = <String, String>{};
+    for (final match in _cardBannerPattern.allMatches(section)) {
+      final slug = match.group(1) ?? '';
+      final banner = match.group(2) ?? match.group(3) ?? '';
+      if (slug.isNotEmpty &&
+          banner.isNotEmpty &&
+          !banner.contains('/assets/exclusive/')) {
+        bannersBySlug.putIfAbsent(slug, () => banner);
+      }
+    }
+
     final seen = <String>{};
     final profiles = <ArtistProfile>[];
     for (final match in _modelCardPattern.allMatches(section)) {
@@ -425,18 +487,73 @@ class FapelloProvider
       final avatar = _imgSrcPattern.firstMatch(row)?.group(1) ?? '';
       if (avatar.contains('/assets/exclusive/')) continue;
 
-      final displayName = _bareText(row).trim();
+      final rawDisplayName = _bareText(row).trim();
+      final formattedName = _beautifyName(rawDisplayName, slug);
       profiles.add(ArtistProfile(
         id: slug,
         providerId: providerId,
         service: _service,
-        name: slug,
-        displayName: displayName.isEmpty ? slug : displayName,
+        name: formattedName,
+        displayName: formattedName,
         url: 'https://fapello.com/$slug/',
         avatarUrl: avatar.isEmpty ? null : avatar,
+        bannerUrl: bannersBySlug[slug],
       ));
     }
     return profiles;
+  }
+
+  static ArtistProfile _parseProfilePageHtml(
+    String html,
+    String slug, {
+    required String providerId,
+  }) {
+    final avatarMatch = _profileAvatarPattern.firstMatch(html);
+    final avatar = avatarMatch?.group(1);
+
+    final rawName = _profileNamePattern.firstMatch(html)?.group(1) ?? '';
+    final formattedName = _beautifyName(_decodeHtml(rawName), slug);
+
+    final mediaCountStr = _mediaCountPattern.firstMatch(html)?.group(1);
+    final postCount = mediaCountStr != null
+        ? int.tryParse(mediaCountStr.replaceAll(',', ''))
+        : null;
+
+    final firstMedia = _imgSrcPattern.firstMatch(_listingSection(html));
+    final bannerUrl = firstMedia?.group(1);
+
+    return ArtistProfile(
+      id: slug,
+      providerId: providerId,
+      service: _service,
+      name: formattedName,
+      displayName: formattedName,
+      url: 'https://fapello.com/$slug/',
+      avatarUrl: (avatar != null && avatar.isNotEmpty) ? avatar : null,
+      bannerUrl: bannerUrl,
+      postCount: postCount,
+    );
+  }
+
+  static String _beautifyName(String raw, String slug) {
+    var name = raw.trim();
+    if (name.isEmpty) name = slug.trim();
+    name = name
+        .replaceAll(RegExp(r'[-_]+'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    if (name.isEmpty) return slug;
+
+    // Check casing: if all lowercase or all uppercase, convert each word to Title Case.
+    final hasLower = name.contains(RegExp(r'[a-z]'));
+    final hasUpper = name.contains(RegExp(r'[A-Z]'));
+    if (!hasUpper || (hasUpper && !hasLower)) {
+      name = name.split(' ').map((word) {
+        if (word.isEmpty) return word;
+        return word[0].toUpperCase() + word.substring(1).toLowerCase();
+      }).join(' ');
+    }
+    return name;
   }
 
   // ------------------------------------------------------------- media grid
@@ -599,9 +716,26 @@ class FapelloProvider
 
   static List<String> _parseDetailTags(String html) {
     final tags = <String>[];
+    final seen = <String>{};
     for (final match in _detailTagPattern.allMatches(html)) {
       final name = (match.group(2) ?? '').trim();
-      if (name.isNotEmpty) tags.add(name);
+      if (name.isNotEmpty && seen.add(name.toLowerCase())) {
+        tags.add(name);
+      }
+    }
+
+    final aliasMatch = _descriptionAliasesPattern.firstMatch(html);
+    if (aliasMatch != null) {
+      final text = _decodeHtml(aliasMatch.group(1) ?? '');
+      for (final part in text.split(',')) {
+        final clean = part.replaceAll('#', '').trim();
+        if (clean.isNotEmpty &&
+            !clean.toLowerCase().startsWith('photo #') &&
+            !clean.toLowerCase().startsWith('video #') &&
+            seen.add(clean.toLowerCase())) {
+          tags.add(clean);
+        }
+      }
     }
     return tags;
   }
