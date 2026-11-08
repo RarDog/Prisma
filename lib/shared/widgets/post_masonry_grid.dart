@@ -171,8 +171,24 @@ class PostMasonryGrid extends StatelessWidget {
     bool mobile,
   ) {
     if (posts.isEmpty) return;
-    const lookahead = 4;
+    const lookahead = 2;
     final maxIdx = math.min(currentIndex + lookahead, posts.length - 1);
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final padHorizontal = mobile ? 16.0 : 32.0;
+    final spacing = mobile ? 8.0 : 12.0;
+    final totalSpacing = (columns - 1) * spacing;
+    final colWidth = ((screenWidth - padHorizontal - totalSpacing) / columns)
+        .clamp(140.0, 960.0);
+    final baseCacheWidth = (colWidth * dpr).round().clamp(280, 960);
+    final memCacheWidth = switch (mediaQualityMode) {
+      MediaQualityMode.original =>
+        (colWidth * dpr * 2).round().clamp(480, 2560),
+      MediaQualityMode.highQuality =>
+        (colWidth * dpr * 1.5).round().clamp(360, 1440),
+      _ => baseCacheWidth,
+    };
+
     for (int i = currentIndex + 1; i <= maxIdx; i++) {
       final post = posts[i];
       if (post.fileType == 'text' || post.fileType == 'audio') continue;
@@ -184,12 +200,18 @@ class PostMasonryGrid extends StatelessWidget {
       final url = urls.firstOrNull;
       if (url == null || url.trim().isEmpty) continue;
       if (_precachedUrls.contains(url)) continue;
-      if (_precachedUrls.length >= 600) {
+      if (_precachedUrls.length >= 150) {
         _precachedUrls.remove(_precachedUrls.first);
       }
       _precachedUrls.add(url);
       final headers = getPostMediaHeaders(post);
-      final provider = CachedNetworkImageProvider(url, headers: headers);
+      final isGif = MediaUrlSelector.isGif(post) ||
+          post.fileType.toLowerCase().contains('gif') ||
+          url.toLowerCase().contains('.gif');
+      final rawProvider = CachedNetworkImageProvider(url, headers: headers);
+      final ImageProvider<Object> provider = isGif
+          ? rawProvider
+          : ResizeImage.resizeIfNeeded(memCacheWidth, null, rawProvider);
       unawaited(
         precacheImage(
           provider,

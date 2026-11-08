@@ -181,7 +181,10 @@ class _PostCardState extends ConsumerState<PostCard>
         widget.badgeConfig ?? const PostCardBadgeConfig();
     if (widget.badgeConfig == null) {
       try {
-        badgeConfig = ref.watch(appSettingsProvider).value?.cardBadgeConfig ??
+        badgeConfig = ref.watch(
+              appSettingsProvider
+                  .select((s) => s.value?.cardBadgeConfig),
+            ) ??
             const PostCardBadgeConfig();
       } catch (_) {
         badgeConfig = const PostCardBadgeConfig();

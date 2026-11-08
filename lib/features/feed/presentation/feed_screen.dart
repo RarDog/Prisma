@@ -426,6 +426,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen>
                                 ),
                                 blurExplicit: settings.blurExplicitContent,
                                 showBadges: settings.showPostBadges,
+                                badgeConfig: settings.cardBadgeConfig,
                                 nsfwEnabled: settings.nsfwEnabled,
                                 mediaQualityMode: MediaQualityMode.fromName(
                                     settings.mediaQualityMode),
