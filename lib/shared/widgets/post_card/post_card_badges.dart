@@ -84,19 +84,12 @@ class ProviderBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.68),
+        color: Colors.black.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: accent.withValues(alpha: 0.45),
           width: 0.8,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -107,12 +100,6 @@ class ProviderBadge extends StatelessWidget {
             decoration: BoxDecoration(
               color: accent,
               shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: accent.withValues(alpha: 0.6),
-                  blurRadius: 4,
-                ),
-              ],
             ),
           ),
           const SizedBox(width: 5.5),
@@ -145,19 +132,12 @@ class PageCountBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3.5),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.68),
+        color: Colors.black.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: Colors.white.withValues(alpha: 0.3),
           width: 0.7,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -237,19 +217,12 @@ class MediaBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.65),
+        color: Colors.black.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: accent.withValues(alpha: 0.35),
-          width: 0.7,
+          color: accent.withValues(alpha: 0.40),
+          width: 0.8,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: accent.withValues(alpha: 0.15),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -325,19 +298,12 @@ class SeenBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.65),
+        color: Colors.black.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.16),
+          color: Colors.white.withValues(alpha: 0.20),
           width: 0.7,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: const Row(
         mainAxisSize: MainAxisSize.min,
@@ -366,19 +332,12 @@ class DownloadedBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.65),
+        color: Colors.black.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: const Color(0xFF10B981).withValues(alpha: 0.4),
-          width: 0.7,
+          color: const Color(0xFF10B981).withValues(alpha: 0.45),
+          width: 0.8,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF10B981).withValues(alpha: 0.15),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: const Icon(
         Icons.download_done_rounded,
