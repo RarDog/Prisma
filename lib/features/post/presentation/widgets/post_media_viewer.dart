@@ -18,195 +18,22 @@ import 'ugoira_player.dart';
 import 'video_surface.dart';
 import 'zoomable_image.dart';
 
+export 'fullscreen/fullscreen_media_helpers.dart' show resolveFullscreenPosts;
+export 'multi_page_pill_overlay.dart';
 export 'post_content_heroes.dart';
+export 'post_fullscreen_launcher.dart';
+export 'post_media_headers.dart';
+export 'post_playback_memory.dart';
 export 'video_player_controls.dart';
 export 'video_surface.dart';
 export 'zoomable_image.dart';
-export 'fullscreen/fullscreen_media_helpers.dart' show resolveFullscreenPosts;
 
 import 'package:gel_rule_app/backend/backend.dart';
-import 'package:gel_rule_app/core/http/app_headers.dart';
-
-/// Remembers playback state per post across screens. LRU-capped: without a
-/// bound it grew one entry per video watched for the whole session.
-final Map<String, VideoPlaybackSnapshot> playbackMemory =
-    <String, VideoPlaybackSnapshot>{};
-
-const _playbackMemoryCap = 50;
-
-void rememberPlayback(String cacheKey, VideoPlaybackSnapshot snapshot) {
-  playbackMemory.remove(cacheKey);
-  playbackMemory[cacheKey] = snapshot;
-  while (playbackMemory.length > _playbackMemoryCap) {
-    playbackMemory.remove(playbackMemory.keys.first);
-  }
-}
-
-final isFullscreenViewerActiveProvider = StateProvider<bool>((ref) => false);
-
-final postMediaDimensionsProvider =
-    StateProvider.autoDispose.family<Size?, String>((ref, cacheKey) => null);
-
-Map<String, String> getMediaUrlHeaders({
-  String? providerId,
-  String? url,
-  Map<String, String>? extraHeaders,
-  bool isVideo = false,
-}) {
-  String? defaultReferer;
-  final pid = (providerId ?? '').toLowerCase();
-  final u = (url ?? '').toLowerCase();
-
-  if (pid.contains('gelbooru') || u.contains('gelbooru.com')) {
-    defaultReferer = 'https://gelbooru.com/';
-  } else if (pid.contains('tbib') || u.contains('tbib.org')) {
-    defaultReferer = 'https://tbib.org/';
-  } else if (pid.contains('safebooru') || u.contains('safebooru.org')) {
-    defaultReferer = 'https://safebooru.org/';
-  } else if (pid.contains('rule34_us') || u.contains('rule34.us')) {
-    defaultReferer = 'https://rule34.us/';
-  } else if (pid.contains('rule34') || u.contains('rule34.xxx')) {
-    defaultReferer = 'https://rule34.xxx/';
-  } else if (pid.contains('realbooru') || u.contains('realbooru.com')) {
-    defaultReferer = 'https://realbooru.com/';
-  } else if (pid.contains('wallhaven') || u.contains('wallhaven.cc')) {
-    defaultReferer = 'https://wallhaven.cc/';
-  } else if (pid.contains('arena') || u.contains('are.na')) {
-    defaultReferer = 'https://www.are.na/';
-  } else if (pid.contains('danbooru') || u.contains('donmai.us')) {
-    defaultReferer = 'https://danbooru.donmai.us/';
-  } else if (pid.contains('yande.re') || u.contains('yande.re')) {
-    defaultReferer = 'https://yande.re/';
-  } else if (pid.contains('konachan') || u.contains('konachan')) {
-    defaultReferer = 'https://konachan.net/';
-  } else if (pid.contains('e621') ||
-      pid.contains('e926') ||
-      u.contains('e621.net')) {
-    defaultReferer = 'https://e621.net/';
-  } else if (pid.contains('pixiv') || u.contains('pximg.net')) {
-    defaultReferer = 'https://www.pixiv.net/';
-  } else if (pid.contains('nhentai') || u.contains('nhentai.net')) {
-    defaultReferer = 'https://nhentai.net/';
-  } else if (pid.contains('mangadex') ||
-      u.contains('mangadex.org') ||
-      u.contains('mangadex.network')) {
-    defaultReferer = 'https://mangadex.org/';
-  } else if (pid.contains('mangalib') ||
-      u.contains('mangalib.me') ||
-      u.contains('imglib.info')) {
-    defaultReferer = 'https://mangalib.me/';
-  } else if (pid.contains('ranobelib') || u.contains('ranobelib.me')) {
-    defaultReferer = 'https://ranobelib.me/';
-  } else if (pid.contains('pawchive') || u.contains('pawchive.pw')) {
-    defaultReferer = 'https://pawchive.pw/';
-  } else if (pid.contains('hitomi') ||
-      u.contains('hitomi.la') ||
-      u.contains('gold-usergeneratedcontent.net')) {
-    defaultReferer = 'https://hitomi.la/';
-  } else if (pid.contains('ehentai') ||
-      u.contains('e-hentai.org') ||
-      u.contains('ehgt.org')) {
-    defaultReferer = 'https://e-hentai.org/';
-  } else if (pid.contains('mangaupdates') || u.contains('mangaupdates.com')) {
-    defaultReferer = 'https://www.mangaupdates.com/';
-  } else if (url != null && url.isNotEmpty) {
-    final uri = Uri.tryParse(url);
-    if (uri != null && uri.hasScheme && uri.host.isNotEmpty) {
-      defaultReferer = '${uri.scheme}://${uri.host}/';
-    }
-  }
-
-  final isDanbooruOrPawchive = pid.contains('danbooru') ||
-      u.contains('donmai.us') ||
-      pid.contains('pawchive') ||
-      u.contains('pawchive.pw');
-  final userAgent = isDanbooruOrPawchive
-      ? AppHeaders.defaultUserAgent
-      : AppHeaders.desktopChromeUserAgent;
-
-  return {
-    'User-Agent': userAgent,
-    'Accept': isVideo
-        ? 'video/webm,video/mp4,video/*;q=0.9,*/*;q=0.8'
-        : 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
-    if (defaultReferer != null) 'Referer': defaultReferer,
-    if (extraHeaders != null) ...extraHeaders,
-  };
-}
-
-Map<String, String> getPostMediaHeaders(Post post,
-    [Map<String, String>? extraHeaders]) {
-  final url = post.fileUrl.isNotEmpty
-      ? post.fileUrl
-      : (post.sampleUrl.isNotEmpty ? post.sampleUrl : post.previewUrl);
-  final isVideo = post.fileType.toLowerCase() == 'mp4' ||
-      post.fileType.toLowerCase() == 'webm' ||
-      post.fileUrl.endsWith('.mp4') ||
-      post.fileUrl.endsWith('.webm') ||
-      post.sampleUrl.endsWith('.mp4') ||
-      post.sampleUrl.endsWith('.webm');
-  return getMediaUrlHeaders(
-    providerId: post.providerId,
-    url: url,
-    extraHeaders: extraHeaders,
-    isVideo: isVideo,
-  );
-}
-
-Duration getPostVideoPlaybackPosition(String cacheKey) {
-  return playbackMemory[cacheKey]?.position ?? Duration.zero;
-}
-
-Future<void> openPostFullscreenGallery({
-  required BuildContext context,
-  required WidgetRef ref,
-  required Post post,
-  List<Post>? postsList,
-  MediaQualityMode qualityMode = MediaQualityMode.auto,
-  List<PostNote> notes = const [],
-  bool showNotes = false,
-  String? localFilePath,
-  Duration? initialVideoPosition,
-  bool useLiveFeed = false,
-  ValueChanged<int>? onPostChanged,
-  VoidCallback? onLoadMore,
-}) async {
-  final initPos =
-      initialVideoPosition ?? getPostVideoPlaybackPosition(post.cacheKey);
-  ref.read(isFullscreenViewerActiveProvider.notifier).state = true;
-  final posts =
-      (postsList != null && postsList.isNotEmpty) ? postsList : [post];
-  final postIndex = posts.indexWhere((p) => p.cacheKey == post.cacheKey);
-  final initialIndex = postIndex >= 0 ? postIndex : 0;
-
-  int? nextIndex;
-  try {
-    nextIndex = await Navigator.of(context, rootNavigator: true).push<int>(
-      PageRouteBuilder(
-        opaque: false,
-        barrierColor: Colors.black,
-        pageBuilder: (_, __, ___) => FullscreenImageViewerPage(
-          posts: posts,
-          initialIndex: initialIndex,
-          qualityMode: qualityMode,
-          notes: notes,
-          showNotes: showNotes,
-          headersBuilder: (p) => getPostMediaHeaders(p),
-          localFilePath: localFilePath,
-          initialVideoPosition: initPos,
-          useLiveFeed: useLiveFeed,
-          onPostChanged: onPostChanged,
-          onLoadMore: onLoadMore,
-        ),
-      ),
-    );
-  } finally {
-    ref.read(isFullscreenViewerActiveProvider.notifier).state = false;
-  }
-  if (nextIndex != null && nextIndex != initialIndex) {
-    onPostChanged?.call(nextIndex);
-  }
-}
+import 'fullscreen/fullscreen_media_helpers.dart';
+import 'multi_page_pill_overlay.dart';
+import 'post_fullscreen_launcher.dart';
+import 'post_media_headers.dart';
+import 'post_playback_memory.dart';
 
 class PostMediaViewer extends ConsumerStatefulWidget {
   const PostMediaViewer({
@@ -655,70 +482,10 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
           child: mediaView,
         ),
         if (hasMultiPages)
-          Positioned(
-            bottom: 14,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.70),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.white24, width: 0.8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.35),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: pageIndex > 0
-                        ? () => widget.onPageChanged?.call(pageIndex - 1)
-                        : null,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 2),
-                      child: Icon(
-                        Icons.chevron_left_rounded,
-                        size: 20,
-                        color: pageIndex > 0 ? Colors.white : Colors.white38,
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Text(
-                      '${pageIndex + 1} / $pageCount',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                  ),
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: pageIndex < pageCount - 1
-                        ? () => widget.onPageChanged?.call(pageIndex + 1)
-                        : null,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 2),
-                      child: Icon(
-                        Icons.chevron_right_rounded,
-                        size: 20,
-                        color: pageIndex < pageCount - 1
-                            ? Colors.white
-                            : Colors.white38,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          MultiPagePillOverlay(
+            pageIndex: pageIndex,
+            pageCount: pageCount,
+            onPageChanged: widget.onPageChanged,
           ),
       ],
     );
@@ -1055,13 +822,8 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
     return list;
   }
 
-  static bool _isDirectVideoUrl(String url) {
-    final lower = url.toLowerCase();
-    return lower.contains('.mp4') ||
-        lower.contains('.webm') ||
-        lower.contains('.mov') ||
-        lower.contains('.mkv');
-  }
+  static bool _isDirectVideoUrl(String url) =>
+      FullscreenMediaHelpers.isDirectVideoUrl(url);
 
   bool _isAudio(Post post) => MediaUrlSelector.isAudio(post);
 
