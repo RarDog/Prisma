@@ -22,10 +22,6 @@
   <a href="https://github.com/RarDog/Prisma/issues"><img src="https://img.shields.io/github/issues/RarDog/Prisma?style=flat-square&color=orange" alt="Issues" /></a>
 </p>
 
-<p align="center">
-  <img src="assets/preview.png" width="900" alt="Prisma Preview" />
-</p>
-
 ---
 
 ## Overview
