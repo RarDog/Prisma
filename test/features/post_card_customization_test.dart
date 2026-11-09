@@ -6,7 +6,6 @@ import 'package:gel_rule_app/core/utils/media_quality.dart';
 import 'package:gel_rule_app/features/settings/models/post_card_badge_config.dart';
 import 'package:gel_rule_app/features/settings/presentation/widgets/card_badges_customizer_sheet.dart';
 import 'package:gel_rule_app/shared/widgets/post_card.dart';
-import 'package:gel_rule_app/shared/widgets/post_card/post_card_badges.dart';
 import 'package:gel_rule_app/shared/widgets/rating_badge.dart';
 
 void main() {

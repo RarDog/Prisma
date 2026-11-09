@@ -7,7 +7,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:gel_rule_app/app/app.dart';
-import 'package:gel_rule_app/app/motion.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/core/performance/performance_monitor.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
@@ -15,10 +14,21 @@ import 'package:gel_rule_app/features/post/presentation/widgets/post_media_viewe
 import 'package:gel_rule_app/features/settings/models/post_card_badge_config.dart';
 import 'blur_content.dart';
 import 'loading_skeleton.dart';
-import 'rating_badge.dart';
 import 'post_card/feed_video_preview.dart';
-import 'post_card/post_card_badges.dart';
+import 'post_card/multi_page_stack_container.dart';
+import 'post_card/post_card_badges_overlay.dart';
+import 'post_card/post_card_context_menu.dart';
+import 'post_card/post_card_hover_actions.dart';
 import 'post_card/post_card_previews.dart';
+
+export 'post_card/add_to_collection_picker.dart';
+export 'post_card/feed_video_preview.dart';
+export 'post_card/multi_page_stack_container.dart';
+export 'post_card/post_card_badges.dart';
+export 'post_card/post_card_badges_overlay.dart';
+export 'post_card/post_card_context_menu.dart';
+export 'post_card/post_card_hover_actions.dart';
+export 'post_card/post_card_previews.dart';
 
 class PostCard extends ConsumerStatefulWidget {
   static void clearResolvedPostCache() {
@@ -193,106 +203,6 @@ class _PostCardState extends ConsumerState<PostCard>
       }
     }
 
-    final Map<String, List<Widget>> cornerWidgets = {
-      'topLeft': [],
-      'topRight': [],
-      'bottomLeft': [],
-      'bottomRight': [],
-    };
-
-    if (widget.showBadges) {
-      if (badgeConfig.showProvider) {
-        cornerWidgets[badgeConfig.providerPosition]?.add(
-          ProviderBadge(
-            name: post.providerName,
-            providerId: post.providerId,
-          ),
-        );
-      }
-      if (badgeConfig.showMediaType) {
-        final hasMedia = post.isMultiPage ||
-            post.isUgoira ||
-            post.fileType.toLowerCase().contains('video') ||
-            post.fileType.toLowerCase().contains('webm') ||
-            post.fileType.toLowerCase().contains('mp4') ||
-            post.fileType.toLowerCase().contains('gif') ||
-            isVideoPost ||
-            isAudioPost ||
-            isTextPost;
-        if (hasMedia ||
-            post.tagGroups['duration_text']?.isNotEmpty == true) {
-          final isRightSide = badgeConfig.mediaTypePosition == 'topRight' ||
-              badgeConfig.mediaTypePosition == 'bottomRight';
-          cornerWidgets[badgeConfig.mediaTypePosition]?.add(
-            Wrap(
-              alignment:
-                  isRightSide ? WrapAlignment.end : WrapAlignment.start,
-              runAlignment:
-                  isRightSide ? WrapAlignment.end : WrapAlignment.start,
-              spacing: 4,
-              runSpacing: 4,
-              children: [
-                if (post.isMultiPage)
-                  PageCountBadge(count: post.pageCount),
-                if (post.tagGroups['duration_text']?.isNotEmpty == true)
-                  DurationBadge(
-                      duration: post.tagGroups['duration_text']!.first),
-                if (post.isUgoira ||
-                    post.fileType.toLowerCase().contains('video') ||
-                    post.fileType.toLowerCase().contains('webm') ||
-                    post.fileType.toLowerCase().contains('mp4') ||
-                    post.fileType.toLowerCase().contains('gif') ||
-                    isVideoPost ||
-                    isAudioPost ||
-                    isTextPost)
-                  MediaBadge(
-                    fileType: post.isUgoira
-                        ? 'ugoira'
-                        : (isAudioPost
-                            ? 'audio'
-                            : (isTextPost
-                                ? 'text'
-                                : (isVideoPost ? 'video' : post.fileType))),
-                  ),
-              ],
-            ),
-          );
-        }
-      }
-      if (badgeConfig.showStatus &&
-          (widget.isViewed || widget.isDownloaded)) {
-        final isRightSide = badgeConfig.statusPosition == 'topRight' ||
-            badgeConfig.statusPosition == 'bottomRight';
-        cornerWidgets[badgeConfig.statusPosition]?.add(
-          Wrap(
-            alignment: isRightSide ? WrapAlignment.end : WrapAlignment.start,
-            runAlignment:
-                isRightSide ? WrapAlignment.end : WrapAlignment.start,
-            spacing: 4,
-            runSpacing: 4,
-            children: [
-              if (widget.isViewed) const SeenBadge(),
-              if (widget.isDownloaded) const DownloadedBadge(),
-            ],
-          ),
-        );
-      }
-      if (badgeConfig.showRating) {
-        cornerWidgets[badgeConfig.ratingPosition]?.add(
-          RatingBadge(rating: post.rating),
-        );
-      }
-    }
-
-    if (mobile && badgeConfig.showFavorite) {
-      cornerWidgets[badgeConfig.favoritePosition]?.add(
-        FavoriteButton(
-          isFavorite: widget.isFavorite,
-          onPressed: widget.onFavorite,
-        ),
-      );
-    }
-
     return MouseRegion(
       onEnter: (_) {
         setState(() => _hovered = true);
@@ -348,47 +258,21 @@ class _PostCardState extends ConsumerState<PostCard>
           }
           widget.onToggleSelected?.call();
         },
-        onSecondaryTapDown: (details) {
-          showMenu<void>(
-            context: context,
-            position: RelativeRect.fromLTRB(
-              details.globalPosition.dx,
-              details.globalPosition.dy,
-              details.globalPosition.dx,
-              details.globalPosition.dy,
-            ),
-            items: [
-              PopupMenuItem(
-                onTap: widget.onOpen,
-                child: const Text('Open'),
-              ),
-              PopupMenuItem(
-                onTap: widget.onFavorite,
-                child: const Text('Favorite'),
-              ),
-              if (widget.onAddToCollection != null)
-                PopupMenuItem(
-                  onTap: widget.onAddToCollection,
-                  child: const Text('Add to collection'),
-                ),
-              if (widget.onHide != null)
-                PopupMenuItem(
-                  onTap: widget.onHide,
-                  child: const Text('Hide post'),
-                ),
-            ],
-          );
-        },
+        onSecondaryTapDown: (details) => showPostCardContextMenu(
+          context: context,
+          globalPosition: details.globalPosition,
+          onOpen: widget.onOpen,
+          onFavorite: widget.onFavorite,
+          onAddToCollection: widget.onAddToCollection,
+          onHide: widget.onHide,
+        ),
         child: AnimatedScale(
           scale: _pressed ? 0.978 : (_hovered && !mobile ? 1.015 : 1.0),
           duration: const Duration(milliseconds: 140),
           curve: Curves.easeOutCubic,
-          child: _wrapWithMultiPageStack(
-            context,
-            theme,
-            isDark,
-            post,
-            Container(
+          child: MultiPageStackContainer(
+            post: post,
+            child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
@@ -550,74 +434,19 @@ class _PostCardState extends ConsumerState<PostCard>
                         ),
                       ),
                     ),
-                  if (cornerWidgets['topLeft']!.isNotEmpty)
-                    Positioned(
-                      left: 8,
-                      top: 8,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          for (int i = 0;
-                              i < cornerWidgets['topLeft']!.length;
-                              i++) ...[
-                            if (i > 0) const SizedBox(height: 4),
-                            cornerWidgets['topLeft']![i],
-                          ],
-                        ],
-                      ),
-                    ),
-                  if (cornerWidgets['topRight']!.isNotEmpty)
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          for (int i = 0;
-                              i < cornerWidgets['topRight']!.length;
-                              i++) ...[
-                            if (i > 0) const SizedBox(height: 4),
-                            cornerWidgets['topRight']![i],
-                          ],
-                        ],
-                      ),
-                    ),
-                  if (cornerWidgets['bottomLeft']!.isNotEmpty)
-                    Positioned(
-                      left: 8,
-                      bottom: 8,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          for (int i = 0;
-                              i < cornerWidgets['bottomLeft']!.length;
-                              i++) ...[
-                            if (i > 0) const SizedBox(height: 4),
-                            cornerWidgets['bottomLeft']![i],
-                          ],
-                        ],
-                      ),
-                    ),
-                  if (cornerWidgets['bottomRight']!.isNotEmpty)
-                    Positioned(
-                      right: 8,
-                      bottom: 8,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          for (int i = 0;
-                              i < cornerWidgets['bottomRight']!.length;
-                              i++) ...[
-                            if (i > 0) const SizedBox(height: 4),
-                            cornerWidgets['bottomRight']![i],
-                          ],
-                        ],
-                      ),
-                    ),
+                  PostCardBadgesOverlay(
+                    post: post,
+                    badgeConfig: badgeConfig,
+                    showBadges: widget.showBadges,
+                    isFavorite: widget.isFavorite,
+                    isViewed: widget.isViewed,
+                    isDownloaded: widget.isDownloaded,
+                    isMobile: mobile,
+                    onFavorite: widget.onFavorite,
+                    isVideoPost: isVideoPost,
+                    isAudioPost: isAudioPost,
+                    isTextPost: isTextPost,
+                  ),
                   if (widget.selected)
                     Positioned.fill(
                       child: DecoratedBox(
@@ -670,66 +499,13 @@ class _PostCardState extends ConsumerState<PostCard>
                         ),
                       ),
                     ),
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      ignoring: !_hovered || mobile,
-                      child: AnimatedOpacity(
-                        opacity: _hovered && !mobile ? 1 : 0,
-                        duration: AppMotion.duration(context, 140),
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.bottomCenter,
-                              end: Alignment.topCenter,
-                              colors: [
-                                Colors.black.withValues(alpha: 0.55),
-                                Colors.transparent,
-                              ],
-                            ),
-                          ),
-                          child: Align(
-                            alignment: Alignment.bottomRight,
-                            child: Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton.filledTonal(
-                                    tooltip: widget.isFavorite
-                                        ? 'Remove favorite'
-                                        : 'Favorite',
-                                    onPressed: () {
-                                      HapticFeedback.lightImpact();
-                                      widget.onFavorite();
-                                    },
-                                    icon: Icon(
-                                      widget.isFavorite
-                                          ? Icons.favorite_rounded
-                                          : Icons.favorite_border_rounded,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  IconButton.filledTonal(
-                                    tooltip: 'Add to collection',
-                                    onPressed: widget.onAddToCollection,
-                                    icon: const Icon(Icons.add_rounded),
-                                  ),
-                                  if (widget.onHide != null) ...[
-                                    const SizedBox(width: 6),
-                                    IconButton.filledTonal(
-                                      tooltip: 'Hide post',
-                                      onPressed: widget.onHide,
-                                      icon: const Icon(
-                                          Icons.visibility_off_rounded),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+                  PostCardHoverActionsOverlay(
+                    hovered: _hovered,
+                    isMobile: mobile,
+                    isFavorite: widget.isFavorite,
+                    onFavorite: widget.onFavorite,
+                    onAddToCollection: widget.onAddToCollection,
+                    onHide: widget.onHide,
                   ),
                 ],
               ),
@@ -741,86 +517,7 @@ class _PostCardState extends ConsumerState<PostCard>
   );
 }
 
-  Widget _wrapWithMultiPageStack(
-    BuildContext context,
-    ThemeData theme,
-    bool isDark,
-    Post post,
-    Widget cardChild,
-  ) {
-    if (!post.isMultiPage) return cardChild;
 
-    final sheetColor =
-        isDark ? const Color(0xFF1E2024) : const Color(0xFFF1F3F5);
-    final borderColor = isDark
-        ? Colors.white.withValues(alpha: 0.16)
-        : Colors.black.withValues(alpha: 0.12);
-    final count = post.pageCount;
-    final showThirdSheet = count >= 3;
-
-    return Padding(
-      padding: EdgeInsets.only(
-        top: showThirdSheet ? 5.0 : 3.5,
-        right: showThirdSheet ? 5.0 : 3.5,
-      ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          // Third sheet (bottom-most, visible if 3+ pages)
-          if (showThirdSheet)
-            Positioned.fill(
-              child: Transform.translate(
-                offset: const Offset(5.0, -5.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: sheetColor.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: borderColor.withValues(alpha: 0.7),
-                      width: 0.8,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black
-                            .withValues(alpha: isDark ? 0.25 : 0.06),
-                        blurRadius: 4,
-                        offset: const Offset(1, -1),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          // Second sheet (middle, visible if 2+ pages)
-          Positioned.fill(
-            child: Transform.translate(
-              offset: const Offset(2.5, -2.5),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: sheetColor,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: borderColor,
-                    width: 0.8,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color:
-                          Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
-                      blurRadius: 5,
-                      offset: const Offset(1, -1),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          // Foreground card
-          cardChild,
-        ],
-      ),
-    );
-  }
 
   bool _isSensitive(String rating) {
     final normalized = rating.toLowerCase();
@@ -920,39 +617,5 @@ class _PostCardState extends ConsumerState<PostCard>
     }
     return post.fileUrl.isEmpty || post.fileUrl == post.previewUrl;
   }
-}
-
-Future<void> showAddToCollectionPicker(
-  BuildContext context, {
-  required List<Collection> collections,
-  required void Function(Collection collection) onSelected,
-  required VoidCallback onCreate,
-}) {
-  return showModalBottomSheet<void>(
-    context: context,
-    showDragHandle: true,
-    builder: (context) => ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        ListTile(
-          leading: const Icon(Icons.add_rounded),
-          title: const Text('Create collection'),
-          onTap: () {
-            Navigator.pop(context);
-            onCreate();
-          },
-        ),
-        for (final collection in collections)
-          ListTile(
-            title: Text(collection.name),
-            subtitle: Text(collection.description ?? ''),
-            onTap: () {
-              Navigator.pop(context);
-              onSelected(collection);
-            },
-          ),
-      ],
-    ),
-  );
 }
 
