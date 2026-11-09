@@ -185,7 +185,7 @@ The single orchestration point. Know these behaviours before touching feeds:
 * **Branch order is load-bearing**: `AppShell.branchIndexForLocation`, `locationForBranchIndex`, `branchNavKeys` (9 `GlobalKey`s) and `AnimatedBranchContainer` all assume it. Adding a tab means touching router, `AppShell.destinations`, both index mappers, and `tab_visibility_editor`.
 * **Post navigation** passes `PostNavigationContext` (current post + list + `fromFeed`) via `extra`; an empty list means "unknown", same as no context.
 * **Shell** (`shared/widgets/app_shell.dart` + `shared/widgets/shell/`): adaptive — desktop rail (left/right, pinnable) vs mobile bottom bar (`liquid_glass_bottom_bar`). `AppSettings.hiddenTabs` hides destinations; `desktopNavPosition` / `desktopSidebarPinned` drive placement.
-* **Settings** (`features/settings/presentation/`): hub (`settings_screen.dart`) + `screens/{general, appearance, feed, filters, storage, accounts, about}` + `hidden_posts_screen.dart`, `cache_manager_screen.dart`. Each screen constrains content to `BoxConstraints(maxWidth: 860)`.
+* **Settings** (`features/settings/presentation/`): hub (`settings_screen.dart`) + `screens/{general, appearance, feed, filters, storage, accounts, about, hidden_posts, cache_manager}`. Each screen constrains content to `BoxConstraints(maxWidth: 860)`.
 * **Accounts vs Providers** — keep this division:
   * **Accounts & Sync** (`screens/accounts_settings_screen.dart`): credential-bound services — Pawchive multi-account author sync, e621/e926 username + API key, server blacklist and favorites sync.
   * **Providers** (`features/providers/`): generic booru/custom endpoints, priorities, timeouts, ping checks. e621/e926 are filtered out of this list because their controls live in Accounts.

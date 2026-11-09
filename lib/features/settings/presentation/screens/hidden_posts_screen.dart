@@ -7,7 +7,7 @@ import 'package:gel_rule_app/app/app_navigator.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/shared/widgets/adaptive_scaffold.dart';
-import 'settings_controller.dart';
+import '../settings_controller.dart';
 
 final hiddenPostRowsProvider = FutureProvider<List<HiddenPostRow>>((ref) async {
   final settings = ref.watch(appSettingsProvider).value ?? AppSettings.defaults;

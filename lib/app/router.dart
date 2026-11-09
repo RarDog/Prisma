@@ -17,8 +17,8 @@ import 'package:gel_rule_app/features/providers/presentation/provider_form_scree
 import 'package:gel_rule_app/features/providers/presentation/providers_screen.dart';
 import 'package:gel_rule_app/features/search/presentation/search_screen.dart';
 import 'package:gel_rule_app/features/manga/presentation/manga_screen.dart';
-import 'package:gel_rule_app/features/settings/presentation/cache_manager_screen.dart';
-import 'package:gel_rule_app/features/settings/presentation/hidden_posts_screen.dart';
+import 'package:gel_rule_app/features/settings/presentation/screens/cache_manager_screen.dart';
+import 'package:gel_rule_app/features/settings/presentation/screens/hidden_posts_screen.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_screen.dart';
 import 'package:gel_rule_app/features/viewed/presentation/viewed_screen.dart';
 import 'package:gel_rule_app/shared/widgets/animated_branch_container.dart';
