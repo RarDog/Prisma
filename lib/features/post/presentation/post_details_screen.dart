@@ -1,40 +1,32 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:file_selector/file_selector.dart';
-import 'package:path/path.dart' as p;
-import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'package:gel_rule_app/app/app.dart';
-import 'package:gel_rule_app/app/app_navigator.dart';
-import 'package:gel_rule_app/app/app_strings.dart';
 import 'package:gel_rule_app/app/responsive.dart';
 import 'package:gel_rule_app/backend/backend.dart';
-import 'package:gel_rule_app/core/utils/result.dart';
-import 'package:gel_rule_app/sources/mappers/pixiv_mapper.dart';
-import 'package:gel_rule_app/shared/widgets/adaptive_scaffold.dart';
-import 'package:gel_rule_app/shared/widgets/empty_view.dart';
-import 'package:gel_rule_app/shared/widgets/error_view.dart';
-import 'package:gel_rule_app/shared/widgets/post_card.dart';
-import 'package:gel_rule_app/features/collections/presentation/collection_form_dialog.dart';
 import 'package:gel_rule_app/features/favorites/presentation/favorites_controller.dart';
 import 'package:gel_rule_app/features/feed/presentation/feed_controller.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
 import 'package:gel_rule_app/features/viewed/presentation/viewed_controller.dart';
+import 'package:gel_rule_app/shared/widgets/adaptive_scaffold.dart';
+import 'package:gel_rule_app/shared/widgets/empty_view.dart';
+import 'package:gel_rule_app/shared/widgets/error_view.dart';
 import 'package:gel_rule_app/sources/booru/e621_provider.dart';
+import 'package:gel_rule_app/sources/mappers/pixiv_mapper.dart';
 import 'post_details_controller.dart';
 import 'post_details_providers.dart';
-import 'widgets/post_action_bar.dart';
+import 'widgets/post_details_action_handler.dart';
 import 'widgets/post_details_desktop_layout.dart';
 import 'widgets/post_details_mobile_layout.dart';
+import 'widgets/post_details_quick_actions_sheet.dart';
 import 'widgets/post_media_viewer.dart';
 
 export 'post_details_providers.dart';
 export 'widgets/post_artist_posts_card.dart';
+export 'widgets/post_details_action_handler.dart';
 export 'widgets/post_details_intents.dart';
+export 'widgets/post_details_quick_actions_sheet.dart';
 export 'widgets/post_media_carousel.dart';
 export 'widgets/post_translate_button.dart';
 
@@ -245,7 +237,7 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
             final e621Provider =
                 providerInstance is E621Provider ? providerInstance : null;
 
-            final labels = _postActionLabels(strings);
+            final labels = PostDetailsActionHandler.buildActionLabels(strings);
 
             if (Responsive.isMobile(context)) {
               return PostDetailsMobileLayout(
@@ -276,52 +268,65 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                 onPostIndexChanged: (newIndex) =>
                     _handlePagerPageChanged(newIndex, feedPosts),
                 onToggleFavorite: (ref, p, keys) =>
-                    _toggleFavorite(ref, p, keys),
+                    PostDetailsActionHandler.toggleFavorite(ref, p, keys),
                 onShowQuickActions: (ctx, ref, p, keys) =>
-                    _showMobileQuickActions(ctx, ref, p, keys),
+                    PostDetailsQuickActionsSheet.show(
+                  context: ctx,
+                  ref: ref,
+                  post: p,
+                  favoriteKeys: keys,
+                ),
                 onSaveVideoSnapshot: (ref, p, snapshot) =>
-                    _saveVideoSnapshot(ref, p, snapshot),
+                    PostDetailsActionHandler.saveVideoSnapshot(
+                        ref, p, snapshot),
                 onSaveVideoPreferences: (ref, snapshot) =>
-                    _saveVideoPreferences(ref, snapshot),
+                    PostDetailsActionHandler.saveVideoPreferences(
+                        ref, snapshot),
                 onPageSelected: (idx) =>
                     setState(() => _selectedPageIndex = idx),
                 onDownloadAllPages: () =>
-                    _downloadAllPages(context, ref, pages),
-                onAddToCollection: () => _addToCollection(context, ref, post),
-                onOpenSource: () => _openSourcePage(ref, targetPost),
-                onOpenSimilar: () => _openSimilar(context, ref, targetPost),
-                onHidePost: () => _hidePost(context, ref, targetPost),
+                    PostDetailsActionHandler.downloadAllPages(
+                        context, ref, pages),
+                onAddToCollection: () =>
+                    PostDetailsActionHandler.addToCollection(
+                        context, ref, post),
+                onOpenSource: () =>
+                    PostDetailsActionHandler.openSourcePage(ref, targetPost),
+                onOpenSimilar: () =>
+                    PostDetailsActionHandler.openSimilar(context, targetPost),
+                onHidePost: () => PostDetailsActionHandler.hidePost(
+                  context,
+                  ref,
+                  targetPost,
+                  onHidden: () => _close(context),
+                ),
                 onDownload: settings.allowDownloads
-                    ? () => _download(context, ref, post)
+                    ? () => PostDetailsActionHandler.download(
+                        context, ref, post)
                     : null,
                 onSaveAs: settings.allowDownloads
-                    ? () => _saveAs(context, ref, post)
+                    ? () => PostDetailsActionHandler.saveAs(
+                        context, ref, post)
                     : null,
                 onDeleteLocalFile: () =>
-                    _deleteLocalFile(context, ref, targetPost),
-                onShare: () => _sharePost(context, ref, targetPost),
+                    PostDetailsActionHandler.deleteLocalFile(
+                        context, ref, targetPost),
+                onShare: () => PostDetailsActionHandler.sharePost(
+                    context, ref, targetPost),
                 onOpenArtistPost: (artistPost, filtered) =>
-                    Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => PostDetailsScreen(
-                      providerId: artistPost.providerId,
-                      postId: artistPost.id,
-                      initialPost: artistPost,
-                      postsList: filtered,
-                    ),
-                  ),
-                ),
+                    PostDetailsActionHandler.openArtistPost(
+                        context, artistPost, filtered),
                 onOpenPostId: (targetId) =>
-                    _openPostById(context, post.providerId, targetId),
-                onOpenComic: (poolId, currentPost, [targetId]) => _openComic(
-                    context, e621Provider!, poolId, currentPost, targetId),
-                onPlayStream: (streamUrl) => launchUrl(
-                  Uri.parse(streamUrl),
-                  mode: LaunchMode.externalApplication,
-                ),
+                    PostDetailsActionHandler.openPostById(
+                        context, post.providerId, targetId),
+                onOpenComic: (poolId, currentPost, [targetId]) =>
+                    PostDetailsActionHandler.openComic(
+                        context, e621Provider!, poolId, currentPost, targetId),
+                onPlayStream: (streamUrl) =>
+                    PostDetailsActionHandler.playStream(streamUrl),
                 onDownloadStream: settings.allowDownloads
-                    ? (streamUrl) =>
-                        _downloadUrl(context, ref, post, streamUrl)
+                    ? (streamUrl) => PostDetailsActionHandler.downloadUrl(
+                        context, ref, post, streamUrl)
                     : null,
                 onLoadMore: widget.fromFeed
                     ? () => ref
@@ -356,47 +361,55 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
               isTextOnly: isTextOnly,
               fromFeed: widget.fromFeed,
               onOpenPost: (p) => _openPost(context, p),
-              onToggleFavorite: () => _toggleFavorite(ref, post, favoriteKeys),
-              onAddToCollection: () => _addToCollection(context, ref, post),
+              onToggleFavorite: () =>
+                  PostDetailsActionHandler.toggleFavorite(
+                      ref, post, favoriteKeys),
+              onAddToCollection: () =>
+                  PostDetailsActionHandler.addToCollection(
+                      context, ref, post),
               onClose: () => _close(context),
               onDownload: settings.allowDownloads
-                  ? () => _download(context, ref, post)
+                  ? () => PostDetailsActionHandler.download(
+                      context, ref, post)
                   : null,
               onSaveAs: settings.allowDownloads
-                  ? () => _saveAs(context, ref, post)
+                  ? () => PostDetailsActionHandler.saveAs(
+                      context, ref, post)
                   : null,
               onDeleteLocalFile: () =>
-                  _deleteLocalFile(context, ref, targetPost),
-              onShare: () => _sharePost(context, ref, targetPost),
-              onOpenSource: () => _openSourcePage(ref, targetPost),
-              onOpenSimilar: () => _openSimilar(context, ref, targetPost),
-              onHidePost: () => _hidePost(context, ref, targetPost),
+                  PostDetailsActionHandler.deleteLocalFile(
+                      context, ref, targetPost),
+              onShare: () => PostDetailsActionHandler.sharePost(
+                  context, ref, targetPost),
+              onOpenSource: () =>
+                  PostDetailsActionHandler.openSourcePage(ref, targetPost),
+              onOpenSimilar: () =>
+                  PostDetailsActionHandler.openSimilar(context, targetPost),
+              onHidePost: () => PostDetailsActionHandler.hidePost(
+                context,
+                ref,
+                targetPost,
+                onHidden: () => _close(context),
+              ),
               onPageSelected: (idx) =>
                   setState(() => _selectedPageIndex = idx),
               onDownloadAllPages: () =>
-                  _downloadAllPages(context, ref, pages),
+                  PostDetailsActionHandler.downloadAllPages(
+                      context, ref, pages),
               onOpenArtistPost: (artistPost, filtered) =>
-                  Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => PostDetailsScreen(
-                    providerId: artistPost.providerId,
-                    postId: artistPost.id,
-                    initialPost: artistPost,
-                    postsList: filtered,
-                  ),
-                ),
-              ),
+                  PostDetailsActionHandler.openArtistPost(
+                      context, artistPost, filtered),
               onOpenPostId: (targetId) =>
-                  _openPostById(context, post.providerId, targetId),
-              onOpenComic: (poolId, currentPost, [targetId]) => _openComic(
-                  context, e621Provider!, poolId, currentPost, targetId),
-              onPlayStream: (streamUrl) => launchUrl(
-                Uri.parse(streamUrl),
-                mode: LaunchMode.externalApplication,
-              ),
+                  PostDetailsActionHandler.openPostById(
+                      context, post.providerId, targetId),
+              onOpenComic: (poolId, currentPost, [targetId]) =>
+                  PostDetailsActionHandler.openComic(
+                      context, e621Provider!, poolId, currentPost, targetId),
+              onPlayStream: (streamUrl) =>
+                  PostDetailsActionHandler.playStream(streamUrl),
               onDownloadStream: settings.allowDownloads
-                  ? (streamUrl) =>
-                      _downloadUrl(context, ref, post, streamUrl)
+                  ? (streamUrl) => PostDetailsActionHandler.downloadUrl(
+                      context, ref, post, streamUrl)
                   : null,
               onToggleNotes: () => ref
                   .read(showPostNotesProvider(targetPost.cacheKey).notifier)
@@ -405,9 +418,11 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
                   .read(settingsControllerProvider.notifier)
                   .setVideoPlayerVolume(vol),
               onPlaybackSnapshot: (snapshot) =>
-                  _saveVideoSnapshot(ref, targetPost, snapshot),
+                  PostDetailsActionHandler.saveVideoSnapshot(
+                      ref, targetPost, snapshot),
               onPlaybackPreferencesChanged: (snapshot) =>
-                  _saveVideoPreferences(ref, snapshot),
+                  PostDetailsActionHandler.saveVideoPreferences(
+                      ref, snapshot),
               onLoadMore: widget.fromFeed
                   ? () => ref
                       .read(feedControllerProvider.notifier)
@@ -418,383 +433,6 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
         ),
       ),
     );
-  }
-
-  Future<void> _addToCollection(
-    BuildContext context,
-    WidgetRef ref,
-    Post post,
-  ) async {
-    final result = await ref.read(collectionServiceProvider).getCollections();
-    final collections =
-        result is Success<List<Collection>> ? result.data : <Collection>[];
-    if (!context.mounted) return;
-    await showAddToCollectionPicker(
-      context,
-      collections: collections,
-      onSelected: (collection) {
-        ref
-            .read(collectionServiceProvider)
-            .addPostToCollection(collection.id, post);
-      },
-      onCreate: () => showCollectionFormDialog(context, ref),
-    );
-  }
-
-  Future<void> _download(BuildContext context, WidgetRef ref, Post post) async {
-    if (!context.mounted) return;
-    await ref.read(downloadManagerServiceProvider).start(post);
-    if (!context.mounted) return;
-    final strings = ref.read(appStringsProvider);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(strings.ru ? 'Скачивание началось' : 'Download started'),
-      ),
-    );
-    Future<void>.delayed(const Duration(seconds: 2), () {
-      ref.invalidate(downloadedMediaByKeyProvider(post.cacheKey));
-    });
-  }
-
-  Future<void> _downloadAllPages(
-    BuildContext context,
-    WidgetRef ref,
-    List<Post> pages,
-  ) async {
-    final downloadManager = ref.read(downloadManagerServiceProvider);
-    for (final page in pages) {
-      await downloadManager.start(page);
-    }
-    if (!context.mounted) return;
-    final strings = ref.read(appStringsProvider);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          strings.ru
-              ? 'Начато скачивание всех страниц (${pages.length})'
-              : 'Started downloading all pages (${pages.length})',
-        ),
-      ),
-    );
-  }
-
-  Future<void> _saveAs(BuildContext context, WidgetRef ref, Post post) async {
-    if (!context.mounted) return;
-    final strings = ref.read(appStringsProvider);
-    final url = MediaUrlSelector.download(post) ?? post.fileUrl;
-    final parsed = Uri.tryParse(url);
-    final segment =
-        parsed?.pathSegments.isEmpty ?? true ? '' : parsed!.pathSegments.last;
-    final extension = segment.contains('.')
-        ? p.extension(segment).replaceAll('.', '')
-        : (post.fileType.isNotEmpty ? post.fileType.toLowerCase() : 'jpg');
-    final suggested = segment.isNotEmpty
-        ? segment
-        : '${post.providerId}_${post.id}.$extension';
-
-    final location = await getSaveLocation(
-      suggestedName: suggested,
-      acceptedTypeGroups: [
-        XTypeGroup(
-          label: extension.toUpperCase(),
-          extensions: [extension],
-        ),
-      ],
-    );
-    if (location == null || !context.mounted) return;
-
-    await ref.read(downloadManagerServiceProvider).start(
-          post,
-          customSavePath: location.path,
-        );
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          strings.ru
-              ? 'Сохранение в ${p.basename(location.path)} началось'
-              : 'Saving to ${p.basename(location.path)} started',
-        ),
-      ),
-    );
-    Future<void>.delayed(const Duration(seconds: 2), () {
-      ref.invalidate(downloadedMediaByKeyProvider(post.cacheKey));
-    });
-  }
-
-  Future<void> _downloadUrl(
-    BuildContext context,
-    WidgetRef ref,
-    Post post,
-    String targetUrl,
-  ) async {
-    final customPost = post.copyWith(fileUrl: targetUrl, sampleUrl: targetUrl);
-    await _download(context, ref, customPost);
-  }
-
-  Future<void> _sharePost(
-      BuildContext context, WidgetRef ref, Post post) async {
-    final strings = ref.read(appStringsProvider);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          strings.ru
-              ? 'Подготовка файла к отправке...'
-              : 'Preparing file for sharing...',
-        ),
-        duration: const Duration(seconds: 1),
-      ),
-    );
-    try {
-      final path =
-          await ref.read(downloadServiceProvider).prepareFileForShare(post);
-      await Share.shareXFiles([XFile(path)], text: post.source ?? post.fileUrl);
-    } catch (e) {
-      if (!context.mounted) return;
-      final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '${isRu ? "Ошибка отправки" : "Share error"}: $e',
-          ),
-        ),
-      );
-    }
-  }
-
-  Future<void> _showMobileQuickActions(
-    BuildContext context,
-    WidgetRef ref,
-    Post post,
-    Set<String> favoriteKeys,
-  ) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: Icon(
-                favoriteKeys.contains(post.cacheKey)
-                    ? Icons.favorite_rounded
-                    : Icons.favorite_border_rounded,
-              ),
-              title: Text(
-                favoriteKeys.contains(post.cacheKey)
-                    ? 'Remove favorite'
-                    : 'Favorite',
-              ),
-              onTap: () async {
-                Navigator.pop(sheetContext);
-                await _toggleFavorite(ref, post, favoriteKeys);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.collections_bookmark_rounded),
-              title: const Text('Add to collection'),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                _addToCollection(context, ref, post);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.copy_rounded),
-              title: const Text('Copy link'),
-              onTap: () {
-                Clipboard.setData(ClipboardData(text: post.fileUrl));
-                Navigator.pop(sheetContext);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.download_rounded),
-              title: const Text('Download'),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                _download(context, ref, post);
-              },
-            ),
-            Builder(
-              builder: (ctx) {
-                final pages =
-                    ref.read(postPagesProvider(PostPagesArgs(post))).value ??
-                        [post];
-                if (pages.length <= 1) return const SizedBox.shrink();
-                final isRu =
-                    Localizations.maybeLocaleOf(ctx)?.languageCode == 'ru';
-                return ListTile(
-                  leading: const Icon(Icons.download_for_offline_rounded),
-                  title: Text(
-                    isRu
-                        ? 'Скачать все страницы (${pages.length})'
-                        : 'Download all pages (${pages.length})',
-                  ),
-                  onTap: () {
-                    Navigator.pop(sheetContext);
-                    _downloadAllPages(context, ref, pages);
-                  },
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _toggleFavorite(
-    WidgetRef ref,
-    Post post,
-    Set<String> favoriteKeys,
-  ) async {
-    final isFav = favoriteKeys.contains(post.cacheKey);
-    if (isFav) {
-      await ref
-          .read(favoriteServiceProvider)
-          .removeFavorite(post.id, post.providerId);
-      final provider = await ref
-          .read(providerManagerProvider)
-          .getProviderInstance(post.providerId);
-      if (provider is E621Provider && provider.isAuthorized) {
-        unawaited(provider.removeFavorite(post.id));
-      }
-    } else {
-      await ref.read(favoriteServiceProvider).addFavorite(post);
-      await _maybeAutoDownloadFavorite(ref, post);
-      final provider = await ref
-          .read(providerManagerProvider)
-          .getProviderInstance(post.providerId);
-      if (provider is E621Provider && provider.isAuthorized) {
-        unawaited(provider.addFavorite(post.id));
-      }
-    }
-    ref.invalidate(favoriteKeysProvider);
-    ref.invalidate(favoritesControllerProvider);
-  }
-
-  Future<void> _openComic(
-    BuildContext context,
-    E621Provider provider,
-    String poolId,
-    Post currentPost, [
-    String? targetId,
-  ]) async {
-    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                  strokeWidth: 2, color: Colors.white),
-            ),
-            const SizedBox(width: 12),
-            Text(isRu ? 'Загрузка комикса...' : 'Loading comic...'),
-          ],
-        ),
-        duration: const Duration(seconds: 4),
-      ),
-    );
-
-    final poolPosts = await provider.getPoolPosts(poolId);
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-    if (poolPosts.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(isRu
-              ? 'Не удалось загрузить страницы комикса'
-              : 'Could not load comic pages'),
-        ),
-      );
-      return;
-    }
-
-    final idToFind = targetId ?? currentPost.id;
-    final targetIndex = poolPosts.indexWhere((p) => p.id == idToFind);
-    final startPost =
-        targetIndex >= 0 ? poolPosts[targetIndex] : poolPosts.first;
-
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (ctx) => PostDetailsScreen(
-          providerId: provider.id,
-          postId: startPost.id,
-          initialPost: startPost,
-          postsList: poolPosts,
-        ),
-      ),
-    );
-  }
-
-  void _openPostById(BuildContext context, String providerId, String targetId) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (ctx) => PostDetailsScreen(
-          providerId: providerId,
-          postId: targetId,
-          fromFeed: false,
-        ),
-      ),
-    );
-  }
-
-  Future<void> _maybeAutoDownloadFavorite(WidgetRef ref, Post post) async {
-    final settings =
-        ref.read(appSettingsProvider).value ?? AppSettings.defaults;
-    if (!settings.autoDownloadFavorites || !settings.allowDownloads) return;
-    await ref.read(downloadManagerServiceProvider).start(post);
-  }
-
-  Future<void> _deleteLocalFile(
-    BuildContext context,
-    WidgetRef ref,
-    Post post,
-  ) async {
-    final strings = ref.read(appStringsProvider);
-    await ref.read(downloadedMediaServiceProvider).deleteLocalFile(
-          post.cacheKey,
-        );
-    ref.invalidate(downloadedMediaByKeyProvider(post.cacheKey));
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(strings.deleteLocalFile)),
-    );
-  }
-
-  PostActionLabels _postActionLabels(AppStrings strings) {
-    return PostActionLabels(
-      favorite: strings.favorite,
-      unfavorite: strings.removeFavorite,
-      collection: strings.collection,
-      similar: strings.similar,
-      openOriginal: strings.open,
-      saveAs: strings.ru ? 'Сохранить как...' : 'Save as...',
-      copyLink: strings.ru ? 'Копировать ссылку' : 'Copy link',
-      download: strings.download,
-      deleteLocalFile: strings.deleteLocalFile,
-      hidePost: strings.hidePost,
-      share: strings.ru ? 'Поделиться' : 'Share',
-    );
-  }
-
-  Future<void> _hidePost(
-    BuildContext context,
-    WidgetRef ref,
-    Post post,
-  ) async {
-    await ref.read(settingsServiceProvider).hidePostKey(post.cacheKey);
-    ref.invalidate(appSettingsProvider);
-    unawaited(ref.read(feedControllerProvider.notifier).refresh());
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Post hidden locally')),
-    );
-    _close(context);
   }
 
   void _openPost(BuildContext context, Post post) {
@@ -890,65 +528,11 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
     );
   }
 
-  void _openSimilar(BuildContext context, WidgetRef ref, Post post) {
-    AppNavigator.openSimilarPosts(context, post: post);
-  }
-
-  Future<void> _openSourcePage(WidgetRef ref, Post post) async {
-    final source = post.source?.trim();
-    String? url = source != null && source.isNotEmpty ? source : null;
-    if (url == null) {
-      final result =
-          await ref.read(providerManagerProvider).getPostPageUrl(post);
-      if (result is Success<String?>) url = result.data;
-    }
-    if (url == null || url.isEmpty) return;
-    await launchUrl(Uri.parse(url));
-  }
-
   void _close(BuildContext context) {
     if (Navigator.of(context).canPop()) {
       context.pop();
       return;
     }
     context.go('/');
-  }
-
-  Future<void> _saveVideoPreferences(
-    WidgetRef ref,
-    VideoPlaybackSnapshot snapshot,
-  ) async {
-    final result = await ref.read(settingsServiceProvider).getSettings();
-    if (result is! Success<AppSettings>) return;
-    final settings = result.data;
-    if (settings.videoPlayerMuted == snapshot.muted &&
-        settings.videoPlayerHalfVolume == snapshot.halfVolume &&
-        settings.videoPlayerLoop == snapshot.loopVideo &&
-        settings.videoPlayerCover == snapshot.coverVideo &&
-        (settings.videoPlayerVolume - snapshot.volume).abs() < 0.01) {
-      return;
-    }
-    await ref.read(settingsServiceProvider).updateSettings(
-          settings.copyWith(
-            videoPlayerMuted: snapshot.muted,
-            videoPlayerHalfVolume: snapshot.halfVolume,
-            videoPlayerLoop: snapshot.loopVideo,
-            videoPlayerCover: snapshot.coverVideo,
-            videoPlayerVolume: snapshot.volume,
-          ),
-        );
-    ref.invalidate(appSettingsProvider);
-  }
-
-  Future<void> _saveVideoSnapshot(
-    WidgetRef ref,
-    Post post,
-    VideoPlaybackSnapshot snapshot,
-  ) async {
-    await ref.read(settingsServiceProvider).saveVideoPlaybackPosition(
-          post.cacheKey,
-          snapshot.position.inMilliseconds,
-        );
-    ref.invalidate(appSettingsProvider);
   }
 }
