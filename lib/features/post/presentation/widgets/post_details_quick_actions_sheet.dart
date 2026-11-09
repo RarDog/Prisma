@@ -114,7 +114,7 @@ class PostDetailsQuickActionsSheet extends ConsumerWidget {
           Builder(
             builder: (ctx) {
               final pages =
-                  ref.read(postPagesProvider(PostPagesArgs(post))).value ??
+                  ref.watch(postPagesProvider(PostPagesArgs(post))).value ??
                       [post];
               if (pages.length <= 1) return const SizedBox.shrink();
               final isRu =

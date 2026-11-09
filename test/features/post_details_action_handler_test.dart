@@ -146,5 +146,77 @@ void main() {
       expect(find.text('Remove favorite'), findsOneWidget);
       expect(find.text('Favorite'), findsNothing);
     });
+
+    testWidgets('renders Download all pages when multiple pages exist',
+        (tester) async {
+      bool downloadAllCalled = false;
+      final multiPost = testPost.copyWith(
+        id: '456',
+        tagGroups: {
+          'page_count': ['3'],
+        },
+      );
+      final page2 = testPost.copyWith(id: '456_p1');
+      final page3 = testPost.copyWith(id: '456_p2');
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            postPagesProvider(PostPagesArgs(multiPost)).overrideWith(
+              (ref) async => [multiPost, page2, page3],
+            ),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: PostDetailsQuickActionsSheet(
+                post: multiPost,
+                favoriteKeys: const {},
+                onDownloadAllPages: (_) => downloadAllCalled = true,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Pump to resolve future provider
+      await tester.pumpAndSettle();
+
+      expect(find.text('Download all pages (3)'), findsOneWidget);
+      await tester.tap(find.text('Download all pages (3)'));
+      await tester.pump();
+      expect(downloadAllCalled, isTrue);
+    });
+
+    testWidgets('PostDetailsQuickActionsSheet.show displays bottom sheet modal',
+        (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: Consumer(
+                builder: (context, ref, _) => ElevatedButton(
+                  onPressed: () => PostDetailsQuickActionsSheet.show(
+                    context: context,
+                    ref: ref,
+                    post: testPost,
+                    favoriteKeys: const {},
+                  ),
+                  child: const Text('Open Sheet'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Sheet'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Favorite'), findsOneWidget);
+      expect(find.text('Add to collection'), findsOneWidget);
+      expect(find.text('Copy link'), findsOneWidget);
+      expect(find.text('Download'), findsOneWidget);
+    });
   });
 }
+

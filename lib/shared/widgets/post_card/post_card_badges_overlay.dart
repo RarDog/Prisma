@@ -135,8 +135,9 @@ class PostCardBadgesOverlay extends StatelessWidget {
       );
     }
 
-    return Stack(
-      children: [
+    return Positioned.fill(
+      child: Stack(
+        children: [
         if (cornerWidgets['topLeft']!.isNotEmpty)
           Positioned(
             left: 8,
@@ -198,6 +199,7 @@ class PostCardBadgesOverlay extends StatelessWidget {
             ),
           ),
       ],
+      ),
     );
   }
 }

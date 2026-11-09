@@ -256,8 +256,11 @@ class PostDetailsActionHandler {
     ref.invalidate(appSettingsProvider);
     unawaited(ref.read(feedControllerProvider.notifier).refresh());
     if (!context.mounted) return;
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Post hidden locally')),
+      SnackBar(
+        content: Text(isRu ? 'Пост скрыт локально' : 'Post hidden locally'),
+      ),
     );
     onHidden?.call();
   }
@@ -307,7 +310,12 @@ class PostDetailsActionHandler {
       ),
     );
 
-    final poolPosts = await provider.getPoolPosts(poolId);
+    List<Post> poolPosts = const [];
+    try {
+      poolPosts = await provider.getPoolPosts(poolId);
+    } catch (_) {
+      poolPosts = const [];
+    }
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
