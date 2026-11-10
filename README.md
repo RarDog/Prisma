@@ -7,7 +7,7 @@
 <h1 align="center">Prisma</h1>
 
 <p align="center">
-  <strong>Next-generation, high-performance multimedia client for Booru imageboards, creator archives, manga catalogs, and light novel libraries.</strong>
+  <strong>Cross-platform client for booru imageboards, manga, and creator archives.</strong>
 </p>
 
 <p align="center">
@@ -20,58 +20,23 @@
   <img src="https://img.shields.io/badge/Platform-Android%20%7C%20Linux%20%7C%20Windows%20%7C%20macOS-00C853?style=flat-square" alt="Platforms" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License" /></a>
   <a href="https://github.com/RarDog/Prisma/issues"><img src="https://img.shields.io/github/issues/RarDog/Prisma?style=flat-square&color=orange" alt="Issues" /></a>
+  <a href="https://github.com/RarDog/Prisma/discussions"><img src="https://img.shields.io/github/discussions/RarDog/Prisma?style=flat-square&color=blueviolet" alt="Discussions" /></a>
 </p>
 
 ---
 
-## Overview
+## Features
 
-**Prisma** is a modern, privacy-focused, resource-optimized multimedia application engineered with Flutter. It unifies dozens of popular booru imageboards, artwork archives, manga platforms, and light novel repositories into a fluid Material 3 interface across mobile and desktop environments.
-
-Built from the ground up for low latency, smooth 60/120 FPS navigation, and predictable memory footprint, Prisma handles multi-gigabyte media collections without interface stutter or out-of-memory crashes.
-
----
-
-## ⚡ Key Highlights
-
-* **Proactive Feed Prefetching**: Intelligent viewport preloading buffers subsequent media pages seamlessly ahead of scroll velocity.
-* **Hardware-Accelerated Video Engine**: Integrated `media_kit` (libmpv) player tuned for minimal Time-to-First-Frame (TTFF) and low-latency WebM/MP4 playback.
-* **Extensive Ecosystem**: Native support for over 15 imageboards, manga scanlations, light novel libraries, and creator networks.
-* **Deterministic Sliding-Window Memory**: Aggressive $\pm 1$ page eviction isolates memory consumption to active viewports.
-* **Live Network Diagnostics**: Monotonic hardware stopwatch RTT measurements, streaming health telemetry, and automatic offline fail-safe.
-* **Adaptive Glass UI & Layouts**: Customizable navigation rail (Left / Right / Bottom), AMOLED black, and Liquid Glass Material 3 themes.
+* **15+ sources in one app**: Imageboards, creator platforms (Pixiv, Pawchive), manga & novel catalogs (MangaDex, MangaLib, RanobeLib), and wallpapers (Wallhaven).
+* **Media player & high-resolution viewer**: Hardware-accelerated video (WebM / MP4 via MPV), Pixiv Ugoira playback, GIFs, multi-touch zoom, and Danbooru-style translation notes.
+* **Manga & novel reader**: Continuous Webtoon scroll, traditional Right-to-Left (RTL) / Left-to-Right (LTR) page layouts, custom margins, and customizable typography for light novels.
+* **Search & filters**: Tag autocomplete, query operators (`-tag`, `and`), rating filters (Safe / NSFW), and custom blacklist rules.
+* **Offline & collections**: Download manager, local user collections (Boards), viewing history, and synchronized favorites.
+* **Adaptive Material 3 UI**: Responsive navigation (bottom bar on mobile, pinnable sidebar/rail on desktop), AMOLED black theme, and desktop keyboard shortcuts.
 
 ---
 
-## 🚀 Core Capabilities
-
-### 📱 Media & Feed Browsing
-* **Adaptive Viewport Modes**: Continuous Pinterest-style masonry grid, 1:1 square cards, and dense compact lists.
-* **Dynamic Resolution Profiles**: Configure image fidelity per environment — *Auto*, *Data Saver / Preview*, *Sample / Balanced*, or uncompressed *Original*.
-* **Deep Zoom & High-Fidelity Viewer**: Multi-touch interactive zoom, pan gesture physics, asset variants switcher, and Danbooru-style translation notes overlay.
-* **Post Sets & Manga Navigation**: Multi-page artwork indicator on feed cards and dedicated bottom page-stepper strip for sequential works.
-
-### 📚 Manga & Light Novel Hub
-* **Integrated Global Catalogs**: Instant streaming and reading from **MangaDex**, **MangaLib**, and **RanobeLib**.
-* **Specialized Reading Pipelines**:
-  * **Webtoon Mode**: Frictionless continuous vertical strip with hardware-accelerated image decoding.
-  * **Manga Reader**: Traditional Right-to-Left (RTL) and Left-to-Right (LTR) page layouts with custom margin tuning.
-  * **Light Novel Typography**: Dedicated formatting engine with adjustable typeface, font size, line spacing, and eye-friendly color themes.
-* **Reading Progress Synchronization**: Automated bookmarking, unread tracking, and library organization (*Reading*, *Plan to Read*, *Completed*, *On Hold*, *Dropped*).
-
-### 🔍 Search & Intelligent Filtering
-* **Sub-Millisecond Tag Autocomplete**: Instant token suggestions queried across millions of booru tags.
-* **Advanced Query Syntax**: Multi-tag search, boolean exclusion (`-tag`), explicit `and` conjunctions, and source switching without resetting query parameters.
-* **Three-Tier Content Control**: Flexible blacklist, whitelist, NSFW auto-blur, and quick toggle between Safe and Unrestricted modes.
-* **Creator Hub**: Direct author profiles, portfolio browsing, and creator archive indexing.
-
-### 🛡️ Resource Optimization & Diagnostics
-* **Smart Memory GC & Watchdog**: Proactively intercepts OS low-memory warnings, releasing decoded raster surfaces before memory thresholds trigger process termination.
-* **Sliding-Window Eviction**: Ensures carousel memory bounds never exceed active neighbors ($\pm 1$), evicting distant decoders.
-
----
-
-## 🌐 Supported Sources & Feature Matrix
+## Supported Sources
 
 | Source | Category | Integration Type | Video | Tags & Autocomplete | Comments | Period Filters |
 | :--- | :--- | :--- | :---: | :---: | :---: | :---: |
@@ -84,51 +49,47 @@ Built from the ground up for low latency, smooth 60/120 FPS navigation, and pred
 | **Pixiv** | Art & Sets | Session Auth / REST | ❌ | ✅ | ✅ | ✅ |
 | **Wallhaven** | 4K/8K Wallpapers | REST API | ❌ | ✅ | ❌ | ✅ |
 | **Rule34 (.xxx)** | Booru | Gelbooru API | ✅ | ✅ | ❌ | ✅ |
-| **Rule34.us** | Booru | Resilient HTML Scraper | ✅ | ✅ | ❌ | ✅ |
-| **Rule34 Paheal** | Booru | Shimmie HTML Scraper | ✅ | ✅ | ❌ | ❌ |
+| **Rule34.us** | Booru | HTML Scraper | ✅ | ✅ | ❌ | ✅ |
+| **Rule34 Paheal** | Booru | HTML Scraper | ✅ | ✅ | ❌ | ❌ |
 | **Realbooru** | Booru | HTML Scraper | ✅ | ✅ | ❌ | ❌ |
 | **Safebooru** | Booru (SFW) | Gelbooru API | ❌ | ✅ | ❌ | ✅ |
 | **XVideos** | Video Tube | HTML Scraper | ✅ | ✅ | ❌ | ✅ |
-| ~~**Fapello**~~ | ~~Creator Media~~ | ~~Scraper Engine~~ | ~~✅~~ | ~~❌~~ | ~~❌~~ | ~~❌~~ |
-| ~~**Are.na**~~ | ~~Channels & Blocks~~ | ~~REST API~~ | ~~❌~~ | ~~❌~~ | ~~❌~~ | ~~❌~~ |
-| **Pawchive** | Creator Archives | Direct Sync | ✅ | ✅ | ❌ | ❌ |
+| **Pawchive** | Creator Archives | Direct Sync / REST | ✅ | ✅ | ❌ | ❌ |
 | **MangaDex** | Manga | REST API | — | ✅ | ❌ | Multi-Lang |
-| **MangaLib** | Manga | REST / Web API | — | ✅ | ❌ | Volumes |
-| **RanobeLib** | Light Novels | REST / Web API | — | ✅ | ❌ | Chapters |
+| **MangaLib** | Manga | Web API | — | ✅ | ❌ | Volumes |
+| **RanobeLib** | Light Novels | Web API | — | ✅ | ❌ | Chapters |
 
 ---
 
-## 📦 Download & Platform Availability
+## Download
 
-All pre-compiled packages are hosted on the official **[Releases](https://github.com/RarDog/Prisma/releases)** page.
+Pre-compiled binaries are available on the **[Releases](https://github.com/RarDog/Prisma/releases)** page.
 
-### 🧪 Beta Channel (`v4.2.2-beta.3`)
-Pre-release beta builds designated for **Android** and **Linux** environments.
+### Beta Channel (`v4.2.2-beta.3`)
 
-#### 📱 Android (Beta)
+#### Android (Beta)
 | Package | Architecture | Target Devices |
 | :--- | :--- | :--- |
 | **[Prisma-4.2.2-beta.3-arm64-v8a.apk](https://github.com/RarDog/Prisma/releases/download/v4.2.2-beta.3/Prisma-4.2.2-beta.3-arm64-v8a.apk)** | 64-bit ARM (`arm64-v8a`) | Modern smartphones and tablets (Android 7.0+, Recommended) |
-| **[Prisma-4.2.2-beta.3-armeabi-v7a.apk](https://github.com/RarDog/Prisma/releases/download/v4.2.2-beta.3/Prisma-4.2.2-beta.3-armeabi-v7a.apk)** | 32-bit ARM (`armeabi-v7a`) | Legacy or entry-level 32-bit devices |
+| **[Prisma-4.2.2-beta.3-armeabi-v7a.apk](https://github.com/RarDog/Prisma/releases/download/v4.2.2-beta.3/Prisma-4.2.2-beta.3-armeabi-v7a.apk)** | 32-bit ARM (`armeabi-v7a`) | Legacy or budget 32-bit devices |
 | **[Prisma-4.2.2-beta.3-x86_64.apk](https://github.com/RarDog/Prisma/releases/download/v4.2.2-beta.3/Prisma-4.2.2-beta.3-x86_64.apk)** | 64-bit x86 (`x86_64`) | Android emulators, ChromeOS, and x86 devices |
 
-#### 🐧 Linux (Beta)
+#### Linux (Beta)
 | Package | Format | Notes |
 | :--- | :--- | :--- |
 | **[Prisma-v4.2.2-beta.3-linux-x86_64.AppImage](https://github.com/RarDog/Prisma/releases/download/v4.2.2-beta.3/Prisma-v4.2.2-beta.3-linux-x86_64.AppImage)** | AppImage | Standalone portable executable (requires `libmpv`) |
 | **[Prisma-v4.2.2-beta.3-linux-x64.tar.gz](https://github.com/RarDog/Prisma/releases/download/v4.2.2-beta.3/Prisma-v4.2.2-beta.3-linux-x64.tar.gz)** | Tarball Archive | Portable application bundle |
 
-### 🏆 Stable Channel (`v4.2.1`)
-Production-ready milestone releases recommended for everyday stability across all platforms.
+### Stable Channel (`v4.2.1`)
 
-#### 📱 Android
+#### Android
 | Package | Architecture | Target Devices |
 | :--- | :--- | :--- |
 | **[Prisma-4.2.1-arm64-v8a.apk](https://github.com/RarDog/Prisma/releases/download/v4.2.1/Prisma-4.2.1-arm64-v8a.apk)** | 64-bit ARM (`arm64-v8a`) | Modern smartphones and tablets (Android 7.0+, Recommended) |
-| **[Prisma-4.2.1-armeabi-v7a.apk](https://github.com/RarDog/Prisma/releases/download/v4.2.1/Prisma-4.2.1-armeabi-v7a.apk)** | 32-bit ARM (`armeabi-v7a`) | Legacy or entry-level 32-bit devices |
+| **[Prisma-4.2.1-armeabi-v7a.apk](https://github.com/RarDog/Prisma/releases/download/v4.2.1/Prisma-4.2.1-armeabi-v7a.apk)** | 32-bit ARM (`armeabi-v7a`) | Legacy or budget 32-bit devices |
 | **[Prisma-4.2.1-x86_64.apk](https://github.com/RarDog/Prisma/releases/download/v4.2.1/Prisma-4.2.1-x86_64.apk)** | 64-bit x86 (`x86_64`) | Android emulators, ChromeOS, and x86 devices |
 
-#### 💻 Desktop (Linux, Windows, macOS)
+#### Desktop (Linux, Windows, macOS)
 | Platform | Package | Architecture / Format |
 | :--- | :--- | :--- |
 | **Linux** | **[Prisma-v4.2.1-linux-x86_64.AppImage](https://github.com/RarDog/Prisma/releases/download/v4.2.1/Prisma-v4.2.1-linux-x86_64.AppImage)** | Standalone AppImage (requires `libmpv`) |
@@ -138,46 +99,23 @@ Production-ready milestone releases recommended for everyday stability across al
 
 ---
 
-## 🏗️ Architecture & Technology Stack
-
-Prisma follows a modular, reactive architecture based on Clean Architecture principles:
-
-```
-┌────────────────────────────────────────────────────────┐
-│               Presentation Layer (UI)                  │
-│   Material 3 • Responsive Breakpoints • Liquid Glass   │
-└───────────────────────────▲────────────────────────────┘
-                            │ Riverpod State Management
-┌───────────────────────────┴────────────────────────────┐
-│                    Domain & Logic                      │
-│   Feed Controllers • Search State • Prefetch Engine    │
-└───────────────────────────▲────────────────────────────┘
-                            │ Repository Contracts
-┌───────────────────────────┴────────────────────────────┐
-│               Data, Storage & Core Engine              │
-│  Isar DB (NoSQL) • media_kit (libmpv) • Dio HTTP Pool │
-└───────────────────────────▲────────────────────────────┘
-                            │ Network Connectors
-┌────────────────────────────────────────────────────────┐
-│     Remote Sources (REST • DAPI • Scrapers • Auth)     │
-└────────────────────────────────────────────────────────┘
-```
+## Tech Stack
 
 * **Framework**: [Flutter](https://flutter.dev) (Dart 3.3+)
 * **State Management**: [Riverpod 2.6](https://riverpod.dev)
-* **Embedded Database**: [Isar Database](https://isar.dev) (High-performance NoSQL)
-* **Media Decoding**: [media_kit](https://github.com/media-kit/media-kit) (libmpv C-bindings)
-* **Networking**: [Dio](https://pub.dev/packages/dio) with HTTP keep-alive connection pooling
+* **Local Database**: [Isar](https://isar.dev)
+* **Video Engine**: [media_kit](https://github.com/media-kit/media-kit) (libmpv)
+* **Networking**: [Dio](https://pub.dev/packages/dio)
 
 ---
 
-## 🛠️ Building from Source
+## Building from Source
 
 ### Prerequisites
 * [Flutter SDK](https://flutter.dev/docs/get-started/install) (`>= 3.24.0`)
 * [Dart SDK](https://dart.dev/get-dart)
-* JDK 17 & Android Command Line Tools (for Android compilation)
-* Linux host dependencies:
+* JDK 17 & Android Command Line Tools (for Android)
+* Linux dependencies:
   ```bash
   sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libmpv-dev liblzma-dev
   ```
@@ -188,41 +126,21 @@ Prisma follows a modular, reactive architecture based on Clean Architecture prin
 git clone https://github.com/RarDog/Prisma.git
 cd Prisma
 
-# 2. Fetch dependencies
+# 2. Get packages
 flutter pub get
 
-# 3. Launch in debug mode
+# 3. Run in debug mode
 flutter run
 
-# 4. Compile Android Split APKs
+# 4. Build Android split APKs
 flutter build apk --release --split-per-abi
 
-# 5. Compile Linux Desktop Release
+# 5. Build Linux release
 flutter build linux --release
 ```
 
-### Verification
-```bash
-# Static analysis (must report zero issues)
-dart analyze
-
-# Deterministic test suite — live upstream API suites are skipped
-flutter test
-
-# Provider integrations against real APIs (opt-in, needs network)
-flutter test --tags network --run-skipped
-```
-
 ---
 
-## 🤝 Contributing & Issue Reporting
+## License
 
-Contributions, ideas, and feedback are always welcome!
-* Encountered a bug or performance bottleneck? Please submit an issue via the **[GitHub Issue Tracker](https://github.com/RarDog/Prisma/issues)**.
-* Have an idea for a new content source or feature? Open a feature request with sample endpoints or markup.
-
----
-
-## 📄 License
-
-Prisma is open-source software licensed under the [MIT License](LICENSE).
+Prisma is licensed under the [MIT License](LICENSE).
