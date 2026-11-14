@@ -131,13 +131,18 @@ class PostDetailsMobileLayout extends ConsumerWidget {
     final posts = feedPosts;
     final hasMultiplePosts = posts != null && posts.length > 1;
     final basePostId = post.id.split('_p').first;
-    final currentIndex = (posts != null && hasMultiplePosts)
+    var currentIndex = (posts != null && hasMultiplePosts)
         ? posts.indexWhere(
             (item) =>
                 item.providerId == post.providerId &&
                 (item.id == post.id || item.id == basePostId),
           )
         : 0;
+    if (currentIndex < 0 && posts != null && hasMultiplePosts) {
+      currentIndex = posts.indexWhere(
+        (item) => item.id == post.id || item.id == basePostId,
+      );
+    }
 
     final screenWidth = MediaQuery.sizeOf(context).width;
     final screenHeight = MediaQuery.sizeOf(context).height;

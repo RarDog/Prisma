@@ -119,11 +119,16 @@ class PostDetailsDesktopLayout extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final basePostId = post.id.split('_p').first;
-    final currentIndex = feedPosts.indexWhere(
+    var currentIndex = feedPosts.indexWhere(
       (item) =>
           item.providerId == post.providerId &&
           (item.id == post.id || item.id == basePostId),
     );
+    if (currentIndex < 0) {
+      currentIndex = feedPosts.indexWhere(
+        (item) => item.id == post.id || item.id == basePostId,
+      );
+    }
 
     return Shortcuts(
       shortcuts: {

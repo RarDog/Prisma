@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gel_rule_app/core/http/dio_client.dart';
 import 'package:gel_rule_app/core/models/post.dart';
@@ -271,6 +272,44 @@ void main() {
       expect(provider.postPageUrl(dummyPost), equals('https://rule34.us/index.php?r=posts/view&id=13628978'));
       final headers = provider.mediaHeaders(dummyPost);
       expect(headers['Referer'], equals('https://rule34.us/'));
+    });
+
+    test('Rule34UsProvider.getPost preserves providerId and providerName', () async {
+      final dio = Dio();
+      const sampleDetailsHtml = '''
+      <html>
+        <body>
+          <li class="character-tag"><a href="https://rule34.us/index.php?r=posts/index&amp;q=meg_griffin">meg griffin</a></li>
+          <a href="https://img2.rule34.us/images/51/12/51120739.jpg">Original</a>
+          <img id="image" src="https://img2.rule34.us/images/51/12/51120739.jpg" />
+        </body>
+      </html>
+      ''';
+      dio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) => handler.resolve(
+            Response(
+              requestOptions: options,
+              data: sampleDetailsHtml,
+              statusCode: 200,
+            ),
+          ),
+        ),
+      );
+
+      final client = DioClient(dio: dio);
+      final provider = Rule34UsProvider(
+        id: 'rule34_us',
+        name: 'Rule34.us',
+        baseUrl: 'https://rule34.us',
+        dioClient: client,
+      );
+
+      final post = await provider.getPost('51120739');
+      expect(post, isNotNull);
+      expect(post!.id, equals('51120739'));
+      expect(post.providerId, equals('rule34_us'));
+      expect(post.providerName, equals('Rule34.us'));
     });
   });
 }

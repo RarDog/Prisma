@@ -1,5 +1,36 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.2.2',
+    title:
+        'Релиз 4.2.2: возвращение Fapello через Cronet, 60/120 FPS оптимизации, свайп и переключатель тулбаров, пагинация авторов и исправления',
+    titleEn:
+        'Release 4.2.2: Fapello revival via Cronet, 60/120 FPS performance overhaul, swipeable toolbars, author pagination & fixes',
+    bullets: [
+      'Возвращение Fapello на Android: интеграция сетевого адаптера Google Cronet (NativeAdapter) позволила обойти проверку Cloudflare TLS JA3/JA4 fingerprinting на уровне системного сетевого стека Chromium.',
+      'Человекочитаемые имена и статистика моделей: аккуратное форматирование технических слагов в Title Case, парсинг обложек моделей, счётчиков публикаций (Media), лайков и аватаров в профиле.',
+      'Обсуждения и теги авторов: поддержка тредов со страницы модели (/discussion/) и извлечение альтернативных имён и ключевых слов в теги поста.',
+      'Плавность 60/120 FPS в Настройках и Ленте: устранение тяжёлых BackdropFilter-эффектов, 64 мс дебаунс состояний нажатия, изоляция RepaintBoundary и оптимизация отслеживания скролла через ValueNotifier.',
+      'Сворачивание тулбаров свайпом и стрелкой: интуитивный жест свайпа вверх для скрытия панелей поиска/фильтров, интерактивный переключатель в AppBar со стрелкой и настройка автоскрытия при скролле.',
+      'Кастомизация бейджей карточек: визуальный редактор в настройках ленты с живым предпросмотром расположения бейджей (разрешение, провайдер, тип медиа, закладки).',
+      'Каталог Артистов и 3D-выбор страниц: плавный свайп номеров страниц в капсуле Liquid Glass, 3D-барабан колеса для быстрого перехода, прямой переход на удалённые страницы и сортировка авторов (по популярности, постам, дате).',
+      'Исправление перехода к первому посту ленты (Realbooru и HTML-провайдеры): устранено затенение идентификатора провайдера в getPost, из-за которого открытие детального просмотра некорректно перенаправляло на первый элемент ленты.',
+      'Исправление ложного видео-режима: фото-посты со ссылками на Mega или Google Drive в описании больше не перехватываются видео-плеером и открываются в галерее.',
+      'Отказоустойчивость ленты: автоматическая дедупликация постов между источниками, накопление целевого размера страницы и мягкий перезапуск без ложного перехода в офлайн.',
+    ],
+    bulletsEn: [
+      'Fapello Revival on Android: integrated Google Cronet engine via NativeAdapter to bypass Cloudflare TLS JA3/JA4 fingerprint challenge on Android using the native Chromium network stack.',
+      'Human-Readable Model Names & Profile Stats: automatic beautification of technical slugs into clean Title Case, top-grid banner parsing, media counts, likes, and avatars enriching artist cards.',
+      'Discussion Threads & Description Tags: model community discussion threads (/discussion/) support and extraction of model aliases/keywords directly into post tags.',
+      '60/120 FPS Performance Polish: eliminated heavy BackdropFilter passes from settings cards, debounced tap interactions by 64 ms, RepaintBoundary isolation, and ValueNotifier scroll state optimization.',
+      'Swipe-to-Collapse Toolbars & Interactive Header: intuitive upward swipe gesture on toolbars, animated 180° arrow toggle on AppBar titles, and configurable auto-hide on scroll.',
+      'Card Badge Layout Customizer: interactive visual settings editor allowing full customization of card badge positions with live previews.',
+      'Artists Catalog & 3D Wheel Picker: smooth horizontal swipe gesture for page numbers, clean 3D wheel cylinder, direct single-request jumping to distant pages, and multi-mode author sorting.',
+      'Feed Post Redirect Fix (Realbooru & HTML providers): resolved providerId parameter shadowing in getPost that previously caused opening post details to jump to the topmost post.',
+      'Cloud Link Media Fix: photo posts with Mega or Google Drive cloud links in descriptions are no longer mistaken for video streams and render properly in the image viewer.',
+      'Feed Engine Resilience: cross-provider content deduplication, adaptive accumulation of target page sizes, and stable soft retry without false-offline flips.',
+    ],
+  ),
+  PrismaChange(
     version: '4.2.2-beta.3',
     title:
         'Бета 4.2.2-beta.3: возвращение Fapello через Cronet на Android, улучшенные карточки и статистика моделей, баннеры и комментарии',

@@ -187,6 +187,8 @@ void main() {
       final post = await provider.getPost('999');
       expect(post, isNotNull);
       expect(post!.id, equals('999'));
+      expect(post.providerId, equals('realbooru'));
+      expect(post.providerName, equals('Realbooru'));
       expect(post.fileType, equals('video'));
       expect(post.score, equals(42));
       expect(post.fileUrl,

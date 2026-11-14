@@ -121,7 +121,7 @@ class Rule34UsProvider
       );
 
       final html = response.data ?? '';
-      final providerId = id;
+      final providerId = this.id;
       final providerName = name;
       final base = baseUrl;
       return await Isolate.run(() => parseDetailsHtml(

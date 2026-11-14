@@ -65,37 +65,22 @@
 
 Pre-compiled binaries are available on the **[Releases](https://github.com/RarDog/Prisma/releases)** page.
 
-### Beta Channel (`v4.2.2-beta.3`)
-
-#### Android (Beta)
-| Package | Architecture | Target Devices |
-| :--- | :--- | :--- |
-| **[Prisma-4.2.2-beta.3-arm64-v8a.apk](https://github.com/RarDog/Prisma/releases/download/v4.2.2-beta.3/Prisma-4.2.2-beta.3-arm64-v8a.apk)** | 64-bit ARM (`arm64-v8a`) | Modern smartphones and tablets (Android 7.0+, Recommended) |
-| **[Prisma-4.2.2-beta.3-armeabi-v7a.apk](https://github.com/RarDog/Prisma/releases/download/v4.2.2-beta.3/Prisma-4.2.2-beta.3-armeabi-v7a.apk)** | 32-bit ARM (`armeabi-v7a`) | Legacy or budget 32-bit devices |
-| **[Prisma-4.2.2-beta.3-x86_64.apk](https://github.com/RarDog/Prisma/releases/download/v4.2.2-beta.3/Prisma-4.2.2-beta.3-x86_64.apk)** | 64-bit x86 (`x86_64`) | Android emulators, ChromeOS, and x86 devices |
-
-#### Linux (Beta)
-| Package | Format | Notes |
-| :--- | :--- | :--- |
-| **[Prisma-v4.2.2-beta.3-linux-x86_64.AppImage](https://github.com/RarDog/Prisma/releases/download/v4.2.2-beta.3/Prisma-v4.2.2-beta.3-linux-x86_64.AppImage)** | AppImage | Standalone portable executable (requires `libmpv`) |
-| **[Prisma-v4.2.2-beta.3-linux-x64.tar.gz](https://github.com/RarDog/Prisma/releases/download/v4.2.2-beta.3/Prisma-v4.2.2-beta.3-linux-x64.tar.gz)** | Tarball Archive | Portable application bundle |
-
-### Stable Channel (`v4.2.1`)
+### Stable Channel (`v4.2.2`)
 
 #### Android
 | Package | Architecture | Target Devices |
 | :--- | :--- | :--- |
-| **[Prisma-4.2.1-arm64-v8a.apk](https://github.com/RarDog/Prisma/releases/download/v4.2.1/Prisma-4.2.1-arm64-v8a.apk)** | 64-bit ARM (`arm64-v8a`) | Modern smartphones and tablets (Android 7.0+, Recommended) |
-| **[Prisma-4.2.1-armeabi-v7a.apk](https://github.com/RarDog/Prisma/releases/download/v4.2.1/Prisma-4.2.1-armeabi-v7a.apk)** | 32-bit ARM (`armeabi-v7a`) | Legacy or budget 32-bit devices |
-| **[Prisma-4.2.1-x86_64.apk](https://github.com/RarDog/Prisma/releases/download/v4.2.1/Prisma-4.2.1-x86_64.apk)** | 64-bit x86 (`x86_64`) | Android emulators, ChromeOS, and x86 devices |
+| **[Prisma-4.2.2-arm64-v8a.apk](https://github.com/RarDog/Prisma/releases/download/v4.2.2/Prisma-4.2.2-arm64-v8a.apk)** | 64-bit ARM (`arm64-v8a`) | Modern smartphones and tablets (Android 7.0+, Recommended) |
+| **[Prisma-4.2.2-armeabi-v7a.apk](https://github.com/RarDog/Prisma/releases/download/v4.2.2/Prisma-4.2.2-armeabi-v7a.apk)** | 32-bit ARM (`armeabi-v7a`) | Legacy or budget 32-bit devices |
+| **[Prisma-4.2.2-x86_64.apk](https://github.com/RarDog/Prisma/releases/download/v4.2.2/Prisma-4.2.2-x86_64.apk)** | 64-bit x86 (`x86_64`) | Android emulators, ChromeOS, and x86 devices |
 
 #### Desktop (Linux, Windows, macOS)
 | Platform | Package | Architecture / Format |
 | :--- | :--- | :--- |
-| **Linux** | **[Prisma-v4.2.1-linux-x86_64.AppImage](https://github.com/RarDog/Prisma/releases/download/v4.2.1/Prisma-v4.2.1-linux-x86_64.AppImage)** | Standalone AppImage (requires `libmpv`) |
-| **Linux** | **[Prisma-v4.2.1-linux-x64.tar.gz](https://github.com/RarDog/Prisma/releases/download/v4.2.1/Prisma-v4.2.1-linux-x64.tar.gz)** | Portable Tarball Archive |
-| **Windows** | **[Prisma-v4.2.1-windows-x64.zip](https://github.com/RarDog/Prisma/releases/download/v4.2.1/Prisma-v4.2.1-windows-x64.zip)** | Portable 64-bit ZIP Archive |
-| **macOS** | **[Prisma-v4.2.1-macos.zip](https://github.com/RarDog/Prisma/releases/download/v4.2.1/Prisma-v4.2.1-macos.zip)** | Standalone macOS App Bundle (`Prisma.app`) |
+| **Linux** | **[Prisma-v4.2.2-linux-x86_64.AppImage](https://github.com/RarDog/Prisma/releases/download/v4.2.2/Prisma-v4.2.2-linux-x86_64.AppImage)** | Standalone AppImage (requires `libmpv`) |
+| **Linux** | **[Prisma-v4.2.2-linux-x64.tar.gz](https://github.com/RarDog/Prisma/releases/download/v4.2.2/Prisma-v4.2.2-linux-x64.tar.gz)** | Portable Tarball Archive |
+| **Windows** | **[Prisma-v4.2.2-windows-x64.zip](https://github.com/RarDog/Prisma/releases/download/v4.2.2/Prisma-v4.2.2-windows-x64.zip)** | Portable 64-bit ZIP Archive |
+| **macOS** | **[Prisma-v4.2.2-macos.zip](https://github.com/RarDog/Prisma/releases/download/v4.2.2/Prisma-v4.2.2-macos.zip)** | Standalone macOS App Bundle (`Prisma.app`) |
 
 ---
 

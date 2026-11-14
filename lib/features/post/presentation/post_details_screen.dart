@@ -183,11 +183,16 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
               ref.invalidate(viewedControllerProvider);
             });
             final basePostId = post.id.split('_p').first;
-            final currentIndex = feedPosts.indexWhere(
+            var currentIndex = feedPosts.indexWhere(
               (item) =>
                   item.providerId == post.providerId &&
                   (item.id == post.id || item.id == basePostId),
             );
+            if (currentIndex < 0) {
+              currentIndex = feedPosts.indexWhere(
+                (item) => item.id == post.id || item.id == basePostId,
+              );
+            }
             final previous =
                 currentIndex > 0 ? feedPosts[currentIndex - 1] : null;
             final next =

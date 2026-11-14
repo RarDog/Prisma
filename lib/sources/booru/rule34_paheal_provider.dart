@@ -75,7 +75,7 @@ class Rule34PahealProvider implements ContentProvider, PostPageProvider {
       options: Options(responseType: ResponseType.plain),
     );
     final html = response.data ?? '';
-    final providerId = id;
+    final providerId = this.id;
     final providerName = name;
     final base = baseUrl;
     return await Isolate.run(() => parseSingleHtml(

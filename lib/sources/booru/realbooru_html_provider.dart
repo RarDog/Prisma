@@ -89,7 +89,7 @@ class RealbooruHtmlProvider
     );
     final html = response.data ?? '';
     // Snapshot sendable locals — the parse closure must not capture `this`.
-    final providerId = id;
+    final providerId = this.id;
     final providerName = name;
     final base = baseUrl;
     // Detail pages are ~100-200 KB of HTML per dozen regexes: parse off the
