@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -376,6 +377,8 @@ class VideoSurface extends StatefulWidget {
     this.onToggleOrientation,
     this.topOffset = 0.0,
     this.inGallery = false,
+    this.posterUrl,
+    this.posterHeaders,
   });
 
   final Player player;
@@ -404,6 +407,8 @@ class VideoSurface extends StatefulWidget {
   final VoidCallback? onToggleOrientation;
   final double topOffset;
   final bool inGallery;
+  final String? posterUrl;
+  final Map<String, String>? posterHeaders;
 
   @override
   State<VideoSurface> createState() => VideoSurfaceState();
@@ -545,12 +550,26 @@ class VideoSurfaceState extends State<VideoSurface> {
           children: [
             ColoredBox(
               color: Colors.black,
-              child: Video(
-                controller: widget.controller,
-                fit: widget.coverVideo ? BoxFit.cover : BoxFit.contain,
-                controls: null,
-                pauseUponEnteringBackgroundMode: false,
-                resumeUponEnteringForegroundMode: false,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (widget.posterUrl != null &&
+                      widget.posterUrl!.trim().isNotEmpty)
+                    CachedNetworkImage(
+                      imageUrl: widget.posterUrl!,
+                      httpHeaders: widget.posterHeaders,
+                      fit: widget.coverVideo ? BoxFit.cover : BoxFit.contain,
+                      placeholder: (_, __) => const SizedBox.shrink(),
+                      errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                    ),
+                  Video(
+                    controller: widget.controller,
+                    fit: widget.coverVideo ? BoxFit.cover : BoxFit.contain,
+                    controls: null,
+                    pauseUponEnteringBackgroundMode: false,
+                    resumeUponEnteringForegroundMode: false,
+                  ),
+                ],
               ),
             ),
             if (_currentBrightness < 0.99)

@@ -5,6 +5,7 @@ import 'package:gel_rule_app/core/http/dio_client.dart';
 import 'package:gel_rule_app/core/models/post.dart';
 import 'package:gel_rule_app/core/models/provider_health.dart';
 import 'package:gel_rule_app/core/models/top_period_filter.dart';
+import 'package:gel_rule_app/features/artists/models/artist_sort_order.dart';
 import 'package:gel_rule_app/features/artists/models/artist_work_query.dart';
 import 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
 import 'package:gel_rule_app/sources/booru/fapello_provider.dart';
@@ -468,6 +469,62 @@ void main() {
       expect((await provider.searchArtists('thiessita', page: 1)).length, 2);
       expect(await provider.searchArtists('thiessita', page: 2), isEmpty);
       expect(paths, ['/search/thiessita/']);
+    });
+
+    test('listArtists routes each ArtistSortOrder to the correct Fapello endpoint',
+        () async {
+      final requested = <String>[];
+      dio.httpClientAdapter = _FakeAdapter((options) async {
+        requested.add(options.path);
+        return _html(_topLikesPage1);
+      });
+      final provider = _providerWith(dio);
+
+      await provider.listArtists(sort: ArtistSortOrder.popularityDesc, page: 1);
+      await provider.listArtists(sort: ArtistSortOrder.popularityDesc, page: 2);
+      await provider.listArtists(sort: ArtistSortOrder.topFollowers, page: 1);
+      await provider.listArtists(sort: ArtistSortOrder.topFollowers, page: 2);
+      await provider.listArtists(sort: ArtistSortOrder.trending, page: 1);
+      await provider.listArtists(sort: ArtistSortOrder.trending, page: 2);
+      await provider.listArtists(sort: ArtistSortOrder.dailyRanking, page: 1);
+      await provider.listArtists(sort: ArtistSortOrder.dailyRanking, page: 2);
+
+      expect(requested, [
+        '/top-likes/',
+        '/top-likes/page-2/',
+        '/top-followers/',
+        '/top-followers/page-2/',
+        '/trending/',
+        '/trending/page-2/',
+        '/daily-search-ranking/',
+        '/daily-search-ranking/page-2/',
+      ]);
+    });
+
+    test('ArtistSortOrder provides Fapello-specific sorting labels and options', () {
+      final supported = ArtistSortOrder.supportedFor('fapello');
+      expect(supported, [
+        ArtistSortOrder.popularityDesc,
+        ArtistSortOrder.topFollowers,
+        ArtistSortOrder.trending,
+        ArtistSortOrder.dailyRanking,
+      ]);
+      expect(ArtistSortOrder.popularityDesc.label(true, providerId: 'fapello'),
+          'Топ по лайкам');
+      expect(ArtistSortOrder.popularityDesc.label(false, providerId: 'fapello'),
+          'Top Likes');
+      expect(ArtistSortOrder.topFollowers.label(true, providerId: 'fapello'),
+          'Топ по подписчикам');
+      expect(ArtistSortOrder.topFollowers.label(false, providerId: 'fapello'),
+          'Top Followers');
+      expect(ArtistSortOrder.trending.label(true, providerId: 'fapello'),
+          'В тренде');
+      expect(ArtistSortOrder.trending.label(false, providerId: 'fapello'),
+          'Trending');
+      expect(ArtistSortOrder.dailyRanking.label(true, providerId: 'fapello'),
+          'Топ за день');
+      expect(ArtistSortOrder.dailyRanking.label(false, providerId: 'fapello'),
+          'Daily Top');
     });
   });
 

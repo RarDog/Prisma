@@ -121,7 +121,9 @@ class _FeedVideoPreviewState extends State<FeedVideoPreview> {
             player,
             configuration: VideoControllerConfiguration(
               enableHardwareAcceleration: !isDesktop,
-              hwdec: isDesktop ? 'no' : 'auto-safe',
+              hwdec: isDesktop
+                  ? 'no'
+                  : (Platform.isAndroid ? 'mediacodec-copy' : 'auto-safe'),
             ),
           );
           _errorSubscription = player.stream.error.listen((_) {

@@ -352,7 +352,7 @@ class FapelloProvider
     }
 
     final html = trimmed.isEmpty
-        ? await _getHtml(_modelListPath(page))
+        ? await _getHtml(_modelListPath(page, sort))
         : await _getHtml('/search/${Uri.encodeQueryComponent(trimmed)}/');
     final cards = await _parseModelCards(html);
     // Paging terminates on the first empty page. The `/top-likes/` listing
@@ -451,8 +451,16 @@ class FapelloProvider
 
   // ---------------------------------------------------------------- listing
 
-  String _modelListPath(int page) =>
-      page <= 1 ? '/top-likes/' : '/top-likes/page-$page/';
+  String _modelListPath(int page,
+      [ArtistSortOrder sort = ArtistSortOrder.popularityDesc]) {
+    final prefix = switch (sort) {
+      ArtistSortOrder.topFollowers => '/top-followers/',
+      ArtistSortOrder.trending => '/trending/',
+      ArtistSortOrder.dailyRanking => '/daily-search-ranking/',
+      _ => '/top-likes/',
+    };
+    return page <= 1 ? prefix : '$prefix' 'page-$page/';
+  }
 
   Future<List<ArtistProfile>> _parseModelCards(String html) {
     final providerId = id;

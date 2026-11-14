@@ -105,7 +105,8 @@ class _FullscreenVideoItemState extends State<FullscreenVideoItem> {
       p,
       configuration: VideoControllerConfiguration(
         enableHardwareAcceleration: enableHw,
-        hwdec: enableHw ? (Platform.isAndroid ? 'auto-safe' : 'auto') : 'no',
+        hwdec:
+            enableHw ? (Platform.isAndroid ? 'mediacodec-copy' : 'auto') : 'no',
       ),
     );
     _player = p;
@@ -322,6 +323,10 @@ class _FullscreenVideoItemState extends State<FullscreenVideoItem> {
       isSoftwareDecoding: _isSoftwareDecoding,
       topOffset: topOffset,
       inGallery: true,
+      posterUrl: widget.post.sampleUrl.isNotEmpty
+          ? widget.post.sampleUrl
+          : widget.post.previewUrl,
+      posterHeaders: widget.headers,
       onToggleDecoder: () {
         setState(() => _isSoftwareDecoding = !_isSoftwareDecoding);
         _player?.dispose();

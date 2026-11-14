@@ -201,13 +201,14 @@ class ArtistsHeader extends StatelessWidget {
                     tooltip: isRu ? 'Сортировка' : 'Sort order',
                     initialValue: selectedSort,
                     onSelected: onSortChanged,
-                    itemBuilder: (context) => ArtistSortOrder.values.map((s) {
+                    itemBuilder: (context) =>
+                        ArtistSortOrder.supportedFor(selectedProviderId).map((s) {
                       return PopupMenuItem<ArtistSortOrder>(
                         value: s,
                         child: Row(
                           children: [
                             Icon(
-                              s.icon,
+                              s.iconFor(selectedProviderId),
                               size: 16,
                               color: s == selectedSort
                                   ? theme.colorScheme.primary
@@ -215,7 +216,7 @@ class ArtistsHeader extends StatelessWidget {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              s.label(isRu),
+                              s.label(isRu, providerId: selectedProviderId),
                               style: TextStyle(
                                 fontWeight: s == selectedSort
                                     ? FontWeight.bold
@@ -231,6 +232,7 @@ class ArtistsHeader extends StatelessWidget {
                     }).toList(growable: false),
                     child: _QuickSortChip(
                       selectedSort: selectedSort,
+                      selectedProviderId: selectedProviderId,
                       isRu: isRu,
                       isDark: isDark,
                       accentColor: theme.colorScheme.primary,
@@ -314,12 +316,14 @@ class ArtistsHeader extends StatelessWidget {
 class _QuickSortChip extends StatelessWidget {
   const _QuickSortChip({
     required this.selectedSort,
+    this.selectedProviderId,
     required this.isRu,
     required this.isDark,
     required this.accentColor,
   });
 
   final ArtistSortOrder selectedSort;
+  final String? selectedProviderId;
   final bool isRu;
   final bool isDark;
   final Color accentColor;
@@ -348,7 +352,7 @@ class _QuickSortChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            selectedSort.icon,
+            selectedSort.iconFor(selectedProviderId),
             size: 13,
             color: hasCustomSort
                 ? accentColor
@@ -356,7 +360,7 @@ class _QuickSortChip extends StatelessWidget {
           ),
           const SizedBox(width: 5),
           Text(
-            selectedSort.label(isRu),
+            selectedSort.label(isRu, providerId: selectedProviderId),
             style: TextStyle(
               fontSize: 11.5,
               fontWeight: hasCustomSort ? FontWeight.bold : FontWeight.w500,

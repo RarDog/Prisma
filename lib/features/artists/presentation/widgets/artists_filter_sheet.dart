@@ -185,11 +185,11 @@ class _ArtistsFilterSheetState extends State<ArtistsFilterSheet> {
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: ArtistSortOrder.values.map((s) {
+                      children: ArtistSortOrder.supportedFor(_providerId).map((s) {
                         final selected = _sort == s;
                         return _ChoiceChipItem(
-                          label: s.label(isRu),
-                          icon: s.icon,
+                          label: s.label(isRu, providerId: _providerId),
+                          icon: s.iconFor(_providerId),
                           selected: selected,
                           onTap: () => setState(() => _sort = s),
                         );
@@ -251,7 +251,16 @@ class _ArtistsFilterSheetState extends State<ArtistsFilterSheet> {
                           return _ChoiceChipItem(
                             label: p.name,
                             selected: selected,
-                            onTap: () => setState(() => _providerId = p.id),
+                            onTap: () {
+                              setState(() {
+                                _providerId = p.id;
+                                final supported =
+                                    ArtistSortOrder.supportedFor(_providerId);
+                                if (!supported.contains(_sort)) {
+                                  _sort = ArtistSortOrder.popularityDesc;
+                                }
+                              });
+                            },
                           );
                         }).toList(growable: false),
                       ),

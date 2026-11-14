@@ -294,6 +294,7 @@ class Rule34UsProvider
         isGif: isGif,
         tags: tags,
       );
+      final derivedPoster = isVideo ? _derivePosterUrl(previewUrl) : previewUrl;
 
       final postPage = linkHref.startsWith('http')
           ? linkHref
@@ -305,7 +306,7 @@ class Rule34UsProvider
           providerId: providerId,
           providerName: providerName,
           previewUrl: previewUrl,
-          sampleUrl: isVideo ? previewUrl : derivedMedia,
+          sampleUrl: isVideo ? derivedPoster : derivedMedia,
           fileUrl: derivedMedia,
           tags: tags,
           rating: 'explicit',
@@ -360,8 +361,8 @@ class Rule34UsProvider
 
     // Prefer MP4 first for hardware accelerated playback
     videoSources.sort((a, b) {
-      final aMp4 = a.toLowerCase().endsWith('.mp4');
-      final bMp4 = b.toLowerCase().endsWith('.mp4');
+      final aMp4 = a.toLowerCase().contains('.mp4');
+      final bMp4 = b.toLowerCase().contains('.mp4');
       if (aMp4 != bMp4) return aMp4 ? -1 : 1;
       return 0;
     });
@@ -371,10 +372,10 @@ class Rule34UsProvider
       caseSensitive: false,
     ).firstMatch(html)?.group(0);
 
-    final videoPoster = _absolute(
-      _attribute(videoTag ?? '', 'poster'),
-      baseUrl,
-    );
+    final rawVideoPoster = _attribute(videoTag ?? '', 'poster');
+    final videoPoster = rawVideoPoster.isNotEmpty
+        ? _absolute(rawVideoPoster, baseUrl)
+        : '';
 
     // 3. Image tag
     final imgTag = RegExp(
@@ -391,21 +392,28 @@ class Rule34UsProvider
         0;
 
     final isVideo = videoSources.isNotEmpty ||
-        (originalUrl.isNotEmpty && _fileType(originalUrl) == 'video');
+        (originalUrl.isNotEmpty &&
+            _fileType(originalUrl) == 'video' &&
+            !originalUrl.endsWith('/'));
 
     final fileUrl = videoSources.isNotEmpty
         ? videoSources.first
-        : originalUrl.isNotEmpty
+        : (originalUrl.isNotEmpty && !originalUrl.endsWith('/'))
             ? originalUrl
             : imgSrc;
 
-    final previewUrl = videoPoster.isNotEmpty
+    final poster = videoPoster.isNotEmpty
         ? videoPoster
-        : imgSrc.isNotEmpty
-            ? imgSrc
-            : fileUrl;
+        : (isVideo
+            ? _derivePosterUrl(imgSrc.isNotEmpty ? imgSrc : fileUrl)
+            : imgSrc);
 
-    final sampleUrl = isVideo ? previewUrl : fileUrl;
+    final previewUrl = poster.isNotEmpty
+        ? poster
+        : (imgSrc.isNotEmpty ? imgSrc : fileUrl);
+
+    final sampleUrl =
+        isVideo ? (poster.isNotEmpty ? poster : previewUrl) : fileUrl;
 
     // 4. Categorized tags from sidebar
     final tagGroups = <String, List<String>>{
@@ -482,6 +490,19 @@ class Rule34UsProvider
         .where((t) => t.isNotEmpty)
         .toSet()
         .toList(growable: false);
+  }
+
+  static String _derivePosterUrl(String thumbUrl) {
+    final match = RegExp(
+      r'thumbnails/([a-f0-9]+)/([a-f0-9]+)/thumbnail_([a-f0-9]+)\.',
+      caseSensitive: false,
+    ).firstMatch(thumbUrl);
+
+    if (match == null) return thumbUrl;
+    final d1 = match.group(1)!;
+    final d2 = match.group(2)!;
+    final hash = match.group(3)!;
+    return 'https://video.rule34.us/images/$d1/$d2/$hash.jpg';
   }
 
   static String _deriveMediaUrl(

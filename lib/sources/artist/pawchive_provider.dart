@@ -757,6 +757,9 @@ class PawchiveProvider
               .compareTo(b.displayName.toLowerCase());
 
         case ArtistSortOrder.popularityDesc:
+        case ArtistSortOrder.topFollowers:
+        case ArtistSortOrder.trending:
+        case ArtistSortOrder.dailyRanking:
           final favA = a.postCount ?? 0;
           final favB = b.postCount ?? 0;
           if (favA != favB) return favB.compareTo(favA);

@@ -306,6 +306,10 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
                                   widget.post.cacheKey))!
                               .height
                       : 16 / 9),
+              posterUrl: widget.post.sampleUrl.isNotEmpty
+                  ? widget.post.sampleUrl
+                  : widget.post.previewUrl,
+              posterHeaders: _headersFor(widget.post),
               isSoftwareDecoding: _useSoftwareDecoding,
               onToggleDecoder: _toggleDecoderMode,
               controlsVisible: _controlsVisible,
@@ -569,7 +573,8 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
       _player!,
       configuration: VideoControllerConfiguration(
         enableHardwareAcceleration: enableHw,
-        hwdec: enableHw ? (Platform.isAndroid ? 'auto-safe' : 'auto') : 'no',
+        hwdec:
+            enableHw ? (Platform.isAndroid ? 'mediacodec-copy' : 'auto') : 'no',
       ),
     );
     _applyVolume();

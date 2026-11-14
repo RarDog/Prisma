@@ -400,6 +400,9 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
                   a.name.toLowerCase().compareTo(b.name.toLowerCase()));
               break;
             case ArtistSortOrder.popularityDesc:
+            case ArtistSortOrder.topFollowers:
+            case ArtistSortOrder.trending:
+            case ArtistSortOrder.dailyRanking:
               displayedFavorites.sort((a, b) {
                 final countA = a.postCount ?? -1;
                 final countB = b.postCount ?? -1;
@@ -455,6 +458,11 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
                       setState(() {
                         _providerId = value;
                         _selectedServices.clear();
+                        final supported =
+                            ArtistSortOrder.supportedFor(_providerId);
+                        if (!supported.contains(_sortOrder)) {
+                          _sortOrder = ArtistSortOrder.popularityDesc;
+                        }
                       });
                       _refresh(items);
                     },

@@ -1,5 +1,26 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.2.3',
+    title:
+        'Релиз 4.2.3: сортировка каталога Fapello (топ по лайкам, подписчикам, в тренде, за день) и исправление видео Rule34.us',
+    titleEn:
+        'Release 4.2.3: Fapello catalog sorting (top likes, top followers, trending, daily ranking) & Rule34.us video fixes',
+    bullets: [
+      'Сортировка каталога Fapello: полная поддержка переключения режимов каталога во вкладке Авторов («Топ по лайкам», «Топ по подписчикам», «В тренде», «Топ за день») с бесшовной навигацией по страницам.',
+      'Адаптивный фильтр авторов: меню фильтров и быстрые чипы сортировки динамически подстраивают доступные опции и иконки под выбранный источник (Fapello или Pawchive).',
+      'Исправление воспроизведения видео Rule34.us: устранена проблема черного экрана при идущем звуке на Android за счет перехода на аппаратный декодер mediacodec-copy с рендером в OpenGL-текстуру.',
+      'Постеры и предзагрузка видео: добавлена подложка постера под видеотекстуру, исключающая черные кадры при старте, а также синхронизированы URL постеров между лентой и экраном поста.',
+      'Надежность медиа-источников Rule34.us: фильтрация несуществующих webm-источников и приоритет рабочих mp4-потоков.',
+    ],
+    bulletsEn: [
+      'Fapello Catalog Sorting: full support for sorting modes in the Artists tab ("Top Likes", "Top Followers", "Trending", "Daily Top") with smooth page navigation.',
+      'Adaptive Artists Filter: the filter sheet and quick sort chips dynamically adapt available options and icons to the active catalog source (Fapello or Pawchive).',
+      'Rule34.us Video Playback Fix: resolved the black screen issue with active audio on Android by switching hardware decoding to mediacodec-copy onto OpenGL textures.',
+      'Video Posters & Seamless Preview: added network poster backdrop under the video surface to eliminate black flashes, and aligned poster URLs between feed cards and post details.',
+      'Rule34.us Stream Reliability: filtered out non-existent 404 webm sources and prioritized direct mp4 streams.',
+    ],
+  ),
+  PrismaChange(
     version: '4.2.2',
     title:
         'Релиз 4.2.2: возвращение Fapello через Cronet, 60/120 FPS оптимизации, свайп и переключатель тулбаров, пагинация авторов и исправления',
