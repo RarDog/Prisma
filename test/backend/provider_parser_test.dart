@@ -301,7 +301,7 @@ void main() {
     // Off by default: Cloudflare blocks the HTML pages this provider reads.
     expect(fapello.enabled, isFalse);
     expect(fapello.apiType, 'fapello');
-    expect(fapello.baseUrl, 'https://fapello.com');
+    expect(fapello.baseUrl, 'https://fapello.is');
     final realbooru = ProviderRepository.seedProviders()
         .where((provider) => provider.id == 'realbooru')
         .single;

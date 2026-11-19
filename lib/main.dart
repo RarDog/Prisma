@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,7 +8,19 @@ import 'core/motion/desktop_smooth_scroll_binding.dart';
 import 'core/performance/performance_monitor.dart';
 import 'core/utils/logger.dart';
 
+class _AppHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) {
+        // Allows expired or self-signed SSL certificates for booru mirrors and media CDNs (e.g. fckthots.xyz)
+        return true;
+      };
+  }
+}
+
 void main() {
+  HttpOverrides.global = _AppHttpOverrides();
   DesktopSmoothScrollBinding.ensureInitialized();
   PerformanceMonitorService.init();
 

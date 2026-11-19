@@ -80,6 +80,7 @@ class AppSettings {
     this.debugHudY = 90.0,
     this.desktopSidebarPinned = false,
     this.desktopNavPosition = 'left',
+    this.desktopPostSplitView = true,
   });
 
   final bool hasCompletedOnboarding;
@@ -103,6 +104,7 @@ class AppSettings {
   final double debugHudY;
   final bool desktopSidebarPinned;
   final String desktopNavPosition;
+  final bool desktopPostSplitView;
   final String lastActiveLocation;
   final List<String> favoriteArtists;
   final List<String> pawchiveAccounts;
@@ -217,6 +219,7 @@ class AppSettings {
     novelLineHeight: 1.6,
     novelReaderTheme: 'dark',
     desktopNavPosition: 'left',
+    desktopPostSplitView: true,
   );
 
   AppSettings copyWith({
@@ -296,6 +299,7 @@ class AppSettings {
     double? debugHudY,
     bool? desktopSidebarPinned,
     String? desktopNavPosition,
+    bool? desktopPostSplitView,
   }) {
     return AppSettings(
       lastActiveLocation: lastActiveLocation ?? this.lastActiveLocation,
@@ -386,6 +390,7 @@ class AppSettings {
       debugHudY: debugHudY ?? this.debugHudY,
       desktopSidebarPinned: desktopSidebarPinned ?? this.desktopSidebarPinned,
       desktopNavPosition: desktopNavPosition ?? this.desktopNavPosition,
+      desktopPostSplitView: desktopPostSplitView ?? this.desktopPostSplitView,
     );
   }
 
@@ -463,6 +468,7 @@ class AppSettings {
         'debugHudX': debugHudX,
         'debugHudY': debugHudY,
         'desktopSidebarPinned': desktopSidebarPinned,
+        'desktopPostSplitView': desktopPostSplitView,
         if (!Platform.isAndroid && !Platform.isIOS)
           'desktopNavPosition': desktopNavPosition,
       };
@@ -634,6 +640,8 @@ class AppSettings {
             defaults.desktopSidebarPinned,
         desktopNavPosition: (json['desktopNavPosition'] as String?) ??
             defaults.desktopNavPosition,
+        desktopPostSplitView: (json['desktopPostSplitView'] as bool?) ??
+            defaults.desktopPostSplitView,
       );
 
   List<PawchiveAccount> get parsedPawchiveAccounts {

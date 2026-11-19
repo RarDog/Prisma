@@ -93,6 +93,7 @@ class PerformanceHttpOverrides extends HttpOverrides {
   HttpClient createHttpClient(SecurityContext? context) {
     final client =
         fallback?.createHttpClient(context) ?? super.createHttpClient(context);
+    client.badCertificateCallback = (cert, host, port) => true;
     return _TrackingHttpClient(client);
   }
 }

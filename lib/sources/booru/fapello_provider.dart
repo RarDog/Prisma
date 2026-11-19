@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:isolate';
 
 import 'package:dio/dio.dart';
@@ -73,9 +74,16 @@ class FapelloProvider
     responseType: ResponseType.plain,
     validateStatus: (_) => true,
     headers: {
-      'Accept': 'text/html,application/xhtml+xml,*/*;q=0.8',
+      'Accept': 'text/html,application/xhtml+xml,application/json,*/*;q=0.8',
       'User-Agent': AppHeaders.desktopChromeUserAgent,
+      'Referer': 'https://fapello.is/',
     },
+  );
+
+  static final _girlFoundPattern = RegExp(
+    r'''<div\s[^>]*class=["'][^"']*\bgirlfound\b[^"']*["'][^>]*id=["']([^"']+)["'][^>]*>.*?<img\s[^>]*src=["']([^"']+)["'][^>]*>.*?<a\s[^>]*class=["'][^"']*text-lead[^"']*["'][^>]*>(.*?)</a>''',
+    caseSensitive: false,
+    dotAll: true,
   );
 
   /// The "avatar + display name" row shared by every model card.
@@ -83,14 +91,14 @@ class FapelloProvider
   /// Anchoring the href on `https://fapello.com/` drops the sponsored cards,
   /// whose links point at third-party hosts such as `onlyfans.com`.
   static final _modelCardPattern = RegExp(
-    r'''<a\s[^>]*href=["'](https://fapello\.com/([a-z0-9][a-z0-9._-]*)/)["'][^>]*class=["'][^"']*\blg:flex flex-1 items-center\b[^"']*["'][^>]*>(.*?)</a>''',
+    r'''<a\s[^>]*href=["'](https://fapello\.(?:com|is)/([a-z0-9][a-z0-9._-]*)/)["'][^>]*class=["'][^"']*\blg:flex flex-1 items-center\b[^"']*["'][^>]*>(.*?)</a>''',
     caseSensitive: false,
     dotAll: true,
   );
 
   /// One tile of the media grid on a model profile, and of its `/ajax` form.
   static final _mediaItemPattern = RegExp(
-    r'''<a\s[^>]*href=["'](https://fapello\.com/([a-z0-9][a-z0-9._-]*)/(\d+)/)["'][^>]*>(.*?)</a>''',
+    r'''<a\s[^>]*href=["'](https://fapello\.(?:com|is)/([a-z0-9][a-z0-9._-]*)/(\d+)/)["'][^>]*>(.*?)</a>''',
     caseSensitive: false,
     dotAll: true,
   );
@@ -104,13 +112,18 @@ class FapelloProvider
   static final _playIconPattern = RegExp(r'assets/images/icon-play\.svg');
 
   static final _fullImagePattern = RegExp(
-    r'''<a\s[^>]*href=["']([^"']*fapello\.com/content/[^"']+\.(?:jpe?g|png|gif|webp))["'][^>]*target=["']_blank["'][^>]*>(.*?)</a>''',
+    r'''<a\s[^>]*href=["']([^"']*fapello\.(?:com|is)/content/[^"']+\.(?:jpe?g|png|gif|webp))["'][^>]*target=["']_blank["'][^>]*>(.*?)</a>''',
     caseSensitive: false,
     dotAll: true,
   );
 
+  static final _fullBtnPattern = RegExp(
+    r'''<a\s[^>]*id=["']fullBtn["'][^>]*href=["']([^"']+)["']|<a\s[^>]*href=["']([^"']+)["'][^>]*id=["']fullBtn["']''',
+    caseSensitive: false,
+  );
+
   static final _videoSourcePattern = RegExp(
-    r'''<source[^>]+type=["']video/mp4["'][^>]+src=["']([^"']+\.mp4)["']''',
+    r'''<source[^>]+src=["']([^"']+\.mp4)["']|<source[^>]+type=["']video/mp4["'][^>]+src=["']([^"']+\.mp4)["']''',
     caseSensitive: false,
   );
 
@@ -118,7 +131,7 @@ class FapelloProvider
       RegExp(r'''<video[^>]+poster=["']([^"']+)["']''', caseSensitive: false);
 
   static final _detailTagPattern = RegExp(
-    r'''<a\s[^>]*href=["']https://fapello\.com/tags/([a-z0-9][a-z0-9._-]*)/["'][^>]*class=["'][^"']*tags-chip[^"']*["'][^>]*>\s*#?([^<]+?)\s*</a>''',
+    r'''<a\s[^>]*href=["']https://fapello\.(?:com|is)/tags/([a-z0-9][a-z0-9._-]*)/["'][^>]*class=["'][^"']*tags-chip[^"']*["'][^>]*>\s*#?([^<]+?)\s*</a>''',
     caseSensitive: false,
     dotAll: true,
   );
@@ -138,7 +151,7 @@ class FapelloProvider
   );
 
   static final _cardBannerPattern = RegExp(
-    r'''<a\s[^>]*href=["']https://fapello\.com/([a-z0-9][a-z0-9._-]*)/?["'][^>]*>\s*<img\s[^>]*?(?:src=["']([^"']+)["'][^>]*?class=["'][^"']*object-cover[^"']*|class=["'][^"']*object-cover[^"']*[^>]*?src=["']([^"']+)["'])''',
+    r'''<a\s[^>]*href=["']https://fapello\.(?:com|is)/([a-z0-9][a-z0-9._-]*)/?["'][^>]*>\s*<img\s[^>]*?(?:src=["']([^"']+)["'][^>]*?class=["'][^"']*object-cover[^"']*|class=["'][^"']*object-cover[^"']*[^>]*?src=["']([^"']+)["'])''',
     caseSensitive: false,
   );
 
@@ -192,7 +205,28 @@ class FapelloProvider
       'from the app.';
 
   Future<String> _getHtml(String path) async {
-    final response = await _dio.get<String>(path, options: _htmlOptions);
+    Response<String> response;
+    try {
+      response = await _dio.get<String>(path, options: _htmlOptions);
+    } on DioException catch (e) {
+      final isConnectionIssue = e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.connectionTimeout ||
+          (e.message?.contains('ERR_CONNECTION_CLOSED') ?? false) ||
+          e.error.toString().contains('ERR_CONNECTION_CLOSED');
+      final host = _dio.options.baseUrl;
+      if (isConnectionIssue && !host.contains('fapello.is')) {
+        try {
+          response = await _dio.get<String>(
+            'https://fapello.is$path',
+            options: _htmlOptions,
+          );
+        } catch (_) {
+          rethrow;
+        }
+      } else {
+        rethrow;
+      }
+    }
     final status = response.statusCode ?? 0;
     final body = response.data is String ? response.data as String : '';
     if (status == 403 || status == 503) {
@@ -225,7 +259,10 @@ class FapelloProvider
     if (parsed == null) return null;
     final (slug, mediaId) = parsed;
     try {
-      final html = await _getHtml('/$slug/$mediaId/');
+      final path = (baseUrl.contains('fapello.is') || slug.isEmpty)
+          ? '/post/$mediaId'
+          : '/$slug/$mediaId/';
+      final html = await _getHtml(path);
       if (html.trim().isEmpty) return null;
       // Snapshot sendable locals — the parse closure must not capture `this`.
       final providerId = id;
@@ -242,6 +279,24 @@ class FapelloProvider
   Future<ProviderHealth> checkHealth() async {
     final sw = Stopwatch()..start();
     try {
+      if (baseUrl.contains('fapello.is')) {
+        final res = await _dio.get<String>(
+          'https://fapello.is/api/popular/1',
+          options: _htmlOptions,
+        );
+        sw.stop();
+        final raw = res.data?.trim() ?? '';
+        final ok =
+            raw.startsWith('[') || (res.statusCode == 200 && raw.isNotEmpty);
+        return ProviderHealth(
+          providerId: id,
+          status: ok ? ProviderStatus.online : ProviderStatus.offline,
+          pingMs: ok ? sw.elapsedMilliseconds : 0,
+          lastCheckedAt: DateTime.now(),
+          apiVersion: 'fapello-json',
+          errorMessage: ok ? null : 'Failed to reach Fapello API',
+        );
+      }
       final html = await _getHtml('/top-likes/');
       sw.stop();
       final healthy = html.isNotEmpty && _modelCardPattern.hasMatch(html);
@@ -261,7 +316,7 @@ class FapelloProvider
         pingMs: 0,
         lastCheckedAt: DateTime.now(),
         errorMessage: error.message,
-        apiVersion: 'fapello-html',
+        apiVersion: baseUrl.contains('fapello.is') ? 'fapello-json' : 'fapello-html',
       );
     } catch (error) {
       sw.stop();
@@ -271,7 +326,7 @@ class FapelloProvider
         pingMs: 0,
         lastCheckedAt: DateTime.now(),
         errorMessage: error.toString(),
-        apiVersion: 'fapello-html',
+        apiVersion: baseUrl.contains('fapello.is') ? 'fapello-json' : 'fapello-html',
       );
     }
   }
@@ -281,6 +336,50 @@ class FapelloProvider
     final parsed = _parseMediaId(postId);
     if (parsed == null) return const [];
     final (slug, mediaId) = parsed;
+
+    try {
+      final commentOptions = Options(
+        responseType: ResponseType.plain,
+        validateStatus: (_) => true,
+        headers: {
+          'Accept': 'application/json, text/plain, */*',
+          'User-Agent': AppHeaders.desktopChromeUserAgent,
+          'Referer': 'https://fapello.is/post/$mediaId',
+        },
+      );
+      const apiHost = 'https://fapello.is';
+      final res = await _dio.get<String>(
+        '$apiHost/api/mediacomments/$mediaId/1/1',
+        options: commentOptions,
+      );
+        final raw = res.data?.trim() ?? '';
+        if (raw.startsWith('[')) {
+          final list = (jsonDecode(raw) as List?) ?? const [];
+          if (list.isNotEmpty) {
+            final comments = <PostComment>[];
+            for (final item in list) {
+              if (item is! Map) continue;
+              final author = item['username']?.toString() ?? '';
+              final body = item['comment']?.toString() ?? '';
+              final lastupdate =
+                  int.tryParse(item['lastupdate']?.toString() ?? '0') ?? 0;
+              final createdAt = lastupdate > 0
+                  ? DateTime.fromMillisecondsSinceEpoch(lastupdate * 1000)
+                  : DateTime.now();
+              comments.add(PostComment(
+                id: '${author}_$lastupdate',
+                postId: postId,
+                providerId: id,
+                authorName: author,
+                body: body,
+                createdAt: createdAt,
+              ));
+            }
+            return comments;
+          }
+        }
+      } catch (_) {}
+
     try {
       final html = await _getHtml('/$slug/$mediaId/');
       final providerId = id;
@@ -316,13 +415,17 @@ class FapelloProvider
   String? postPageUrl(Post post) {
     final parsed = _parseMediaId(post.id);
     if (parsed == null) return null;
+    if (baseUrl.contains('fapello.is')) {
+      return 'https://fapello.is/post/${parsed.$2}';
+    }
     return 'https://fapello.com/${parsed.$1}/${parsed.$2}/';
   }
 
   @override
   Map<String, String> mediaHeaders(Post post) => {
         'User-Agent': AppHeaders.desktopChromeUserAgent,
-        'Referer': '$baseUrl/',
+        'Referer':
+            baseUrl.contains('fapello.is') ? 'https://fapello.is/' : '$baseUrl/',
         'Accept': '*/*',
       };
 
@@ -345,20 +448,94 @@ class FapelloProvider
     }
 
     final trimmed = (query ?? '').trim();
-    if (trimmed.isNotEmpty && page > 1) {
-      // Search is a single un-paged result set; asking again would only
-      // duplicate the same models.
-      return const [];
+    if (trimmed.isNotEmpty) {
+      if (page > 1) {
+        // Search is a single un-paged result set; asking again would only
+        // duplicate the same models.
+        return const [];
+      }
+      final html =
+          await _getHtml('/search/${Uri.encodeQueryComponent(trimmed)}/');
+      final found = _parseGirlFound(html);
+      if (found.isNotEmpty) {
+        return found.take(limit).toList(growable: false);
+      }
+      final cards = await _parseModelCards(html);
+      return cards.take(limit).toList(growable: false);
     }
 
-    final html = trimmed.isEmpty
-        ? await _getHtml(_modelListPath(page, sort))
-        : await _getHtml('/search/${Uri.encodeQueryComponent(trimmed)}/');
+    if (baseUrl.contains('fapello.is')) {
+      final ep = switch (sort) {
+        ArtistSortOrder.topFollowers => 4,
+        ArtistSortOrder.trending || ArtistSortOrder.dailyRanking => 6,
+        _ => 2,
+      };
+      try {
+        final res = await _dio.get<String>(
+          'https://fapello.is/api/popular/$ep',
+          options: _htmlOptions,
+        );
+        final raw = res.data?.trim() ?? '';
+        if (raw.startsWith('[')) {
+          final list = (jsonDecode(raw) as List?) ?? const [];
+          final profiles = <ArtistProfile>[];
+          final providerId = id;
+          for (final item in list) {
+            if (item is! Map) continue;
+            final girlId = item['id']?.toString() ?? '';
+            final rawName = item['name']?.toString() ?? '';
+            final avatar =
+                (item['thumbnew'] ?? item['thumbNew'])?.toString() ?? '';
+            if (girlId.isEmpty) continue;
+            final formatted = _beautifyName(rawName, girlId);
+            profiles.add(ArtistProfile(
+              id: girlId,
+              providerId: providerId,
+              service: _service,
+              name: formatted,
+              displayName: formatted,
+              url: 'https://fapello.is/model/$girlId',
+              avatarUrl: avatar.isNotEmpty ? avatar : null,
+              bannerUrl: avatar.isNotEmpty ? avatar : null,
+            ));
+          }
+          final startIndex = (page - 1) * limit;
+          if (startIndex >= profiles.length) return const [];
+          return profiles.skip(startIndex).take(limit).toList(growable: false);
+        }
+      } catch (_) {
+        // Fall back to HTML scraper
+      }
+    }
+
+    final html = await _getHtml(_modelListPath(page, sort));
     final cards = await _parseModelCards(html);
     // Paging terminates on the first empty page. The `/top-likes/` listing
     // keeps returning new models well past its own `data-max` marker, and
     // eventually 302-redirects to the post feed, which yields no model cards.
     return cards.take(limit).toList(growable: false);
+  }
+
+  List<ArtistProfile> _parseGirlFound(String html) {
+    final profiles = <ArtistProfile>[];
+    final seen = <String>{};
+    for (final match in _girlFoundPattern.allMatches(html)) {
+      final girlId = match.group(1)?.trim() ?? '';
+      final avatar = match.group(2)?.trim() ?? '';
+      final rawName = _bareText(match.group(3) ?? '').trim();
+      if (girlId.isEmpty || !seen.add(girlId)) continue;
+      final formatted = _beautifyName(_decodeHtml(rawName), girlId);
+      profiles.add(ArtistProfile(
+        id: girlId,
+        providerId: id,
+        service: _service,
+        name: formatted,
+        displayName: formatted,
+        url: 'https://fapello.is/model/$girlId',
+        avatarUrl: avatar.isNotEmpty ? avatar : null,
+      ));
+    }
+    return profiles;
   }
 
   @override
@@ -381,13 +558,93 @@ class FapelloProvider
 
   @override
   Future<List<ArtistTag>> getArtistTags(
-          String service, String artistId) async =>
-      const [];
+    String service,
+    String artistId,
+  ) async {
+    final slug = artistId.trim();
+    if (slug.isEmpty || baseUrl.contains('fapello.is') || int.tryParse(slug) != null) {
+      return const [];
+    }
+    try {
+      final html = await _getHtml('/$slug/');
+      if (html.isEmpty) return const [];
+      return await Isolate.run(() => _parseArtistTagsHtml(html));
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  static List<ArtistTag> _parseArtistTagsHtml(String html) {
+    final tags = <ArtistTag>[];
+    final seen = <String>{};
+    for (final match in _detailTagPattern.allMatches(html)) {
+      final name = (match.group(2) ?? '').trim();
+      if (name.isNotEmpty && seen.add(name.toLowerCase())) {
+        tags.add(ArtistTag(tag: name, postCount: 0));
+      }
+    }
+    final descMatch = _descriptionAliasesPattern.firstMatch(html);
+    if (descMatch != null) {
+      final text = _decodeHtml(descMatch.group(1) ?? '');
+      final hashMatches = RegExp(r'#([a-zA-Z0-9_.-]+)').allMatches(text);
+      for (final hm in hashMatches) {
+        final tag = hm.group(1)?.trim() ?? '';
+        if (tag.isNotEmpty && seen.add(tag.toLowerCase())) {
+          tags.add(ArtistTag(tag: tag, postCount: 0));
+        }
+      }
+    }
+    return tags;
+  }
 
   @override
   Future<List<ArtistLink>> getArtistLinks(
-          String service, String artistId) async =>
-      const [];
+    String service,
+    String artistId,
+  ) async {
+    final slug = artistId.trim();
+    if (slug.isEmpty) return const [];
+    try {
+      final html = await _getHtml('/$slug/');
+      if (html.isEmpty) return const [];
+      return await Isolate.run(() => _parseArtistLinksHtml(html, slug));
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  static final _socialLinkPattern = RegExp(
+    r'''href=["'](https?:\/\/(?:www\.)?(onlyfans\.com|fansly\.com|instagram\.com|twitter\.com|x\.com|tiktok\.com|patreon\.com|twitch\.tv|youtube\.com)\/([a-zA-Z0-9_.-]+)\/?)["']''',
+    caseSensitive: false,
+  );
+
+  static List<ArtistLink> _parseArtistLinksHtml(String html, String slug) {
+    final links = <ArtistLink>[];
+    final seen = <String>{};
+    for (final match in _socialLinkPattern.allMatches(html)) {
+      final fullUrl = match.group(1) ?? '';
+      final platform = (match.group(2) ?? '').toLowerCase();
+      final user = match.group(3) ?? slug;
+      if (fullUrl.isNotEmpty && seen.add(fullUrl)) {
+        final name = switch (platform) {
+          'onlyfans.com' => 'OnlyFans (@$user)',
+          'fansly.com' => 'Fansly (@$user)',
+          'instagram.com' => 'Instagram (@$user)',
+          'twitter.com' || 'x.com' => 'Twitter/X (@$user)',
+          'tiktok.com' => 'TikTok (@$user)',
+          'patreon.com' => 'Patreon (@$user)',
+          _ => platform,
+        };
+        links.add(ArtistLink(
+          id: user,
+          service: platform.replaceAll('.com', '').replaceAll('.tv', ''),
+          name: name,
+          publicId: fullUrl,
+        ));
+      }
+    }
+    return links;
+  }
 
   @override
   Future<List<ArtistAnnouncement>> getArtistAnnouncements(
@@ -402,7 +659,11 @@ class FapelloProvider
     final slug = artistId.trim();
     if (slug.isEmpty) return null;
     try {
-      final html = await _getHtml('/$slug/');
+      final path =
+          (baseUrl.contains('fapello.is') || int.tryParse(slug) != null)
+              ? '/model/$slug'
+              : '/$slug/';
+      final html = await _getHtml(path);
       if (html.trim().isEmpty) return null;
       final providerId = id;
       return await Isolate.run(
@@ -418,8 +679,12 @@ class FapelloProvider
     String? service,
     List<String>? services,
     String? query,
-  }) async =>
-      null;
+  }) async {
+    if (baseUrl.contains('fapello.is')) {
+      return 100;
+    }
+    return null;
+  }
 
   @override
   Future<List<Post>> getArtistPosts({
@@ -429,8 +694,109 @@ class FapelloProvider
   }) async {
     final slug = query.artistId.trim();
     if (slug.isEmpty) return const [];
+
+    if (baseUrl.contains('fapello.is') || int.tryParse(slug) != null) {
+      try {
+        const apiHost = 'https://fapello.is';
+      final isVideoFilter = query.mediaFilter?.toLowerCase() == 'video' ||
+          query.mediaFilter?.toLowerCase() == 'videos';
+      // When searching for videos, order '2' (Top Likes) puts all videos at the top
+      final orderParam = isVideoFilter ? '2' : '1';
+      final mediaOptions = Options(
+        responseType: ResponseType.plain,
+        validateStatus: (_) => true,
+        headers: {
+          'Accept': 'application/json, text/plain, */*',
+          'User-Agent': AppHeaders.desktopChromeUserAgent,
+          'Referer': 'https://fapello.is/model/$slug',
+        },
+      );
+
+      final posts = <Post>[];
+      final artistName = query.artistName.trim().isNotEmpty
+          ? query.artistName.trim()
+          : slug;
+
+      // Fapello returns only 12 items per API page.
+      // Fetch multiple API pages per batch so both photos and videos are found.
+      final startApiPage = isVideoFilter ? (page * 5 + 1) : (page * 3 + 1);
+      final maxApiPages = isVideoFilter ? 5 : 3;
+
+      for (var i = 0; i < maxApiPages; i++) {
+        final currentApiPage = startApiPage + i;
+        final res = await _dio.get<String>(
+          '$apiHost/api/media/$slug/$currentApiPage/$orderParam',
+          options: mediaOptions,
+        );
+        final raw = res.data?.trim() ?? '';
+        if (!raw.startsWith('[')) break;
+        final list = (jsonDecode(raw) as List?) ?? const [];
+        if (list.isEmpty) break;
+
+          for (final item in list) {
+            if (item is! Map) continue;
+            final mediaId = item['id']?.toString() ?? '';
+            final newUrlThumb = item['newUrlThumb']?.toString() ?? '';
+            final newUrl = item['newUrl']?.toString() ?? '';
+            final type = item['type']?.toString();
+            final isVideo = type == '2';
+            if (isVideoFilter && !isVideo) continue;
+            if ((query.mediaFilter?.toLowerCase() == 'photo' ||
+                    query.mediaFilter?.toLowerCase() == 'photos') &&
+                isVideo) {
+              continue;
+            }
+            final score =
+                int.tryParse(item['likes']?.toString() ?? '0') ?? 0;
+            final comments = item['comments']?.toString() ?? '0';
+            final timestamp =
+                int.tryParse(item['lastUpdate']?.toString() ?? '0') ?? 0;
+            final createdAt = timestamp > 0
+                ? DateTime.fromMillisecondsSinceEpoch(timestamp * 1000)
+                : _pseudoDate(mediaId);
+
+            posts.add(Post(
+              id: '$slug:$mediaId',
+              providerId: id,
+              providerName: name,
+              previewUrl: newUrlThumb.isNotEmpty ? newUrlThumb : newUrl,
+              sampleUrl: newUrl,
+              fileUrl: newUrl,
+              tags: [artistName, isVideo ? 'video' : 'photo'],
+              rating: 'explicit',
+              width: 600,
+              height: 900,
+              source: 'https://fapello.is/post/$mediaId',
+              createdAt: createdAt,
+              fileType: isVideo ? 'video' : 'photo',
+              score: score,
+              tagGroups: {
+                'artist': [artistName],
+                'comments_count': [comments],
+              },
+            ));
+          }
+
+          if (list.length < 12) break;
+          if (posts.length >= (isVideoFilter ? 12 : limit)) break;
+        }
+
+        if (posts.isNotEmpty) {
+          return posts;
+        }
+      } catch (_) {
+        // Fall back to classic scraper
+      }
+    }
+
     // `page` is 0-based here while the site is 1-based.
-    final path = '/ajax/model/${Uri.encodeComponent(slug)}/page-${page + 1}/';
+    final filterSegment = switch (query.mediaFilter) {
+      'video' || 'videos' => 'videos/',
+      'photo' || 'photos' => 'photos/',
+      _ => '',
+    };
+    final path =
+        '/ajax/model/${Uri.encodeComponent(slug)}/$filterSegment' 'page-${page + 1}/';
     final html = await _getHtml(path);
     if (html.trim().isEmpty) return const [];
 
@@ -517,15 +883,42 @@ class FapelloProvider
     required String providerId,
   }) {
     final avatarMatch = _profileAvatarPattern.firstMatch(html);
-    final avatar = avatarMatch?.group(1);
+    var avatar = avatarMatch?.group(1);
 
-    final rawName = _profileNamePattern.firstMatch(html)?.group(1) ?? '';
+    var rawName = _profileNamePattern.firstMatch(html)?.group(1) ?? '';
+    if (rawName.isEmpty) {
+      final h1Match = RegExp(
+        r'''<h1\s[^>]*class=["'][^"']*text-lead[^"']*["'][^>]*>(.*?)</h1>''',
+        caseSensitive: false,
+      ).firstMatch(html);
+      if (h1Match != null) {
+        rawName = h1Match.group(1) ?? '';
+      }
+    }
     final formattedName = _beautifyName(_decodeHtml(rawName), slug);
 
+    int? postCount;
     final mediaCountStr = _mediaCountPattern.firstMatch(html)?.group(1);
-    final postCount = mediaCountStr != null
-        ? int.tryParse(mediaCountStr.replaceAll(',', ''))
-        : null;
+    if (mediaCountStr != null) {
+      postCount = int.tryParse(mediaCountStr.replaceAll(',', ''));
+    }
+    if (postCount == null) {
+      final isMediaMatch = RegExp(
+        r'''<span\s[^>]*class=["'][^"']*font-bold[^"']*["']>(\d+)</span>\s*(?:Post|Media)''',
+        caseSensitive: false,
+      ).firstMatch(html);
+      if (isMediaMatch != null) {
+        postCount = int.tryParse(isMediaMatch.group(1)!);
+      }
+    }
+
+    if (avatar == null || avatar.isEmpty || avatar.contains('delete_avatar')) {
+      final isAvatarMatch = RegExp(
+        r'''<figure[^>]*>\s*<img\s[^>]*src=["']([^"']+)["'][^>]*alt=["']avatar["']''',
+        caseSensitive: false,
+      ).firstMatch(html);
+      avatar = isAvatarMatch?.group(1);
+    }
 
     final firstMedia = _imgSrcPattern.firstMatch(_listingSection(html));
     final bannerUrl = firstMedia?.group(1);
@@ -536,8 +929,14 @@ class FapelloProvider
       service: _service,
       name: formattedName,
       displayName: formattedName,
-      url: 'https://fapello.com/$slug/',
-      avatarUrl: (avatar != null && avatar.isNotEmpty) ? avatar : null,
+      url: int.tryParse(slug) != null
+          ? 'https://fapello.is/model/$slug'
+          : 'https://fapello.com/$slug/',
+      avatarUrl: (avatar != null &&
+              avatar.isNotEmpty &&
+              !avatar.contains('delete_avatar'))
+          ? avatar
+          : null,
       bannerUrl: bannerUrl,
       postCount: postCount,
     );
@@ -546,6 +945,18 @@ class FapelloProvider
   static String _beautifyName(String raw, String slug) {
     var name = raw.trim();
     if (name.isEmpty) name = slug.trim();
+
+    // Strip trailing aliases, handles, and alternate accounts separated by /, |, \
+    if (name.contains('/') || name.contains('|') || name.contains('\\')) {
+      final primary = name.split(RegExp(r'\s*[/|\\]\s*')).firstWhere(
+            (part) => part.trim().isNotEmpty,
+            orElse: () => name,
+          );
+      name = primary.trim();
+    }
+    // Strip trailing @social_handle
+    name = name.replaceAll(RegExp(r'\s+@\w+.*$'), '').trim();
+
     name = name
         .replaceAll(RegExp(r'[-_]+'), ' ')
         .replaceAll(RegExp(r'\s+'), ' ')
@@ -586,10 +997,24 @@ class FapelloProvider
       final thumbnailUrl = _imgSrcPattern.firstMatch(body)?.group(1) ?? '';
       if (thumbnailUrl.isEmpty) continue;
 
+      final durMatch =
+          RegExp(r'''(\d{1,2}:\d{2}(?::\d{2})?)''').firstMatch(body);
+      final durationText = durMatch?.group(1);
+
+      final likeMatch = RegExp(
+        r'''(?:count_likes_\d+|likes?)\b[^>]*>\s*([0-9,]+)''',
+        caseSensitive: false,
+      ).firstMatch(body);
+      final tileScore = likeMatch != null
+          ? (int.tryParse(likeMatch.group(1)!.replaceAll(',', '')) ?? 0)
+          : 0;
+
       items.add(_MediaItem(
         mediaId: mediaId,
         thumbnailUrl: thumbnailUrl,
-        isVideo: _playIconPattern.hasMatch(body),
+        isVideo: _playIconPattern.hasMatch(body) || durationText != null,
+        score: tileScore,
+        durationText: durationText,
       ));
     }
     return items;
@@ -602,6 +1027,9 @@ class FapelloProvider
   }) {
     final previewUrl = item.thumbnailUrl;
     final posterUrl = _fullMediaUrl(previewUrl);
+    final durationSeconds = item.durationText != null
+        ? Post.parseDurationString(item.durationText!)
+        : 0;
     return Post(
       id: '$slug:${item.mediaId}',
       providerId: id,
@@ -618,9 +1046,13 @@ class FapelloProvider
       // newest-first grid order intact whenever something sorts by date.
       createdAt: _pseudoDate(item.mediaId),
       fileType: item.isVideo ? 'video' : 'image',
-      score: 0,
+      score: item.score,
       tagGroups: {
-        'artist': [artistName]
+        'artist': [artistName],
+        if (item.durationText != null && item.durationText!.isNotEmpty)
+          'duration_text': [item.durationText!],
+        if (durationSeconds > 0)
+          'duration': [durationSeconds.toString()],
       },
     );
   }
@@ -634,6 +1066,28 @@ class FapelloProvider
     required String providerId,
     required String providerName,
   }) {
+    final fullBtnMatch = _fullBtnPattern.firstMatch(html);
+    if (fullBtnMatch != null) {
+      final fileUrl = fullBtnMatch.group(1) ?? fullBtnMatch.group(2) ?? '';
+      if (fileUrl.isNotEmpty) {
+        final ogImage = RegExp(
+          r'''<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']''',
+          caseSensitive: false,
+        ).firstMatch(html)?.group(1) ?? fileUrl;
+        return _buildPost(
+          providerId: providerId,
+          providerName: providerName,
+          slug: slug,
+          mediaId: mediaId,
+          previewUrl: ogImage,
+          fileUrl: fileUrl,
+          fileType: 'image',
+          title: _pageTitle(html),
+          html: html,
+        );
+      }
+    }
+
     final imageMatch = _fullImagePattern.firstMatch(html);
     if (imageMatch != null) {
       final fileUrl = imageMatch.group(1) ?? '';
@@ -719,8 +1173,16 @@ class FapelloProvider
     );
   }
 
-  static int _parseLikeCount(String html) =>
-      int.tryParse(_likeCountPattern.firstMatch(html)?.group(1) ?? '') ?? 0;
+  static int _parseLikeCount(String html) {
+    final postLikes = RegExp(
+      r'''id=["']postLikes["'][^>]*>\s*(\d+)''',
+      caseSensitive: false,
+    ).firstMatch(html)?.group(1);
+    if (postLikes != null) {
+      return int.tryParse(postLikes) ?? 0;
+    }
+    return int.tryParse(_likeCountPattern.firstMatch(html)?.group(1) ?? '') ?? 0;
+  }
 
   static List<String> _parseDetailTags(String html) {
     final tags = <String>[];
@@ -848,11 +1310,16 @@ class FapelloProvider
 
   (String, String)? _parseMediaId(String postId) {
     final parts = postId.split(':');
-    if (parts.length < 2) return null;
-    final slug = parts[0].trim();
-    final mediaId = parts[1].trim();
-    if (slug.isEmpty || mediaId.isEmpty) return null;
-    return (slug, mediaId);
+    if (parts.length >= 2) {
+      final slug = parts[0].trim();
+      final mediaId = parts[1].trim();
+      if (slug.isNotEmpty && mediaId.isNotEmpty) return (slug, mediaId);
+    }
+    final trimmed = postId.trim();
+    if (trimmed.isNotEmpty && int.tryParse(trimmed) != null) {
+      return ('', trimmed);
+    }
+    return null;
   }
 
   static String _decodeHtml(String input) {
@@ -895,9 +1362,13 @@ class _MediaItem {
     required this.mediaId,
     required this.thumbnailUrl,
     required this.isVideo,
+    this.score = 0,
+    this.durationText,
   });
 
   final String mediaId;
   final String thumbnailUrl;
   final bool isVideo;
+  final int score;
+  final String? durationText;
 }

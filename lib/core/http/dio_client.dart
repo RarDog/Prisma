@@ -33,6 +33,7 @@ class DioClient {
             final client = io.HttpClient();
             client.idleTimeout = const Duration(seconds: 120);
             client.maxConnectionsPerHost = 15;
+            client.badCertificateCallback = (cert, host, port) => true;
             return client;
           },
         );

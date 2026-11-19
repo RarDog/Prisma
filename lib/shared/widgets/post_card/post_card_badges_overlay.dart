@@ -119,9 +119,24 @@ class PostCardBadgesOverlay extends StatelessWidget {
           ),
         );
       }
-      if (badgeConfig.showRating) {
+      if (badgeConfig.showRating && post.score > 0) {
+        cornerWidgets[badgeConfig.ratingPosition]?.add(
+          Wrap(
+            spacing: 4,
+            runSpacing: 4,
+            children: [
+              RatingBadge(rating: post.rating),
+              ScoreBadge(score: post.score),
+            ],
+          ),
+        );
+      } else if (badgeConfig.showRating) {
         cornerWidgets[badgeConfig.ratingPosition]?.add(
           RatingBadge(rating: post.rating),
+        );
+      } else if (post.score > 0) {
+        cornerWidgets[badgeConfig.ratingPosition]?.add(
+          ScoreBadge(score: post.score),
         );
       }
     }

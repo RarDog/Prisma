@@ -153,12 +153,7 @@ class _OnboardingCompletionStepState
                   icon: Icons.hub_rounded,
                   label: isRu ? 'Активные источники' : 'Active sources',
                   value:
-                      '${(ref.watch(providersControllerProvider).value ?? []).where((p) {
-                        if (!kIsWeb && defaultTargetPlatform != TargetPlatform.android) {
-                          if (p.apiType == "fapello" || p.id == "fapello") return false;
-                        }
-                        return p.enabled;
-                      }).length}',
+                      '${(ref.watch(providersControllerProvider).value ?? []).where((p) => p.enabled).length}',
                   valueColor: const Color(0xFF6366F1),
                 ),
                 const Divider(height: 24),

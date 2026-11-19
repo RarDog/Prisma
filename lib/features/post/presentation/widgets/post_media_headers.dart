@@ -13,7 +13,11 @@ Map<String, String> getMediaUrlHeaders({
   final pid = (providerId ?? '').toLowerCase();
   final u = (url ?? '').toLowerCase();
 
-  if (pid.contains('gelbooru') || u.contains('gelbooru.com')) {
+  if (pid.contains('fapello') ||
+      u.contains('fapello') ||
+      u.contains('fckthots.xyz')) {
+    defaultReferer = 'https://fapello.is/';
+  } else if (pid.contains('gelbooru') || u.contains('gelbooru.com')) {
     defaultReferer = 'https://gelbooru.com/';
   } else if (pid.contains('tbib') || u.contains('tbib.org')) {
     defaultReferer = 'https://tbib.org/';

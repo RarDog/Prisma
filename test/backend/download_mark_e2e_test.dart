@@ -107,6 +107,9 @@ void main() {
     expect(task?.status, DownloadTaskStatus.completed,
         reason: 'the fake download completes instantly');
 
+    // Give markDownloaded a tick to complete its async write to Isar.
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+
     final read = await downloadedMediaService.allByKeys([p.cacheKey]);
     final map = (read as Success<Map<String, DownloadedMedia>>).data;
     expect(map, contains(p.cacheKey),

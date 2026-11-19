@@ -541,13 +541,13 @@ class _LiquidProviderPill extends StatelessWidget {
   const _LiquidProviderPill({
     required this.label,
     required this.isSelected,
-    required this.onTap,
+    this.onTap,
     this.icon,
   });
 
   final String label;
   final bool isSelected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final IconData? icon;
 
   @override
@@ -556,72 +556,78 @@ class _LiquidProviderPill extends StatelessWidget {
     final scheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
+    final content = AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOutCubic,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? (isDark
+                ? scheme.secondaryContainer.withValues(alpha: 0.35)
+                : scheme.secondaryContainer.withValues(alpha: 0.7))
+            : (isDark
+                ? scheme.surfaceContainerHigh.withValues(alpha: 0.4)
+                : scheme.surfaceContainerHighest.withValues(alpha: 0.35)),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isSelected
+              ? scheme.secondary.withValues(alpha: isDark ? 0.6 : 0.4)
+              : (isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.black.withValues(alpha: 0.05)),
+          width: 1,
+        ),
+        boxShadow: isSelected
+            ? [
+                BoxShadow(
+                  color: scheme.secondary
+                      .withValues(alpha: isDark ? 0.2 : 0.08),
+                  blurRadius: 6,
+                ),
+              ]
+            : null,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(
+              icon,
+              size: 14,
+              color: isSelected
+                  ? (isDark
+                      ? scheme.secondary
+                      : scheme.onSecondaryContainer)
+                  : scheme.onSurfaceVariant.withValues(alpha: 0.8),
+            ),
+            const SizedBox(width: 5),
+          ],
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              color: isSelected
+                  ? (isDark
+                      ? scheme.secondary
+                      : scheme.onSecondaryContainer)
+                  : scheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (onTap == null) {
+      return content;
+    }
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? (isDark
-                    ? scheme.secondaryContainer.withValues(alpha: 0.35)
-                    : scheme.secondaryContainer.withValues(alpha: 0.7))
-                : (isDark
-                    ? scheme.surfaceContainerHigh.withValues(alpha: 0.4)
-                    : scheme.surfaceContainerHighest.withValues(alpha: 0.35)),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: isSelected
-                  ? scheme.secondary.withValues(alpha: isDark ? 0.6 : 0.4)
-                  : (isDark
-                      ? Colors.white.withValues(alpha: 0.08)
-                      : Colors.black.withValues(alpha: 0.05)),
-              width: 1,
-            ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: scheme.secondary
-                          .withValues(alpha: isDark ? 0.2 : 0.08),
-                      blurRadius: 6,
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (icon != null) ...[
-                Icon(
-                  icon,
-                  size: 14,
-                  color: isSelected
-                      ? (isDark
-                          ? scheme.secondary
-                          : scheme.onSecondaryContainer)
-                      : scheme.onSurfaceVariant.withValues(alpha: 0.8),
-                ),
-                const SizedBox(width: 5),
-              ],
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected
-                      ? (isDark
-                          ? scheme.secondary
-                          : scheme.onSecondaryContainer)
-                      : scheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
+        child: content,
       ),
     );
   }
@@ -820,3 +826,4 @@ class _ProviderStatusChipState extends State<_ProviderStatusChip> {
     );
   }
 }
+

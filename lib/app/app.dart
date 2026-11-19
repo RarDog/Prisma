@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:dynamic_color/dynamic_color.dart';
@@ -120,6 +121,9 @@ class _AppOverlayState extends ConsumerState<_AppOverlay>
   }
 
   Future<void> _checkUpdates() async {
+    // Non-blocking background sync of remote mirrors (mirrors.json)
+    unawaited(ref.read(remoteMirrorsServiceProvider).syncMirrors());
+
     final result = await ref.read(updateServiceProvider).checkForUpdates();
     if (!mounted || result is! Success<AppUpdateInfo?> || result.data == null) {
       return;

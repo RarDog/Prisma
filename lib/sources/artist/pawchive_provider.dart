@@ -23,7 +23,8 @@ class PawchiveProvider
         ContentProvider,
         ArtistProvider,
         CommentProvider,
-        MediaHeadersProvider {
+        MediaHeadersProvider,
+        MultiPageProvider {
   PawchiveProvider({
     required this.id,
     required this.name,
@@ -40,6 +41,15 @@ class PawchiveProvider
 
   @override
   final String baseUrl;
+
+  final Map<String, List<Post>> _postPagesCache = {};
+
+  void _cachePostPages(String postKey, List<Post> pages) {
+    if (_postPagesCache.length > 250) {
+      _postPagesCache.remove(_postPagesCache.keys.first);
+    }
+    _postPagesCache[postKey] = pages;
+  }
 
   @override
   Map<String, String> mediaHeaders(Post post) {
@@ -146,6 +156,46 @@ class PawchiveProvider
       } catch (_) {}
     }
     return null;
+  }
+
+  @override
+  Future<List<Post>> getPostPages(Post post) async {
+    final parts = post.id.split(':');
+    if (parts.length < 3) return [post];
+    final service = parts[0];
+    final artistId = parts[1];
+    final postId = parts[2];
+    final postKey = '$service:$artistId:$postId';
+
+    final cached = _postPagesCache[postKey];
+    if (cached != null && cached.isNotEmpty) {
+      return cached;
+    }
+
+    try {
+      final response = await _dio.get<dynamic>(
+        '/api/v1/$service/user/$artistId/post/$postId',
+      );
+      final data = response.data;
+      if (data is Map) {
+        final query = ArtistWorkQuery(
+          providerId: id,
+          service: service,
+          artistId: artistId,
+          artistName: post.tagGroups['artist']?.firstOrNull ?? artistId,
+        );
+        final subPosts = _postsFromArtistPost(
+          Map<String, dynamic>.from(data),
+          query: query,
+        );
+        if (subPosts.isNotEmpty) {
+          _cachePostPages(postKey, subPosts);
+          return subPosts;
+        }
+      }
+    } catch (_) {}
+
+    return [post];
   }
 
   @override
@@ -307,10 +357,38 @@ class PawchiveProvider
       final posts = _postItems(response.data);
       final mapped = <Post>[];
       for (final post in posts.whereType<Map>()) {
-        mapped.addAll(_postsFromArtistPost(
-          Map<String, dynamic>.from(post),
+        final postMap = Map<String, dynamic>.from(post);
+        final subPosts = _postsFromArtistPost(
+          postMap,
           query: query,
-        ));
+        );
+        if (subPosts.isEmpty) continue;
+
+        final rawPostId =
+            (postMap['id'] ?? postMap['post_id'] ?? '').toString();
+        final postKey = '${query.service}:${query.artistId}:$rawPostId';
+        _cachePostPages(postKey, subPosts);
+
+        if (query.groupByPost) {
+          if (subPosts.length == 1) {
+            mapped.add(subPosts.first);
+          } else {
+            final first = subPosts.first;
+            mapped.add(first.copyWith(
+              tagGroups: {
+                ...first.tagGroups,
+                'is_multi_page': ['true'],
+                'page_count': ['${subPosts.length}'],
+                'children': subPosts
+                    .skip(1)
+                    .map((p) => p.id)
+                    .toList(growable: false),
+              },
+            ));
+          }
+        } else {
+          mapped.addAll(subPosts);
+        }
       }
       mapped.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       return mapped.toList(growable: false);
@@ -559,7 +637,10 @@ class PawchiveProvider
           tagGroups: {
             'artist': [query.artistName],
             'meta': [query.service],
-            if (title.trim().isNotEmpty) 'copyright': [title.trim()],
+            if (title.trim().isNotEmpty) ...{
+              'copyright': [title.trim()],
+              'title': [title.trim()],
+            },
             if (cloudLinksJson.isNotEmpty) 'cloud_links': cloudLinksJson,
             if (cleanDesc.isNotEmpty)
               'description': [cleanDesc]
@@ -628,7 +709,10 @@ class PawchiveProvider
             tagGroups: {
               'artist': [query.artistName],
               'meta': [query.service],
-              if (title.trim().isNotEmpty) 'copyright': [title.trim()],
+              if (title.trim().isNotEmpty) ...{
+                'copyright': [title.trim()],
+                'title': [title.trim()],
+              },
               if (cloudLinksJson.isNotEmpty) 'cloud_links': cloudLinksJson,
               if (cleanDesc.isNotEmpty) 'description': [cleanDesc],
             },

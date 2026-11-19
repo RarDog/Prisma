@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/shared/widgets/confirm_dialog.dart';
 import 'package:gel_rule_app/shared/widgets/error_view.dart';
 import 'provider_check_screen.dart';
@@ -133,6 +135,77 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
                 ],
               ),
               actions: [
+                // Remote Mirrors Sync Button
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.cloud_sync_rounded,
+                      size: 20,
+                      color: scheme.primary,
+                    ),
+                    visualDensity: VisualDensity.compact,
+                    tooltip: isRu ? 'Обновить зеркала' : 'Update mirrors',
+                    onPressed: () async {
+                      HapticFeedback.lightImpact();
+                      final messenger = ScaffoldMessenger.of(context);
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Row(
+                            children: [
+                              const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                isRu
+                                    ? 'Обновление зеркал...'
+                                    : 'Updating mirrors...',
+                              ),
+                            ],
+                          ),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+
+                      final result = await ref
+                          .read(remoteMirrorsServiceProvider)
+                          .syncMirrors(force: true);
+
+                      if (!context.mounted) return;
+                      messenger.hideCurrentSnackBar();
+                      final isSuccess = result.isSuccess;
+                      final updatedCount = switch (result) {
+                        Success(:final data) => data.updatedCount,
+                        Error() => 0,
+                      };
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            isSuccess
+                                ? (updatedCount > 0
+                                    ? (isRu
+                                        ? 'Обновлено зеркал: $updatedCount'
+                                        : 'Updated mirrors: $updatedCount')
+                                    : (isRu
+                                        ? 'Все зеркала актуальны'
+                                        : 'All mirrors are up to date'))
+                                : (isRu
+                                    ? 'Ошибка обновления зеркал'
+                                    : 'Failed to update mirrors'),
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
                 // Provider Check Glass Button
                 Padding(
                   padding: const EdgeInsets.only(right: 6),
@@ -249,13 +322,9 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
         error: (error, _) => ErrorView(message: error.toString()),
         data: (rawItems) {
           final items = rawItems
-              .where((p) {
-                if (!kIsWeb && defaultTargetPlatform != TargetPlatform.android) {
-                  if (p.apiType == 'fapello' || p.id == 'fapello') return false;
-                }
-                return p.id.toLowerCase() != 'e621' &&
-                    p.id.toLowerCase() != 'e926';
-              })
+              .where((p) =>
+                  p.id.toLowerCase() != 'e621' &&
+                  p.id.toLowerCase() != 'e926')
               .toList();
           final activeCount = items.where((p) => p.enabled).length;
           final booruCount = items.where((p) => _isBooru(p.apiType)).length;
@@ -292,6 +361,19 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
                       130 + bottomInset,
                     ),
                     children: [
+                      // Broadcast Announcement Banner (from mirrors.json)
+                      if (ref.watch(activeBroadcastMessageProvider) != null) ...[
+                        _buildBroadcastBanner(
+                          context,
+                          ref.watch(activeBroadcastMessageProvider)!,
+                          isRu,
+                          isDark,
+                          isAmoled,
+                          scheme,
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+
                       // Overview Glass Card
                       Container(
                         margin: const EdgeInsets.only(bottom: 12),
@@ -690,6 +772,76 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+  Widget _buildBroadcastBanner(
+    BuildContext context,
+    RemoteBroadcastMessage broadcast,
+    bool isRu,
+    bool isDark,
+    bool isAmoled,
+    ColorScheme scheme,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: scheme.primaryContainer.withValues(alpha: isDark ? 0.35 : 0.70),
+        border: Border.all(
+          color: scheme.primary.withValues(alpha: 0.40),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: scheme.primary.withValues(alpha: 0.15),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: scheme.primary.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.campaign_rounded,
+              size: 20,
+              color: scheme.primary,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (broadcast.title(isRu).isNotEmpty)
+                  Text(
+                    broadcast.title(isRu),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      color: scheme.onPrimaryContainer,
+                    ),
+                  ),
+                if (broadcast.title(isRu).isNotEmpty) const SizedBox(height: 4),
+                Text(
+                  broadcast.message(isRu),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: scheme.onPrimaryContainer.withValues(alpha: 0.90),
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

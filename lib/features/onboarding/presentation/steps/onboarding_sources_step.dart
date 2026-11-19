@@ -110,14 +110,7 @@ class OnboardingSourcesStep extends ConsumerWidget {
     final isRu = settings.languageCode == 'ru';
     final providersAsync = ref.watch(providersControllerProvider);
     final allProviders = providersAsync.value ?? [];
-    final providers = allProviders
-        .where((p) {
-          if (!kIsWeb && defaultTargetPlatform != TargetPlatform.android) {
-            return p.apiType != 'fapello' && p.id != 'fapello';
-          }
-          return true;
-        })
-        .toList();
+    final providers = allProviders;
     final activeCount = providers.where((p) => p.enabled).length;
 
     return SingleChildScrollView(

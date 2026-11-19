@@ -560,6 +560,11 @@ class _PostCardState extends ConsumerState<PostCard>
   static final Set<String> _prewarmedDetailUrls = {};
 
   void _prewarmDetailsImage(BuildContext context, Post post) {
+    // Avoid saturating the network by prefetching full heavy files on Fapello CDN
+    if (post.providerId.contains('fapello') ||
+        post.fileUrl.contains('fckthots.xyz')) {
+      return;
+    }
     final detailsUrls =
         MediaUrlSelector.details(post, mode: widget.mediaQualityMode);
     final url = detailsUrls.firstOrNull;

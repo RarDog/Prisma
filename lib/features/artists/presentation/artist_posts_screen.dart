@@ -62,6 +62,7 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
   bool _loading = false;
   bool _hasMore = true;
   Object? _error;
+  bool _groupByPost = true;
 
   @override
   void initState() {
@@ -122,12 +123,17 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
       _error = null;
     });
 
+    final String? mediaFilter =
+        _selectedTypes.length == 1 ? _selectedTypes.first : null;
+
     final query = ArtistWorkQuery(
       providerId: widget.providerId,
       service: widget.service,
       artistId: widget.artistId,
       artistName: widget.artistName,
       tagFilter: _selectedTag,
+      mediaFilter: mediaFilter,
+      groupByPost: _groupByPost,
     );
 
     try {
@@ -163,7 +169,7 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
               .toList();
           _posts.addAll(uniqueNew);
           _page++;
-          if (newPosts.length < 10) {
+          if (widget.providerId != 'fapello' && newPosts.length < 10) {
             _hasMore = false;
           }
         }
@@ -472,6 +478,42 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
     );
   }
 
+  void _onAllTypesSelected() {
+    if (_selectedTypes.isEmpty) return;
+    setState(() {
+      _selectedTypes.clear();
+      if (widget.providerId == 'fapello') {
+        _posts.clear();
+        _page = 0;
+        _hasMore = true;
+        _error = null;
+      }
+    });
+    if (widget.providerId == 'fapello') {
+      _loadMore();
+    }
+  }
+
+  void _onTypeSelected(String type, bool selected) {
+    setState(() {
+      if (selected) {
+        _selectedTypes.clear();
+        _selectedTypes.add(type);
+      } else {
+        _selectedTypes.remove(type);
+      }
+      if (widget.providerId == 'fapello') {
+        _posts.clear();
+        _page = 0;
+        _hasMore = true;
+        _error = null;
+      }
+    });
+    if (widget.providerId == 'fapello') {
+      _loadMore();
+    }
+  }
+
   Widget _buildMediaTypeFilters() {
     final scheme = Theme.of(context).colorScheme;
     final audioCount = _posts.where(MediaUrlSelector.isAudio).length;
@@ -498,7 +540,7 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
               selected: _selectedTypes.isEmpty,
               label: Text(
                   isRu ? 'Все (${_posts.length})' : 'All (${_posts.length})'),
-              onSelected: (_) => setState(() => _selectedTypes.clear()),
+              onSelected: (_) => _onAllTypesSelected(),
             ),
             const SizedBox(width: 8),
             FilterChip(
@@ -508,16 +550,12 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
                   color: _selectedTypes.contains('photo')
                       ? scheme.onPrimaryContainer
                       : scheme.onSurfaceVariant),
-              label: Text(isRu ? 'Фото ($photoCount)' : 'Photo ($photoCount)'),
-              onSelected: (selected) {
-                setState(() {
-                  if (selected) {
-                    _selectedTypes.add('photo');
-                  } else {
-                    _selectedTypes.remove('photo');
-                  }
-                });
-              },
+              label: Text(widget.providerId == 'fapello' &&
+                      !_selectedTypes.contains('photo') &&
+                      photoCount == 0
+                  ? (isRu ? 'Фото' : 'Photo')
+                  : (isRu ? 'Фото ($photoCount)' : 'Photo ($photoCount)')),
+              onSelected: (selected) => _onTypeSelected('photo', selected),
             ),
             const SizedBox(width: 8),
             FilterChip(
@@ -527,16 +565,12 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
                   color: _selectedTypes.contains('video')
                       ? scheme.onPrimaryContainer
                       : scheme.onSurfaceVariant),
-              label: Text(isRu ? 'Видео ($videoCount)' : 'Video ($videoCount)'),
-              onSelected: (selected) {
-                setState(() {
-                  if (selected) {
-                    _selectedTypes.add('video');
-                  } else {
-                    _selectedTypes.remove('video');
-                  }
-                });
-              },
+              label: Text(widget.providerId == 'fapello' &&
+                      !_selectedTypes.contains('video') &&
+                      videoCount == 0
+                  ? (isRu ? 'Видео' : 'Video')
+                  : (isRu ? 'Видео ($videoCount)' : 'Video ($videoCount)')),
+              onSelected: (selected) => _onTypeSelected('video', selected),
             ),
             if (audioCount > 0) ...[
               const SizedBox(width: 8),
@@ -745,6 +779,35 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
     return AdaptiveScaffold(
       title: widget.artistName,
       actions: [
+        if (widget.providerId == 'pawchive')
+          IconButton(
+            tooltip: isRu
+                ? (_groupByPost
+                    ? 'Режим: По постам (нажмите для всех фото)'
+                    : 'Режим: Все фото (нажмите для постов)')
+                : (_groupByPost
+                    ? 'Mode: By posts (tap for all media)'
+                    : 'Mode: All media (tap for posts)'),
+            icon: Icon(
+              _groupByPost
+                  ? Icons.view_agenda_rounded
+                  : Icons.grid_view_rounded,
+              color: _groupByPost
+                  ? Theme.of(context).colorScheme.primary
+                  : null,
+            ),
+            onPressed: () {
+              HapticFeedback.selectionClick();
+              setState(() {
+                _groupByPost = !_groupByPost;
+                _posts.clear();
+                _page = 0;
+                _hasMore = true;
+                _error = null;
+              });
+              _loadMore();
+            },
+          ),
         IconButton(
           tooltip: isArtistFavorite
               ? (isRu ? 'В избранном' : 'In favorites')
@@ -879,6 +942,14 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
 
   String _friendlyArtistPostError(Object error, bool isRu) {
     final message = error.toString();
+    if (message.contains('ERR_CONNECTION_CLOSED') ||
+        message.contains('Connection refused') ||
+        message.contains('SocketException') ||
+        message.contains('NetworkClientException')) {
+      return isRu
+          ? 'Не удалось подключиться к источнику. Возможно, адрес заблокирован провайдером. Проверьте зеркала в Настройки -> Провайдеры.'
+          : 'Could not connect to provider. The domain might be blocked by your ISP. Check mirrors in Settings -> Providers.';
+    }
     if (message.contains('HandshakeException') ||
         message.contains('artist works are unavailable')) {
       return isRu

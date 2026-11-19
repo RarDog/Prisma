@@ -10,7 +10,7 @@ Map<String, String> _artistHeaders(String service) {
   if (service.toLowerCase() == 'fapello') {
     return {
       'User-Agent': AppHeaders.desktopChromeUserAgent,
-      'Referer': 'https://fapello.com/',
+      'Referer': 'https://fapello.is/',
       'Accept': '*/*',
     };
   }

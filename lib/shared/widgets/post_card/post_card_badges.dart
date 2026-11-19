@@ -347,3 +347,56 @@ class DownloadedBadge extends StatelessWidget {
     );
   }
 }
+
+class ScoreBadge extends StatelessWidget {
+  const ScoreBadge({super.key, required this.score});
+
+  final int score;
+
+  @override
+  Widget build(BuildContext context) {
+    if (score <= 0) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3.5),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.redAccent.withValues(alpha: 0.45),
+          width: 0.8,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.favorite_rounded,
+            size: 11,
+            color: Colors.redAccent,
+          ),
+          const SizedBox(width: 3.5),
+          Text(
+            _formatScore(score),
+            style: const TextStyle(
+              fontSize: 10,
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.2,
+              height: 1.1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _formatScore(int value) {
+    if (value >= 1000000) {
+      return '${(value / 1000000).toStringAsFixed(1)}M';
+    }
+    if (value >= 1000) {
+      return '${(value / 1000).toStringAsFixed(1)}k';
+    }
+    return '$value';
+  }
+}

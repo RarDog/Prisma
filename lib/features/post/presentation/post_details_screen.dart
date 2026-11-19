@@ -124,6 +124,28 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
     return AdaptiveScaffold(
       title: strings.post,
       actions: [
+        if (!Responsive.isMobile(context))
+          IconButton(
+            tooltip: settings.desktopPostSplitView
+                ? (strings.ru
+                    ? 'Классический вид (одна колонка)'
+                    : 'Classic single-column view')
+                : (strings.ru
+                    ? 'Двухколоночный вид (Split view)'
+                    : 'Two-pane split view'),
+            icon: Icon(
+              settings.desktopPostSplitView
+                  ? Icons.view_sidebar_rounded
+                  : Icons.view_agenda_rounded,
+            ),
+            onPressed: () {
+              ref.read(settingsControllerProvider.notifier).saveSettings(
+                    settings.copyWith(
+                      desktopPostSplitView: !settings.desktopPostSplitView,
+                    ),
+                  );
+            },
+          ),
         IconButton(
           tooltip: strings.fullscreen,
           onPressed: () => _openFullscreen(

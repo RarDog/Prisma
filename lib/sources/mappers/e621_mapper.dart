@@ -15,6 +15,15 @@ class E621Mapper {
         ),
       ];
     }
+    if (data is Map && data['id'] != null && (data['files'] != null || data['file'] != null)) {
+      return [
+        postFromJson(
+          Map<String, dynamic>.from(data),
+          providerId: providerId,
+          providerName: providerName,
+        ),
+      ];
+    }
     final posts = data is Map ? (data['posts'] ?? data['post']) : data;
     final items = posts is List ? posts : (posts is Map ? [posts] : const []);
     return items
@@ -32,19 +41,87 @@ class E621Mapper {
     required String providerId,
     required String providerName,
   }) {
-    final file = Map<String, dynamic>.from((json['file'] as Map?) ?? const {});
-    final preview =
-        Map<String, dynamic>.from((json['preview'] as Map?) ?? const {});
-    final sample =
-        Map<String, dynamic>.from((json['sample'] as Map?) ?? const {});
-    final score =
-        Map<String, dynamic>.from((json['score'] as Map?) ?? const {});
-    final tagsMap =
-        Map<String, dynamic>.from((json['tags'] as Map?) ?? const {});
-    final tagGroups = {
-      for (final entry in tagsMap.entries)
-        entry.key: List<String>.from((entry.value as List?) ?? const []),
-    }..removeWhere((_, value) => value.isEmpty);
+    // Supports both new e621 schema ("files": {"original": ..., "preview": ..., "sample": ..., "meta": ...})
+    // and legacy Danbooru schema ("file": ..., "preview": ..., "sample": ...).
+    final files =
+        Map<String, dynamic>.from((json['files'] as Map?) ?? const {});
+    final original =
+        Map<String, dynamic>.from((files['original'] as Map?) ?? const {});
+    final fileMeta =
+        Map<String, dynamic>.from((files['meta'] as Map?) ?? const {});
+    final oldFile =
+        Map<String, dynamic>.from((json['file'] as Map?) ?? const {});
+
+    final fileUrl = _string(original['url'] ?? oldFile['url']);
+    final width = _int(original['width'] ?? oldFile['width']);
+    final height = _int(original['height'] ?? oldFile['height']);
+    final fileExt = fileMeta['ext'] ?? oldFile['ext'];
+
+    final isVideo = _fileType(fileUrl, fileExt) == 'video';
+
+    // Parse video transcoding variants and samples if present in files.video
+    final videoObj =
+        Map<String, dynamic>.from((files['video'] as Map?) ?? const {});
+    final videoVariants =
+        Map<String, dynamic>.from((videoObj['variants'] as Map?) ?? const {});
+    final videoSamples =
+        Map<String, dynamic>.from((videoObj['samples'] as Map?) ?? const {});
+    final mp4Variant =
+        Map<String, dynamic>.from((videoVariants['mp4'] as Map?) ?? const {});
+    final sample720p =
+        Map<String, dynamic>.from((videoSamples['720p'] as Map?) ?? const {});
+    final sample480p =
+        Map<String, dynamic>.from((videoSamples['480p'] as Map?) ?? const {});
+
+    final mp4Url = _string(mp4Variant['url']);
+    final sample720Url = _string(sample720p['url']);
+    final sample480Url = _string(sample480p['url']);
+
+    final previewMap = Map<String, dynamic>.from(
+        (files['preview'] as Map?) ?? (json['preview'] as Map?) ?? const {});
+    final previewUrl = _string(
+      previewMap['webp'] ?? previewMap['jpg'] ?? previewMap['url'] ?? fileUrl,
+    );
+
+    final sampleMap = Map<String, dynamic>.from(
+        (files['sample'] as Map?) ?? (json['sample'] as Map?) ?? const {});
+    final sampleUrl = isVideo
+        ? (mp4Url.isNotEmpty
+            ? mp4Url
+            : (sample720Url.isNotEmpty ? sample720Url : fileUrl))
+        : _string(
+            sampleMap['webp'] ??
+                sampleMap['jpg'] ??
+                sampleMap['url'] ??
+                fileUrl,
+          );
+
+    final stats =
+        Map<String, dynamic>.from((json['stats'] as Map?) ?? const {});
+    final scoreMap = Map<String, dynamic>.from(
+        (stats['score'] as Map?) ?? (json['score'] as Map?) ?? const {});
+    final score = _int(scoreMap['total'] ?? stats['score'] ?? json['score']);
+
+    final tagGroups = <String, List<String>>{};
+    final rawTags = json['tags'];
+    final List<String> tags;
+    if (rawTags is Map) {
+      for (final entry in rawTags.entries) {
+        final list = List<String>.from((entry.value as List?) ?? const []);
+        if (list.isNotEmpty) {
+          tagGroups[entry.key.toString()] = list;
+        }
+      }
+      tags = tagGroups.values.expand((items) => items).toSet().toList();
+    } else if (rawTags is List) {
+      tags = rawTags
+          .map((e) => e?.toString() ?? '')
+          .where((s) => s.isNotEmpty)
+          .toList();
+      tagGroups['general'] = tags;
+    } else {
+      tags = const [];
+    }
 
     final relationships =
         Map<String, dynamic>.from((json['relationships'] as Map?) ?? const {});
@@ -68,9 +145,14 @@ class E621Mapper {
       tagGroups['pools'] = rawPools;
     }
 
-    final favCount = json['fav_count'];
+    final favCount = stats['fav_count'] ?? json['fav_count'];
     if (favCount != null) {
       tagGroups['fav_count'] = [favCount.toString()];
+    }
+
+    final commentsCount = stats['comment_count'] ?? json['comment_count'];
+    if (commentsCount != null) {
+      tagGroups['comments_count'] = [commentsCount.toString()];
     }
 
     final desc = _string(json['description']);
@@ -80,29 +162,47 @@ class E621Mapper {
 
     final hasNotes = json['has_notes'] == true ||
         json['last_noted_at'] != null ||
+        (json['has'] is Map && (json['has'] as Map)['notes'] == true) ||
         (json['flags'] is Map && (json['flags'] as Map)['has_notes'] == true);
     if (hasNotes) {
       tagGroups['has_notes'] = ['true'];
     }
 
-    final tags = tagGroups.values.expand((items) => items).toSet().toList();
-    final fileUrl = _string(file['url']);
+    final duration = fileMeta['duration'];
+    if (duration != null && duration is num && duration > 0) {
+      tagGroups['duration'] = [duration.toInt().toString()];
+    }
+
+    final variantList = <String>[];
+    if (mp4Url.isNotEmpty) variantList.add('1080p MP4|$mp4Url');
+    if (sample720Url.isNotEmpty) variantList.add('720p MP4|$sample720Url');
+    if (sample480Url.isNotEmpty) variantList.add('480p MP4|$sample480Url');
+    if (fileUrl.isNotEmpty && isVideo) variantList.add('Original|$fileUrl');
+    if (variantList.isNotEmpty) {
+      tagGroups['video_variants'] = variantList;
+    }
+
+    final uploader = json['uploader_name']?.toString();
+    if (uploader != null && uploader.isNotEmpty && !tagGroups.containsKey('artist')) {
+      tagGroups['uploader'] = [uploader];
+    }
+
     return Post(
       id: _string(json['id']),
       providerId: providerId,
       providerName: providerName,
-      previewUrl: _string(preview['url'] ?? sample['url'] ?? fileUrl),
-      sampleUrl: _string(sample['url'] ?? fileUrl),
+      previewUrl: previewUrl,
+      sampleUrl: sampleUrl,
       fileUrl: fileUrl,
       tags: tags,
       rating: _rating(_string(json['rating'], fallback: 'unknown')),
-      width: _int(file['width']),
-      height: _int(file['height']),
+      width: width,
+      height: height,
       source: _sources(json['sources']),
       createdAt:
           DateTime.tryParse(_string(json['created_at'])) ?? DateTime.now(),
-      fileType: _fileType(fileUrl, file['ext']),
-      score: _int(score['total'] ?? json['score']),
+      fileType: _fileType(fileUrl, fileExt),
+      score: score,
       tagGroups: tagGroups,
     );
   }

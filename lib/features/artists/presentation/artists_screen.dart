@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -41,14 +40,7 @@ final artistProviderConfigsProvider =
       .watch(providerManagerProvider)
       .loadArtistConfigs(enabledOnly: true);
   if (result is! Success<List<ContentProviderConfig>>) return const [];
-  return result.data
-      .where((c) {
-        if (!kIsWeb && defaultTargetPlatform != TargetPlatform.android) {
-          return c.id != 'fapello' && c.apiType != 'fapello';
-        }
-        return true;
-      })
-      .toList();
+  return result.data;
 });
 
 class ArtistsScreen extends ConsumerStatefulWidget {
@@ -561,25 +553,37 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
   }
 
   String _friendlyArtistError(Object? error) {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final message = error.toString();
     if (message.contains(_cloudflareChallengeHint)) {
-      return 'Fapello blocks automated requests with a Cloudflare challenge, '
-          'so its pages cannot be read from the app. Enable another artist '
-          'provider in Providers.';
+      return isRu
+          ? 'Fapello блокирует автоматические запросы проверкой Cloudflare. Включите другой источник авторов в Провайдерах.'
+          : 'Fapello blocks automated requests with a Cloudflare challenge, '
+              'so its pages cannot be read from the app. Enable another artist '
+              'provider in Providers.';
+    }
+    if (message.contains('ERR_CONNECTION_CLOSED') ||
+        message.contains('Connection refused') ||
+        message.contains('SocketException') ||
+        message.contains('NetworkClientException')) {
+      return isRu
+          ? 'Не удалось подключиться к источнику. Возможно, адрес заблокирован провайдером. Проверьте зеркала в Настройки -> Провайдеры.'
+          : 'Could not connect to provider. The domain might be blocked by your ISP. Check mirrors in Settings -> Providers.';
     }
     if (message.contains('HandshakeException') ||
         message.contains('artist works are unavailable')) {
-      return 'Artist API is unavailable right now. Try refresh or another provider.';
+      return isRu
+          ? 'API авторов временно недоступен. Попробуйте обновить или выбрать другой источник.'
+          : 'Artist API is unavailable right now. Try refresh or another provider.';
     }
     return message;
   }
 
   bool _matchesDisplayFilters(ArtistProfile a) {
-    final s = a.service.toLowerCase();
-    if (_providerId == 'fapello' || s == 'fapello') {
-      if (_selectedServices.isEmpty) return true;
-      return _selectedServices.contains('fapello');
+    if (_providerId == 'fapello' || a.service.toLowerCase() == 'fapello') {
+      return true;
     }
+    final s = a.service.toLowerCase();
     if (s != 'patreon' && s != 'fanbox') return false;
     if (_selectedServices.isEmpty) return true;
     return _selectedServices.contains(s);
@@ -628,8 +632,9 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
       // Update total artists count if not yet known
       if (_totalArtistsCount == null) {
         final count = await provider.getArtistsCount(
-          services:
-              _selectedServices.isEmpty ? null : _selectedServices.toList(),
+          services: _providerId == 'fapello'
+              ? null
+              : (_selectedServices.isEmpty ? null : _selectedServices.toList()),
           query: _search.text.trim(),
         );
         if (mounted && count != null) {
@@ -642,8 +647,9 @@ class _ArtistsScreenState extends ConsumerState<ArtistsScreen> {
 
       final pageResults = await provider.searchArtists(
         _search.text.trim(),
-        services:
-            _selectedServices.isEmpty ? null : _selectedServices.toList(),
+        services: _providerId == 'fapello'
+            ? null
+            : (_selectedServices.isEmpty ? null : _selectedServices.toList()),
         sort: _sortOrder,
         page: target,
         limit: _pageSize,

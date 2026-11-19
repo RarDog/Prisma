@@ -159,6 +159,31 @@ class MediaUrlSelector {
   }
 
   static List<String> video(Post post) {
+    final variants = <String>[];
+    for (final v in post.tagGroups['video_variants'] ?? const <String>[]) {
+      final parts = v.split('|');
+      final url = parts.length > 1 ? parts[1].trim() : parts[0].trim();
+      if (_looksLikeVideoUrl(url) && !variants.contains(url)) {
+        variants.add(url);
+      }
+    }
+    if (variants.isNotEmpty) {
+      return _compact([
+        ...variants,
+        if (_looksLikeVideoUrl(post.fileUrl)) post.fileUrl,
+        if (_looksLikeVideoUrl(post.sampleUrl)) post.sampleUrl,
+        if (_looksLikeVideoUrl(post.previewUrl)) post.previewUrl,
+      ]);
+    }
+    final fileIsMp4 = post.fileUrl.toLowerCase().contains('.mp4');
+    final sampleIsMp4 = post.sampleUrl.toLowerCase().contains('.mp4');
+    if (sampleIsMp4 && !fileIsMp4) {
+      return _compact([
+        post.sampleUrl,
+        post.fileUrl,
+        if (_looksLikeVideoUrl(post.previewUrl)) post.previewUrl,
+      ]);
+    }
     return _compact([
       if (_looksLikeVideoUrl(post.fileUrl)) post.fileUrl,
       if (_looksLikeVideoUrl(post.sampleUrl)) post.sampleUrl,

@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "updated_at": "2026-11-18T12:00:00Z",
+  "broadcast": {
+    "id": "notice_2026_11",
+    "active": false,
+    "title_ru": "Автономный режим",
+    "message_ru": "Приложение работает в автономном режиме. Актуальные зеркала обновляются из этого файла.",
+    "title_en": "Autonomous Mode",
+    "message_en": "The app is running in autonomous mode. Mirrors are synchronized from this file."
+  },
+  "mirrors": {
+    "mangalib": {
+      "baseUrl": "https://api.cdnlibs.org/api",
+      "customHeaders": {
+        "Referer": "https://mangalib.me/",
+        "Origin": "https://mangalib.me"
+      }
+    },
+    "ranobelib": {
+      "baseUrl": "https://api.cdnlibs.org/api",
+      "customHeaders": {
+        "Referer": "https://ranobelib.me/",
+        "Origin": "https://ranobelib.me"
+      }
+    },
+    "fapello": {
+      "baseUrl": "https://fapello.is"
+    },
+    "rule34_us": {
+      "baseUrl": "https://rule34.us"
+    },
+    "rule34": {
+      "baseUrl": "https://api.rule34.xxx"
+    },
+    "gelbooru": {
+      "baseUrl": "https://gelbooru.com"
+    },
+    "danbooru": {
+      "baseUrl": "https://danbooru.donmai.us"
+    },
+    "realbooru": {
+      "baseUrl": "https://realbooru.com"
+    },
+    "wallhaven": {
+      "baseUrl": "https://wallhaven.cc"
+    },
+    "safebooru": {
+      "baseUrl": "https://safebooru.org"
+    },
+    "e621": {
+      "baseUrl": "https://e621.net"
+    },
+    "e926": {
+      "baseUrl": "https://e926.net"
+    },
+    "tbib": {
+      "baseUrl": "https://tbib.org"
+    },
+    "mangadex": {
+      "baseUrl": "https://api.mangadex.org"
+    },
+    "pixiv": {
+      "baseUrl": "https://app-api.pixiv.net"
+    },
+    "pawchive": {
+      "baseUrl": "https://pawchive.com"
+    },
+    "xvideos": {
+      "baseUrl": "https://www.xvideos.com"
+    }
+  }
+}

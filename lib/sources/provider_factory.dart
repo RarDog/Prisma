@@ -72,6 +72,11 @@ class ProviderFactory {
         final basicAuth = base64Encode(utf8.encode('$login:$apiKey'));
         headers['Authorization'] = 'Basic $basicAuth';
         headers['User-Agent'] = AppHeaders.e621UserAgent(login);
+      } else {
+        headers.putIfAbsent(
+          'User-Agent',
+          () => AppHeaders.e621UserAgent('anonymous'),
+        );
       }
     } else if (config.apiType.toLowerCase() == 'pixiv') {
       headers.putIfAbsent('Referer', () => 'https://www.pixiv.net/');

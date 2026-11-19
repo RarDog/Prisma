@@ -137,9 +137,10 @@ class FeedController extends AsyncNotifier<FeedState> {
     );
     if (requestId != _loadRequestId) return;
     final emptyPageStreak = batch.hasMore ? 0 : current.emptyPageStreak + 1;
+    final combined = [...current.posts, ...batch.posts];
     state = AsyncData(
       current.copyWith(
-        posts: [...current.posts, ...batch.posts],
+        posts: combined,
         isLoadingMore: false,
         hasMore: batch.hasMore,
         emptyPageStreak: emptyPageStreak,

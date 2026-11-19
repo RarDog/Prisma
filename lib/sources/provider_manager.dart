@@ -467,6 +467,12 @@ class ProviderManager {
         getActiveFeedProviders: activeFeedProviders,
       );
 
+  /// Explicitly invalidates provider config caches so feeds, readers,
+  /// and suggestions immediately reload newly saved URLs or headers.
+  void invalidateConfigCache() {
+    _clearSuggestionCaches();
+  }
+
   void _clearSuggestionCaches() {
     _suggestionAggregator.clearCaches();
     _configsCache = null;

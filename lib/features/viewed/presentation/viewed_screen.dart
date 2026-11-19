@@ -25,10 +25,12 @@ class ViewedScreen extends ConsumerStatefulWidget {
 }
 
 class _ViewedScreenState extends ConsumerState<ViewedScreen> {
-  bool _isGridView = false;
+  bool? _isGridView;
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = Responsive.isDesktop(context);
+    final isGrid = _isGridView ?? isDesktop;
     final state = ref.watch(viewedControllerProvider);
     final settings =
         ref.watch(appSettingsProvider).value ?? AppSettings.defaults;
@@ -39,13 +41,13 @@ class _ViewedScreenState extends ConsumerState<ViewedScreen> {
       title: isRu ? 'История' : 'History',
       actions: [
         IconButton(
-          tooltip: _isGridView
+          tooltip: isGrid
               ? (isRu ? 'Список' : 'List view')
               : (isRu ? 'Сетка' : 'Grid view'),
-          icon: Icon(_isGridView
+          icon: Icon(isGrid
               ? Icons.view_agenda_rounded
               : Icons.grid_view_rounded),
-          onPressed: () => setState(() => _isGridView = !_isGridView),
+          onPressed: () => setState(() => _isGridView = !isGrid),
         ),
         IconButton(
           tooltip: isRu ? 'Очистить историю' : 'Clear history',
@@ -125,7 +127,7 @@ class _ViewedScreenState extends ConsumerState<ViewedScreen> {
               for (final i in g.items) i.post
           ];
 
-          if (_isGridView) {
+          if (isGrid) {
             return RefreshIndicator(
               onRefresh: () =>
                   ref.read(viewedControllerProvider.notifier).refresh(),

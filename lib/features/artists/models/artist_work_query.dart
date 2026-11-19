@@ -6,6 +6,8 @@ class ArtistWorkQuery {
     required this.artistName,
     this.queryText,
     this.tagFilter,
+    this.mediaFilter,
+    this.groupByPost = false,
   });
 
   final String providerId;
@@ -14,6 +16,8 @@ class ArtistWorkQuery {
   final String artistName;
   final String? queryText;
   final String? tagFilter;
+  final String? mediaFilter;
+  final bool groupByPost;
 
   ArtistWorkQuery copyWith({
     String? providerId,
@@ -22,6 +26,8 @@ class ArtistWorkQuery {
     String? artistName,
     String? queryText,
     String? tagFilter,
+    String? mediaFilter,
+    bool? groupByPost,
   }) {
     return ArtistWorkQuery(
       providerId: providerId ?? this.providerId,
@@ -30,6 +36,8 @@ class ArtistWorkQuery {
       artistName: artistName ?? this.artistName,
       queryText: queryText ?? this.queryText,
       tagFilter: tagFilter ?? this.tagFilter,
+      mediaFilter: mediaFilter ?? this.mediaFilter,
+      groupByPost: groupByPost ?? this.groupByPost,
     );
   }
 
@@ -41,7 +49,9 @@ class ArtistWorkQuery {
         other.artistId == artistId &&
         other.artistName == artistName &&
         other.queryText == queryText &&
-        other.tagFilter == tagFilter;
+        other.tagFilter == tagFilter &&
+        other.mediaFilter == mediaFilter &&
+        other.groupByPost == groupByPost;
   }
 
   @override
@@ -52,5 +62,7 @@ class ArtistWorkQuery {
         artistName,
         queryText,
         tagFilter,
+        mediaFilter,
+        groupByPost,
       );
 }

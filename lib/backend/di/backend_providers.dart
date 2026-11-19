@@ -28,6 +28,8 @@ import 'package:gel_rule_app/features/downloads/domain/downloaded_media_service.
 import 'package:gel_rule_app/features/favorites/domain/favorite_service.dart';
 import 'package:gel_rule_app/features/feed/domain/feed_service.dart';
 import 'package:gel_rule_app/features/providers/domain/provider_check_service.dart';
+import 'package:gel_rule_app/features/providers/domain/remote_mirrors_service.dart';
+import 'package:gel_rule_app/features/providers/models/remote_mirrors_config.dart';
 import 'package:gel_rule_app/features/search/domain/search_service.dart';
 import 'package:gel_rule_app/features/search/domain/tag_cache_service.dart';
 import 'package:gel_rule_app/features/artists/domain/pawchive_accounts_store.dart';
@@ -304,3 +306,18 @@ final Provider<OnboardingService> onboardingServiceProvider =
     providerRepository: ref.watch(providerRepositoryProvider),
   );
 });
+
+final remoteMirrorsServiceProvider = Provider<RemoteMirrorsService>((ref) {
+  return RemoteMirrorsService(
+    dio: Dio(),
+    providerRepository: ref.watch(providerRepositoryProvider),
+    providerManager: ref.watch(providerManagerProvider),
+  );
+});
+
+final activeBroadcastMessageProvider = Provider<RemoteBroadcastMessage?>((ref) {
+  final appDb = ref.watch(appDatabaseProvider);
+  if (!appDb.hasValue) return null;
+  return ref.watch(remoteMirrorsServiceProvider).activeBroadcast;
+});
+

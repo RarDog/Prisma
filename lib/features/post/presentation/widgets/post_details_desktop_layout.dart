@@ -186,9 +186,22 @@ class PostDetailsDesktopLayout extends ConsumerWidget {
         },
         child: Focus(
           autofocus: true,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
+          child: settings.desktopPostSplitView
+              ? _buildSplitLayout(context, ref, currentIndex)
+              : _buildClassicLayout(context, ref, currentIndex),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildClassicLayout(
+    BuildContext context,
+    WidgetRef ref,
+    int currentIndex,
+  ) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -458,9 +471,264 @@ class PostDetailsDesktopLayout extends ConsumerWidget {
               ),
               const SizedBox(height: 80),
             ],
+          );
+  }
+
+  Widget _buildMediaViewer(
+    BuildContext context,
+    WidgetRef ref, {
+    required bool fitAvailable,
+  }) {
+    final isVideo = MediaUrlSelector.isVideo(targetPost);
+    final isAudio = MediaUrlSelector.isAudio(targetPost);
+
+    final mediaWidget = PostMediaViewer(
+      key: ValueKey('${targetPost.cacheKey}_$currentPostIndex'),
+      post: targetPost,
+      pageIndex: isMultiPage ? currentPostIndex : null,
+      pageCount: isMultiPage ? pages.length : null,
+      onPageChanged: isMultiPage ? (newIdx) => onPageSelected(newIdx) : null,
+      useLiveFeed: isMultiPage ? false : fromFeed,
+      postsList: isMultiPage ? pages : feedPosts,
+      onLoadMore: onLoadMore,
+      onPostIndexChanged: (index) {
+        if (isMultiPage) {
+          if (index >= 0 && index < pages.length) {
+            onPageSelected(index);
+          }
+          return;
+        }
+        final currentPosts = fromFeed
+            ? (ref.read(feedControllerProvider).value?.posts ?? feedPosts)
+            : feedPosts;
+        if (index >= 0 && index < currentPosts.length) {
+          final target = currentPosts[index];
+          if (target.cacheKey != post.cacheKey) {
+            onOpenPost(target);
+          }
+        }
+      },
+      localFilePath: localMedia?.savedPath,
+      qualityMode: qualityMode,
+      notes: notes,
+      showNotes: showNotes,
+      mediaHeaders:
+          ref.watch(postMediaHeadersProvider(targetPost)).value ?? const {},
+      initialPosition: Duration(
+        milliseconds:
+            settings.videoPlaybackPositions[targetPost.cacheKey] ?? 0,
+      ),
+      initialLoop: settings.videoPlayerLoop,
+      initialMuted: settings.videoPlayerMuted,
+      initialCoverVideo: settings.videoPlayerCover,
+      initialHalfVolume: settings.videoPlayerHalfVolume,
+      initialVolume: settings.videoPlayerVolume,
+      onVolumeChanged: onVolumeChanged,
+      onPlaybackSnapshot: onPlaybackSnapshot,
+      onPlaybackPreferencesChanged: onPlaybackPreferencesChanged,
+    );
+
+    if (fitAvailable) {
+      if (isAudio) {
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 360, maxWidth: 620),
+            child: mediaWidget,
+          ),
+        );
+      }
+      return mediaWidget;
+    }
+
+    if (isVideo || isAudio) {
+      return ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: isAudio ? 360 : 760,
+          maxWidth: isAudio ? 620 : double.infinity,
+        ),
+        child: AspectRatio(
+          aspectRatio: isAudio
+              ? 1.4
+              : ((targetPost.width > 0 && targetPost.height > 0)
+                  ? (targetPost.width / targetPost.height).clamp(0.45, 2.4)
+                  : (16 / 9)),
+          child: mediaWidget,
+        ),
+      );
+    }
+
+    final double aspect = (targetPost.width > 0 && targetPost.height > 0)
+        ? (targetPost.width / targetPost.height).clamp(0.2, 5.0)
+        : (ref.watch(postMediaDimensionsProvider(targetPost.cacheKey)) != null &&
+                ref.watch(postMediaDimensionsProvider(targetPost.cacheKey))!.height > 0
+            ? (ref.watch(postMediaDimensionsProvider(targetPost.cacheKey))!.width /
+                    ref.watch(postMediaDimensionsProvider(targetPost.cacheKey))!.height)
+                .clamp(0.2, 5.0)
+            : (16 / 9));
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 760),
+      child: AspectRatio(
+        aspectRatio: aspect,
+        child: mediaWidget,
+      ),
+    );
+  }
+
+  Widget _buildSplitLayout(
+    BuildContext context,
+    WidgetRef ref,
+    int currentIndex,
+  ) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final sidebarWidth = (screenWidth * 0.28).clamp(360.0, 450.0);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Левая колонка: Просмотрщик медиа
+        Expanded(
+          child: Container(
+            color: isDark ? Colors.black : theme.colorScheme.surfaceContainerLowest,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 52, vertical: 12),
+                    child: _buildMediaViewer(context, ref, fitAvailable: true),
+                  ),
+                ),
+                if (previous != null)
+                  Positioned(
+                    left: 10,
+                    top: 0,
+                    bottom: 0,
+                    child: Center(
+                      child: IconButton.filledTonal(
+                        tooltip: strings.ru ? 'Предыдущий (←)' : 'Previous (←)',
+                        onPressed: () => onOpenPost(previous!),
+                        icon: const Icon(Icons.chevron_left_rounded, size: 28),
+                      ),
+                    ),
+                  ),
+                if (next != null)
+                  Positioned(
+                    right: 10,
+                    top: 0,
+                    bottom: 0,
+                    child: Center(
+                      child: IconButton.filledTonal(
+                        tooltip: strings.ru ? 'Следующий (→)' : 'Next (→)',
+                        onPressed: () => onOpenPost(next!),
+                        icon: const Icon(Icons.chevron_right_rounded, size: 28),
+                      ),
+                    ),
+                  ),
+                if (pages.length > 1 || currentIndex >= 0)
+                  Positioned(
+                    left: 56,
+                    right: 56,
+                    bottom: 10,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (pages.length > 1)
+                          PostMultiPageStrip(
+                            pages: pages,
+                            currentIndex: currentPostIndex,
+                            onPageSelected: onPageSelected,
+                            onDownloadAll: settings.allowDownloads
+                                ? onDownloadAllPages
+                                : null,
+                          ),
+                        if (currentIndex >= 0 && pages.length <= 1)
+                          NeighborStrip(
+                            posts: feedPosts,
+                            currentIndex: currentIndex,
+                            onOpen: onOpenPost,
+                          ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
-      ),
+        // Разделитель колонок
+        VerticalDivider(
+          width: 1,
+          thickness: 1,
+          color: theme.dividerColor.withValues(alpha: 0.12),
+        ),
+        // Правая колонка: Инспектор метаданных, тегов и действий
+        SizedBox(
+          width: sidebarWidth,
+          child: Container(
+            color: theme.colorScheme.surface,
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              children: [
+                if (!MediaUrlSelector.isVideo(post) &&
+                    !MediaUrlSelector.isAudio(post) &&
+                    (post.providerId.toLowerCase().contains('e621') ||
+                        post.providerId.toLowerCase().contains('e926') ||
+                        post.hasNotes)) ...[
+                  GoogleTranslateButton(
+                    hasNotes: notes.isNotEmpty,
+                    isLoading: notesAsync.isLoading,
+                    showNotes: showNotes,
+                    notesCount: notes.length,
+                    isRu: strings.ru,
+                    onToggle: onToggleNotes,
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                _buildMetadataSection(),
+                const SizedBox(height: 48),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMetadataSection() {
+    return PostDetailsMetadataSection(
+      post: post,
+      targetPost: targetPost,
+      settings: settings,
+      strings: strings,
+      labels: labels,
+      isFavorite: favoriteKeys.contains(post.cacheKey),
+      downloaded: localMedia != null,
+      isDownloading: isDownloading,
+      localMedia: localMedia,
+      fileSizeBytes: fileSizeBytes,
+      e621Provider: e621Provider,
+      shouldShowCloudCard: shouldShowCloudCard,
+      isTextOnly: isTextOnly,
+      isMobile: false,
+      onFavorite: onToggleFavorite,
+      onCollection: onAddToCollection,
+      onOpen: () => onOpenSource(),
+      onOpenSource: onOpenSource,
+      onCopy: () => Clipboard.setData(
+          ClipboardData(text: targetPost.fileUrl)),
+      onSimilar: onOpenSimilar,
+      onHide: onHidePost,
+      onDownload: onDownload,
+      onSaveAs: onSaveAs,
+      onDeleteLocalFile: onDeleteLocalFile,
+      onShare: onShare,
+      onOpenArtistPost: onOpenArtistPost,
+      onOpenPostId: onOpenPostId,
+      onOpenComic: onOpenComic,
+      onPlayStream: onPlayStream,
+      onDownloadStream: onDownloadStream,
     );
   }
 }

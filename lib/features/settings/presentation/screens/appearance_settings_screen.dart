@@ -130,6 +130,22 @@ class AppearanceSettingsScreen extends ConsumerWidget {
                 accentColor: const Color(0xFF3B82F6),
                 children: [
                   if (isDesktop) ...[
+                    SettingsSwitchTile(
+                      icon: Icons.view_sidebar_rounded,
+                      iconColor: const Color(0xFF3B82F6),
+                      title: isRu
+                          ? 'Двухколоночный режим поста (ПК)'
+                          : 'Two-pane post view (Desktop)',
+                      subtitle: isRu
+                          ? 'Медиа слева на весь экран, а автор, теги и действия — справа'
+                          : 'Media on the left and metadata panel on the right',
+                      value: settings.desktopPostSplitView,
+                      onChanged: (val) => _update(
+                        ref,
+                        settings.copyWith(desktopPostSplitView: val),
+                      ),
+                    ),
+                    const SettingsDivider(),
                     SettingsSegmentedTile<String>(
                       icon: Icons.dock_rounded,
                       iconColor: const Color(0xFF3B82F6),

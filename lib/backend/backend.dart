@@ -73,8 +73,10 @@ export 'package:gel_rule_app/features/artists/domain/pawchive_sync_service.dart'
 
 // Feature: Providers Config
 export 'package:gel_rule_app/features/providers/models/content_provider_config.dart';
+export 'package:gel_rule_app/features/providers/models/remote_mirrors_config.dart';
 export 'package:gel_rule_app/features/providers/data/provider_repository.dart';
 export 'package:gel_rule_app/features/providers/domain/provider_check_service.dart';
+export 'package:gel_rule_app/features/providers/domain/remote_mirrors_service.dart';
 
 // Feature: Onboarding
 export 'package:gel_rule_app/features/onboarding/domain/onboarding_service.dart';

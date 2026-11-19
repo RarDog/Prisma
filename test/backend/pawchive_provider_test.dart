@@ -252,4 +252,90 @@ void main() {
     final feedUrls = MediaUrlSelector.feed(gifPost);
     expect(feedUrls.first, equals(gifPost.fileUrl));
   });
+
+  test('PawchiveProvider implements MultiPageProvider and groups posts when requested', () async {
+    final dio = Dio(BaseOptions(baseUrl: 'https://pawchive.pw'));
+    dio.interceptors.add(InterceptorsWrapper(
+      onRequest: (options, handler) {
+        if (options.path.contains('/posts')) {
+          return handler.resolve(Response(
+            requestOptions: options,
+            statusCode: 200,
+            data: [
+              {
+                'id': '999',
+                'user': '123',
+                'service': 'patreon',
+                'title': 'Test Multi Post',
+                'content': 'This post has 3 photos',
+                'published': '2026-11-18T12:00:00Z',
+                'file': {
+                  'name': 'image1.jpg',
+                  'path': '/ab/cd/image1.jpg',
+                  'server': 'https://file.pawchive.pw',
+                },
+                'attachments': [
+                  {
+                    'name': 'image2.png',
+                    'path': '/ab/cd/image2.png',
+                    'server': 'https://file.pawchive.pw',
+                  },
+                  {
+                    'name': 'image3.webp',
+                    'path': '/ab/cd/image3.webp',
+                    'server': 'https://file.pawchive.pw',
+                  },
+                ],
+              }
+            ],
+          ));
+        }
+        return handler.next(options);
+      },
+    ));
+
+    final provider = PawchiveProvider(
+      id: 'pawchive',
+      name: 'Pawchive',
+      baseUrl: 'https://pawchive.pw',
+      dioClient: DioClient(dio: dio),
+    );
+
+    expect(provider, isA<MultiPageProvider>());
+
+    // 1. Grouped mode (groupByPost: true)
+    const groupedQuery = ArtistWorkQuery(
+      providerId: 'pawchive',
+      service: 'patreon',
+      artistId: '123',
+      artistName: 'Test Artist',
+      groupByPost: true,
+    );
+
+    final groupedPosts = await provider.getArtistPosts(query: groupedQuery);
+    expect(groupedPosts.length, equals(1));
+    final parent = groupedPosts.first;
+    expect(parent.isMultiPage, isTrue);
+    expect(parent.pageCount, equals(3));
+    expect(parent.title, equals('Test Multi Post'));
+
+    // Check getPostPages
+    final pages = await (provider as MultiPageProvider).getPostPages(parent);
+    expect(pages.length, equals(3));
+    expect(pages[0].fileUrl, contains('image1.jpg'));
+    expect(pages[1].fileUrl, contains('image2.png'));
+    expect(pages[2].fileUrl, contains('image3.webp'));
+
+    // 2. Flat mode (groupByPost: false)
+    const flatQuery = ArtistWorkQuery(
+      providerId: 'pawchive',
+      service: 'patreon',
+      artistId: '123',
+      artistName: 'Test Artist',
+      groupByPost: false,
+    );
+
+    final flatPosts = await provider.getArtistPosts(query: flatQuery);
+    expect(flatPosts.length, equals(3));
+  });
 }

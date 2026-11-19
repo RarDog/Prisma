@@ -127,8 +127,45 @@ class Post {
     return raw != null ? int.tryParse(raw) : null;
   }
 
+  int get videoDurationSeconds {
+    final raw = tagGroups['duration']?.firstOrNull;
+    if (raw != null) {
+      final parsed = int.tryParse(raw);
+      if (parsed != null && parsed > 0) return parsed;
+    }
+    final text = tagGroups['duration_text']?.firstOrNull;
+    if (text != null && text.trim().isNotEmpty) {
+      return parseDurationString(text);
+    }
+    return 0;
+  }
+
+  List<String> get videoVariants => tagGroups['video_variants'] ?? const [];
+
+  static int parseDurationString(String text) {
+    final clean = text.trim();
+    if (clean.isEmpty) return 0;
+    final parts = clean.split(':');
+    if (parts.length == 2) {
+      final min = int.tryParse(parts[0]) ?? 0;
+      final sec = int.tryParse(parts[1]) ?? 0;
+      return min * 60 + sec;
+    } else if (parts.length == 3) {
+      final hr = int.tryParse(parts[0]) ?? 0;
+      final min = int.tryParse(parts[1]) ?? 0;
+      final sec = int.tryParse(parts[2]) ?? 0;
+      return hr * 3600 + min * 60 + sec;
+    }
+    final mMatch = RegExp(r'(\d+)\s*m').firstMatch(clean);
+    final sMatch = RegExp(r'(\d+)\s*s').firstMatch(clean);
+    var total = 0;
+    if (mMatch != null) total += (int.tryParse(mMatch.group(1)!) ?? 0) * 60;
+    if (sMatch != null) total += int.tryParse(sMatch.group(1)!) ?? 0;
+    return total;
+  }
+
   String? get title {
-    final list = tagGroups['copyright'];
+    final list = tagGroups['title'] ?? tagGroups['copyright'];
     if (list != null && list.isNotEmpty) {
       return list.first;
     }

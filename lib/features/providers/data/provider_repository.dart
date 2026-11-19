@@ -198,7 +198,7 @@ class ProviderRepository {
       ContentProviderConfig(
         id: 'fapello',
         name: 'Fapello',
-        baseUrl: 'https://fapello.com',
+        baseUrl: 'https://fapello.is',
         apiType: 'fapello',
         // Off by default: the site serves its HTML behind a Cloudflare
         // managed challenge, which the app's HTTP client cannot pass. The
@@ -326,6 +326,11 @@ class ProviderRepository {
           await isar.providerConfigEntitys.put(provider);
         } else if (removedIds.contains(provider.providerId)) {
           await isar.providerConfigEntitys.delete(provider.isarId);
+        } else if (provider.providerId == 'fapello' &&
+            provider.baseUrl.contains('fapello.com')) {
+          provider.baseUrl = 'https://fapello.is';
+          provider.updatedAt = DateTime.now();
+          await isar.providerConfigEntitys.put(provider);
         }
       }
       final seeds = seedProviders();
@@ -373,7 +378,10 @@ class ProviderRepository {
     });
     if (result is! Success<List<ContentProviderConfig>>) return result;
     final overlaid = <ContentProviderConfig>[];
-    for (final config in result.data) {
+    for (var config in result.data) {
+      if (config.id == 'fapello' && config.baseUrl.contains('fapello.com')) {
+        config = config.copyWith(baseUrl: 'https://fapello.is');
+      }
       overlaid.add(await _overlayCredentials(config));
     }
     return Success(overlaid);
