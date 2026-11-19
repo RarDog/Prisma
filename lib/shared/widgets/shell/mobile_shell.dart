@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gel_rule_app/app/responsive.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:gel_rule_app/features/settings/presentation/settings_screen.dart';
@@ -54,6 +55,10 @@ class MobileShellState extends ConsumerState<MobileShell>
   }
 
   void _openSettingsWithReveal([Offset? center]) {
+    if (Responsive.isDesktop(context)) {
+      widget.onNavigate('/settings');
+      return;
+    }
     final media = MediaQuery.of(context);
     final fallbackCenter = Offset(
       media.size.width - 42.0,
@@ -100,7 +105,7 @@ class MobileShellState extends ConsumerState<MobileShell>
     );
     final media = MediaQuery.of(context);
     final isKeyboardOpen = media.viewInsets.bottom > 0;
-    final bottomInset = isKeyboardOpen ? 0.0 : (76.0 + media.padding.bottom);
+    final bottomInset = isKeyboardOpen ? 0.0 : (88.0 + media.padding.bottom);
 
     return Scaffold(
       extendBody: true,

@@ -16,7 +16,8 @@ import 'package:gel_rule_app/features/settings/presentation/widgets/settings_sha
 import 'package:gel_rule_app/sources/booru/e621_provider.dart';
 
 class AccountsSettingsScreen extends ConsumerWidget {
-  const AccountsSettingsScreen({super.key});
+  const AccountsSettingsScreen({super.key, this.embedded = false});
+  final bool embedded;
 
   Future<void> _syncE621Blacklist(
     BuildContext context,
@@ -174,6 +175,7 @@ class AccountsSettingsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: !embedded,
         title: Row(
           children: [
             const SettingsIconBadge(

@@ -112,10 +112,12 @@ class ArtistsCatalogView extends StatelessWidget {
                 ),
               ),
             // The shell injects the nav-bar inset into padding.bottom — keep
-            // the footer scrollable clear of the glass bar.
+            // the footer scrollable clear of the glass bar (at least 100px if bottom bar is present).
             SliverPadding(
               padding: EdgeInsets.only(
-                bottom: MediaQuery.paddingOf(context).bottom + 24,
+                bottom: (MediaQuery.paddingOf(context).bottom > 20
+                    ? MediaQuery.paddingOf(context).bottom + 28
+                    : 104.0),
               ),
             ),
           ],

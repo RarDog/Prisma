@@ -17,7 +17,8 @@ import 'package:gel_rule_app/features/settings/presentation/widgets/prisma_chang
 import 'package:gel_rule_app/features/settings/presentation/widgets/settings_shared_widgets.dart';
 
 class AboutSettingsScreen extends ConsumerWidget {
-  const AboutSettingsScreen({super.key});
+  const AboutSettingsScreen({super.key, this.embedded = false});
+  final bool embedded;
 
   Future<void> _checkUpdates(
       BuildContext context, WidgetRef ref, bool isRu) async {
@@ -410,8 +411,9 @@ class AboutSettingsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: !embedded,
         title: Text(strings.about),
-        leading: Navigator.canPop(context)
+        leading: (!embedded && Navigator.canPop(context))
             ? IconButton(
                 icon: const Icon(Icons.arrow_back_rounded),
                 onPressed: () => Navigator.pop(context),

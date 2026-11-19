@@ -9,7 +9,8 @@ import 'package:gel_rule_app/features/settings/presentation/settings_controller.
 import 'package:gel_rule_app/features/settings/presentation/widgets/settings_shared_widgets.dart';
 
 class FeedSettingsScreen extends ConsumerWidget {
-  const FeedSettingsScreen({super.key});
+  const FeedSettingsScreen({super.key, this.embedded = false});
+  final bool embedded;
 
   Future<void> _update(WidgetRef ref, AppSettings settings) {
     return ref.read(settingsControllerProvider.notifier).saveSettings(settings);
@@ -38,6 +39,7 @@ class FeedSettingsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: !embedded,
         title: Row(
           children: [
             const SettingsIconBadge(

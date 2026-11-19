@@ -13,7 +13,8 @@ import 'package:gel_rule_app/features/settings/presentation/widgets/settings_sha
 import 'package:gel_rule_app/features/viewed/presentation/viewed_controller.dart';
 
 class StorageSettingsScreen extends ConsumerWidget {
-  const StorageSettingsScreen({super.key});
+  const StorageSettingsScreen({super.key, this.embedded = false});
+  final bool embedded;
 
   Future<void> _update(WidgetRef ref, AppSettings settings) {
     return ref.read(settingsControllerProvider.notifier).saveSettings(settings);
@@ -392,6 +393,7 @@ class StorageSettingsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: !embedded,
         title: Row(
           children: [
             const SettingsIconBadge(

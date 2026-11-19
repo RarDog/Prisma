@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gel_rule_app/app/responsive.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/features/artists/models/artist_sort_order.dart';
 
@@ -64,6 +65,101 @@ class ArtistsHeader extends StatelessWidget {
                 ? 1
                 : 0);
 
+    final isDesktop = Responsive.isDesktop(context);
+
+    final filterButton = InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () => ArtistsFilterSheet.show(
+        context,
+        selectedSort: selectedSort,
+        selectedServices: selectedServices,
+        providers: providers,
+        selectedProviderId: selectedProviderId,
+        isRu: isRu,
+        onApply: ({
+          required sort,
+          required services,
+          required providerId,
+        }) {
+          if (sort != selectedSort) onSortChanged(sort);
+          if (providerId != selectedProviderId) {
+            onProviderChanged(providerId);
+          }
+          for (final s in services) {
+            if (!selectedServices.contains(s)) onToggleService(s);
+          }
+          for (final s in selectedServices) {
+            if (!services.contains(s)) onToggleService(s);
+          }
+        },
+      ),
+      child: Container(
+        height: 38,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: activeFilterCount > 0
+              ? theme.colorScheme.primary
+                  .withValues(alpha: isDark ? 0.3 : 0.15)
+              : (isDark
+                  ? Colors.black.withValues(alpha: 0.3)
+                  : Colors.black.withValues(alpha: 0.05)),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: activeFilterCount > 0
+                ? theme.colorScheme.primary
+                    .withValues(alpha: isDark ? 0.6 : 0.4)
+                : (isDark
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Colors.black.withValues(alpha: 0.08)),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.tune_rounded,
+              size: 16,
+              color: activeFilterCount > 0
+                  ? theme.colorScheme.primary
+                  : (isDark ? Colors.white70 : Colors.black54),
+            ),
+            if (activeFilterCount > 0) ...[
+              const SizedBox(width: 5),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '$activeFilterCount',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+
+    final tabToggle = ArtistsTabToggle(
+      currentTab: currentTab,
+      onTabChanged: onTabChanged,
+      favoritesCount: favoritesCount,
+      isRu: isRu,
+    );
+
+    final searchField = ArtistsSearchField(
+      searchController: searchController,
+      onSearch: onSearch,
+      isRu: isRu,
+    );
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 6, 14, 6),
       child: ArtistsLiquidCard(
@@ -72,108 +168,34 @@ class ArtistsHeader extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Row 1: Compact Tab Toggle + Filter Sheet Trigger
-            Row(
-              children: [
-                Expanded(
-                  child: ArtistsTabToggle(
-                    currentTab: currentTab,
-                    onTabChanged: onTabChanged,
-                    favoritesCount: favoritesCount,
-                    isRu: isRu,
+            if (isDesktop) ...[
+              // Desktop layout: Compact tab toggle + search field + filter button in a single row
+              Row(
+                children: [
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 300),
+                    child: tabToggle,
                   ),
-                ),
-                const SizedBox(width: 8),
-                InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () => ArtistsFilterSheet.show(
-                    context,
-                    selectedSort: selectedSort,
-                    selectedServices: selectedServices,
-                    providers: providers,
-                    selectedProviderId: selectedProviderId,
-                    isRu: isRu,
-                    onApply: ({
-                      required sort,
-                      required services,
-                      required providerId,
-                    }) {
-                      if (sort != selectedSort) onSortChanged(sort);
-                      if (providerId != selectedProviderId) {
-                        onProviderChanged(providerId);
-                      }
-                      for (final s in services) {
-                        if (!selectedServices.contains(s)) onToggleService(s);
-                      }
-                      for (final s in selectedServices) {
-                        if (!services.contains(s)) onToggleService(s);
-                      }
-                    },
-                  ),
-                  child: Container(
-                    height: 38,
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    decoration: BoxDecoration(
-                      color: activeFilterCount > 0
-                          ? theme.colorScheme.primary
-                              .withValues(alpha: isDark ? 0.3 : 0.15)
-                          : (isDark
-                              ? Colors.black.withValues(alpha: 0.3)
-                              : Colors.black.withValues(alpha: 0.05)),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: activeFilterCount > 0
-                            ? theme.colorScheme.primary
-                                .withValues(alpha: isDark ? 0.6 : 0.4)
-                            : (isDark
-                                ? Colors.white.withValues(alpha: 0.1)
-                                : Colors.black.withValues(alpha: 0.08)),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.tune_rounded,
-                          size: 16,
-                          color: activeFilterCount > 0
-                              ? theme.colorScheme.primary
-                              : (isDark ? Colors.white70 : Colors.black54),
-                        ),
-                        if (activeFilterCount > 0) ...[
-                          const SizedBox(width: 5),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 5, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primary,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              '$activeFilterCount',
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // Row 2: Search field
-            ArtistsSearchField(
-              searchController: searchController,
-              onSearch: onSearch,
-              isRu: isRu,
-            ),
-            const SizedBox(height: 8),
+                  const SizedBox(width: 10),
+                  Expanded(child: searchField),
+                  const SizedBox(width: 8),
+                  filterButton,
+                ],
+              ),
+              const SizedBox(height: 8),
+            ] else ...[
+              // Mobile layout: Tab toggle full row + filter button, followed by search field
+              Row(
+                children: [
+                  Expanded(child: tabToggle),
+                  const SizedBox(width: 8),
+                  filterButton,
+                ],
+              ),
+              const SizedBox(height: 8),
+              searchField,
+              const SizedBox(height: 8),
+            ],
 
             // Row 3: Horizontal quick filter & sort pills
             SizedBox(

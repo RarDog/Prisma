@@ -35,7 +35,9 @@ class ArtistsFavoritesView extends StatelessWidget {
             16,
             10,
             16,
-            MediaQuery.paddingOf(context).bottom + 24,
+            (MediaQuery.paddingOf(context).bottom > 20
+                ? MediaQuery.paddingOf(context).bottom + 28
+                : 104.0),
           ),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: columns,

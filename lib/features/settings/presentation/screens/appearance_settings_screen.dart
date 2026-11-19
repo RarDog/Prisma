@@ -9,7 +9,8 @@ import 'package:gel_rule_app/features/settings/presentation/widgets/card_badges_
 import 'package:gel_rule_app/features/settings/presentation/widgets/settings_shared_widgets.dart';
 
 class AppearanceSettingsScreen extends ConsumerWidget {
-  const AppearanceSettingsScreen({super.key});
+  const AppearanceSettingsScreen({super.key, this.embedded = false});
+  final bool embedded;
 
   Future<void> _update(WidgetRef ref, AppSettings settings) {
     return ref.read(settingsControllerProvider.notifier).saveSettings(settings);
@@ -26,6 +27,7 @@ class AppearanceSettingsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: !embedded,
         title: Row(
           children: [
             const SettingsIconBadge(

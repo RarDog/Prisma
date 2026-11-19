@@ -6,12 +6,17 @@ enum ArtistsTab {
   favorites,
 }
 
-/// Column count for the artist card grids: 1 on mobile, 2 on medium
-/// tablets/narrow desktop, 3 on wide desktop.
+/// Column count for the artist card grids:
+/// Adaptive scaling: 1 on mobile, 2-5 columns on desktop depending on width,
+/// ensuring cards maintain an ideal aspect ratio (~350-420px width) rather than
+/// stretching into extreme letterbox bars.
 int artistGridColumns(BuildContext context, BoxConstraints constraints) {
   if (Responsive.isMobile(context)) return 1;
-  if (constraints.maxWidth >= 1100) return 3;
-  if (constraints.maxWidth >= 760) return 2;
+  final width = constraints.maxWidth;
+  if (width >= 1750) return 5;
+  if (width >= 1380) return 4;
+  if (width >= 1050) return 3;
+  if (width >= 700) return 2;
   return 1;
 }
 

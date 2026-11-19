@@ -66,12 +66,13 @@ class PostMasonryGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final mobile = Responsive.isMobile(context);
     final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final hasBottomBar = mobile || bottomInset > 20;
     final pad = padding ??
         EdgeInsets.fromLTRB(
           mobile ? 8 : 16,
           mobile ? 8 : 16,
           mobile ? 8 : 16,
-          (mobile ? 8 : 16) + (mobile ? (120.0 + bottomInset) : 0.0),
+          (mobile ? 8 : 16) + (hasBottomBar ? (120.0 + bottomInset) : 24.0),
         );
     final spacing = mobile ? 8.0 : 12.0;
 
@@ -137,9 +138,29 @@ class PostMasonryGrid extends StatelessWidget {
         separatorBuilder: (_, __) => SizedBox(height: spacing),
         itemCount: posts.length + (loading ? 3 : 0),
         itemBuilder: (context, index) {
-          if (index >= posts.length) return const LoadingSkeleton();
+          if (index >= posts.length) {
+            const skeleton = LoadingSkeleton();
+            if (!mobile) {
+              return Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 820),
+                  child: skeleton,
+                ),
+              );
+            }
+            return skeleton;
+          }
           _maybePrecacheAhead(context, index, mobile);
-          return buildCard(posts[index]);
+          final card = buildCard(posts[index]);
+          if (!mobile) {
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 820),
+                child: card,
+              ),
+            );
+          }
+          return card;
         },
       );
     }
