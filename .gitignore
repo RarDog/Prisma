@@ -14,3 +14,5 @@ android/local.properties
 *.tar.gz
 *.zip
 *.AppImage
+.zcode/
+release_assets/
