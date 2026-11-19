@@ -82,6 +82,7 @@ class AppSettings {
     this.desktopNavPosition = 'left',
     this.desktopPostSplitView = true,
     this.customTitleBar = true,
+    this.feedVideoHoverPreview = false,
   });
 
   final bool hasCompletedOnboarding;
@@ -107,6 +108,7 @@ class AppSettings {
   final String desktopNavPosition;
   final bool desktopPostSplitView;
   final bool customTitleBar;
+  final bool feedVideoHoverPreview;
   final String lastActiveLocation;
   final List<String> favoriteArtists;
   final List<String> pawchiveAccounts;
@@ -223,6 +225,7 @@ class AppSettings {
     desktopNavPosition: 'left',
     desktopPostSplitView: true,
     customTitleBar: true,
+    feedVideoHoverPreview: false,
   );
 
   AppSettings copyWith({
@@ -304,6 +307,7 @@ class AppSettings {
     String? desktopNavPosition,
     bool? desktopPostSplitView,
     bool? customTitleBar,
+    bool? feedVideoHoverPreview,
   }) {
     return AppSettings(
       lastActiveLocation: lastActiveLocation ?? this.lastActiveLocation,
@@ -396,6 +400,8 @@ class AppSettings {
       desktopNavPosition: desktopNavPosition ?? this.desktopNavPosition,
       desktopPostSplitView: desktopPostSplitView ?? this.desktopPostSplitView,
       customTitleBar: customTitleBar ?? this.customTitleBar,
+      feedVideoHoverPreview:
+          feedVideoHoverPreview ?? this.feedVideoHoverPreview,
     );
   }
 
@@ -475,6 +481,7 @@ class AppSettings {
         'desktopSidebarPinned': desktopSidebarPinned,
         'desktopPostSplitView': desktopPostSplitView,
         'customTitleBar': customTitleBar,
+        'feedVideoHoverPreview': feedVideoHoverPreview,
         if (!Platform.isAndroid && !Platform.isIOS)
           'desktopNavPosition': desktopNavPosition,
       };
@@ -650,6 +657,8 @@ class AppSettings {
             defaults.desktopPostSplitView,
         customTitleBar: (json['customTitleBar'] as bool?) ??
             defaults.customTitleBar,
+        feedVideoHoverPreview: (json['feedVideoHoverPreview'] as bool?) ??
+            defaults.feedVideoHoverPreview,
       );
 
   List<PawchiveAccount> get parsedPawchiveAccounts {

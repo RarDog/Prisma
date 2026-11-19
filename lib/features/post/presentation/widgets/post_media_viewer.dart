@@ -772,8 +772,6 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
     _player = null;
     _controller = null;
     if (p != null) {
-      unawaited(p.pause());
-      unawaited(p.stop());
       unawaited(p.dispose());
     }
   }

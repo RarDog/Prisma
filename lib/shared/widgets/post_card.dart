@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:collection';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -203,18 +202,22 @@ class _PostCardState extends ConsumerState<PostCard>
       }
     }
 
+    final feedVideoHoverEnabled = ref.watch(
+          appSettingsProvider.select(
+            (s) => s.value?.feedVideoHoverPreview ?? false,
+          ),
+        );
+
     return MouseRegion(
       onEnter: (_) {
         setState(() => _hovered = true);
         _videoHoverTimer?.cancel();
-        if (MediaUrlSelector.isVideo(widget.post)) {
-          _videoHoverTimer = Timer(const Duration(milliseconds: 300), () {
+        if (feedVideoHoverEnabled && MediaUrlSelector.isVideo(widget.post)) {
+          _videoHoverTimer = Timer(const Duration(milliseconds: 750), () {
             if (mounted && _hovered) {
               setState(() => _videoHoverActive = true);
             }
           });
-        } else {
-          _prewarmDetailsImage(context, widget.post);
         }
       },
       onExit: (_) {
@@ -359,6 +362,7 @@ class _PostCardState extends ConsumerState<PostCard>
                           final headers = _headersFor(post);
                           final videoUrls = MediaUrlSelector.video(post);
                           if (!mobile &&
+                              feedVideoHoverEnabled &&
                               _videoHoverActive &&
                               MediaUrlSelector.isVideo(post) &&
                               videoUrls.isNotEmpty) {
@@ -553,34 +557,6 @@ class _PostCardState extends ConsumerState<PostCard>
                   ? Icons.music_note_rounded
                   : Icons.broken_image_rounded),
         ),
-      ),
-    );
-  }
-
-  static final Set<String> _prewarmedDetailUrls = {};
-
-  void _prewarmDetailsImage(BuildContext context, Post post) {
-    // Avoid saturating the network by prefetching full heavy files on Fapello CDN
-    if (post.providerId.contains('fapello') ||
-        post.fileUrl.contains('fckthots.xyz')) {
-      return;
-    }
-    final detailsUrls =
-        MediaUrlSelector.details(post, mode: widget.mediaQualityMode);
-    final url = detailsUrls.firstOrNull;
-    if (url == null || url.trim().isEmpty || url == post.previewUrl) return;
-    if (_prewarmedDetailUrls.contains(url)) return;
-    if (_prewarmedDetailUrls.length >= 300) {
-      _prewarmedDetailUrls.remove(_prewarmedDetailUrls.first);
-    }
-    _prewarmedDetailUrls.add(url);
-    final headers = _headersFor(post);
-    final provider = CachedNetworkImageProvider(url, headers: headers);
-    unawaited(
-      precacheImage(
-        provider,
-        context,
-        onError: (_, __) {},
       ),
     );
   }

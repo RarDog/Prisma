@@ -6,6 +6,8 @@ const prismaChangelog = [
     titleEn:
         'Release 4.2.3: Fapello catalog sorting (top likes, top followers, trending, daily ranking) & Rule34.us video fixes',
     bullets: [
+      'Стабильность ленты на ПК: устранение вылетов и зависаний в драйвере nvwgf2umx.dll (0xc0000005) при быстром скролле постов за счёт отключения неконтролируемого предпрогрева 4K-оригиналов и добавления настройки автовоспроизведения видео в ленте.',
+      'Безопасное автовоспроизведение в карточках: добавлена опция в Настройках ленты с увеличенным до 750 мс дебаунсом и защитой от утечек D3D11-текстур при скролле.',
       'Сортировка каталога Fapello: полная поддержка переключения режимов каталога во вкладке Авторов («Топ по лайкам», «Топ по подписчикам», «В тренде», «Топ за день») с бесшовной навигацией по страницам.',
       'Адаптивный фильтр авторов: меню фильтров и быстрые чипы сортировки динамически подстраивают доступные опции и иконки под выбранный источник (Fapello или Pawchive).',
       'Исправление воспроизведения видео Rule34.us: устранена проблема черного экрана при идущем звуке на Android за счет перехода на аппаратный декодер mediacodec-copy с рендером в OpenGL-текстуру.',
@@ -13,6 +15,8 @@ const prismaChangelog = [
       'Надежность медиа-источников Rule34.us: фильтрация несуществующих webm-источников и приоритет рабочих mp4-потоков.',
     ],
     bulletsEn: [
+      'Desktop Feed Stability: eliminated crashes and freezes in nvwgf2umx.dll (0xc0000005) during fast scrolling by removing unbounded 4K image prewarming on hover and introducing a dedicated feed video autoplay setting.',
+      'Safe Feed Video Previews: added a configurable toggle in Feed Settings with a 750 ms debounce and lifecycle guards preventing D3D11 texture churn during scrolling.',
       'Fapello Catalog Sorting: full support for sorting modes in the Artists tab ("Top Likes", "Top Followers", "Trending", "Daily Top") with smooth page navigation.',
       'Adaptive Artists Filter: the filter sheet and quick sort chips dynamically adapt available options and icons to the active catalog source (Fapello or Pawchive).',
       'Rule34.us Video Playback Fix: resolved the black screen issue with active audio on Android by switching hardware decoding to mediacodec-copy onto OpenGL textures.',

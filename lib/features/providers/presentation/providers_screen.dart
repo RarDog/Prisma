@@ -1,5 +1,4 @@
 import 'dart:ui';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -147,6 +146,7 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
                     visualDensity: VisualDensity.compact,
                     tooltip: isRu ? 'Обновить зеркала' : 'Update mirrors',
                     onPressed: () async {
+                      // ignore: unawaited_futures
                       HapticFeedback.lightImpact();
                       final messenger = ScaffoldMessenger.of(context);
                       messenger.showSnackBar(

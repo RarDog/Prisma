@@ -51,7 +51,7 @@ void main() async {
 
   // Optimize image cache to prevent memory bloat and OOM crashes
   PaintingBinding.instance.imageCache.maximumSizeBytes =
-      180 * 1024 * 1024; // 180 MB
-  PaintingBinding.instance.imageCache.maximumSize = 120; // 120 images
+      120 * 1024 * 1024; // 120 MB
+  PaintingBinding.instance.imageCache.maximumSize = 80; // 80 images
   runApp(const ProviderScope(child: GelRuleApp()));
 }

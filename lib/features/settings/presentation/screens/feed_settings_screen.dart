@@ -344,6 +344,30 @@ class FeedSettingsScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
+
+              // Feed Previews & Stability
+              SettingsCardGroup(
+                title: isRu ? 'Предпросмотр в ленте' : 'Feed Previews',
+                icon: Icons.video_collection_rounded,
+                accentColor: const Color(0xFF8B5CF6),
+                children: [
+                  SettingsSwitchTile(
+                    icon: Icons.smart_display_rounded,
+                    iconColor: const Color(0xFF8B5CF6),
+                    title: isRu
+                        ? 'Воспроизведение видео при наведении'
+                        : 'Autoplay video preview on hover',
+                    subtitle: isRu
+                        ? 'Автоматически проигрывать видео в карточке при задержке курсора мыши (на ПК)'
+                        : 'Automatically play video in post card on mouse hover (desktop)',
+                    value: settings.feedVideoHoverPreview,
+                    onChanged: (val) => _update(
+                      ref,
+                      settings.copyWith(feedVideoHoverPreview: val),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),

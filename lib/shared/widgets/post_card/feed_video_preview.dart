@@ -58,7 +58,6 @@ class _FeedVideoPreviewState extends State<FeedVideoPreview> {
     _player = null;
     _controller = null;
     if (p != null) {
-      unawaited(p.stop());
       unawaited(p.dispose());
     }
     super.dispose();
@@ -121,6 +120,10 @@ class _FeedVideoPreviewState extends State<FeedVideoPreview> {
               bufferSize: 16 * 1024 * 1024,
             ),
           );
+          if (!mounted || requestId != _requestId) {
+            unawaited(player.dispose());
+            return;
+          }
           _player = player;
           final isDesktop =
               Platform.isLinux || Platform.isWindows || Platform.isMacOS;
@@ -134,12 +137,10 @@ class _FeedVideoPreviewState extends State<FeedVideoPreview> {
             ),
           );
           _errorSubscription = player.stream.error.listen((_) {
-            unawaited(player?.pause());
-            unawaited(player?.stop());
             if (mounted) setState(() => _failed = true);
           });
         }
-        await player.stop();
+        if (!mounted || requestId != _requestId) return;
         await player.setVolume(0);
         await player.setPlaylistMode(PlaylistMode.loop);
         await player
