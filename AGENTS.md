@@ -91,7 +91,6 @@ lib/
 **Other top-level directories**
 
 * `test/backend/` — data layer, providers, repositories, services. `test/features/` — widgets/controllers. `test/shared/` — shared widgets. `test/sources/` — factory memoization.
-* `docs/superpowers/plans/` and `docs/superpowers/specs/` — design docs written before larger features (e.g. download Dynamic Island, Pixiv Ugoira player). Add a spec + plan here for multi-step work.
 * `installer/` — packaging: `build_linux_appimage.sh` (Linux AppImage) and `Prisma.iss` (Windows Inno Setup).
 * `third_party/isar_flutter_libs/` — pinned Isar binaries; do not remove the `dependency_overrides` entry.
 
