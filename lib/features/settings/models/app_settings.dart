@@ -83,6 +83,7 @@ class AppSettings {
     this.desktopPostSplitView = true,
     this.customTitleBar = true,
     this.feedVideoHoverPreview = false,
+    this.hasMigratedMangaHidden = true,
   });
 
   final bool hasCompletedOnboarding;
@@ -109,6 +110,7 @@ class AppSettings {
   final bool desktopPostSplitView;
   final bool customTitleBar;
   final bool feedVideoHoverPreview;
+  final bool hasMigratedMangaHidden;
   final String lastActiveLocation;
   final List<String> favoriteArtists;
   final List<String> pawchiveAccounts;
@@ -173,7 +175,7 @@ class AppSettings {
     themeMode: 'dark',
     languageCode: 'ru',
     appSeedColor: 0xFFE84D8A,
-    hiddenTabs: [],
+    hiddenTabs: ['manga'],
     allowExperimentalUpdates: false,
     desktopColumns: 5,
     mobileColumns: 2,
@@ -226,6 +228,7 @@ class AppSettings {
     desktopPostSplitView: true,
     customTitleBar: true,
     feedVideoHoverPreview: false,
+    hasMigratedMangaHidden: true,
   );
 
   AppSettings copyWith({
@@ -308,6 +311,7 @@ class AppSettings {
     bool? desktopPostSplitView,
     bool? customTitleBar,
     bool? feedVideoHoverPreview,
+    bool? hasMigratedMangaHidden,
   }) {
     return AppSettings(
       lastActiveLocation: lastActiveLocation ?? this.lastActiveLocation,
@@ -402,6 +406,8 @@ class AppSettings {
       customTitleBar: customTitleBar ?? this.customTitleBar,
       feedVideoHoverPreview:
           feedVideoHoverPreview ?? this.feedVideoHoverPreview,
+      hasMigratedMangaHidden:
+          hasMigratedMangaHidden ?? this.hasMigratedMangaHidden,
     );
   }
 
@@ -482,6 +488,7 @@ class AppSettings {
         'desktopPostSplitView': desktopPostSplitView,
         'customTitleBar': customTitleBar,
         'feedVideoHoverPreview': feedVideoHoverPreview,
+        'hasMigratedMangaHidden': hasMigratedMangaHidden,
         if (!Platform.isAndroid && !Platform.isIOS)
           'desktopNavPosition': desktopNavPosition,
       };
@@ -498,8 +505,14 @@ class AppSettings {
             (json['languageCode'] as String?) ?? defaults.languageCode,
         appSeedColor:
             (json['appSeedColor'] as num?)?.toInt() ?? defaults.appSeedColor,
-        hiddenTabs: List<String>.from(
-            (json['hiddenTabs'] as List?) ?? defaults.hiddenTabs),
+        hiddenTabs: (json['hiddenTabs'] as List?) != null
+            ? (((json['hasMigratedMangaHidden'] as bool?) ?? false)
+                ? (json['hiddenTabs'] as List).map((e) => e.toString()).toList()
+                : {
+                    ...(json['hiddenTabs'] as List).map((e) => e.toString()),
+                    'manga',
+                  }.toList())
+            : defaults.hiddenTabs,
         allowExperimentalUpdates: (json['allowExperimentalUpdates'] as bool?) ??
             defaults.allowExperimentalUpdates,
         desktopColumns: (json['desktopColumns'] as num?)?.toInt() ??
@@ -659,6 +672,7 @@ class AppSettings {
             defaults.customTitleBar,
         feedVideoHoverPreview: (json['feedVideoHoverPreview'] as bool?) ??
             defaults.feedVideoHoverPreview,
+        hasMigratedMangaHidden: true,
       );
 
   List<PawchiveAccount> get parsedPawchiveAccounts {
