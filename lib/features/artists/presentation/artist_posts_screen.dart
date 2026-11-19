@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:gel_rule_app/app/app.dart';
@@ -752,6 +753,16 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
     }
   }
 
+  void _handleBack(BuildContext context) {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).maybePop();
+    } else if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/artists');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
@@ -776,8 +787,13 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
     final displayedPosts =
         _posts.where(_matchesTypeFilter).toList(growable: false);
 
-    return AdaptiveScaffold(
+    final scaffold = AdaptiveScaffold(
       title: widget.artistName,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_rounded),
+        tooltip: isRu ? 'Назад (Esc)' : 'Back (Esc)',
+        onPressed: () => _handleBack(context),
+      ),
       actions: [
         if (widget.providerId == 'pawchive')
           IconButton(
@@ -937,6 +953,17 @@ class _ArtistPostsScreenState extends ConsumerState<ArtistPostsScreen> {
                         ),
                       ],
                     ),
+    );
+
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.escape): () =>
+            _handleBack(context),
+      },
+      child: Focus(
+        autofocus: true,
+        child: scaffold,
+      ),
     );
   }
 

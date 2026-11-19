@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:gel_rule_app/app/responsive.dart';
 
@@ -12,6 +13,7 @@ class AdaptiveScaffold extends StatelessWidget {
     this.floatingActionButton,
     this.resizeToAvoidBottomInset = false,
     this.leading,
+    this.automaticallyImplyLeading = true,
     super.key,
   });
 
@@ -22,6 +24,7 @@ class AdaptiveScaffold extends StatelessWidget {
   final Widget? floatingActionButton;
   final bool resizeToAvoidBottomInset;
   final Widget? leading;
+  final bool automaticallyImplyLeading;
 
   Widget _buildGlassNotchBar(BuildContext context, {required bool mobile}) {
     final theme = Theme.of(context);
@@ -155,18 +158,7 @@ class AdaptiveScaffold extends StatelessWidget {
                     child: SizedBox(
                       height: barHeight,
                       child: NavigationToolbar(
-                        leading: leading != null
-                            ? IconButtonTheme(
-                                data: IconButtonThemeData(
-                                  style: IconButton.styleFrom(
-                                    visualDensity: VisualDensity.compact,
-                                    padding: const EdgeInsets.all(6),
-                                    minimumSize: const Size(36, 36),
-                                  ),
-                                ),
-                                child: leading!,
-                              )
-                            : null,
+                        leading: _buildLeading(context),
                         middle: DefaultTextStyle(
                           style: (theme.textTheme.titleMedium ?? const TextStyle())
                               .copyWith(
@@ -239,5 +231,47 @@ class AdaptiveScaffold extends StatelessWidget {
       ),
       floatingActionButton: floatingActionButton,
     );
+  }
+
+  Widget? _buildLeading(BuildContext context) {
+    if (leading != null) {
+      return IconButtonTheme(
+        data: IconButtonThemeData(
+          style: IconButton.styleFrom(
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.all(6),
+            minimumSize: const Size(36, 36),
+          ),
+        ),
+        child: leading!,
+      );
+    }
+    if (automaticallyImplyLeading) {
+      final canPop = Navigator.of(context).canPop() || context.canPop();
+      if (canPop) {
+        final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
+        return IconButtonTheme(
+          data: IconButtonThemeData(
+            style: IconButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.all(6),
+              minimumSize: const Size(36, 36),
+            ),
+          ),
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded),
+            tooltip: isRu ? 'Назад' : 'Back',
+            onPressed: () {
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).maybePop();
+              } else if (context.canPop()) {
+                context.pop();
+              }
+            },
+          ),
+        );
+      }
+    }
+    return null;
   }
 }

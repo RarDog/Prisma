@@ -185,7 +185,7 @@ class _DesktopSettingsLayoutState extends ConsumerState<DesktopSettingsLayout> {
               ),
               child: Column(
                 children: [
-                  // Top Bar with Back / Close Button and Title
+                  // Top Bar with Back Button and Title
                   Padding(
                     padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
                     child: Row(
@@ -195,20 +195,13 @@ class _DesktopSettingsLayoutState extends ConsumerState<DesktopSettingsLayout> {
                           tooltip: isRu ? 'Назад (Esc)' : 'Back (Esc)',
                           onPressed: () => _handleClose(context),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            strings.settings,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 17,
-                            ),
+                        const SizedBox(width: 12),
+                        Text(
+                          strings.settings,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 17,
                           ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close_rounded, size: 20),
-                          tooltip: isRu ? 'Закрыть (Esc)' : 'Close (Esc)',
-                          onPressed: () => _handleClose(context),
                         ),
                       ],
                     ),
