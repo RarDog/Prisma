@@ -40,6 +40,7 @@ dependencies:
   flutter_markdown_plus: ^1.0.12
   cronet_http: ^1.10.1
   native_dio_adapter: ^1.8.0
+  window_manager: ^0.4.3
 dev_dependencies:
   flutter_test:
     sdk: flutter

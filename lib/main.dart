@@ -1,7 +1,8 @@
 import 'dart:io';
-import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:window_manager/window_manager.dart';
 
 import 'app/app.dart';
 import 'core/motion/desktop_smooth_scroll_binding.dart';
@@ -19,7 +20,13 @@ class _AppHttpOverrides extends HttpOverrides {
   }
 }
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+    try {
+      await windowManager.ensureInitialized();
+    } catch (_) {}
+  }
   HttpOverrides.global = _AppHttpOverrides();
   DesktopSmoothScrollBinding.ensureInitialized();
   PerformanceMonitorService.init();

@@ -2,15 +2,18 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:dynamic_color/dynamic_color.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:window_manager/window_manager.dart';
 
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/features/settings/presentation/widgets/app_update_dialog.dart';
 import 'package:gel_rule_app/core/motion/desktop_smooth_scroll_binding.dart';
 import 'package:gel_rule_app/features/downloads/presentation/widgets/download_dynamic_island.dart';
+import 'package:gel_rule_app/shared/widgets/shell/desktop_window_title_bar.dart';
 import 'app_strings.dart';
 import 'motion.dart';
 import 'router.dart';
@@ -93,6 +96,27 @@ class _AppOverlayState extends ConsumerState<_AppOverlay>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    if (!kIsWeb && (Platform.isWindows || Platform.isLinux)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final settings =
+            ref.read(appSettingsProvider).valueOrNull ?? AppSettings.defaults;
+        _applyWindowTitleBarStyle(settings.customTitleBar);
+      });
+    }
+  }
+
+  void _applyWindowTitleBarStyle(bool custom) {
+    if (kIsWeb || (!Platform.isWindows && !Platform.isLinux)) return;
+    try {
+      if (custom) {
+        windowManager.setTitleBarStyle(
+          TitleBarStyle.hidden,
+          windowButtonVisibility: false,
+        );
+      } else {
+        windowManager.setTitleBarStyle(TitleBarStyle.normal);
+      }
+    } catch (_) {}
   }
 
   @override
@@ -166,9 +190,25 @@ class _AppOverlayState extends ConsumerState<_AppOverlay>
             .setPreferredRefreshRate(motion.effectiveHz);
       });
     }
+
+    final showCustomBar = !kIsWeb &&
+        (Platform.isWindows || Platform.isLinux) &&
+        (appSettings?.customTitleBar ?? true);
+
+    Widget content = DownloadDynamicIslandOverlay(child: widget.child);
+
+    if (showCustomBar) {
+      content = Column(
+        children: [
+          const DesktopWindowTitleBar(),
+          Expanded(child: content),
+        ],
+      );
+    }
+
     return AppMotionScope(
       settings: motion,
-      child: DownloadDynamicIslandOverlay(child: widget.child),
+      child: content,
     );
   }
 }

@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:window_manager/window_manager.dart';
 
 import 'package:gel_rule_app/app/app.dart';
 import 'package:gel_rule_app/backend/backend.dart';
@@ -132,6 +134,51 @@ class AppearanceSettingsScreen extends ConsumerWidget {
                 accentColor: const Color(0xFF3B82F6),
                 children: [
                   if (isDesktop) ...[
+                    SettingsSegmentedTile<bool>(
+                      icon: Icons.web_asset_rounded,
+                      iconColor: const Color(0xFF10B981),
+                      title: isRu ? 'Заголовок окна' : 'Window Title Bar',
+                      subtitle: isRu
+                          ? 'Кнопки управления окна (закрыть, свернуть, развернуть)'
+                          : 'Window control buttons (close, minimize, maximize)',
+                      segments: [
+                        ButtonSegment<bool>(
+                          value: false,
+                          icon: const Icon(Icons.desktop_windows_rounded, size: 18),
+                          label: Text(isRu ? 'Системный' : 'System'),
+                        ),
+                        ButtonSegment<bool>(
+                          value: true,
+                          icon: const Icon(Icons.style_rounded, size: 18),
+                          label: Text(isRu ? 'Приложение' : 'Custom App'),
+                        ),
+                      ],
+                      selected: {settings.customTitleBar},
+                      onSelectionChanged: (val) async {
+                        if (val.isNotEmpty) {
+                          final custom = val.first;
+                          await _update(
+                            ref,
+                            settings.copyWith(customTitleBar: custom),
+                          );
+                          if (!kIsWeb && (Platform.isWindows || Platform.isLinux)) {
+                            try {
+                              if (custom) {
+                                await windowManager.setTitleBarStyle(
+                                  TitleBarStyle.hidden,
+                                  windowButtonVisibility: false,
+                                );
+                              } else {
+                                await windowManager.setTitleBarStyle(
+                                  TitleBarStyle.normal,
+                                );
+                              }
+                            } catch (_) {}
+                          }
+                        }
+                      },
+                    ),
+                    const SettingsDivider(),
                     SettingsSwitchTile(
                       icon: Icons.view_sidebar_rounded,
                       iconColor: const Color(0xFF3B82F6),

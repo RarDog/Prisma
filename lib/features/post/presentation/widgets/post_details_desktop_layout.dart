@@ -493,50 +493,54 @@ class _PostDetailsDesktopLayoutState
         Expanded(
           child: Container(
             color: isDark ? Colors.black : theme.colorScheme.surfaceContainerLowest,
-            child: Stack(
-              fit: StackFit.expand,
+            child: Column(
               children: [
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 52, vertical: 12),
-                    child: _buildAnimatedMedia(
-                      targetKey:
-                          '${widget.targetPost.cacheKey}_${widget.currentPostIndex}',
-                      child: _buildMediaViewer(context, fitAvailable: true),
-                    ),
+                Expanded(
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 52, vertical: 8),
+                          child: _buildAnimatedMedia(
+                            targetKey:
+                                '${widget.targetPost.cacheKey}_${widget.currentPostIndex}',
+                            child: _buildMediaViewer(context, fitAvailable: true),
+                          ),
+                        ),
+                      ),
+                      if (hasPrevious)
+                        Positioned(
+                          left: 10,
+                          top: 0,
+                          bottom: 0,
+                          child: Center(
+                            child: IconButton.filledTonal(
+                              tooltip: widget.strings.ru ? 'Предыдущий (←)' : 'Previous (←)',
+                              onPressed: _goToPrevious,
+                              icon: const Icon(Icons.chevron_left_rounded, size: 28),
+                            ),
+                          ),
+                        ),
+                      if (hasNext)
+                        Positioned(
+                          right: 10,
+                          top: 0,
+                          bottom: 0,
+                          child: Center(
+                            child: IconButton.filledTonal(
+                              tooltip: widget.strings.ru ? 'Следующий (→)' : 'Next (→)',
+                              onPressed: _goToNext,
+                              icon: const Icon(Icons.chevron_right_rounded, size: 28),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-                if (hasPrevious)
-                  Positioned(
-                    left: 10,
-                    top: 0,
-                    bottom: 0,
-                    child: Center(
-                      child: IconButton.filledTonal(
-                        tooltip: widget.strings.ru ? 'Предыдущий (←)' : 'Previous (←)',
-                        onPressed: _goToPrevious,
-                        icon: const Icon(Icons.chevron_left_rounded, size: 28),
-                      ),
-                    ),
-                  ),
-                if (hasNext)
-                  Positioned(
-                    right: 10,
-                    top: 0,
-                    bottom: 0,
-                    child: Center(
-                      child: IconButton.filledTonal(
-                        tooltip: widget.strings.ru ? 'Следующий (→)' : 'Next (→)',
-                        onPressed: _goToNext,
-                        icon: const Icon(Icons.chevron_right_rounded, size: 28),
-                      ),
-                    ),
-                  ),
-                if (widget.pages.length > 1 || currentIndex >= 0)
-                  Positioned(
-                    left: 56,
-                    right: 56,
-                    bottom: 10,
+                if (widget.pages.length > 1 || (currentIndex >= 0 && widget.pages.length <= 1))
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(52, 0, 52, 10),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [

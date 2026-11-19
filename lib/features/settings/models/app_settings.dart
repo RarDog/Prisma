@@ -81,6 +81,7 @@ class AppSettings {
     this.desktopSidebarPinned = false,
     this.desktopNavPosition = 'left',
     this.desktopPostSplitView = true,
+    this.customTitleBar = true,
   });
 
   final bool hasCompletedOnboarding;
@@ -105,6 +106,7 @@ class AppSettings {
   final bool desktopSidebarPinned;
   final String desktopNavPosition;
   final bool desktopPostSplitView;
+  final bool customTitleBar;
   final String lastActiveLocation;
   final List<String> favoriteArtists;
   final List<String> pawchiveAccounts;
@@ -220,6 +222,7 @@ class AppSettings {
     novelReaderTheme: 'dark',
     desktopNavPosition: 'left',
     desktopPostSplitView: true,
+    customTitleBar: true,
   );
 
   AppSettings copyWith({
@@ -300,6 +303,7 @@ class AppSettings {
     bool? desktopSidebarPinned,
     String? desktopNavPosition,
     bool? desktopPostSplitView,
+    bool? customTitleBar,
   }) {
     return AppSettings(
       lastActiveLocation: lastActiveLocation ?? this.lastActiveLocation,
@@ -391,6 +395,7 @@ class AppSettings {
       desktopSidebarPinned: desktopSidebarPinned ?? this.desktopSidebarPinned,
       desktopNavPosition: desktopNavPosition ?? this.desktopNavPosition,
       desktopPostSplitView: desktopPostSplitView ?? this.desktopPostSplitView,
+      customTitleBar: customTitleBar ?? this.customTitleBar,
     );
   }
 
@@ -469,6 +474,7 @@ class AppSettings {
         'debugHudY': debugHudY,
         'desktopSidebarPinned': desktopSidebarPinned,
         'desktopPostSplitView': desktopPostSplitView,
+        'customTitleBar': customTitleBar,
         if (!Platform.isAndroid && !Platform.isIOS)
           'desktopNavPosition': desktopNavPosition,
       };
@@ -642,6 +648,8 @@ class AppSettings {
             defaults.desktopNavPosition,
         desktopPostSplitView: (json['desktopPostSplitView'] as bool?) ??
             defaults.desktopPostSplitView,
+        customTitleBar: (json['customTitleBar'] as bool?) ??
+            defaults.customTitleBar,
       );
 
   List<PawchiveAccount> get parsedPawchiveAccounts {

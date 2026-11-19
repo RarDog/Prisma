@@ -430,10 +430,10 @@ class _VideoControlsState extends State<VideoControls> {
               right: 0,
               child: Container(
                 padding: EdgeInsets.fromLTRB(
-                  14,
+                  16,
                   8,
-                  14,
-                  widget.fullscreen ? 10 : 4,
+                  16,
+                  widget.fullscreen ? 16 : 14,
                 ),
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(

@@ -8,6 +8,8 @@ analyzer:
     - windows/**
     - linux/**
     - macos/**
+  errors:
+    deprecated_member_use: ignore
 
 linter:
   rules:
