@@ -1,5 +1,26 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.2.4-beta.1',
+    title:
+        'Релиз 4.2.4-beta.1: кастомный заголовок окна, динамическая вёрстка плеера, устранение вылетов при скролле и улучшения навигации',
+    titleEn:
+        'Release 4.2.4-beta.1: custom window title bar, dynamic player layout, feed scroll crash fix & navigation enhancements',
+    bullets: [
+      'Стабильность ленты и устранение крашей: ликвидирован сбой драйвера nvwgf2umx.dll (0xc0000005) на ПК за счёт отключения неконтролируемого предпрогрева 4K-оригиналов и добавления опции автовоспроизведения видео в ленте с дебаунсом 750 мс.',
+      'Кастомный заголовок окна для Windows и Linux: стилизованная панель управления окном с нативными кнопками («Свернуть», «Развернуть/Восстановить», «Закрыть» с фирменным акцентом) и переключателем на системную рамку в «Настройки» → «Внешний вид».',
+      'Динамическая вёрстка экрана поста: просмотрщик медиа и лента миниатюр многостраничных/соседних постов разнесены в адаптивную вертикальную колонку, исключающую наложение органов управления плеера.',
+      'Безопасное воспроизведение видео: изоляция видеоплеера от анимационных переходов AnimatedSwitcher для исключения одновременных D3D11-цепочек и чистый dispose нативных инстансов libmpv.',
+      'Улучшения навигации: добавлены кнопка «Назад» и поддержка клавиши Escape в галерее постов автора, а также кнопка выхода в настройках.',
+    ],
+    bulletsEn: [
+      'Feed Stability & Crash Fix: resolved NVIDIA user-mode driver crash nvwgf2umx.dll (0xc0000005) on desktop by eliminating unbounded 4K image prewarming on hover and introducing a dedicated feed video autoplay setting with 750 ms debounce.',
+      'Custom Window Title Bar for Windows & Linux: stylized title bar with native window controls (minimize, maximize/restore, close with hover styling) and dynamic toggle between OS system frame and custom app frame in Settings → Appearance.',
+      'Dynamic Post Details Layout: decoupled media viewer from multipage/neighbor thumbnail strips into a responsive vertical column, preventing player controls overlap.',
+      'Safe Video Playback: excluded video/audio surfaces from concurrent AnimatedSwitcher transitions to prevent D3D11 swapchain conflicts, with guarded libmpv player disposal.',
+      'Navigation Enhancements: added back navigation button and Esc key support to Artist Posts view, and refined desktop settings navigation.',
+    ],
+  ),
+  PrismaChange(
     version: '4.2.3',
     title:
         'Релиз 4.2.3: сортировка каталога Fapello (топ по лайкам, подписчикам, в тренде, за день) и исправление видео Rule34.us',

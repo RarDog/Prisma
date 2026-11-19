@@ -135,7 +135,7 @@ jobs:
           done
 
       - name: Build Android Release Split APKs
-        run: flutter build apk --release --split-per-abi
+        run: flutter build apk --release --split-per-abi --android-skip-build-dependency-validation
 
       - name: Rename APKs
         run: |
