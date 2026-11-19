@@ -451,7 +451,15 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
     final mediaContent = Stack(
       fit: StackFit.expand,
       children: [
-        image,
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 250),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          transitionBuilder: (child, animation) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          child: image,
+        ),
         if (widget.showNotes && widget.notes.isNotEmpty)
           PostNotesOverlay(
             post: widget.post,

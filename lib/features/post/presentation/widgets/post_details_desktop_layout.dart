@@ -15,7 +15,7 @@ import 'post_media_viewer.dart';
 import 'post_multi_page_strip.dart';
 import 'post_translate_button.dart';
 
-class PostDetailsDesktopLayout extends ConsumerWidget {
+class PostDetailsDesktopLayout extends ConsumerStatefulWidget {
   const PostDetailsDesktopLayout({
     super.key,
     required this.post,
@@ -117,16 +117,113 @@ class PostDetailsDesktopLayout extends ConsumerWidget {
   final VoidCallback? onLoadMore;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final basePostId = post.id.split('_p').first;
-    var currentIndex = feedPosts.indexWhere(
+  ConsumerState<PostDetailsDesktopLayout> createState() =>
+      _PostDetailsDesktopLayoutState();
+}
+
+class _PostDetailsDesktopLayoutState
+    extends ConsumerState<PostDetailsDesktopLayout> {
+  int _direction = 1;
+
+  @override
+  void didUpdateWidget(covariant PostDetailsDesktopLayout oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final oldKey =
+        '${oldWidget.targetPost.cacheKey}_${oldWidget.currentPostIndex}';
+    final newKey =
+        '${widget.targetPost.cacheKey}_${widget.currentPostIndex}';
+    if (oldKey != newKey) {
+      if (oldWidget.targetPost.cacheKey == widget.targetPost.cacheKey) {
+        _direction =
+            widget.currentPostIndex >= oldWidget.currentPostIndex ? 1 : -1;
+      } else {
+        final oldIdx = widget.feedPosts
+            .indexWhere((p) => p.cacheKey == oldWidget.targetPost.cacheKey);
+        final newIdx = widget.feedPosts
+            .indexWhere((p) => p.cacheKey == widget.targetPost.cacheKey);
+        if (oldIdx >= 0 && newIdx >= 0) {
+          _direction = newIdx >= oldIdx ? 1 : -1;
+        }
+      }
+    }
+  }
+
+  void _goToPrevious() {
+    setState(() => _direction = -1);
+    if (widget.isMultiPage && widget.currentPostIndex > 0) {
+      widget.onPageSelected(widget.currentPostIndex - 1);
+    } else if (widget.previous != null) {
+      widget.onOpenPost(widget.previous!);
+    }
+  }
+
+  void _goToNext() {
+    setState(() => _direction = 1);
+    if (widget.isMultiPage && widget.currentPostIndex < widget.pages.length - 1) {
+      widget.onPageSelected(widget.currentPostIndex + 1);
+    } else if (widget.next != null) {
+      widget.onOpenPost(widget.next!);
+    }
+  }
+
+  Widget _buildAnimatedMedia({
+    required Widget child,
+    required String targetKey,
+  }) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 280),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      layoutBuilder: (currentChild, previousChildren) {
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            ...previousChildren,
+            if (currentChild != null) currentChild,
+          ],
+        );
+      },
+      transitionBuilder: (child, animation) {
+        final isIncoming = (child.key as ValueKey?)?.value == targetKey;
+        final offsetTween = Tween<Offset>(
+          begin: Offset(
+            isIncoming ? (_direction * 0.12) : (-_direction * 0.12),
+            0,
+          ),
+          end: Offset.zero,
+        );
+        return FadeTransition(
+          opacity: CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeInOutCubic,
+          ),
+          child: SlideTransition(
+            position: offsetTween.animate(CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutCubic,
+            )),
+            child: child,
+          ),
+        );
+      },
+      child: KeyedSubtree(
+        key: ValueKey(targetKey),
+        child: child,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final basePostId = widget.post.id.split('_p').first;
+    var currentIndex = widget.feedPosts.indexWhere(
       (item) =>
-          item.providerId == post.providerId &&
-          (item.id == post.id || item.id == basePostId),
+          item.providerId == widget.post.providerId &&
+          (item.id == widget.post.id || item.id == basePostId),
     );
     if (currentIndex < 0) {
-      currentIndex = feedPosts.indexWhere(
-        (item) => item.id == post.id || item.id == basePostId,
+      currentIndex = widget.feedPosts.indexWhere(
+        (item) => item.id == widget.post.id || item.id == basePostId,
       );
     }
 
@@ -147,38 +244,38 @@ class PostDetailsDesktopLayout extends ConsumerWidget {
         actions: {
           PreviousPostIntent: NonTextInputAction<PreviousPostIntent>(
             onInvoke: (_) {
-              if (previous != null) onOpenPost(previous!);
+              _goToPrevious();
               return null;
             },
           ),
           NextPostIntent: NonTextInputAction<NextPostIntent>(
             onInvoke: (_) {
-              if (next != null) onOpenPost(next!);
+              _goToNext();
               return null;
             },
           ),
           ToggleFavoriteIntent: NonTextInputAction<ToggleFavoriteIntent>(
             onInvoke: (_) {
-              onToggleFavorite();
+              widget.onToggleFavorite();
               return null;
             },
           ),
           AddCollectionIntent: NonTextInputAction<AddCollectionIntent>(
             onInvoke: (_) {
-              onAddToCollection();
+              widget.onAddToCollection();
               return null;
             },
           ),
           CloseIntent: NonTextInputAction<CloseIntent>(
             onInvoke: (_) {
-              onClose();
+              widget.onClose();
               return null;
             },
           ),
           DownloadIntent: NonTextInputAction<DownloadIntent>(
             onInvoke: (_) {
-              if (settings.allowDownloads) {
-                onDownload?.call();
+              if (widget.settings.allowDownloads) {
+                widget.onDownload?.call();
               }
               return null;
             },
@@ -186,9 +283,9 @@ class PostDetailsDesktopLayout extends ConsumerWidget {
         },
         child: Focus(
           autofocus: true,
-          child: settings.desktopPostSplitView
-              ? _buildSplitLayout(context, ref, currentIndex)
-              : _buildClassicLayout(context, ref, currentIndex),
+          child: widget.settings.desktopPostSplitView
+              ? _buildSplitLayout(context, currentIndex)
+              : _buildClassicLayout(context, currentIndex),
         ),
       ),
     );
@@ -196,336 +293,136 @@ class PostDetailsDesktopLayout extends ConsumerWidget {
 
   Widget _buildClassicLayout(
     BuildContext context,
-    WidgetRef ref,
     int currentIndex,
   ) {
+    final hasPrevious = (widget.isMultiPage && widget.currentPostIndex > 0) ||
+        widget.previous != null;
+    final hasNext = (widget.isMultiPage &&
+            widget.currentPostIndex < widget.pages.length - 1) ||
+        widget.next != null;
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  IconButton.filledTonal(
-                    tooltip: strings.ru ? 'Предыдущий' : 'Previous',
-                    onPressed:
-                        previous == null ? null : () => onOpenPost(previous!),
-                    icon: const Icon(Icons.chevron_left_rounded),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: (MediaUrlSelector.isVideo(targetPost) ||
-                              MediaUrlSelector.isAudio(targetPost))
-                          ? ConstrainedBox(
-                              constraints: BoxConstraints(
-                                maxHeight: MediaUrlSelector.isAudio(targetPost)
-                                    ? 360
-                                    : 760,
-                                maxWidth: MediaUrlSelector.isAudio(targetPost)
-                                    ? 620
-                                    : double.infinity,
-                              ),
-                              child: AspectRatio(
-                                aspectRatio: MediaUrlSelector.isAudio(targetPost)
-                                    ? 1.4
-                                    : ((targetPost.width > 0 &&
-                                            targetPost.height > 0)
-                                        ? (targetPost.width / targetPost.height)
-                                            .clamp(0.45, 2.4)
-                                        : (16 / 9)),
-                                child: PostMediaViewer(
-                                  key: ValueKey(
-                                      '${targetPost.cacheKey}_$currentPostIndex'),
-                                  post: targetPost,
-                                  pageIndex:
-                                      isMultiPage ? currentPostIndex : null,
-                                  pageCount: isMultiPage ? pages.length : null,
-                                  onPageChanged: isMultiPage
-                                      ? (newIdx) => onPageSelected(newIdx)
-                                      : null,
-                                  useLiveFeed:
-                                      isMultiPage ? false : fromFeed,
-                                  postsList: isMultiPage ? pages : feedPosts,
-                                  onLoadMore: onLoadMore,
-                                  onPostIndexChanged: (index) {
-                                    if (isMultiPage) {
-                                      if (index >= 0 && index < pages.length) {
-                                        onPageSelected(index);
-                                      }
-                                      return;
-                                    }
-                                    final currentPosts = fromFeed
-                                        ? (ref
-                                                .read(feedControllerProvider)
-                                                .value
-                                                ?.posts ??
-                                            feedPosts)
-                                        : feedPosts;
-                                    if (index >= 0 &&
-                                        index < currentPosts.length) {
-                                      final target = currentPosts[index];
-                                      if (target.cacheKey != post.cacheKey) {
-                                        onOpenPost(target);
-                                      }
-                                    }
-                                  },
-                                  localFilePath: localMedia?.savedPath,
-                                  qualityMode: qualityMode,
-                                  notes: notes,
-                                  showNotes: showNotes,
-                                  mediaHeaders: ref
-                                          .watch(postMediaHeadersProvider(
-                                              targetPost))
-                                          .value ??
-                                      const {},
-                                  initialPosition: Duration(
-                                    milliseconds: settings
-                                            .videoPlaybackPositions[
-                                        targetPost.cacheKey] ??
-                                        0,
-                                  ),
-                                  initialLoop: settings.videoPlayerLoop,
-                                  initialMuted: settings.videoPlayerMuted,
-                                  initialCoverVideo: settings.videoPlayerCover,
-                                  initialHalfVolume:
-                                      settings.videoPlayerHalfVolume,
-                                  initialVolume: settings.videoPlayerVolume,
-                                  onVolumeChanged: onVolumeChanged,
-                                  onPlaybackSnapshot: onPlaybackSnapshot,
-                                  onPlaybackPreferencesChanged:
-                                      onPlaybackPreferencesChanged,
-                                ),
-                              ),
-                            )
-                          : ConstrainedBox(
-                              constraints: const BoxConstraints(
-                                maxHeight: 760,
-                              ),
-                              child: AspectRatio(
-                                aspectRatio: (targetPost.width > 0 &&
-                                        targetPost.height > 0)
-                                    ? (targetPost.width / targetPost.height)
-                                        .clamp(0.2, 5.0)
-                                    : (ref.watch(postMediaDimensionsProvider(
-                                                    targetPost.cacheKey)) !=
-                                                null &&
-                                            ref
-                                                    .watch(
-                                                        postMediaDimensionsProvider(
-                                                            targetPost.cacheKey))!
-                                                    .height >
-                                                0
-                                        ? (ref
-                                                .watch(
-                                                    postMediaDimensionsProvider(
-                                                        targetPost.cacheKey))!
-                                                .width /
-                                            ref
-                                                .watch(
-                                                    postMediaDimensionsProvider(
-                                                        targetPost.cacheKey))!
-                                                .height)
-                                            .clamp(0.2, 5.0)
-                                        : (16 / 9)),
-                                child: PostMediaViewer(
-                                  key: ValueKey(
-                                      '${targetPost.cacheKey}_$currentPostIndex'),
-                                  post: targetPost,
-                                  pageIndex:
-                                      isMultiPage ? currentPostIndex : null,
-                                  pageCount: isMultiPage ? pages.length : null,
-                                  onPageChanged: isMultiPage
-                                      ? (newIdx) => onPageSelected(newIdx)
-                                      : null,
-                                  useLiveFeed:
-                                      isMultiPage ? false : fromFeed,
-                                  postsList: isMultiPage ? pages : feedPosts,
-                                  onLoadMore: onLoadMore,
-                                  onPostIndexChanged: (index) {
-                                    if (isMultiPage) {
-                                      if (index >= 0 && index < pages.length) {
-                                        onPageSelected(index);
-                                      }
-                                      return;
-                                    }
-                                    final currentPosts = fromFeed
-                                        ? (ref
-                                                .read(feedControllerProvider)
-                                                .value
-                                                ?.posts ??
-                                            feedPosts)
-                                        : feedPosts;
-                                    if (index >= 0 &&
-                                        index < currentPosts.length) {
-                                      final target = currentPosts[index];
-                                      if (target.cacheKey != post.cacheKey) {
-                                        onOpenPost(target);
-                                      }
-                                    }
-                                  },
-                                  localFilePath: localMedia?.savedPath,
-                                  qualityMode: qualityMode,
-                                  notes: notes,
-                                  showNotes: showNotes,
-                                  mediaHeaders: ref
-                                          .watch(postMediaHeadersProvider(
-                                              targetPost))
-                                          .value ??
-                                      const {},
-                                  initialPosition: Duration(
-                                    milliseconds: settings
-                                            .videoPlaybackPositions[
-                                        targetPost.cacheKey] ??
-                                        0,
-                                  ),
-                                  initialLoop: settings.videoPlayerLoop,
-                                  initialMuted: settings.videoPlayerMuted,
-                                  initialCoverVideo: settings.videoPlayerCover,
-                                  initialHalfVolume:
-                                      settings.videoPlayerHalfVolume,
-                                  initialVolume: settings.videoPlayerVolume,
-                                  onVolumeChanged: onVolumeChanged,
-                                  onPlaybackSnapshot: onPlaybackSnapshot,
-                                  onPlaybackPreferencesChanged:
-                                      onPlaybackPreferencesChanged,
-                                ),
-                              ),
-                            ),
-                    ),
-                  ),
-                  IconButton.filledTonal(
-                    tooltip: strings.ru ? 'Следующий' : 'Next',
-                    onPressed: next == null ? null : () => onOpenPost(next!),
-                    icon: const Icon(Icons.chevron_right_rounded),
-                  ),
-                ],
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            IconButton.filledTonal(
+              tooltip: widget.strings.ru ? 'Предыдущий (←)' : 'Previous (←)',
+              onPressed: hasPrevious ? _goToPrevious : null,
+              icon: const Icon(Icons.chevron_left_rounded),
+            ),
+            Expanded(
+              child: Center(
+                child: _buildAnimatedMedia(
+                  targetKey:
+                      '${widget.targetPost.cacheKey}_${widget.currentPostIndex}',
+                  child: _buildMediaViewer(context, fitAvailable: false),
+                ),
               ),
-              if (!MediaUrlSelector.isVideo(post) &&
-                  !MediaUrlSelector.isAudio(post) &&
-                  (post.providerId.toLowerCase().contains('e621') ||
-                      post.providerId.toLowerCase().contains('e926') ||
-                      post.hasNotes)) ...[
-                const SizedBox(height: 10),
-                Center(
-                  child: GoogleTranslateButton(
-                    hasNotes: notes.isNotEmpty,
-                    isLoading: notesAsync.isLoading,
-                    showNotes: showNotes,
-                    notesCount: notes.length,
-                    isRu: strings.ru,
-                    onToggle: onToggleNotes,
-                  ),
-                ),
-              ],
-              if (pages.length > 1) ...[
-                const SizedBox(height: 10),
-                PostMultiPageStrip(
-                  pages: pages,
-                  currentIndex: currentPostIndex,
-                  onPageSelected: onPageSelected,
-                  onDownloadAll: settings.allowDownloads
-                      ? onDownloadAllPages
-                      : null,
-                ),
-              ],
-              if (currentIndex >= 0) ...[
-                const SizedBox(height: 10),
-                NeighborStrip(
-                  posts: feedPosts,
-                  currentIndex: currentIndex,
-                  onOpen: onOpenPost,
-                ),
-              ],
-              const SizedBox(height: 16),
-              PostDetailsMetadataSection(
-                post: post,
-                targetPost: targetPost,
-                settings: settings,
-                strings: strings,
-                labels: labels,
-                isFavorite: favoriteKeys.contains(post.cacheKey),
-                downloaded: localMedia != null,
-                isDownloading: isDownloading,
-                localMedia: localMedia,
-                fileSizeBytes: fileSizeBytes,
-                e621Provider: e621Provider,
-                shouldShowCloudCard: shouldShowCloudCard,
-                isTextOnly: isTextOnly,
-                isMobile: false,
-                onFavorite: onToggleFavorite,
-                onCollection: onAddToCollection,
-                onOpen: () => onOpenSource(),
-                onOpenSource: onOpenSource,
-                onCopy: () => Clipboard.setData(
-                    ClipboardData(text: targetPost.fileUrl)),
-                onSimilar: onOpenSimilar,
-                onHide: onHidePost,
-                onDownload: onDownload,
-                onSaveAs: onSaveAs,
-                onDeleteLocalFile: onDeleteLocalFile,
-                onShare: onShare,
-                onOpenArtistPost: onOpenArtistPost,
-                onOpenPostId: onOpenPostId,
-                onOpenComic: onOpenComic,
-                onPlayStream: onPlayStream,
-                onDownloadStream: onDownloadStream,
-              ),
-              const SizedBox(height: 80),
-            ],
-          );
+            ),
+            IconButton.filledTonal(
+              tooltip: widget.strings.ru ? 'Следующий (→)' : 'Next (→)',
+              onPressed: hasNext ? _goToNext : null,
+              icon: const Icon(Icons.chevron_right_rounded),
+            ),
+          ],
+        ),
+        if (!MediaUrlSelector.isVideo(widget.post) &&
+            !MediaUrlSelector.isAudio(widget.post) &&
+            (widget.post.providerId.toLowerCase().contains('e621') ||
+                widget.post.providerId.toLowerCase().contains('e926') ||
+                widget.post.hasNotes)) ...[
+          const SizedBox(height: 10),
+          Center(
+            child: GoogleTranslateButton(
+              hasNotes: widget.notes.isNotEmpty,
+              isLoading: widget.notesAsync.isLoading,
+              showNotes: widget.showNotes,
+              notesCount: widget.notes.length,
+              isRu: widget.strings.ru,
+              onToggle: widget.onToggleNotes,
+            ),
+          ),
+        ],
+        if (widget.pages.length > 1) ...[
+          const SizedBox(height: 10),
+          PostMultiPageStrip(
+            pages: widget.pages,
+            currentIndex: widget.currentPostIndex,
+            onPageSelected: widget.onPageSelected,
+            onDownloadAll: widget.settings.allowDownloads
+                ? widget.onDownloadAllPages
+                : null,
+          ),
+        ],
+        if (currentIndex >= 0) ...[
+          const SizedBox(height: 10),
+          NeighborStrip(
+            posts: widget.feedPosts,
+            currentIndex: currentIndex,
+            onOpen: widget.onOpenPost,
+          ),
+        ],
+        const SizedBox(height: 16),
+        _buildMetadataSection(),
+        const SizedBox(height: 80),
+      ],
+    );
   }
 
   Widget _buildMediaViewer(
-    BuildContext context,
-    WidgetRef ref, {
+    BuildContext context, {
     required bool fitAvailable,
   }) {
+    final targetPost = widget.targetPost;
     final isVideo = MediaUrlSelector.isVideo(targetPost);
     final isAudio = MediaUrlSelector.isAudio(targetPost);
 
     final mediaWidget = PostMediaViewer(
-      key: ValueKey('${targetPost.cacheKey}_$currentPostIndex'),
+      key: ValueKey('${targetPost.cacheKey}_${widget.currentPostIndex}'),
       post: targetPost,
-      pageIndex: isMultiPage ? currentPostIndex : null,
-      pageCount: isMultiPage ? pages.length : null,
-      onPageChanged: isMultiPage ? (newIdx) => onPageSelected(newIdx) : null,
-      useLiveFeed: isMultiPage ? false : fromFeed,
-      postsList: isMultiPage ? pages : feedPosts,
-      onLoadMore: onLoadMore,
+      pageIndex: widget.isMultiPage ? widget.currentPostIndex : null,
+      pageCount: widget.isMultiPage ? widget.pages.length : null,
+      onPageChanged: widget.isMultiPage ? (newIdx) => widget.onPageSelected(newIdx) : null,
+      useLiveFeed: widget.isMultiPage ? false : widget.fromFeed,
+      postsList: widget.isMultiPage ? widget.pages : widget.feedPosts,
+      onLoadMore: widget.onLoadMore,
       onPostIndexChanged: (index) {
-        if (isMultiPage) {
-          if (index >= 0 && index < pages.length) {
-            onPageSelected(index);
+        if (widget.isMultiPage) {
+          if (index >= 0 && index < widget.pages.length) {
+            widget.onPageSelected(index);
           }
           return;
         }
-        final currentPosts = fromFeed
-            ? (ref.read(feedControllerProvider).value?.posts ?? feedPosts)
-            : feedPosts;
+        final currentPosts = widget.fromFeed
+            ? (ref.read(feedControllerProvider).value?.posts ?? widget.feedPosts)
+            : widget.feedPosts;
         if (index >= 0 && index < currentPosts.length) {
           final target = currentPosts[index];
-          if (target.cacheKey != post.cacheKey) {
-            onOpenPost(target);
+          if (target.cacheKey != widget.post.cacheKey) {
+            widget.onOpenPost(target);
           }
         }
       },
-      localFilePath: localMedia?.savedPath,
-      qualityMode: qualityMode,
-      notes: notes,
-      showNotes: showNotes,
+      localFilePath: widget.localMedia?.savedPath,
+      qualityMode: widget.qualityMode,
+      notes: widget.notes,
+      showNotes: widget.showNotes,
       mediaHeaders:
           ref.watch(postMediaHeadersProvider(targetPost)).value ?? const {},
       initialPosition: Duration(
         milliseconds:
-            settings.videoPlaybackPositions[targetPost.cacheKey] ?? 0,
+            widget.settings.videoPlaybackPositions[targetPost.cacheKey] ?? 0,
       ),
-      initialLoop: settings.videoPlayerLoop,
-      initialMuted: settings.videoPlayerMuted,
-      initialCoverVideo: settings.videoPlayerCover,
-      initialHalfVolume: settings.videoPlayerHalfVolume,
-      initialVolume: settings.videoPlayerVolume,
-      onVolumeChanged: onVolumeChanged,
-      onPlaybackSnapshot: onPlaybackSnapshot,
-      onPlaybackPreferencesChanged: onPlaybackPreferencesChanged,
+      initialLoop: widget.settings.videoPlayerLoop,
+      initialMuted: widget.settings.videoPlayerMuted,
+      initialCoverVideo: widget.settings.videoPlayerCover,
+      initialHalfVolume: widget.settings.videoPlayerHalfVolume,
+      initialVolume: widget.settings.videoPlayerVolume,
+      onVolumeChanged: widget.onVolumeChanged,
+      onPlaybackSnapshot: widget.onPlaybackSnapshot,
+      onPlaybackPreferencesChanged: widget.onPlaybackPreferencesChanged,
     );
 
     if (fitAvailable) {
@@ -577,13 +474,17 @@ class PostDetailsDesktopLayout extends ConsumerWidget {
 
   Widget _buildSplitLayout(
     BuildContext context,
-    WidgetRef ref,
     int currentIndex,
   ) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final screenWidth = MediaQuery.sizeOf(context).width;
     final sidebarWidth = (screenWidth * 0.28).clamp(360.0, 450.0);
+    final hasPrevious = (widget.isMultiPage && widget.currentPostIndex > 0) ||
+        widget.previous != null;
+    final hasNext = (widget.isMultiPage &&
+            widget.currentPostIndex < widget.pages.length - 1) ||
+        widget.next != null;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -598,36 +499,40 @@ class PostDetailsDesktopLayout extends ConsumerWidget {
                 Center(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 52, vertical: 12),
-                    child: _buildMediaViewer(context, ref, fitAvailable: true),
+                    child: _buildAnimatedMedia(
+                      targetKey:
+                          '${widget.targetPost.cacheKey}_${widget.currentPostIndex}',
+                      child: _buildMediaViewer(context, fitAvailable: true),
+                    ),
                   ),
                 ),
-                if (previous != null)
+                if (hasPrevious)
                   Positioned(
                     left: 10,
                     top: 0,
                     bottom: 0,
                     child: Center(
                       child: IconButton.filledTonal(
-                        tooltip: strings.ru ? 'Предыдущий (←)' : 'Previous (←)',
-                        onPressed: () => onOpenPost(previous!),
+                        tooltip: widget.strings.ru ? 'Предыдущий (←)' : 'Previous (←)',
+                        onPressed: _goToPrevious,
                         icon: const Icon(Icons.chevron_left_rounded, size: 28),
                       ),
                     ),
                   ),
-                if (next != null)
+                if (hasNext)
                   Positioned(
                     right: 10,
                     top: 0,
                     bottom: 0,
                     child: Center(
                       child: IconButton.filledTonal(
-                        tooltip: strings.ru ? 'Следующий (→)' : 'Next (→)',
-                        onPressed: () => onOpenPost(next!),
+                        tooltip: widget.strings.ru ? 'Следующий (→)' : 'Next (→)',
+                        onPressed: _goToNext,
                         icon: const Icon(Icons.chevron_right_rounded, size: 28),
                       ),
                     ),
                   ),
-                if (pages.length > 1 || currentIndex >= 0)
+                if (widget.pages.length > 1 || currentIndex >= 0)
                   Positioned(
                     left: 56,
                     right: 56,
@@ -635,20 +540,20 @@ class PostDetailsDesktopLayout extends ConsumerWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (pages.length > 1)
+                        if (widget.pages.length > 1)
                           PostMultiPageStrip(
-                            pages: pages,
-                            currentIndex: currentPostIndex,
-                            onPageSelected: onPageSelected,
-                            onDownloadAll: settings.allowDownloads
-                                ? onDownloadAllPages
+                            pages: widget.pages,
+                            currentIndex: widget.currentPostIndex,
+                            onPageSelected: widget.onPageSelected,
+                            onDownloadAll: widget.settings.allowDownloads
+                                ? widget.onDownloadAllPages
                                 : null,
                           ),
-                        if (currentIndex >= 0 && pages.length <= 1)
+                        if (currentIndex >= 0 && widget.pages.length <= 1)
                           NeighborStrip(
-                            posts: feedPosts,
+                            posts: widget.feedPosts,
                             currentIndex: currentIndex,
-                            onOpen: onOpenPost,
+                            onOpen: widget.onOpenPost,
                           ),
                       ],
                     ),
@@ -671,18 +576,18 @@ class PostDetailsDesktopLayout extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               children: [
-                if (!MediaUrlSelector.isVideo(post) &&
-                    !MediaUrlSelector.isAudio(post) &&
-                    (post.providerId.toLowerCase().contains('e621') ||
-                        post.providerId.toLowerCase().contains('e926') ||
-                        post.hasNotes)) ...[
+                if (!MediaUrlSelector.isVideo(widget.post) &&
+                    !MediaUrlSelector.isAudio(widget.post) &&
+                    (widget.post.providerId.toLowerCase().contains('e621') ||
+                        widget.post.providerId.toLowerCase().contains('e926') ||
+                        widget.post.hasNotes)) ...[
                   GoogleTranslateButton(
-                    hasNotes: notes.isNotEmpty,
-                    isLoading: notesAsync.isLoading,
-                    showNotes: showNotes,
-                    notesCount: notes.length,
-                    isRu: strings.ru,
-                    onToggle: onToggleNotes,
+                    hasNotes: widget.notes.isNotEmpty,
+                    isLoading: widget.notesAsync.isLoading,
+                    showNotes: widget.showNotes,
+                    notesCount: widget.notes.length,
+                    isRu: widget.strings.ru,
+                    onToggle: widget.onToggleNotes,
                   ),
                   const SizedBox(height: 12),
                 ],
@@ -698,37 +603,37 @@ class PostDetailsDesktopLayout extends ConsumerWidget {
 
   Widget _buildMetadataSection() {
     return PostDetailsMetadataSection(
-      post: post,
-      targetPost: targetPost,
-      settings: settings,
-      strings: strings,
-      labels: labels,
-      isFavorite: favoriteKeys.contains(post.cacheKey),
-      downloaded: localMedia != null,
-      isDownloading: isDownloading,
-      localMedia: localMedia,
-      fileSizeBytes: fileSizeBytes,
-      e621Provider: e621Provider,
-      shouldShowCloudCard: shouldShowCloudCard,
-      isTextOnly: isTextOnly,
+      post: widget.post,
+      targetPost: widget.targetPost,
+      settings: widget.settings,
+      strings: widget.strings,
+      labels: widget.labels,
+      isFavorite: widget.favoriteKeys.contains(widget.post.cacheKey),
+      downloaded: widget.localMedia != null,
+      isDownloading: widget.isDownloading,
+      localMedia: widget.localMedia,
+      fileSizeBytes: widget.fileSizeBytes,
+      e621Provider: widget.e621Provider,
+      shouldShowCloudCard: widget.shouldShowCloudCard,
+      isTextOnly: widget.isTextOnly,
       isMobile: false,
-      onFavorite: onToggleFavorite,
-      onCollection: onAddToCollection,
-      onOpen: () => onOpenSource(),
-      onOpenSource: onOpenSource,
+      onFavorite: widget.onToggleFavorite,
+      onCollection: widget.onAddToCollection,
+      onOpen: () => widget.onOpenSource(),
+      onOpenSource: widget.onOpenSource,
       onCopy: () => Clipboard.setData(
-          ClipboardData(text: targetPost.fileUrl)),
-      onSimilar: onOpenSimilar,
-      onHide: onHidePost,
-      onDownload: onDownload,
-      onSaveAs: onSaveAs,
-      onDeleteLocalFile: onDeleteLocalFile,
-      onShare: onShare,
-      onOpenArtistPost: onOpenArtistPost,
-      onOpenPostId: onOpenPostId,
-      onOpenComic: onOpenComic,
-      onPlayStream: onPlayStream,
-      onDownloadStream: onDownloadStream,
+          ClipboardData(text: widget.targetPost.fileUrl)),
+      onSimilar: widget.onOpenSimilar,
+      onHide: widget.onHidePost,
+      onDownload: widget.onDownload,
+      onSaveAs: widget.onSaveAs,
+      onDeleteLocalFile: widget.onDeleteLocalFile,
+      onShare: widget.onShare,
+      onOpenArtistPost: widget.onOpenArtistPost,
+      onOpenPostId: widget.onOpenPostId,
+      onOpenComic: widget.onOpenComic,
+      onPlayStream: widget.onPlayStream,
+      onDownloadStream: widget.onDownloadStream,
     );
   }
 }

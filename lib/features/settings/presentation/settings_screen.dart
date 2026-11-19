@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' hide appBuildNumber;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:gel_rule_app/app/app.dart';
 import 'package:gel_rule_app/app/app_version.dart';
@@ -70,6 +71,16 @@ class DesktopSettingsLayout extends ConsumerStatefulWidget {
 
 class _DesktopSettingsLayoutState extends ConsumerState<DesktopSettingsLayout> {
   int _selectedIndex = 0;
+
+  void _handleClose(BuildContext context) {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/');
+    }
+  }
 
   Future<void> _update(AppSettings newSettings) {
     return ref
@@ -156,26 +167,56 @@ class _DesktopSettingsLayoutState extends ConsumerState<DesktopSettingsLayout> {
         break;
     }
 
-    return Row(
-      children: [
-        // Left master category sidebar
-        Container(
-          width: 310,
-          decoration: BoxDecoration(
-            color: isDark
-                ? theme.colorScheme.surfaceContainerLowest
-                : theme.colorScheme.surfaceContainerLow,
-            border: Border(
-              right: BorderSide(
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.25),
+    final content = Row(
+          children: [
+            // Left master category sidebar
+            Container(
+              width: 325,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? theme.colorScheme.surfaceContainerLowest
+                    : theme.colorScheme.surfaceContainerLow,
+                border: Border(
+                  right: BorderSide(
+                    color: theme.colorScheme.outlineVariant
+                        .withValues(alpha: 0.25),
+                  ),
+                ),
               ),
-            ),
-          ),
-          child: Column(
-            children: [
-              // Top Quick Brand Card
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 14, 14, 6),
+              child: Column(
+                children: [
+                  // Top Bar with Back / Close Button and Title
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
+                    child: Row(
+                      children: [
+                        IconButton.filledTonal(
+                          icon: const Icon(Icons.arrow_back_rounded, size: 20),
+                          tooltip: isRu ? 'Назад (Esc)' : 'Back (Esc)',
+                          onPressed: () => _handleClose(context),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            strings.settings,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 17,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 20),
+                          tooltip: isRu ? 'Закрыть (Esc)' : 'Close (Esc)',
+                          onPressed: () => _handleClose(context),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Top Quick Brand Card
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 4, 14, 6),
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -237,21 +278,33 @@ class _DesktopSettingsLayoutState extends ConsumerState<DesktopSettingsLayout> {
                             value: 'system',
                             icon: const Icon(Icons.brightness_auto_rounded,
                                 size: 14),
-                            label: Text(isRu ? 'Авто' : 'Auto',
-                                style: const TextStyle(fontSize: 11)),
+                            label: Text(
+                              isRu ? 'Авто' : 'Auto',
+                              style: const TextStyle(fontSize: 10.5),
+                              maxLines: 1,
+                              softWrap: false,
+                            ),
                           ),
                           ButtonSegment<String>(
                             value: 'light',
                             icon:
                                 const Icon(Icons.light_mode_rounded, size: 14),
-                            label: Text(isRu ? 'Светлая' : 'Light',
-                                style: const TextStyle(fontSize: 11)),
+                            label: Text(
+                              isRu ? 'Светлая' : 'Light',
+                              style: const TextStyle(fontSize: 10.5),
+                              maxLines: 1,
+                              softWrap: false,
+                            ),
                           ),
                           ButtonSegment<String>(
                             value: 'dark',
                             icon: const Icon(Icons.dark_mode_rounded, size: 14),
-                            label: Text(isRu ? 'Темная' : 'Dark',
-                                style: const TextStyle(fontSize: 11)),
+                            label: Text(
+                              isRu ? 'Темная' : 'Dark',
+                              style: const TextStyle(fontSize: 10.5),
+                              maxLines: 1,
+                              softWrap: false,
+                            ),
                           ),
                         ],
                         selected: {widget.settings.themeMode},
@@ -389,6 +442,17 @@ class _DesktopSettingsLayoutState extends ConsumerState<DesktopSettingsLayout> {
           ),
         ),
       ],
+    );
+
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.escape): () =>
+            _handleClose(context),
+      },
+      child: Focus(
+        autofocus: true,
+        child: content,
+      ),
     );
   }
 }
