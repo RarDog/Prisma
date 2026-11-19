@@ -105,8 +105,11 @@ class _FullscreenVideoItemState extends State<FullscreenVideoItem> {
       p,
       configuration: VideoControllerConfiguration(
         enableHardwareAcceleration: enableHw,
-        hwdec:
-            enableHw ? (Platform.isAndroid ? 'mediacodec-copy' : 'auto') : 'no',
+        hwdec: enableHw
+            ? (Platform.isAndroid
+                ? 'mediacodec-copy'
+                : (Platform.isWindows ? 'auto-safe' : 'auto'))
+            : 'no',
       ),
     );
     _player = p;
@@ -169,9 +172,11 @@ class _FullscreenVideoItemState extends State<FullscreenVideoItem> {
         play: shouldPlay,
       )
           .then((_) async {
+        if (!mounted || _player != p) return;
         if (seekTo > Duration.zero) {
           await p.seek(seekTo);
         }
+        if (!mounted || _player != p) return;
         if (shouldPlay && !p.state.playing) {
           await p.play();
         }

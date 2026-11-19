@@ -52,8 +52,15 @@ class _FeedVideoPreviewState extends State<FeedVideoPreview> {
 
   @override
   void dispose() {
+    _requestId++;
     _errorSubscription?.cancel();
-    _player?.dispose();
+    final p = _player;
+    _player = null;
+    _controller = null;
+    if (p != null) {
+      unawaited(p.stop());
+      unawaited(p.dispose());
+    }
     super.dispose();
   }
 

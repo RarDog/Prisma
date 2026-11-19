@@ -581,8 +581,11 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
       _player!,
       configuration: VideoControllerConfiguration(
         enableHardwareAcceleration: enableHw,
-        hwdec:
-            enableHw ? (Platform.isAndroid ? 'mediacodec-copy' : 'auto') : 'no',
+        hwdec: enableHw
+            ? (Platform.isAndroid
+                ? 'mediacodec-copy'
+                : (Platform.isWindows ? 'auto-safe' : 'auto'))
+            : 'no',
       ),
     );
     _applyVolume();
@@ -653,9 +656,12 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
         ),
         play: initialPosition == Duration.zero && shouldPlay,
       );
+      if (!mounted || _player != player) return;
       await _applyVolume();
+      if (!mounted || _player != player) return;
       if (initialPosition > Duration.zero) {
         await player.seek(initialPosition);
+        if (!mounted || _player != player) return;
         if (shouldPlay) await player.play();
       }
     } catch (error) {
@@ -762,11 +768,14 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
     final snapshot = _snapshot();
     rememberPlayback(widget.post.cacheKey, snapshot);
     widget.onPlaybackSnapshot?.call(snapshot);
-    _player?.pause();
-    _player?.stop();
-    _player?.dispose();
+    final p = _player;
     _player = null;
     _controller = null;
+    if (p != null) {
+      unawaited(p.pause());
+      unawaited(p.stop());
+      unawaited(p.dispose());
+    }
   }
 
   void _resolveImageDimensions() {

@@ -314,11 +314,18 @@ class _PostDetailsDesktopLayoutState
             ),
             Expanded(
               child: Center(
-                child: _buildAnimatedMedia(
-                  targetKey:
-                      '${widget.targetPost.cacheKey}_${widget.currentPostIndex}',
-                  child: _buildMediaViewer(context, fitAvailable: false),
-                ),
+                child: (MediaUrlSelector.isVideo(widget.targetPost) ||
+                        MediaUrlSelector.isAudio(widget.targetPost))
+                    ? KeyedSubtree(
+                        key: ValueKey(
+                            '${widget.targetPost.cacheKey}_${widget.currentPostIndex}'),
+                        child: _buildMediaViewer(context, fitAvailable: false),
+                      )
+                    : _buildAnimatedMedia(
+                        targetKey:
+                            '${widget.targetPost.cacheKey}_${widget.currentPostIndex}',
+                        child: _buildMediaViewer(context, fitAvailable: false),
+                      ),
               ),
             ),
             IconButton.filledTonal(
@@ -502,11 +509,20 @@ class _PostDetailsDesktopLayoutState
                       Center(
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 52, vertical: 8),
-                          child: _buildAnimatedMedia(
-                            targetKey:
-                                '${widget.targetPost.cacheKey}_${widget.currentPostIndex}',
-                            child: _buildMediaViewer(context, fitAvailable: true),
-                          ),
+                          child: (MediaUrlSelector.isVideo(widget.targetPost) ||
+                                  MediaUrlSelector.isAudio(widget.targetPost))
+                              ? KeyedSubtree(
+                                  key: ValueKey(
+                                      '${widget.targetPost.cacheKey}_${widget.currentPostIndex}'),
+                                  child: _buildMediaViewer(context,
+                                      fitAvailable: true),
+                                )
+                              : _buildAnimatedMedia(
+                                  targetKey:
+                                      '${widget.targetPost.cacheKey}_${widget.currentPostIndex}',
+                                  child: _buildMediaViewer(context,
+                                      fitAvailable: true),
+                                ),
                         ),
                       ),
                       if (hasPrevious)
