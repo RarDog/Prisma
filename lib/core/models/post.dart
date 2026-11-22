@@ -38,6 +38,45 @@ class Post {
 
   String get cacheKey => '$providerId:$id';
 
+  /// Non-tag metadata keys stored in [tagGroups] that must not be treated
+  /// as categorised post tags or tag groups.
+  static const nonTagMetadataKeys = {
+    'cloud_links',
+    'description',
+    'content',
+    'links',
+    'external_links',
+    'is_detailed',
+    'parent_id',
+    'children',
+    'pools',
+    'page_count',
+    'media_type',
+    'has_notes',
+    'fav_count',
+    'comments_count',
+    'duration',
+    'duration_text',
+    'video_variants',
+    'uploader',
+    'md5',
+    'title',
+    'type',
+    'rus_title',
+    'eng_title',
+  };
+
+  /// Returns `true` if this post contains domain tag categories
+  /// beyond 'general' (e.g. artist, character, copyright, species, meta, lore).
+  bool get hasCategorizedTagGroups {
+    return tagGroups.entries.any(
+      (entry) =>
+          !nonTagMetadataKeys.contains(entry.key.toLowerCase()) &&
+          entry.key != 'general' &&
+          entry.value.isNotEmpty,
+    );
+  }
+
   static final RegExp _md5Regex = RegExp(r'([a-fA-F0-9]{32})');
 
   String? get md5Hash {

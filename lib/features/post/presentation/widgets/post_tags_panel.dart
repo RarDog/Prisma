@@ -258,14 +258,7 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
     );
   }
 
-  static const _ignoredTagGroupKeys = {
-    'cloud_links',
-    'description',
-    'content',
-    'links',
-    'external_links',
-    'is_detailed',
-  };
+  static const _ignoredTagGroupKeys = Post.nonTagMetadataKeys;
 
   Map<String, List<String>> _groups(Post post) {
     if (post.tagGroups.isNotEmpty) {
@@ -276,6 +269,7 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
         'copyright',
         'species',
         'meta',
+        'lore',
         'general',
       ]) {
         final tags = _filterValidTags(post.tagGroups[key]);
@@ -321,6 +315,7 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
       'copyright' => 'Copyright / Title',
       'species' => 'Species',
       'meta' => 'Meta',
+      'lore' => 'Lore',
       'general' => 'General',
       _ => 'Other',
     };

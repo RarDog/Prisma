@@ -51,8 +51,7 @@ final postDetailsControllerProvider =
         return remote.data!;
       }
     }
-    final shouldEnrich = post.tagGroups.isEmpty ||
-        (post.tagGroups.length == 1 && post.tagGroups.containsKey('general'));
+    final shouldEnrich = !post.hasCategorizedTagGroups && post.tags.isNotEmpty;
     if (!shouldEnrich) return post;
 
     final enriched = await providerManager.enrichPostTags(post);

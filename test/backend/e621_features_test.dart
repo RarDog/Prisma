@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gel_rule_app/sources/booru/e621_provider.dart';
+import 'package:gel_rule_app/sources/mappers/e621_mapper.dart';
 import 'package:gel_rule_app/core/http/dio_client.dart';
+import 'package:gel_rule_app/core/models/tag_suggestion.dart';
 
 class _FakeAdapter implements HttpClientAdapter {
   _FakeAdapter(this.handler);
@@ -238,6 +240,154 @@ void main() {
       expect(notes[0].body, equals('[b]Hello[/b] world &amp; comic'));
       expect(notes[0].authorName, equals('translator_cat'));
       expect(notes[0].isActive, isTrue);
+    });
+
+    test('categorizeTags maps e621 categories to tag groups', () async {
+      E621Mapper.tagCategoryCache.clear();
+      dio.httpClientAdapter = _FakeAdapter((options) async {
+        expect(options.path, equals('/tags.json'));
+        final names = options.queryParameters['search[name]'] as String;
+        expect(names, contains('jacky-arts'));
+
+        final responseJson = [
+          {'name': 'jacky-arts', 'category': 1},
+          {'name': 'cate_meowdy', 'category': 4},
+          {'name': 'fortnite', 'category': 3},
+          {'name': 'feline', 'category': 5},
+          {'name': 'hi_res', 'category': 7},
+          {'name': 'lore_tag', 'category': 8},
+          {'name': 'solo', 'category': 0},
+        ];
+
+        return ResponseBody.fromString(
+          jsonEncode(responseJson),
+          200,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        );
+      });
+
+      final provider = E621Provider(
+        id: 'e621',
+        name: 'e621',
+        baseUrl: 'https://e621.net',
+        dioClient: dioClient,
+      );
+
+      final groups = await provider.categorizeTags([
+        'jacky-arts',
+        'cate_meowdy',
+        'fortnite',
+        'feline',
+        'hi_res',
+        'lore_tag',
+        'solo',
+      ]);
+
+      expect(groups['artist'], equals(['jacky-arts']));
+      expect(groups['character'], equals(['cate_meowdy']));
+      expect(groups['copyright'], equals(['fortnite']));
+      expect(groups['species'], equals(['feline']));
+      expect(groups['meta'], equals(['hi_res']));
+      expect(groups['lore'], equals(['lore_tag']));
+      expect(groups['general'], equals(['solo']));
+    });
+
+    test('getPost categorizes flat tags list from e621', () async {
+      E621Mapper.tagCategoryCache.clear();
+      dio.httpClientAdapter = _FakeAdapter((options) async {
+        if (options.path == '/posts/6875208.json') {
+          final responseJson = {
+            'post': {
+              'id': 6875208,
+              'files': {
+                'original': {
+                  'width': 1000,
+                  'height': 800,
+                  'url': 'https://static1.e621.net/data/orig.jpg',
+                },
+                'preview': {
+                  'url': 'https://static1.e621.net/data/preview.jpg',
+                },
+                'sample': {
+                  'url': 'https://static1.e621.net/data/sample.jpg',
+                },
+                'meta': {'ext': 'jpg'},
+              },
+              'rating': 'q',
+              'stats': {'score': {'total': 5}},
+              'tags': ['jacky-arts', 'canine', 'anthro'],
+            }
+          };
+          return ResponseBody.fromString(
+            jsonEncode(responseJson),
+            200,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+            },
+          );
+        } else if (options.path == '/tags.json') {
+          final responseJson = [
+            {'name': 'jacky-arts', 'category': 1},
+            {'name': 'canine', 'category': 5},
+            {'name': 'anthro', 'category': 0},
+          ];
+          return ResponseBody.fromString(
+            jsonEncode(responseJson),
+            200,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+            },
+          );
+        }
+        throw UnimplementedError(options.path);
+      });
+
+      final provider = E621Provider(
+        id: 'e621',
+        name: 'e621',
+        baseUrl: 'https://e621.net',
+        dioClient: dioClient,
+      );
+
+      final post = await provider.getPost('6875208');
+      expect(post, isNotNull);
+      expect(post!.tagGroups['artist'], equals(['jacky-arts']));
+      expect(post.tagGroups['species'], equals(['canine']));
+      expect(post.tagGroups['general'], equals(['anthro']));
+      expect(post.hasCategorizedTagGroups, isTrue);
+    });
+
+    test('suggestTags correctly maps e621 species and meta categories', () async {
+      dio.httpClientAdapter = _FakeAdapter((options) async {
+        expect(options.path, equals('/tags.json'));
+        final responseJson = [
+          {'name': 'canine', 'category': 5, 'post_count': 100},
+          {'name': 'hi_res', 'category': 7, 'post_count': 200},
+          {'name': 'jacky-arts', 'category': 1, 'post_count': 50},
+        ];
+        return ResponseBody.fromString(
+          jsonEncode(responseJson),
+          200,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        );
+      });
+
+      final provider = E621Provider(
+        id: 'e621',
+        name: 'e621',
+        baseUrl: 'https://e621.net',
+        dioClient: dioClient,
+      );
+
+      final suggestions = await provider.suggestTags('can');
+      expect(suggestions.length, equals(3));
+      expect(suggestions[0].category, equals(TagCategory.species));
+      expect(suggestions[1].category, equals(TagCategory.meta));
+      expect(suggestions[2].category, equals(TagCategory.artist));
     });
   });
 }

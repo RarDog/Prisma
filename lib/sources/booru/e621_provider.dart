@@ -17,7 +17,8 @@ class E621Provider
         TagSuggestionProvider,
         CommentProvider,
         NoteProvider,
-        PostPageProvider {
+        PostPageProvider,
+        TagMetadataProvider {
   E621Provider({
     required this.id,
     required this.name,
@@ -143,6 +144,79 @@ class E621Provider
     );
   }
 
+  static String _e621CategoryName(dynamic category) {
+    return switch (category?.toString()) {
+      '0' => 'general',
+      '1' => 'artist',
+      '3' => 'copyright',
+      '4' => 'character',
+      '5' => 'species',
+      '7' => 'meta',
+      '8' => 'lore',
+      _ => 'general',
+    };
+  }
+
+  static TagCategory _e621TagCategory(dynamic category) {
+    return switch (category?.toString()) {
+      '0' => TagCategory.general,
+      '1' => TagCategory.artist,
+      '3' => TagCategory.copyright,
+      '4' => TagCategory.character,
+      '5' => TagCategory.species,
+      '7' => TagCategory.meta,
+      _ => TagCategory.unknown,
+    };
+  }
+
+  @override
+  Future<Map<String, List<String>>> categorizeTags(List<String> tags) async {
+    final cleaned = tags
+        .map((t) => t.trim())
+        .where((t) => t.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    if (cleaned.isEmpty) return const {};
+
+    final uncached = cleaned
+        .where((t) => !E621Mapper.tagCategoryCache.containsKey(t))
+        .toList();
+    if (uncached.isNotEmpty) {
+      for (var i = 0; i < uncached.length; i += 80) {
+        final chunk = uncached.sublist(
+          i,
+          (i + 80 > uncached.length) ? uncached.length : i + 80,
+        );
+        try {
+          final response = await _dio.get<dynamic>(
+            '/tags.json',
+            queryParameters: {
+              'search[name]': chunk.join(','),
+              'limit': chunk.length.clamp(1, 100),
+              ..._queryParameters,
+            },
+          );
+          if (response.data is List) {
+            for (final item in (response.data as List).whereType<Map>()) {
+              final name = (item['name'] ?? '').toString().trim();
+              if (name.isNotEmpty) {
+                E621Mapper.tagCategoryCache[name] =
+                    _e621CategoryName(item['category']);
+              }
+            }
+          }
+        } catch (_) {}
+      }
+    }
+
+    final groups = <String, List<String>>{};
+    for (final tag in cleaned) {
+      final category = E621Mapper.tagCategoryCache[tag] ?? 'general';
+      groups.putIfAbsent(category, () => []).add(tag);
+    }
+    return groups;
+  }
+
   @override
   Future<Post?> getPost(String id) async {
     await _throttle();
@@ -155,7 +229,20 @@ class E621Provider
       providerId: this.id,
       providerName: name,
     );
-    return posts.isEmpty ? null : posts.first;
+    if (posts.isEmpty) return null;
+    final post = posts.first;
+    if (post.tags.isNotEmpty) {
+      final categorized = await categorizeTags(post.tags);
+      if (categorized.isNotEmpty) {
+        return post.copyWith(
+          tagGroups: {
+            ...post.tagGroups,
+            ...categorized,
+          },
+        );
+      }
+    }
+    return post;
   }
 
   Future<E621Pool?> getPool(String poolId) async {
@@ -402,9 +489,14 @@ class E621Provider
         .whereType<Map>()
         .map((item) {
           final json = Map<String, dynamic>.from(item);
+          final name = (json['name'] ?? '').toString();
+          final rawCat = json['category'];
+          if (name.isNotEmpty && rawCat != null) {
+            E621Mapper.tagCategoryCache[name] = _e621CategoryName(rawCat);
+          }
           return TagSuggestion(
-            name: (json['name'] ?? '').toString(),
-            category: tagCategoryFromString(json['category']?.toString()),
+            name: name,
+            category: _e621TagCategory(rawCat),
             postCount: _int(json['post_count']),
             providerId: id,
           );

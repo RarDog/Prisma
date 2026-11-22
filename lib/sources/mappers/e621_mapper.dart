@@ -1,6 +1,21 @@
 import 'package:gel_rule_app/core/models/post.dart';
 
 class E621Mapper {
+  /// In-memory tag category lookup cache shared with [E621Provider].
+  static final Map<String, String> tagCategoryCache = {};
+
+  /// Synchronously groups known tags from [tagCategoryCache].
+  static Map<String, List<String>> getCachedCategorizedTags(List<String> tags) {
+    if (tags.isEmpty || tagCategoryCache.isEmpty) return const {};
+    final groups = <String, List<String>>{};
+    for (final tag in tags) {
+      final category = tagCategoryCache[tag];
+      if (category != null && category.isNotEmpty) {
+        groups.putIfAbsent(category, () => []).add(tag);
+      }
+    }
+    return groups;
+  }
   static List<Post> postsFromResponse(
     dynamic data, {
     required String providerId,
@@ -118,7 +133,18 @@ class E621Mapper {
           .map((e) => e?.toString() ?? '')
           .where((s) => s.isNotEmpty)
           .toList();
-      tagGroups['general'] = tags;
+      final cachedGroups = getCachedCategorizedTags(tags);
+      if (cachedGroups.isNotEmpty) {
+        tagGroups.addAll(cachedGroups);
+        final categorizedSet = cachedGroups.values.expand((e) => e).toSet();
+        final uncached =
+            tags.where((t) => !categorizedSet.contains(t)).toList();
+        if (uncached.isNotEmpty) {
+          tagGroups.putIfAbsent('general', () => []).addAll(uncached);
+        }
+      } else {
+        tagGroups['general'] = tags;
+      }
     } else {
       tags = const [];
     }

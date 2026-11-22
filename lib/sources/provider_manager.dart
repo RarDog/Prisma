@@ -426,10 +426,7 @@ class ProviderManager {
   }
 
   Future<Result<Post>> enrichPostTags(Post post) async {
-    final hasUsefulGroups = post.tagGroups.entries.any(
-      (entry) => entry.key != 'general' && entry.value.isNotEmpty,
-    );
-    if (hasUsefulGroups || post.tags.isEmpty) return Success(post);
+    if (post.hasCategorizedTagGroups || post.tags.isEmpty) return Success(post);
 
     final providersResult = await activeFeedProviders();
     if (providersResult is Error<List<ContentProvider>>) {
@@ -446,7 +443,9 @@ class ProviderManager {
       final groups = await (matches.first as TagMetadataProvider)
           .categorizeTags(post.tags);
       if (groups.isEmpty) return Success(post);
-      return Success(post.copyWith(tagGroups: groups));
+      final merged = Map<String, List<String>>.from(post.tagGroups)
+        ..addAll(groups);
+      return Success(post.copyWith(tagGroups: merged));
     } catch (error) {
       return Success(post);
     }
