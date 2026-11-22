@@ -50,7 +50,7 @@ Map<String, String> getMediaUrlHeaders({
   } else if (pid.contains('mangadex') ||
       u.contains('mangadex.org') ||
       u.contains('mangadex.network')) {
-    defaultReferer = 'https://mangadex.org';
+    defaultReferer = 'https://mangadex.org/';
   } else if (pid.contains('mangalib') ||
       u.contains('mangalib.me') ||
       u.contains('imglib.info')) {
