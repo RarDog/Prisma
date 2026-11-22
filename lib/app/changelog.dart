@@ -1,5 +1,24 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.2.4-beta.2',
+    title:
+        'Релиз 4.2.4-beta.2: комплексный аудит безопасности и ядра, масштабное обновление манги и 3D PageFlip, группировка тегов e621',
+    titleEn:
+        'Release 4.2.4-beta.2: core security hardening, comprehensive manga UI update & 3D PageFlip, e621 tag categorization',
+    bullets: [
+      'Безопасность и ядро: строгая валидация TLS-сертификатов (TlsSecurityPolicy), безопасное хранение учетных данных без plaintext-fallback в Isar, защита от Path Traversal при бэкапах и удалении манги, маскирование токенов в логах Dio.',
+      'Вкладка «Манга»: исправлены сбои верстки MangaScreenAppBar, решена проблема загрузки обложек MangaDex (каскадный fallback URL и обход 302/User-Agent), обновлены карточки каталога и библиотеки.',
+      'Читалка манги (3D PageFlip): реалистичное складывание страниц на 180° с цилиндрическим изгибом, тенями, бликами и аутентичной оборотной стороной листа.',
+      'Группировка тегов e621 / e926: восстановлено разделение тегов по категориям (автор, персонажи, копирайт, виды, лор, мета, общие) в карточках, деталях постов и поисковых подсказках.',
+    ],
+    bulletsEn: [
+      'Core Security Hardening: enforced strict TLS certificate verification (TlsSecurityPolicy), zero plaintext credential fallback in Isar, path traversal prevention in backups & manga chapters, sensitive token masking in HTTP logs.',
+      'Manga Tab Overhaul: fixed MangaScreenAppBar layout crash, resolved MangaDex cover image loading (cascading fallback URLs & User-Agent bypass), revamped catalog & library cards.',
+      'Manga Reader (3D PageFlip): authentic continuous 180° cylindrical page folding with realistic shadows, specular highlights, and newspaper backside texture.',
+      'e621 / e926 Tag Categorization: restored tag grouping across categories (artist, character, copyright, species, lore, meta, general) in posts, feeds, and search autocomplete.',
+    ],
+  ),
+  PrismaChange(
     version: '4.2.4-beta.1',
     title:
         'Релиз 4.2.4-beta.1: кастомный заголовок окна, динамическая вёрстка плеера, устранение вылетов при скролле и улучшения навигации',
