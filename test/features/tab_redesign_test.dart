@@ -66,6 +66,7 @@ void main() {
           appSettingsProvider.overrideWith(
             (ref) => AppSettings.defaults.copyWith(languageCode: 'ru'),
           ),
+          downloadedMediaKeysProvider.overrideWith((ref) => <String>{}),
           downloadedMediaByKeysProvider([post.cacheKey, post2.cacheKey])
               .overrideWith((ref) => <String, DownloadedMedia>{}),
         ],
@@ -116,6 +117,7 @@ void main() {
           appSettingsProvider.overrideWith(
             (ref) => AppSettings.defaults.copyWith(languageCode: 'ru'),
           ),
+          downloadedMediaKeysProvider.overrideWith((ref) => <String>{}),
           downloadedMediaByKeysProvider([post.cacheKey])
               .overrideWith((ref) => <String, DownloadedMedia>{}),
         ],

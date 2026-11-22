@@ -107,11 +107,18 @@ void main() {
     expect(task?.status, DownloadTaskStatus.completed,
         reason: 'the fake download completes instantly');
 
-    // Give markDownloaded a tick to complete its async write to Isar.
-    await Future<void>.delayed(const Duration(milliseconds: 100));
+    // Poll until markDownloaded completes its async write to Isar.
+    Map<String, DownloadedMedia> map = const {};
+    for (var i = 0; i < 50; i++) {
+      final read = await downloadedMediaService.allByKeys([p.cacheKey]);
+      if (read is Success<Map<String, DownloadedMedia>> &&
+          read.data.containsKey(p.cacheKey)) {
+        map = read.data;
+        break;
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+    }
 
-    final read = await downloadedMediaService.allByKeys([p.cacheKey]);
-    final map = (read as Success<Map<String, DownloadedMedia>>).data;
     expect(map, contains(p.cacheKey),
         reason:
             'the offline tab resolves downloaded state by post.cacheKey — '

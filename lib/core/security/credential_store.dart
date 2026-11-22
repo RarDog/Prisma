@@ -34,6 +34,12 @@ class CredentialStore {
     'token',
     'authorization',
     'cookie',
+    'x-api-key',
+    'auth',
+    'session',
+    'sessionid',
+    'session_id',
+    'bearer',
   };
 
   static bool isSecretKey(String key) =>

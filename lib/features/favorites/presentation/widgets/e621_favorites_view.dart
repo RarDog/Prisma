@@ -425,14 +425,8 @@ class _E621FavoritesViewState extends ConsumerState<E621FavoritesView> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final downloaded = ref
-            .watch(
-              downloadedMediaByKeysProvider(
-                _posts.map((post) => post.cacheKey).toList(growable: false),
-              ),
-            )
-            .value ??
-        const <String, DownloadedMedia>{};
+    final downloadedKeys =
+        ref.watch(downloadedMediaKeysProvider).value ?? const <String>{};
 
     final favoriteKeys = ref.watch(favoriteKeysProvider).value ?? <String>{};
 
@@ -716,7 +710,7 @@ class _E621FavoritesViewState extends ConsumerState<E621FavoritesView> {
                                       widget.settings.mediaQualityMode,
                                     ),
                                     favoriteKeys: favoriteKeys,
-                                    downloadedKeys: downloaded.keys.toSet(),
+                                    downloadedKeys: downloadedKeys,
                                     onOpen: (post) => AppNavigator.openPost(
                                       context,
                                       post: post,

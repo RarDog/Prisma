@@ -34,6 +34,16 @@ class _PostInfoCardState extends State<PostInfoCard> {
   bool _resolvingDimensions = false;
   int? _votedScore;
   bool _isVoting = false;
+  ImageStream? _imageStream;
+  ImageStreamListener? _imageStreamListener;
+
+  void _clearImageStream() {
+    if (_imageStream != null && _imageStreamListener != null) {
+      _imageStream!.removeListener(_imageStreamListener!);
+      _imageStream = null;
+      _imageStreamListener = null;
+    }
+  }
 
   static final _dimensionCache = <String, (int, int)>{};
 
@@ -98,11 +108,18 @@ class _PostInfoCardState extends State<PostInfoCard> {
   void didUpdateWidget(PostInfoCard old) {
     super.didUpdateWidget(old);
     if (old.post.fileUrl != widget.post.fileUrl) {
+      _clearImageStream();
       _resolvedWidth = null;
       _resolvedHeight = null;
       _resolvingDimensions = false;
       _maybeResolveDimensions();
     }
+  }
+
+  @override
+  void dispose() {
+    _clearImageStream();
+    super.dispose();
   }
 
   void _maybeResolveDimensions() {
@@ -122,27 +139,31 @@ class _PostInfoCardState extends State<PostInfoCard> {
     if (_resolvingDimensions) return;
     _resolvingDimensions = true;
 
+    _clearImageStream();
     final imageProvider = NetworkImage(url);
-    final completer = imageProvider.resolve(ImageConfiguration.empty);
-    completer.addListener(
-      ImageStreamListener(
-        (info, _) {
-          final w = info.image.width;
-          final h = info.image.height;
-          _dimensionCache[url] = (w, h);
-          if (mounted) {
-            setState(() {
-              _resolvedWidth = w;
-              _resolvedHeight = h;
-              _resolvingDimensions = false;
-            });
-          }
-        },
-        onError: (_, __) {
-          if (mounted) setState(() => _resolvingDimensions = false);
-        },
-      ),
+    final stream = imageProvider.resolve(ImageConfiguration.empty);
+    _imageStream = stream;
+    _imageStreamListener = ImageStreamListener(
+      (info, _) {
+        final w = info.image.width;
+        final h = info.image.height;
+        info.dispose();
+        _dimensionCache[url] = (w, h);
+        _clearImageStream();
+        if (mounted) {
+          setState(() {
+            _resolvedWidth = w;
+            _resolvedHeight = h;
+            _resolvingDimensions = false;
+          });
+        }
+      },
+      onError: (_, __) {
+        _clearImageStream();
+        if (mounted) setState(() => _resolvingDimensions = false);
+      },
     );
+    stream.addListener(_imageStreamListener!);
   }
 
   static ({String name, String queryTag})? extractArtist(Post post) {

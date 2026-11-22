@@ -415,7 +415,23 @@ class UpdateService {
       throw Exception('No update package available for current platform');
     }
 
+    final parsedUri = Uri.tryParse(assetUrl);
+    if (parsedUri == null ||
+        parsedUri.scheme != 'https' ||
+        !(parsedUri.host == 'github.com' ||
+            parsedUri.host.endsWith('.github.com') ||
+            parsedUri.host == 'githubusercontent.com' ||
+            parsedUri.host.endsWith('.githubusercontent.com'))) {
+      throw Exception('Untrusted update asset source: $assetUrl');
+    }
+
     final fileName = assetFileName(info, assetUrl);
+    if (fileName.contains('..') ||
+        fileName.contains('/') ||
+        fileName.contains('\\') ||
+        fileName.contains('"')) {
+      throw Exception('Invalid update asset file name: $fileName');
+    }
     Directory baseTempDir;
     try {
       baseTempDir = await getTemporaryDirectory();
@@ -630,6 +646,13 @@ class UpdateService {
         exeDir.replaceAll('/', '\\').replaceAll(RegExp(r'\\+$'), '');
     final cleanDownloadedPath = downloadedPath.replaceAll('/', '\\');
     final cleanExePath = exePath.replaceAll('/', '\\');
+
+    final injectionChars = RegExp(r'["&|^<>%]');
+    if (injectionChars.hasMatch(cleanDownloadedPath) ||
+        injectionChars.hasMatch(cleanExeDir) ||
+        injectionChars.hasMatch(cleanExePath)) {
+      throw Exception('Unsafe path characters detected for Windows update');
+    }
 
     final scriptPath = '${Directory.systemTemp.path}\\gel_rule_apply_update.bat';
     final scriptContent = '''

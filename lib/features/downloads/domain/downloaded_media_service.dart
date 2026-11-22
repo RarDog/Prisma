@@ -42,14 +42,37 @@ class DownloadedMediaService {
     return _repository.allByKeys(cacheKeys);
   }
 
+  Future<Result<Set<String>>> keys() {
+    return _repository.keys();
+  }
+
+  static bool _isSafeFilePath(String path) {
+    final normalized = path.replaceAll('\\', '/').toLowerCase().trim();
+    if (normalized.isEmpty ||
+        normalized == '/' ||
+        normalized == 'c:/' ||
+        normalized.startsWith('/etc') ||
+        normalized.startsWith('/bin') ||
+        normalized.startsWith('/usr') ||
+        normalized.startsWith('/sys') ||
+        normalized.startsWith('/proc') ||
+        normalized.startsWith('c:/windows') ||
+        normalized.startsWith('c:/program files')) {
+      return false;
+    }
+    return true;
+  }
+
   Future<Result<void>> deleteLocalFile(String cacheKey) async {
     final result = await getByCacheKey(cacheKey);
     if (result is Error<DownloadedMedia?>) return Error(result.failure);
     final media = (result as Success<DownloadedMedia?>).data;
-    if (media != null && media.savedPath.isNotEmpty) {
+    if (media != null && media.savedPath.isNotEmpty && _isSafeFilePath(media.savedPath)) {
       final file = File(media.savedPath);
-      if (await file.exists()) {
-        await file.delete();
+      if (await file.exists() && !(await FileSystemEntity.isDirectory(media.savedPath))) {
+        try {
+          await file.delete();
+        } catch (_) {}
       }
     }
     final deleted = await _repository.deleteRecord(cacheKey);

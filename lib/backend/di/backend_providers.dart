@@ -239,6 +239,16 @@ final _downloadedMediaChangeProvider = StateProvider<int>((ref) {
   return service.changeNotifier.value;
 });
 
+final downloadedMediaKeysProvider = FutureProvider<Set<String>>((ref) async {
+  ref.watch(_downloadedMediaChangeProvider);
+  try {
+    final result = await ref.watch(downloadedMediaServiceProvider).keys();
+    return result is Success<Set<String>> ? result.data : const <String>{};
+  } catch (_) {
+    return const <String>{};
+  }
+});
+
 final downloadedMediaByKeysProvider =
     FutureProvider.family<Map<String, DownloadedMedia>, Iterable<String>>(
         (ref, keys) async {

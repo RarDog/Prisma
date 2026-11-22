@@ -29,6 +29,9 @@ class _FakeProviderRepository extends Fake implements ProviderRepository {
   }
 
   @override
+  Future<void> clearCredentials(String id) async {}
+
+  @override
   Future<Result<void>> deleteProvider(String id) async {
     providers.remove(id);
     return const Success(null);

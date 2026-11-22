@@ -458,6 +458,10 @@ class ProviderRepository {
       }
       // Keychain unavailable: keep legacy plaintext persistence so the
       // credentials are not silently lost.
+    } else {
+      // Credentials cleared in form: explicitly delete from keychain so old
+      // secrets are never restored.
+      await _credentialStore.delete(config.id);
     }
     final res = await _databaseService.safeWrite((isar) async {
       await isar.providerConfigEntitys
@@ -466,6 +470,9 @@ class ProviderRepository {
     if (res is Success) onDataChanged?.call();
     return res;
   }
+
+  /// Explicitly clears stored keychain credentials for [id].
+  Future<void> clearCredentials(String id) => _credentialStore.delete(id);
 
   Future<Result<void>> deleteProvider(String id) async {
     await _credentialStore.delete(id);

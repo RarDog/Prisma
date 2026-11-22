@@ -63,6 +63,14 @@ class DownloadedMediaRepository {
     });
   }
 
+  Future<Result<Set<String>>> keys() {
+    return _databaseService.safeRead((isar) async {
+      final items =
+          await isar.downloadedMediaEntitys.where().cacheKeyProperty().findAll();
+      return items.toSet();
+    });
+  }
+
   Future<Result<void>> deleteRecord(String cacheKey) {
     return _databaseService.safeWrite((isar) async {
       await isar.downloadedMediaEntitys

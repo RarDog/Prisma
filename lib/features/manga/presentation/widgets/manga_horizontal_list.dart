@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shimmer/shimmer.dart';
 
 import 'package:gel_rule_app/core/models/post.dart';
 import 'package:gel_rule_app/features/post/presentation/widgets/post_media_viewer.dart';
@@ -73,24 +74,29 @@ class MangaHorizontalList extends StatelessWidget {
                           child: coverUrl.isNotEmpty
                               ? CachedNetworkImage(
                                   imageUrl: coverUrl,
+                                  cacheKey: 'v3_${item.id}_$coverUrl',
                                   httpHeaders: getPostMediaHeaders(item),
                                   fit: BoxFit.cover,
-                                  // Carousel tiles are ~110 logical px wide.
-                                  memCacheWidth: 240,
-                                  placeholder: (_, __) => Container(
-                                    color: Colors.white10,
-                                    child: const Center(
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Color(0xFFFF6740),
-                                      ),
+                                  placeholder: (_, __) => Shimmer.fromColors(
+                                    baseColor: const Color(0xFF1E2128),
+                                    highlightColor: const Color(0xFF2E333D),
+                                    child: Container(
+                                      color: const Color(0xFF1E2128),
                                     ),
                                   ),
-                                  errorWidget: (_, __, ___) => Container(
-                                    color: Colors.white10,
-                                    child: const Icon(
-                                      Icons.broken_image_rounded,
-                                      color: Colors.white38,
+                                  errorWidget: (_, __, ___) => Image.network(
+                                    coverUrl,
+                                    headers: getPostMediaHeaders(item),
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Container(
+                                      color: Colors.white10,
+                                      child: const Center(
+                                        child: Icon(
+                                          Icons.auto_stories_rounded,
+                                          color: Colors.white38,
+                                          size: 24,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 )

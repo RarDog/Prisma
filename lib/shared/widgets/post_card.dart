@@ -202,11 +202,14 @@ class _PostCardState extends ConsumerState<PostCard>
       }
     }
 
-    final feedVideoHoverEnabled = ref.watch(
-          appSettingsProvider.select(
-            (s) => s.value?.feedVideoHoverPreview ?? false,
-          ),
-        );
+    var feedVideoHoverEnabled = false;
+    try {
+      feedVideoHoverEnabled = ref.watch(
+            appSettingsProvider.select(
+              (s) => s.value?.feedVideoHoverPreview ?? false,
+            ),
+          );
+    } catch (_) {}
 
     return MouseRegion(
       onEnter: (_) {

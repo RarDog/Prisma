@@ -55,6 +55,8 @@ class MangaDetailsViewer extends StatelessWidget {
                       imageUrl: post.sampleUrl.isNotEmpty
                           ? post.sampleUrl
                           : post.previewUrl,
+                      cacheKey:
+                          'v3_${post.id}_${post.sampleUrl.isNotEmpty ? post.sampleUrl : post.previewUrl}',
                       httpHeaders: headers,
                       fit: BoxFit.cover,
                       errorWidget: (_, __, ___) => const SizedBox.shrink(),

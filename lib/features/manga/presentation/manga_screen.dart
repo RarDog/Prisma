@@ -615,59 +615,73 @@ class _MangaScreenState extends ConsumerState<MangaScreen>
         onToggleRating: _toggleRating,
         onRefreshCatalog: () => _loadManga(refresh: true),
       ),
-      body: _selectedTab == MangaTab.catalog
-          ? MangaCatalogView(
-              scrollController: _scrollController,
-              searchController: _searchController,
-              onSearchChanged: _onSearchChanged,
-              onSearchSubmitted: (val) {
-                _debounceTimer?.cancel();
-                setState(() {
-                  _activeQuery = val;
-                  _suggestions = [];
-                });
-                _loadManga(refresh: true);
-              },
-              onClearSearch: () {
-                _debounceTimer?.cancel();
-                _searchController.clear();
-                setState(() {
-                  _activeQuery = '';
-                  _suggestions = [];
-                });
-                _loadManga(refresh: true);
-              },
-              activeQuery: _activeQuery,
-              suggestions: _suggestions,
-              onSuggestionSelected: (suggestion) {
-                _debounceTimer?.cancel();
-                _searchController.text = suggestion.name;
-                setState(() {
-                  _activeQuery = suggestion.name;
-                  _suggestions = [];
-                });
-                _loadManga(refresh: true);
-              },
-              mangaProviders: _mangaProviders,
-              selectedProviderId: _selectedProviderId,
-              onProviderSelected: _onProviderSelected,
-              selectedTopPeriod: _selectedTopPeriod,
-              onTopPeriodSelected: _onTopPeriodSelected,
-              errorMessage: _errorMessage,
-              onRetry: () => _loadManga(refresh: true),
-              mangaList: _mangaList,
-              loading: _loading,
-              onOpenManga: _openManga,
-            )
-          : MangaLibraryView(
-              libraryFilter: _libraryFilter,
-              onFilterSelected: (keyName) =>
-                  setState(() => _libraryFilter = keyName),
-              checkingUpdates: _checkingUpdates,
-              onCheckUpdates: _checkLibraryUpdates,
-              onOpenEntry: _openLibraryEntry,
-              onShowEntryOptions: _showLibraryEntryOptions,
-            ),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 260),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        transitionBuilder: (child, animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
+        },
+        child: KeyedSubtree(
+          key: ValueKey<MangaTab>(_selectedTab),
+          child: _selectedTab == MangaTab.catalog
+              ? MangaCatalogView(
+                  scrollController: _scrollController,
+                  searchController: _searchController,
+                  onSearchChanged: _onSearchChanged,
+                  onSearchSubmitted: (val) {
+                    _debounceTimer?.cancel();
+                    setState(() {
+                      _activeQuery = val;
+                      _suggestions = [];
+                    });
+                    _loadManga(refresh: true);
+                  },
+                  onClearSearch: () {
+                    _debounceTimer?.cancel();
+                    _searchController.clear();
+                    setState(() {
+                      _activeQuery = '';
+                      _suggestions = [];
+                    });
+                    _loadManga(refresh: true);
+                  },
+                  activeQuery: _activeQuery,
+                  suggestions: _suggestions,
+                  onSuggestionSelected: (suggestion) {
+                    _debounceTimer?.cancel();
+                    _searchController.text = suggestion.name;
+                    setState(() {
+                      _activeQuery = suggestion.name;
+                      _suggestions = [];
+                    });
+                    _loadManga(refresh: true);
+                  },
+                  mangaProviders: _mangaProviders,
+                  selectedProviderId: _selectedProviderId,
+                  onProviderSelected: _onProviderSelected,
+                  selectedTopPeriod: _selectedTopPeriod,
+                  onTopPeriodSelected: _onTopPeriodSelected,
+                  errorMessage: _errorMessage,
+                  onRetry: () => _loadManga(refresh: true),
+                  mangaList: _mangaList,
+                  loading: _loading,
+                  onOpenManga: _openManga,
+                )
+              : MangaLibraryView(
+                  libraryFilter: _libraryFilter,
+                  onFilterSelected: (keyName) =>
+                      setState(() => _libraryFilter = keyName),
+                  checkingUpdates: _checkingUpdates,
+                  onCheckUpdates: _checkLibraryUpdates,
+                  onOpenEntry: _openLibraryEntry,
+                  onShowEntryOptions: _showLibraryEntryOptions,
+                ),
+        ),
+      ),
     );
   }
 }

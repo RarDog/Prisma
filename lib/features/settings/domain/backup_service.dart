@@ -537,11 +537,13 @@ class BackupService {
             for (final item in dmList) {
               if (item is Map) {
                 final dm = Map<String, dynamic>.from(item);
+                final rawSavedPath = (dm['savedPath'] ?? '').toString();
+                final safePath = _isSafeFilePath(rawSavedPath) ? rawSavedPath : '';
                 final entity = DownloadedMediaEntity()
                   ..cacheKey = (dm['cacheKey'] ?? '').toString()
                   ..providerId = (dm['providerId'] ?? '').toString()
                   ..postId = (dm['postId'] ?? '').toString()
-                  ..savedPath = (dm['savedPath'] ?? '').toString()
+                  ..savedPath = safePath
                   ..fileName = (dm['fileName'] ?? '').toString()
                   ..downloadedAt = DateTime.tryParse(
                           dm['downloadedAt']?.toString() ?? '') ??
@@ -972,6 +974,25 @@ class BackupService {
     final file = File(location.path);
     await file.writeAsString(json);
     await saveAutoBackupToPersistentStorage();
+    return true;
+  }
+
+  static bool _isSafeFilePath(String path) {
+    final normalized = path.replaceAll('\\', '/').toLowerCase().trim();
+    if (normalized.isEmpty ||
+        normalized == '/' ||
+        normalized == 'c:/' ||
+        normalized.startsWith('/etc') ||
+        normalized.startsWith('/bin') ||
+        normalized.startsWith('/usr') ||
+        normalized.startsWith('/sys') ||
+        normalized.startsWith('/proc') ||
+        normalized.startsWith('c:/windows') ||
+        normalized.startsWith('c:/program files') ||
+        normalized.contains('../') ||
+        normalized.contains('..\\')) {
+      return false;
+    }
     return true;
   }
 

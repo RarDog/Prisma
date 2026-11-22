@@ -13,6 +13,7 @@ import 'package:gel_rule_app/core/models/provider_health.dart';
 import 'package:gel_rule_app/features/search/models/search_history.dart';
 import 'package:gel_rule_app/features/viewed/models/viewed_post.dart';
 import 'package:gel_rule_app/features/downloads/models/downloaded_media.dart';
+import 'package:gel_rule_app/core/utils/logger.dart';
 
 part 'app_database.g.dart';
 
@@ -25,16 +26,37 @@ class AppDatabase {
     final dir = directory ?? (await getApplicationDocumentsDirectory()).path;
     try {
       return AppDatabase(await _openIsar(dir));
-    } catch (_) {
-      // Recovery path: a corrupted or schema-incompatible database file must
-      // not crash-loop the app on every startup. Wipe the data file and
-      // recreate it — cached content is disposable, losing it beats losing
-      // the whole app session.
-      final file = File('$dir/gel_rule_app.isar');
-      if (await file.exists()) {
-        await file.delete();
+    } catch (e, stack) {
+      AppLogger.error(
+          'AppDatabase: initial open failed, retrying after backoff', e, stack);
+      // Wait briefly for transient lock (e.g. process reboot or antivirus scan) to clear
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      try {
+        return AppDatabase(await _openIsar(dir));
+      } catch (retryError, retryStack) {
+        AppLogger.error(
+            'AppDatabase: retry failed, attempting safe quarantine',
+            retryError,
+            retryStack);
+        // Recovery path: a corrupted database must NEVER be deleted blindly.
+        // Quarantine the file with timestamp so user data (favorites/collections) can be inspected/restored.
+        final file = File('$dir/gel_rule_app.isar');
+        if (await file.exists()) {
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final backupFile = File('$dir/gel_rule_app.isar.corrupted_$timestamp');
+          try {
+            await file.rename(backupFile.path);
+            AppLogger.warn(
+                'AppDatabase: quarantined corrupted database to ${backupFile.path}');
+          } catch (_) {
+            try {
+              await file.copy(backupFile.path);
+              await file.delete();
+            } catch (_) {}
+          }
+        }
+        return AppDatabase(await _openIsar(dir));
       }
-      return AppDatabase(await _openIsar(dir));
     }
   }
 

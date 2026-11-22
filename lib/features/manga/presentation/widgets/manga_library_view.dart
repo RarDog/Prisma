@@ -223,13 +223,13 @@ class MangaLibraryView extends ConsumerWidget {
             }
 
             return SliverPadding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 0.58,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 12,
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 200,
+                  childAspectRatio: 0.63,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 14,
                 ),
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {

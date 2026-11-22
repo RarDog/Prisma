@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:gel_rule_app/core/utils/logger.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import 'package:gel_rule_app/sources/manga/mangadex_provider.dart';
@@ -40,11 +41,29 @@ class MangaOfflineService {
     return dir;
   }
 
+  static String _safeSegment(String input) {
+    final sanitized = input
+        .replaceAll(RegExp(r'[\\/:*?"<>|\x00-\x1f]'), '_')
+        .replaceAll(RegExp(r'^\.+'), '')
+        .replaceAll(RegExp(r'\.+$'), '')
+        .trim();
+    return sanitized.isEmpty ? 'item' : sanitized;
+  }
+
   Future<Directory> _getChapterDir(String mangaId, String chapterId) async {
     final root = await _getOfflineDir();
-    final cleanMangaId = mangaId.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
-    final cleanChapterId = chapterId.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
-    final dir = Directory('${root.path}/$cleanMangaId/$cleanChapterId');
+    final cleanMangaId = _safeSegment(mangaId);
+    final cleanChapterId = _safeSegment(chapterId);
+    final rootPath = p.canonicalize(root.path);
+    final targetPath =
+        p.canonicalize(p.join(rootPath, cleanMangaId, cleanChapterId));
+
+    if (!targetPath.startsWith(rootPath) || targetPath == rootPath) {
+      throw ArgumentError(
+          'Path traversal detected in chapter path: $targetPath');
+    }
+
+    final dir = Directory(targetPath);
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }

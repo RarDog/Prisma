@@ -23,6 +23,7 @@ class UgoiraPlayer extends ConsumerStatefulWidget {
     this.onTap,
     this.ugoiraMetadata,
     this.ugoiraService,
+    this.isActive = true,
   });
 
   final Post post;
@@ -32,12 +33,14 @@ class UgoiraPlayer extends ConsumerStatefulWidget {
   final VoidCallback? onTap;
   final UgoiraMetadata? ugoiraMetadata;
   final UgoiraService? ugoiraService;
+  final bool isActive;
 
   @override
   ConsumerState<UgoiraPlayer> createState() => _UgoiraPlayerState();
 }
 
-class _UgoiraPlayerState extends ConsumerState<UgoiraPlayer> {
+class _UgoiraPlayerState extends ConsumerState<UgoiraPlayer>
+    with WidgetsBindingObserver {
   List<UgoiraFrame> _frames = const [];
   int _currentFrameIndex = 0;
   bool _isPlaying = true;
@@ -50,6 +53,7 @@ class _UgoiraPlayerState extends ConsumerState<UgoiraPlayer> {
   Timer? _frameTimer;
   Timer? _hideControlsTimer;
   CancelToken? _cancelToken;
+  bool _tickerModeEnabled = true;
 
   UgoiraService get _service =>
       widget.ugoiraService ?? ref.read(ugoiraServiceProvider);
@@ -57,12 +61,42 @@ class _UgoiraPlayerState extends ConsumerState<UgoiraPlayer> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadUgoira();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _tickerModeEnabled = TickerMode.of(context);
+    if (!_tickerModeEnabled) {
+      _frameTimer?.cancel();
+    } else if (_isPlaying && _frames.isNotEmpty && widget.isActive && _frameTimer == null) {
+      _scheduleNextFrame();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.hidden) {
+      _frameTimer?.cancel();
+    } else if (state == AppLifecycleState.resumed && _isPlaying && _canPlay) {
+      _scheduleNextFrame();
+    }
   }
 
   @override
   void didUpdateWidget(covariant UgoiraPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.isActive != widget.isActive) {
+      if (!widget.isActive) {
+        _frameTimer?.cancel();
+      } else if (_isPlaying && _frames.isNotEmpty && _canPlay) {
+        _scheduleNextFrame();
+      }
+    }
     if (oldWidget.post.id != widget.post.id) {
       _cancelToken?.cancel();
       _frameTimer?.cancel();
@@ -76,6 +110,7 @@ class _UgoiraPlayerState extends ConsumerState<UgoiraPlayer> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _cancelToken?.cancel();
     _frameTimer?.cancel();
     _hideControlsTimer?.cancel();
@@ -163,15 +198,23 @@ class _UgoiraPlayerState extends ConsumerState<UgoiraPlayer> {
     }
   }
 
+  bool get _canPlay {
+    if (!widget.isActive) return false;
+    if (!mounted) return false;
+    if (!_tickerModeEnabled) return false;
+    return true;
+  }
+
   void _scheduleNextFrame() {
     _frameTimer?.cancel();
-    if (!_isPlaying || _frames.isEmpty) return;
+    if (!_isPlaying || _frames.isEmpty || !_canPlay) return;
 
     final currentFrame = _frames[_currentFrameIndex];
-    final delay = (currentFrame.delayMs / _playbackSpeed).round().clamp(10, 5000);
+    final delay =
+        (currentFrame.delayMs / _playbackSpeed).round().clamp(10, 5000);
 
     _frameTimer = Timer(Duration(milliseconds: delay), () {
-      if (mounted && _isPlaying) {
+      if (mounted && _isPlaying && _canPlay) {
         setState(() {
           _currentFrameIndex = (_currentFrameIndex + 1) % _frames.length;
         });

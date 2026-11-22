@@ -118,8 +118,7 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
   int _networkRetryCount = 0;
   bool _retriedFormatError = false;
   bool _softwareDecodingFallback = false;
-  late bool _useSoftwareDecoding =
-      Platform.isLinux || Platform.isWindows || Platform.isMacOS;
+  late bool _useSoftwareDecoding = false;
   Timer? _hideTimer;
   StreamSubscription<String>? _errorSubscription;
   StreamSubscription<Duration>? _positionSubscription;
@@ -220,6 +219,7 @@ class _PostMediaViewerState extends ConsumerState<PostMediaViewer> {
         post: widget.post,
         mediaHeaders: widget.mediaHeaders,
         fullscreen: widget.fullscreen,
+        isActive: widget.isActive,
         onOpenFullscreen: widget.fullscreen ? null : () => _openFullscreen(context),
       );
     }

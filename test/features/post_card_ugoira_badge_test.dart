@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gel_rule_app/core/models/post.dart';
 import 'package:gel_rule_app/core/utils/media_quality.dart';
@@ -25,21 +26,23 @@ void main() {
       );
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: SizedBox(
-              width: 300,
-              height: 400,
-              child: PostCard(
-                post: post,
-                blurExplicit: false,
-                showBadges: true,
-                isFavorite: false,
-                isViewed: false,
-                isDownloaded: false,
-                mediaQualityMode: MediaQualityMode.auto,
-                onOpen: () {},
-                onFavorite: () {},
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 300,
+                height: 400,
+                child: PostCard(
+                  post: post,
+                  blurExplicit: false,
+                  showBadges: true,
+                  isFavorite: false,
+                  isViewed: false,
+                  isDownloaded: false,
+                  mediaQualityMode: MediaQualityMode.auto,
+                  onOpen: () {},
+                  onFavorite: () {},
+                ),
               ),
             ),
           ),

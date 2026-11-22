@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:native_dio_adapter/native_dio_adapter.dart';
+import 'package:gel_rule_app/core/security/tls_security_policy.dart';
 
 import 'package:gel_rule_app/core/http/app_headers.dart';
 
@@ -33,7 +34,8 @@ class DioClient {
             final client = io.HttpClient();
             client.idleTimeout = const Duration(seconds: 120);
             client.maxConnectionsPerHost = 15;
-            client.badCertificateCallback = (cert, host, port) => true;
+            client.badCertificateCallback =
+                TlsSecurityPolicy.shouldAllowBadCertificate;
             return client;
           },
         );
@@ -47,6 +49,15 @@ class DioClient {
               responseBody: false,
               requestHeader: false,
               responseHeader: false,
+              logPrint: (object) {
+                final str = object.toString();
+                final sanitized = str.replaceAllMapped(
+                  RegExp(r'(api_key|api_token|token|password|auth|secret)=([^&\s]+)',
+                      caseSensitive: false),
+                  (m) => '${m[1]}=***REDACTED***',
+                );
+                debugPrint(sanitized);
+              },
             ),
           );
     }

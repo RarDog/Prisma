@@ -127,12 +127,8 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
         ref.watch(appSettingsProvider).value ?? AppSettings.defaults;
     final isRu = settings.languageCode == 'ru';
     final allPosts = state.value?.posts ?? const <Post>[];
-    final downloaded = ref
-            .watch(downloadedMediaByKeysProvider(
-              allPosts.map((post) => post.cacheKey).toList(growable: false),
-            ))
-            .value ??
-        const <String, DownloadedMedia>{};
+    final downloadedKeys =
+        ref.watch(downloadedMediaKeysProvider).value ?? const <String>{};
 
     final artistGroups = favoriteArtistAlbums(allPosts);
     // Watched so a completed download refreshes the artists tab's
@@ -353,7 +349,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                   1 => FavoritesArtistsView(
                       posts: allPosts,
                       settings: settings,
-                      downloadedKeys: downloaded.keys.toSet(),
+                      downloadedKeys: downloadedKeys,
                       isRu: isRu,
                       searchQuery: _searchQuery,
                       filterPosts: _applyFilters,
@@ -368,7 +364,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                   _ => _buildAllView(
                       allPosts,
                       settings,
-                      downloaded.keys.toSet(),
+                      downloadedKeys,
                       isRu,
                     ),
                 },

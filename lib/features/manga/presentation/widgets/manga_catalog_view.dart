@@ -104,32 +104,46 @@ class MangaCatalogView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TextField(
-                  controller: searchController,
-                  textInputAction: TextInputAction.search,
-                  onChanged: onSearchChanged,
-                  onSubmitted: onSearchSubmitted,
-                  decoration: InputDecoration(
-                    hintText: isRu
-                        ? 'Поиск манги, автора или тега...'
-                        : 'Search manga, artist or tag...',
-                    prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                    suffixIcon: searchController.text.isNotEmpty ||
-                            activeQuery.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear_rounded, size: 18),
-                            onPressed: onClearSearch,
-                          )
-                        : null,
-                    filled: true,
-                    fillColor: isDark
-                        ? Colors.white.withValues(alpha: 0.06)
+                Container(
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.07)
                         : Colors.black.withValues(alpha: 0.04),
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.10)
+                          : Colors.black.withValues(alpha: 0.06),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: TextField(
+                    controller: searchController,
+                    textInputAction: TextInputAction.search,
+                    onChanged: onSearchChanged,
+                    onSubmitted: onSearchSubmitted,
+                    decoration: InputDecoration(
+                      hintText: isRu
+                          ? 'Поиск манги, автора или тега...'
+                          : 'Search manga, artist or tag...',
+                      hintStyle: TextStyle(
+                        fontSize: 13,
+                        color: theme.colorScheme.onSurfaceVariant
+                            .withValues(alpha: 0.7),
+                      ),
+                      prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                      suffixIcon: searchController.text.isNotEmpty ||
+                              activeQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear_rounded, size: 18),
+                              onPressed: onClearSearch,
+                            )
+                          : null,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                     ),
                   ),
                 ),
@@ -361,13 +375,13 @@ class MangaCatalogView extends StatelessWidget {
           )
         else
           SliverPadding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.62,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 12,
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 200,
+                childAspectRatio: 0.63,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 14,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {

@@ -50,7 +50,7 @@ Map<String, String> getMediaUrlHeaders({
   } else if (pid.contains('mangadex') ||
       u.contains('mangadex.org') ||
       u.contains('mangadex.network')) {
-    defaultReferer = 'https://mangadex.org/';
+    defaultReferer = 'https://mangadex.org';
   } else if (pid.contains('mangalib') ||
       u.contains('mangalib.me') ||
       u.contains('imglib.info')) {
@@ -76,13 +76,19 @@ Map<String, String> getMediaUrlHeaders({
     }
   }
 
-  final isDanbooruOrPawchive = pid.contains('danbooru') ||
+  final String userAgent;
+  if (pid.contains('mangadex') ||
+      u.contains('mangadex.org') ||
+      u.contains('mangadex.network')) {
+    userAgent = AppHeaders.mangaDexUserAgent;
+  } else if (pid.contains('danbooru') ||
       u.contains('donmai.us') ||
       pid.contains('pawchive') ||
-      u.contains('pawchive.pw');
-  final userAgent = isDanbooruOrPawchive
-      ? AppHeaders.defaultUserAgent
-      : AppHeaders.desktopChromeUserAgent;
+      u.contains('pawchive.pw')) {
+    userAgent = AppHeaders.defaultUserAgent;
+  } else {
+    userAgent = AppHeaders.desktopChromeUserAgent;
+  }
 
   return {
     'User-Agent': userAgent,

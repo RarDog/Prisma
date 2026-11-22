@@ -247,7 +247,11 @@ class AdaptiveScaffold extends StatelessWidget {
       );
     }
     if (automaticallyImplyLeading) {
-      final canPop = Navigator.of(context).canPop() || context.canPop();
+      bool canGoPop = false;
+      try {
+        canGoPop = context.canPop();
+      } catch (_) {}
+      final canPop = Navigator.of(context).canPop() || canGoPop;
       if (canPop) {
         final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
         return IconButtonTheme(

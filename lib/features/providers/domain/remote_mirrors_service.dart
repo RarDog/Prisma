@@ -82,6 +82,17 @@ class RemoteMirrorsService {
 
       final cleanMirrorUrl = mirror.baseUrl.trim();
       if (current.baseUrl.trim() != cleanMirrorUrl) {
+        final oldUri = Uri.tryParse(current.baseUrl.trim());
+        final newUri = Uri.tryParse(cleanMirrorUrl);
+        if (oldUri != null &&
+            newUri != null &&
+            (oldUri.host != newUri.host || oldUri.scheme != newUri.scheme)) {
+          // Cross-origin isolation: clear credentials on host migration so they are not leaked
+          await _providerRepository.clearCredentials(providerId);
+          updated = updated.copyWith(
+            customHeaders: CredentialStore.stripSecrets(updated.customHeaders),
+          );
+        }
         updated = updated.copyWith(baseUrl: cleanMirrorUrl);
         needsUpdate = true;
       }

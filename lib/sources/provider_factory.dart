@@ -128,8 +128,16 @@ class ProviderFactory {
       );
     }
 
+    final sortedHeaders = headers.entries
+        .map((e) => '${e.key}:${e.value}')
+        .toList()
+      ..sort();
+    final sortedQueries = queryParameters.entries
+        .map((e) => '${e.key}:${e.value}')
+        .toList()
+      ..sort();
     final clientKey =
-        '${config.id}_${config.baseUrl}_${config.timeoutSeconds}_${headers.entries.map((e) => '${e.key}:${e.value}').join(';')}';
+        '${config.id}_${config.apiType}_${config.baseUrl}_${config.timeoutSeconds}_${sortedHeaders.join(';')}_${sortedQueries.join(';')}';
     // When a provider is recreated with an edited config, its previous client
     // is stale — close it precisely instead of waiting for LRU pressure.
     final previousKey = _clientKeyByProviderId[config.id];
