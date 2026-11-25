@@ -9,6 +9,7 @@ import 'package:gel_rule_app/core/http/app_headers.dart';
 import 'package:gel_rule_app/core/database/database_service.dart';
 import 'package:gel_rule_app/core/utils/logger.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:gel_rule_app/sources/mappers/e621_mapper.dart';
 import 'package:gel_rule_app/sources/provider_factory.dart';
 import 'package:gel_rule_app/sources/provider_manager.dart';
 import 'package:gel_rule_app/features/downloads/models/download_task.dart';
@@ -71,6 +72,7 @@ final appDatabaseProvider = FutureProvider<AppDatabase>((ref) async {
     );
     final show = await onboardingService.shouldShowOnboarding();
     ref.read(shouldShowOnboardingProvider.notifier).state = show;
+    unawaited(E621Mapper.initCache());
   } catch (e) {
     AppLogger.error('Prisma startup & autoRestore error', e);
   }

@@ -137,11 +137,87 @@ class E621Provider
       },
       cancelToken: cancelToken,
     );
-    return E621Mapper.postsFromResponse(
+    final rawPosts = E621Mapper.postsFromResponse(
       response.data,
       providerId: id,
       providerName: name,
     );
+    return _categorizePostsInBatch(rawPosts, cancelToken: cancelToken);
+  }
+
+  /// Categorizes tags for an entire page of posts in bulk using batch /tags.json queries.
+  /// Populates [E621Mapper.tagCategoryCache] and enriches each post's [tagGroups] immediately,
+  /// guaranteeing that artist and category tags are already present during rapid feed scrolling.
+  Future<List<Post>> _categorizePostsInBatch(
+    List<Post> posts, {
+    CancelToken? cancelToken,
+  }) async {
+    if (posts.isEmpty) return posts;
+    await E621Mapper.initCache();
+
+    final allUncached = <String>{};
+    for (final post in posts) {
+      if (post.hasCategorizedTagGroups) continue;
+      for (final tag in post.tags) {
+        final t = tag.trim();
+        if (t.isNotEmpty && !E621Mapper.tagCategoryCache.containsKey(t)) {
+          allUncached.add(t);
+        }
+      }
+    }
+
+    if (allUncached.isNotEmpty) {
+      final uncachedList = allUncached.toList(growable: false);
+      for (var i = 0; i < uncachedList.length; i += 100) {
+        if (cancelToken?.isCancelled == true) break;
+        final chunk = uncachedList.sublist(
+          i,
+          (i + 100 > uncachedList.length) ? uncachedList.length : i + 100,
+        );
+        try {
+          final response = await _dio.get<dynamic>(
+            '/tags.json',
+            queryParameters: {
+              'search[name]': chunk.join(','),
+              'limit': chunk.length.clamp(1, 100),
+              ..._queryParameters,
+            },
+            cancelToken: cancelToken,
+          );
+          if (response.data is List) {
+            final found = <String>{};
+            for (final item in (response.data as List).whereType<Map>()) {
+              final name = (item['name'] ?? '').toString().trim();
+              if (name.isNotEmpty) {
+                found.add(name);
+                E621Mapper.tagCategoryCache[name] =
+                    _e621CategoryName(item['category']);
+              }
+            }
+            for (final name in chunk) {
+              if (!found.contains(name)) {
+                E621Mapper.tagCategoryCache[name] = 'general';
+              }
+            }
+            E621Mapper.saveCacheSoon();
+          }
+        } catch (_) {
+          break;
+        }
+      }
+    }
+
+    return posts.map((post) {
+      if (post.hasCategorizedTagGroups || post.tags.isEmpty) return post;
+      final groups = E621Mapper.getCachedCategorizedTags(post.tags);
+      if (groups.isEmpty) return post;
+      return post.copyWith(
+        tagGroups: {
+          ...post.tagGroups,
+          ...groups,
+        },
+      );
+    }).toList(growable: false);
   }
 
   static String _e621CategoryName(dynamic category) {
@@ -171,6 +247,7 @@ class E621Provider
 
   @override
   Future<Map<String, List<String>>> categorizeTags(List<String> tags) async {
+    await E621Mapper.initCache();
     final cleaned = tags
         .map((t) => t.trim())
         .where((t) => t.isNotEmpty)
@@ -197,13 +274,21 @@ class E621Provider
             },
           );
           if (response.data is List) {
+            final found = <String>{};
             for (final item in (response.data as List).whereType<Map>()) {
               final name = (item['name'] ?? '').toString().trim();
               if (name.isNotEmpty) {
+                found.add(name);
                 E621Mapper.tagCategoryCache[name] =
                     _e621CategoryName(item['category']);
               }
             }
+            for (final name in chunk) {
+              if (!found.contains(name)) {
+                E621Mapper.tagCategoryCache[name] = 'general';
+              }
+            }
+            E621Mapper.saveCacheSoon();
           }
         } catch (_) {}
       }
@@ -364,11 +449,12 @@ class E621Provider
           ..._queryParameters,
         },
       );
-      return E621Mapper.postsFromResponse(
+      final rawPosts = E621Mapper.postsFromResponse(
         response.data,
         providerId: id,
         providerName: name,
       );
+      return await _categorizePostsInBatch(rawPosts);
     } catch (_) {
       return const [];
     }

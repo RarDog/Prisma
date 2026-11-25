@@ -1,8 +1,64 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:path_provider/path_provider.dart';
+
 import 'package:gel_rule_app/core/models/post.dart';
 
 class E621Mapper {
   /// In-memory tag category lookup cache shared with [E621Provider].
   static final Map<String, String> tagCategoryCache = {};
+
+  static bool _isLoaded = false;
+  static Timer? _debounceSave;
+  static String? _customCachePath;
+
+  /// Loads persisted tag categories from disk if not yet loaded.
+  static Future<void> initCache([String? customPath]) async {
+    if (customPath != null) _customCachePath = customPath;
+    if (_isLoaded) return;
+    try {
+      final path = _customCachePath ?? await _getCachePath();
+      final file = File(path);
+      if (await file.exists()) {
+        final content = await file.readAsString();
+        if (content.trim().isNotEmpty) {
+          final decoded = jsonDecode(content);
+          if (decoded is Map) {
+            for (final entry in decoded.entries) {
+              final k = entry.key.toString().trim();
+              final v = entry.value.toString().trim();
+              if (k.isNotEmpty && v.isNotEmpty) {
+                tagCategoryCache[k] = v;
+              }
+            }
+          }
+        }
+      }
+      _isLoaded = true;
+    } catch (_) {
+      _isLoaded = true;
+    }
+  }
+
+  /// Debounces saving [tagCategoryCache] to disk so UI threads stay non-blocking.
+  static void saveCacheSoon() {
+    _debounceSave?.cancel();
+    _debounceSave = Timer(const Duration(seconds: 3), () async {
+      try {
+        final path = _customCachePath ?? await _getCachePath();
+        final file = File(path);
+        await file.writeAsString(jsonEncode(tagCategoryCache));
+      } catch (_) {}
+    });
+  }
+
+  static Future<String> _getCachePath() async {
+    if (_customCachePath != null) return _customCachePath!;
+    final dir = await getApplicationDocumentsDirectory();
+    return '${dir.path}/e621_tag_categories.json';
+  }
 
   /// Synchronously groups known tags from [tagCategoryCache].
   static Map<String, List<String>> getCachedCategorizedTags(List<String> tags) {
@@ -124,10 +180,15 @@ class E621Mapper {
       for (final entry in rawTags.entries) {
         final list = List<String>.from((entry.value as List?) ?? const []);
         if (list.isNotEmpty) {
-          tagGroups[entry.key.toString()] = list;
+          final groupName = entry.key.toString();
+          tagGroups[groupName] = list;
+          for (final tag in list) {
+            tagCategoryCache[tag] = groupName;
+          }
         }
       }
       tags = tagGroups.values.expand((items) => items).toSet().toList();
+      saveCacheSoon();
     } else if (rawTags is List) {
       tags = rawTags
           .map((e) => e?.toString() ?? '')
@@ -145,8 +206,55 @@ class E621Mapper {
       } else {
         tagGroups['general'] = tags;
       }
+    } else if (rawTags is String) {
+      tags = rawTags.split(' ').where((s) => s.isNotEmpty).toList();
+      final cachedGroups = getCachedCategorizedTags(tags);
+      if (cachedGroups.isNotEmpty) {
+        tagGroups.addAll(cachedGroups);
+        final categorizedSet = cachedGroups.values.expand((e) => e).toSet();
+        final uncached =
+            tags.where((t) => !categorizedSet.contains(t)).toList();
+        if (uncached.isNotEmpty) {
+          tagGroups.putIfAbsent('general', () => []).addAll(uncached);
+        }
+      } else {
+        tagGroups['general'] = tags;
+      }
     } else {
       tags = const [];
+    }
+
+    void addTagString(String groupKey, dynamic val) {
+      if (val != null) {
+        final str = val.toString().trim();
+        if (str.isNotEmpty) {
+          final items = str.split(' ').where((s) => s.isNotEmpty).toList();
+          if (items.isNotEmpty) {
+            tagGroups.putIfAbsent(groupKey, () => []).addAll(items);
+            for (final it in items) {
+              tagCategoryCache[it] = groupKey;
+            }
+          }
+        }
+      }
+    }
+    if (!tagGroups.containsKey('artist')) {
+      addTagString('artist', json['tag_string_artist']);
+    }
+    if (!tagGroups.containsKey('character')) {
+      addTagString('character', json['tag_string_character']);
+    }
+    if (!tagGroups.containsKey('copyright')) {
+      addTagString('copyright', json['tag_string_copyright']);
+    }
+    if (!tagGroups.containsKey('species')) {
+      addTagString('species', json['tag_string_species']);
+    }
+    if (!tagGroups.containsKey('lore')) {
+      addTagString('lore', json['tag_string_lore']);
+    }
+    if (!tagGroups.containsKey('meta')) {
+      addTagString('meta', json['tag_string_meta']);
     }
 
     final relationships =

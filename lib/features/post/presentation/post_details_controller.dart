@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/core/utils/result.dart';
+import 'package:gel_rule_app/sources/mappers/e621_mapper.dart';
 
 // Stream the fastest available post version first, then enrich it.
 final postDetailsControllerProvider =
@@ -9,6 +10,22 @@ final postDetailsControllerProvider =
   final providerManager = ref.watch(providerManagerProvider);
   final cacheService = ref.watch(cacheServiceProvider);
   final postRepository = ref.watch(postRepositoryProvider);
+
+  Post preEnrichWithCachedCategories(Post post) {
+    if (post.hasCategorizedTagGroups || post.tags.isEmpty) return post;
+    if (post.providerId == 'e621' || post.providerId == 'e926') {
+      final cached = E621Mapper.getCachedCategorizedTags(post.tags);
+      if (cached.isNotEmpty) {
+        return post.copyWith(
+          tagGroups: {
+            ...post.tagGroups,
+            ...cached,
+          },
+        );
+      }
+    }
+    return post;
+  }
 
   bool needsRealbooruDetails(Post post) {
     if (post.providerId != 'realbooru' && post.providerId != 'rule34_us') {
@@ -42,30 +59,32 @@ final postDetailsControllerProvider =
 
   Future<Post?> enrich(Post? post) async {
     if (post == null) return null;
-    if (needsRealbooruDetails(post) ||
-        needsPixivEnrichment(post) ||
-        needsXVideosDetails(post)) {
-      final remote = await providerManager.getPost(post.providerId, post.id);
+    var effective = preEnrichWithCachedCategories(post);
+    if (needsRealbooruDetails(effective) ||
+        needsPixivEnrichment(effective) ||
+        needsXVideosDetails(effective)) {
+      final remote = await providerManager.getPost(effective.providerId, effective.id);
       if (remote is Success<Post?> && remote.data != null) {
         await cacheService.cachePosts([remote.data!]);
         return remote.data!;
       }
     }
-    final shouldEnrich = !post.hasCategorizedTagGroups && post.tags.isNotEmpty;
-    if (!shouldEnrich) return post;
+    final shouldEnrich = !effective.hasCategorizedTagGroups && effective.tags.isNotEmpty;
+    if (!shouldEnrich) return effective;
 
-    final enriched = await providerManager.enrichPostTags(post);
+    final enriched = await providerManager.enrichPostTags(effective);
     if (enriched is Success<Post>) {
       await cacheService.cachePosts([enriched.data]);
       return enriched.data;
     }
-    return post;
+    return effective;
   }
 
   // Scenario 1: feed navigation already passed the post.
   if (args.initialPost != null) {
-    yield args.initialPost;
-    final enriched = await enrich(args.initialPost);
+    final preEnriched = preEnrichWithCachedCategories(args.initialPost!);
+    yield preEnriched;
+    final enriched = await enrich(preEnriched);
     yield enriched;
     return;
   }
@@ -74,8 +93,9 @@ final postDetailsControllerProvider =
   final cached =
       await postRepository.getCachedPost(args.postId, args.providerId);
   if (cached is Success<Post?> && cached.data != null) {
-    yield cached.data;
-    final enriched = await enrich(cached.data);
+    final preEnriched = preEnrichWithCachedCategories(cached.data!);
+    yield preEnriched;
+    final enriched = await enrich(preEnriched);
     yield enriched;
     return;
   }

@@ -161,6 +161,37 @@ class Post {
 
   bool get hasNotes => tagGroups['has_notes']?.firstOrNull == 'true';
 
+  /// Returns artist/creator tags for this post.
+  List<String> get artistTags {
+    final direct = tagGroups['artist'];
+    if (direct != null && direct.isNotEmpty) return direct;
+    final prefixMatch = tags
+        .where((t) => t.startsWith('artist:') || t.startsWith('creator:'))
+        .map((t) => t.replaceFirst('artist:', '').replaceFirst('creator:', ''))
+        .where((t) => t.isNotEmpty)
+        .toList();
+    if (prefixMatch.isNotEmpty) return prefixMatch;
+    return const [];
+  }
+
+  /// Primary clean artist name, excluding technical flags like conditional_dnp or unknown_artist.
+  String? get artistName {
+    final list = artistTags;
+    if (list.isEmpty) return null;
+    const nonArtistTags = {
+      'conditional_dnp',
+      'avoid_posting',
+      'soundless',
+      'third_party_edit',
+      'unknown_artist',
+      'anonymous_artist',
+    };
+    final real =
+        list.where((a) => !nonArtistTags.contains(a.toLowerCase())).toList();
+    final first = real.isNotEmpty ? real.first : list.first;
+    return nonArtistTags.contains(first.toLowerCase()) ? null : first;
+  }
+
   int? get favCount {
     final raw = tagGroups['fav_count']?.firstOrNull;
     return raw != null ? int.tryParse(raw) : null;

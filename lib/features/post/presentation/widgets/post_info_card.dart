@@ -6,6 +6,7 @@ import 'package:gel_rule_app/app/app_strings.dart';
 import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/shared/widgets/rating_badge.dart';
 import 'package:gel_rule_app/sources/booru/e621_provider.dart';
+import 'package:gel_rule_app/sources/mappers/e621_mapper.dart';
 
 class PostInfoCard extends StatefulWidget {
   const PostInfoCard({
@@ -167,12 +168,20 @@ class _PostInfoCardState extends State<PostInfoCard> {
   }
 
   static ({String name, String queryTag})? extractArtist(Post post) {
-    final rawArtists = post.tagGroups['artist'] ??
-        post.tags
-            .where((t) => t.startsWith('artist:') || t.startsWith('creator:'))
-            .map((t) =>
-                t.replaceFirst('artist:', '').replaceFirst('creator:', ''))
-            .toList();
+    var rawArtists = post.tagGroups['artist'];
+    if (rawArtists == null || rawArtists.isEmpty) {
+      if (post.providerId == 'e621' || post.providerId == 'e926') {
+        final cached = E621Mapper.getCachedCategorizedTags(post.tags);
+        if (cached.containsKey('artist') && cached['artist']!.isNotEmpty) {
+          rawArtists = cached['artist'];
+        }
+      }
+    }
+    rawArtists ??= post.tags
+        .where((t) => t.startsWith('artist:') || t.startsWith('creator:'))
+        .map((t) =>
+            t.replaceFirst('artist:', '').replaceFirst('creator:', ''))
+        .toList();
     if (rawArtists.isEmpty) return null;
 
     const nonArtistTags = {

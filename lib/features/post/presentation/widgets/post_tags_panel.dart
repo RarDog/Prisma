@@ -8,6 +8,7 @@ import 'package:gel_rule_app/backend/backend.dart';
 import 'package:gel_rule_app/shared/widgets/tag_chip.dart';
 import 'package:gel_rule_app/features/feed/presentation/feed_controller.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
+import 'package:gel_rule_app/sources/mappers/e621_mapper.dart';
 
 class PostTagsPanel extends ConsumerStatefulWidget {
   const PostTagsPanel({required this.post, super.key});
@@ -261,7 +262,19 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
   static const _ignoredTagGroupKeys = Post.nonTagMetadataKeys;
 
   Map<String, List<String>> _groups(Post post) {
-    if (post.tagGroups.isNotEmpty) {
+    var tagGroups = post.tagGroups;
+    if ((tagGroups.isEmpty || !tagGroups.containsKey('artist')) &&
+        (post.providerId == 'e621' || post.providerId == 'e926')) {
+      final cached = E621Mapper.getCachedCategorizedTags(post.tags);
+      if (cached.isNotEmpty) {
+        tagGroups = {
+          ...cached,
+          ...tagGroups,
+        };
+      }
+    }
+
+    if (tagGroups.isNotEmpty) {
       final ordered = <String, List<String>>{};
       for (final key in [
         'artist',
@@ -272,10 +285,10 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
         'lore',
         'general',
       ]) {
-        final tags = _filterValidTags(post.tagGroups[key]);
+        final tags = _filterValidTags(tagGroups[key]);
         if (tags.isNotEmpty) ordered[key] = tags;
       }
-      for (final entry in post.tagGroups.entries) {
+      for (final entry in tagGroups.entries) {
         if (_ignoredTagGroupKeys.contains(entry.key.toLowerCase())) continue;
         final tags = _filterValidTags(entry.value);
         if (tags.isNotEmpty) {

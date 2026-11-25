@@ -389,5 +389,83 @@ void main() {
       expect(suggestions[1].category, equals(TagCategory.meta));
       expect(suggestions[2].category, equals(TagCategory.artist));
     });
+
+    test('searchPosts batch categorizes posts and populates artist tag', () async {
+      E621Mapper.tagCategoryCache.clear();
+      dio.httpClientAdapter = _FakeAdapter((options) async {
+        if (options.path == '/posts.json') {
+          final responseJson = {
+            'posts': [
+              {
+                'id': 1111,
+                'file': {
+                  'url': 'https://static1.e621.net/data/sample1.jpg',
+                  'ext': 'jpg',
+                  'width': 1000,
+                  'height': 800,
+                },
+                'preview': {
+                  'url': 'https://static1.e621.net/data/preview1.jpg',
+                  'width': 300,
+                  'height': 200,
+                },
+                'sample': {
+                  'url': 'https://static1.e621.net/data/sample1.jpg',
+                  'has': true,
+                },
+                'tags': ['jacky-arts', 'canine'],
+                'score': {'total': 10},
+                'rating': 's',
+                'created_at': '2026-09-10T12:00:00.000Z',
+              }
+            ]
+          };
+          return ResponseBody.fromString(
+            jsonEncode(responseJson),
+            200,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+            },
+          );
+        } else if (options.path == '/tags.json') {
+          final responseJson = [
+            {'name': 'jacky-arts', 'category': 1},
+            {'name': 'canine', 'category': 5},
+          ];
+          return ResponseBody.fromString(
+            jsonEncode(responseJson),
+            200,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+            },
+          );
+        }
+        throw UnimplementedError(options.path);
+      });
+
+      final provider = E621Provider(
+        id: 'e621',
+        name: 'e621',
+        baseUrl: 'https://e621.net',
+        dioClient: dioClient,
+      );
+
+      final posts = await provider.searchPosts(tags: ['canine'], page: 0);
+      expect(posts.length, equals(1));
+      expect(posts.first.artistName, equals('jacky-arts'));
+      expect(posts.first.tagGroups['artist'], equals(['jacky-arts']));
+      expect(posts.first.tagGroups['species'], equals(['canine']));
+    });
+
+    test('E621Mapper returns cached categorized tags immediately', () {
+      E621Mapper.tagCategoryCache.clear();
+      E621Mapper.tagCategoryCache['artist_test'] = 'artist';
+      E621Mapper.tagCategoryCache['fox'] = 'species';
+
+      final categorized =
+          E621Mapper.getCachedCategorizedTags(['artist_test', 'fox', 'unknown']);
+      expect(categorized['artist'], equals(['artist_test']));
+      expect(categorized['species'], equals(['fox']));
+    });
   });
 }

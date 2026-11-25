@@ -56,6 +56,7 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
   Post? _activePost;
   int _selectedPageIndex = 0;
   bool _mediaGestureLocked = false;
+  final Map<String, Post> _enrichedPostsCache = {};
 
   void _setMediaGestureLocked(bool locked) {
     if (_mediaGestureLocked == locked) return;
@@ -166,7 +167,12 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
         offstage: isFullscreen,
         child: Builder(
           builder: (context) {
-            final effectivePost = postAsync.valueOrNull ?? _activePost;
+            final currentAsyncPost = postAsync.valueOrNull;
+            if (currentAsyncPost != null && currentAsyncPost.hasCategorizedTagGroups) {
+              _enrichedPostsCache[currentAsyncPost.cacheKey] = currentAsyncPost;
+            }
+            final rawEffective = currentAsyncPost ?? _activePost;
+            final effectivePost = (rawEffective != null ? _enrichedPostsCache[rawEffective.cacheKey] : null) ?? rawEffective;
             if (effectivePost == null) {
               if (postAsync.isLoading) {
                 return const Center(child: CircularProgressIndicator());
@@ -466,22 +472,24 @@ class _PostDetailsScreenState extends ConsumerState<PostDetailsScreen> {
     if (_activePostId == post.id && _activeProviderId == post.providerId) {
       return;
     }
+    final resolvedPost = _enrichedPostsCache[post.cacheKey] ?? post;
     setState(() {
-      _activeProviderId = post.providerId;
-      _activePostId = post.id;
-      _activePost = post;
-      _selectedPageIndex = post.id.contains('_p')
-          ? (int.tryParse(post.id.split('_p').last) ?? 0)
+      _activeProviderId = resolvedPost.providerId;
+      _activePostId = resolvedPost.id;
+      _activePost = resolvedPost;
+      _selectedPageIndex = resolvedPost.id.contains('_p')
+          ? (int.tryParse(resolvedPost.id.split('_p').last) ?? 0)
           : 0;
     });
-    ref.read(viewedHistoryServiceProvider).markViewed(post);
+    ref.read(viewedHistoryServiceProvider).markViewed(resolvedPost);
     ref.invalidate(viewedKeysProvider);
     ref.invalidate(viewedControllerProvider);
   }
 
   void _handlePagerPageChanged(int index, List<Post> feedPosts) {
     if (index >= 0 && index < feedPosts.length) {
-      final newPost = feedPosts[index];
+      final rawPost = feedPosts[index];
+      final newPost = _enrichedPostsCache[rawPost.cacheKey] ?? rawPost;
       if (_activePostId != newPost.id ||
           _activeProviderId != newPost.providerId) {
         setState(() {
