@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:gel_rule_app/app/app.dart';
 import 'package:gel_rule_app/backend/backend.dart';
+import 'package:gel_rule_app/core/utils/result.dart';
 import 'package:gel_rule_app/shared/widgets/tag_chip.dart';
 import 'package:gel_rule_app/features/feed/presentation/feed_controller.dart';
 import 'package:gel_rule_app/features/settings/presentation/settings_controller.dart';
@@ -23,15 +24,78 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
   final _expandedGroups = <String>{};
 
   @override
+  void initState() {
+    super.initState();
+    _checkAndEnrichTags();
+  }
+
+  @override
+  void didUpdateWidget(PostTagsPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.post.id != widget.post.id ||
+        oldWidget.post.providerId != widget.post.providerId) {
+      _checkAndEnrichTags();
+    }
+  }
+
+  void _checkAndEnrichTags() {
+    final p = widget.post;
+    if (p.providerId != 'e621' && p.providerId != 'e926') return;
+    if (p.tagGroups.containsKey('artist')) return;
+    final cached = E621Mapper.getCachedCategorizedTags(p.tags);
+    if (cached.containsKey('artist')) {
+      if (mounted) setState(() {});
+      return;
+    }
+    Future.microtask(() async {
+      try {
+        final result =
+            await ref.read(providerManagerProvider).enrichPostTags(p);
+        if (mounted &&
+            result is Success<Post> &&
+            result.data.tagGroups.isNotEmpty) {
+          setState(() {});
+        }
+      } catch (_) {}
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final isRu = Localizations.maybeLocaleOf(context)?.languageCode == 'ru';
     final groups = _groups(widget.post);
     if (groups.isEmpty) return const SizedBox.shrink();
+
+    final artistTags = groups['artist'];
+    final nonArtistEntries =
+        groups.entries.where((e) => e.key != 'artist').toList(growable: false);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (final entry in groups.entries)
+        if (artistTags != null && artistTags.isNotEmpty) ...[
+          _ArtistTagSection(
+            tags: artistTags,
+            isRu: isRu,
+            onTap: (tag) => _navigateToFeed(context, tag),
+            onLongPress: (tag) =>
+                _showTagActionSheet(context, tag: tag, group: 'artist'),
+          ),
+          if (nonArtistEntries.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Divider(
+              height: 16,
+              thickness: 1,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white.withValues(alpha: 0.10)
+                  : Colors.black.withValues(alpha: 0.08),
+            ),
+            const SizedBox(height: 6),
+          ],
+        ],
+        for (final entry in nonArtistEntries)
           _TagGroupBlock(
-            label: _label(entry.key),
+            label: _label(entry.key, isRu),
             group: entry.key,
             tags: entry.value,
             expanded: _expandedGroups.contains(entry.key),
@@ -99,7 +163,7 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          _label(group),
+                          _label(group, isRu),
                           style:
                               Theme.of(context).textTheme.labelSmall?.copyWith(
                                     color: Theme.of(context)
@@ -262,41 +326,83 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
   static const _ignoredTagGroupKeys = Post.nonTagMetadataKeys;
 
   Map<String, List<String>> _groups(Post post) {
-    var tagGroups = post.tagGroups;
+    var tagGroups = Map<String, List<String>>.from(post.tagGroups);
     if ((tagGroups.isEmpty || !tagGroups.containsKey('artist')) &&
         (post.providerId == 'e621' || post.providerId == 'e926')) {
       final cached = E621Mapper.getCachedCategorizedTags(post.tags);
       if (cached.isNotEmpty) {
-        tagGroups = {
-          ...cached,
-          ...tagGroups,
-        };
+        tagGroups.remove('general');
+        tagGroups.addAll(cached);
+        final categorizedSet = cached.values.expand((e) => e).toSet();
+        final uncached =
+            post.tags.where((t) => !categorizedSet.contains(t)).toList();
+        if (uncached.isNotEmpty) {
+          tagGroups['general'] = uncached;
+        }
       }
     }
 
     if (tagGroups.isNotEmpty) {
       final ordered = <String, List<String>>{};
-      for (final key in [
+      final seenTags = <String>{};
+
+      // Strict order: artist -> copyright/fandom -> character -> species -> meta -> lore -> general.
+      const priorityKeys = [
         'artist',
-        'character',
         'copyright',
+        'character',
         'species',
         'meta',
         'lore',
-        'general',
-      ]) {
-        final tags = _filterValidTags(tagGroups[key]);
-        if (tags.isNotEmpty) ordered[key] = tags;
-      }
-      for (final entry in tagGroups.entries) {
-        if (_ignoredTagGroupKeys.contains(entry.key.toLowerCase())) continue;
-        final tags = _filterValidTags(entry.value);
+      ];
+
+      for (final key in priorityKeys) {
+        final tags = _filterValidTags(tagGroups[key])
+            .where((t) => !seenTags.contains(t))
+            .toList(growable: false);
         if (tags.isNotEmpty) {
-          ordered.putIfAbsent(entry.key, () => tags);
+          ordered[key] = tags;
+          seenTags.addAll(tags);
         }
       }
+
+      if (!ordered.containsKey('artist') && post.artistTags.isNotEmpty) {
+        final artistList = _filterValidTags(post.artistTags)
+            .where((t) => !seenTags.contains(t))
+            .toList(growable: false);
+        if (artistList.isNotEmpty) {
+          ordered['artist'] = artistList;
+          seenTags.addAll(artistList);
+        }
+      }
+
+      for (final entry in tagGroups.entries) {
+        final k = entry.key.toLowerCase();
+        if (priorityKeys.contains(k) ||
+            k == 'general' ||
+            _ignoredTagGroupKeys.contains(k)) {
+          continue;
+        }
+        final tags = _filterValidTags(entry.value)
+            .where((t) => !seenTags.contains(t))
+            .toList(growable: false);
+        if (tags.isNotEmpty) {
+          ordered.putIfAbsent(entry.key, () => tags);
+          seenTags.addAll(tags);
+        }
+      }
+
+      final rawGeneral = tagGroups['general'] ?? post.tags;
+      final generalTags = _filterValidTags(rawGeneral)
+          .where((t) => !seenTags.contains(t))
+          .toList(growable: false);
+      if (generalTags.isNotEmpty) {
+        ordered['general'] = generalTags;
+      }
+
       return ordered;
     }
+
     final filtered = _filterValidTags(post.tags);
     return filtered.isEmpty ? const {} : {'general': filtered};
   }
@@ -321,17 +427,113 @@ class _PostTagsPanelState extends ConsumerState<PostTagsPanel> {
     }).toList(growable: false);
   }
 
-  String _label(String key) {
+  String _label(String key, bool isRu) {
     return switch (key) {
-      'artist' => 'Artist',
-      'character' => 'Character',
-      'copyright' => 'Copyright / Title',
-      'species' => 'Species',
-      'meta' => 'Meta',
-      'lore' => 'Lore',
-      'general' => 'General',
-      _ => 'Other',
+      'artist' => isRu ? 'Художник / Автор' : 'Artist / Creator',
+      'copyright' => isRu ? 'Копирайт / Фандом' : 'Copyright / Fandom',
+      'character' => isRu ? 'Персонажи' : 'Characters',
+      'species' => isRu ? 'Вид / Раса' : 'Species',
+      'meta' => isRu ? 'Метаданные' : 'Meta',
+      'lore' => isRu ? 'Лор / Сеттинг' : 'Lore',
+      'general' => isRu ? 'Общие теги' : 'General',
+      _ => isRu ? 'Другое' : 'Other',
     };
+  }
+}
+
+class _ArtistTagSection extends StatelessWidget {
+  const _ArtistTagSection({
+    required this.tags,
+    required this.isRu,
+    required this.onTap,
+    required this.onLongPress,
+  });
+
+  final List<String> tags;
+  final bool isRu;
+  final ValueChanged<String> onTap;
+  final ValueChanged<String> onLongPress;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    const accentColor = Color(0xFFFF4757);
+    final textColor =
+        isDark ? const Color(0xFFFF6B81) : const Color(0xFFD63031);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: accentColor.withValues(alpha: isDark ? 0.12 : 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: accentColor.withValues(alpha: isDark ? 0.35 : 0.25),
+          width: 1.2,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: isDark ? 0.25 : 0.18),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.palette_rounded,
+                  size: 16,
+                  color: accentColor,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isRu ? 'Художник / Автор' : 'Artist / Creator',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: textColor,
+                  letterSpacing: -0.2,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: isDark ? 0.20 : 0.14),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${tags.length}',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final tag in tags)
+                TagChip(
+                  tag: tag,
+                  group: 'artist',
+                  onTap: () => onTap(tag),
+                  onLongPress: () => onLongPress(tag),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -452,10 +654,11 @@ class _TagGroupBlock extends StatelessWidget {
   static Color _headerDotColor(String group, ThemeData theme) {
     return switch (group.toLowerCase()) {
       'artist' => const Color(0xFFFF4757),
-      'character' => const Color(0xFF2ED573),
       'copyright' => const Color(0xFFA55EEA),
+      'character' => const Color(0xFF2ED573),
       'species' => const Color(0xFFFFA502),
       'meta' => const Color(0xFF1E90FF),
+      'lore' => const Color(0xFF20BF6B),
       _ => theme.colorScheme.primary,
     };
   }

@@ -426,7 +426,11 @@ class ProviderManager {
   }
 
   Future<Result<Post>> enrichPostTags(Post post) async {
-    if (post.hasCategorizedTagGroups || post.tags.isEmpty) return Success(post);
+    final isE621 = post.providerId == 'e621' || post.providerId == 'e926';
+    final shouldEnrich = isE621
+        ? (!post.tagGroups.containsKey('artist') && post.tags.isNotEmpty)
+        : (!post.hasCategorizedTagGroups && post.tags.isNotEmpty);
+    if (!shouldEnrich) return Success(post);
 
     final providersResult = await activeFeedProviders();
     if (providersResult is Error<List<ContentProvider>>) {
@@ -443,8 +447,15 @@ class ProviderManager {
       final groups = await (matches.first as TagMetadataProvider)
           .categorizeTags(post.tags);
       if (groups.isEmpty) return Success(post);
-      final merged = Map<String, List<String>>.from(post.tagGroups)
-        ..addAll(groups);
+      final merged = Map<String, List<String>>.from(post.tagGroups);
+      merged.remove('general');
+      merged.addAll(groups);
+      final categorizedSet = groups.values.expand((e) => e).toSet();
+      final remaining =
+          post.tags.where((t) => !categorizedSet.contains(t)).toList();
+      if (remaining.isNotEmpty) {
+        merged['general'] = remaining;
+      }
       return Success(post.copyWith(tagGroups: merged));
     } catch (error) {
       return Success(post);

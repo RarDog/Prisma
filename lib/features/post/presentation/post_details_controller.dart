@@ -69,7 +69,10 @@ final postDetailsControllerProvider =
         return remote.data!;
       }
     }
-    final shouldEnrich = !effective.hasCategorizedTagGroups && effective.tags.isNotEmpty;
+    final isE621 = effective.providerId == 'e621' || effective.providerId == 'e926';
+    final shouldEnrich = isE621
+        ? (!effective.tagGroups.containsKey('artist') && effective.tags.isNotEmpty)
+        : (!effective.hasCategorizedTagGroups && effective.tags.isNotEmpty);
     if (!shouldEnrich) return effective;
 
     final enriched = await providerManager.enrichPostTags(effective);

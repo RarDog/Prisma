@@ -157,7 +157,6 @@ class E621Provider
 
     final allUncached = <String>{};
     for (final post in posts) {
-      if (post.hasCategorizedTagGroups) continue;
       for (final tag in post.tags) {
         final t = tag.trim();
         if (t.isNotEmpty && !E621Mapper.tagCategoryCache.containsKey(t)) {
@@ -168,13 +167,14 @@ class E621Provider
 
     if (allUncached.isNotEmpty) {
       final uncachedList = allUncached.toList(growable: false);
-      for (var i = 0; i < uncachedList.length; i += 100) {
+      for (var i = 0; i < uncachedList.length; i += 80) {
         if (cancelToken?.isCancelled == true) break;
         final chunk = uncachedList.sublist(
           i,
-          (i + 100 > uncachedList.length) ? uncachedList.length : i + 100,
+          (i + 80 > uncachedList.length) ? uncachedList.length : i + 80,
         );
         try {
+          await _throttle();
           final response = await _dio.get<dynamic>(
             '/tags.json',
             queryParameters: {
@@ -208,15 +208,20 @@ class E621Provider
     }
 
     return posts.map((post) {
-      if (post.hasCategorizedTagGroups || post.tags.isEmpty) return post;
       final groups = E621Mapper.getCachedCategorizedTags(post.tags);
       if (groups.isEmpty) return post;
-      return post.copyWith(
-        tagGroups: {
-          ...post.tagGroups,
-          ...groups,
-        },
-      );
+      final existing = Map<String, List<String>>.from(post.tagGroups);
+      existing.remove('general');
+      for (final entry in groups.entries) {
+        existing[entry.key] = entry.value;
+      }
+      final categorizedSet = groups.values.expand((e) => e).toSet();
+      final remaining =
+          post.tags.where((t) => !categorizedSet.contains(t)).toList();
+      if (remaining.isNotEmpty) {
+        existing['general'] = remaining;
+      }
+      return post.copyWith(tagGroups: existing);
     }).toList(growable: false);
   }
 
@@ -224,6 +229,7 @@ class E621Provider
     return switch (category?.toString()) {
       '0' => 'general',
       '1' => 'artist',
+      '2' => 'artist',
       '3' => 'copyright',
       '4' => 'character',
       '5' => 'species',
@@ -265,6 +271,7 @@ class E621Provider
           (i + 80 > uncached.length) ? uncached.length : i + 80,
         );
         try {
+          await _throttle();
           final response = await _dio.get<dynamic>(
             '/tags.json',
             queryParameters: {
