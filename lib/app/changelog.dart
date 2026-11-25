@@ -1,5 +1,24 @@
 const prismaChangelog = [
   PrismaChange(
+    version: '4.2.4-beta.3',
+    title:
+        'Релиз 4.2.4-beta.3: стабилизация тега автора e621 при быстрой прокрутке, выделенный блок художника и строгий порядок групп тегов',
+    titleEn:
+        'Release 4.2.4-beta.3: e621 artist tag stabilization during fast scrolling, dedicated artist block & strict tag group ordering',
+    bullets: [
+      'Стабилизация тега автора e621 / e926: пакетная предкатегоризация тегов на уровне страницы ленты, постоянный дисковый кэш категорий (e621_tag_categories.json) с прогревом при старте и синхронное пред-обогащение первого кадра, исключающее пропадание автора при быстром свайпе.',
+      'Выделенный блок художника и строгая иерархия тегов: группа «Художник / Автор» вынесена в отдельный акцентный блок; остальные группы следуют в строгом порядке — Копирайт / Фандом → Персонажи → Вид / Раса → Метаданные → Лор → Общие теги.',
+      'Исключение дублей в Общих тегах: теги, распределённые по категориям, больше не дублируются в блоке General; добавлена двуязычная локализация заголовков групп.',
+      'Надёжность API e621: добавлен троттлинг запросов к /tags.json во избежание 429-ошибок и маппинг категории 2 (modeler / contributor) к авторам.',
+    ],
+    bulletsEn: [
+      'e621 / e926 Artist Tag Stabilization: batch tag pre-categorization at the feed page level, persistent disk tag category cache (e621_tag_categories.json) prewarmed on startup, and synchronous first-frame pre-enrichment preventing artist flickering during fast swipes.',
+      'Dedicated Artist Block & Strict Tag Hierarchy: Artist / Creator is now highlighted in a separate accent section above the rest of the tags, ordered strictly as Copyright / Fandom → Characters → Species → Meta → Lore → General.',
+      'Zero Duplicate General Tags: categorized tags are cleanly excluded from the General group, and tag group headers are now localized in both Russian and English.',
+      'e621 API Resilience: added rate-limit throttling on /tags.json requests to prevent HTTP 429 drops and mapped e621 category 2 (contributor/modeler) to Artist.',
+    ],
+  ),
+  PrismaChange(
     version: '4.2.4-beta.2',
     title:
         'Релиз 4.2.4-beta.2: комплексный аудит безопасности и ядра, масштабное обновление манги и 3D PageFlip, группировка тегов e621',
